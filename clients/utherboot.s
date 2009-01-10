@@ -35,9 +35,9 @@
   .import __CODE_RUN__
   .import __CODE_SIZE__
 
-	.bss
+.segment        "PAGE3"
 
-
+disable_language_card: .res 3
 bin_file_jmp: .res 3
 
 ; ------------------------------------------------------------------------
@@ -179,14 +179,23 @@ init:
   inx
 :
   stax  copy_src
-  ldy #0
-  lda (copy_dest+1),y ;currently this is the high byte of the length
+  ldy #1
+  lda (copy_dest),y ;currently this is the high byte of the length
   tax
+  dey
   lda (copy_dest),y   ;currently this is the low byte of the length
   jsr copymem
+
+
+  ;now make the 'turn off language card' routine
+  lda #$AD      ;$AD=LDA
+  sta disable_language_card
+  lda #$82      ;low byte of soft switch    
+  sta disable_language_card+1
+  lda #$c0     ;high byte of soft switch
+  sta disable_language_card+2
   
-  jsr bin_file_jmp
-  jmp $3d0
+  jmp disable_language_card
 
 bad_boot:
   jmp $3d0
