@@ -34,7 +34,7 @@
   .import __CODE_LOAD__
   .import __CODE_RUN__
   .import __CODE_SIZE__
-  
+
 	.bss
 
 
@@ -62,6 +62,11 @@ bin_file_jmp: .res 3
   ldax #$0800
   jsr startup_copymem
 
+  
+  lda $c08b   ;enable language : card read RAM, write RAM, BANK 1
+  lda $c08b   ;this soft switch needs to be read twice 
+
+
   ;relocate the CODE segment
   ldax #__CODE_LOAD__
   stax copy_src
@@ -87,9 +92,6 @@ bin_file_jmp: .res 3
   ldax #__DATA_SIZE__
   jsr startup_copymem
 
-  
-  lda $c08b   ;enable language : card read RAM, write RAM, BANK 1
-  lda $c08b   ;this soft switch needs to be read twice 
   jmp init
   
 ; copy memory
@@ -208,7 +210,7 @@ download:
 	jsr print
   clc
   rts
-  
+
 	.rodata
 downloading_msg:  .asciiz "DOWNLOADING "
 

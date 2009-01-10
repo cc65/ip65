@@ -88,9 +88,9 @@ print:
 	beq @done_print
 	jsr print_a
 	inc pptr
-	bcc @print_loop
+	bne @print_loop
   inc pptr+1
-  bcc @print_loop ;if we ever get to $fff, we've probably gone far enough ;-)
+  bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
 @done_print:
   rts
 
