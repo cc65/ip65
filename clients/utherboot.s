@@ -40,8 +40,6 @@
 temp_bin: .res 1
 temp_bcd: .res 2
 
-end: .res 1
-
 bin_file_jmp: .res 3
 
 ; ------------------------------------------------------------------------
@@ -60,13 +58,20 @@ bin_file_jmp: .res 3
   lda $c089   ;enable language : card read ROM, write RAM, BANK 1
  
   ;copy the monitor rom on to the language card
-  
-  ;relocate the RODATA segment
   ldax #$f800
   stax copy_src
   stax copy_dest  
   ldax #$0800
   jsr startup_copymem
+
+  ;relocate the CODE segment
+  ldax #__CODE_LOAD__
+  stax copy_src
+  ldax #__CODE_RUN__
+  stax copy_dest  
+  ldax #__CODE_SIZE__
+  jsr startup_copymem
+
 
   ;relocate the RODATA segment
   ldax #__RODATA_LOAD__
@@ -84,13 +89,6 @@ bin_file_jmp: .res 3
   ldax #__DATA_SIZE__
   jsr startup_copymem
 
-  ;relocate the CODE segment
-  ldax #__CODE_LOAD__
-  stax copy_src
-  ldax #__CODE_RUN__
-  stax copy_dest  
-  ldax #__CODE_SIZE__
-  jsr startup_copymem
   
   lda $c08b   ;enable language : card read RAM, write RAM, BANK 1
   lda $c08b   ;this soft switch needs to be read twice 
@@ -98,6 +96,10 @@ bin_file_jmp: .res 3
   
 ; copy memory
 ; set copy_src and copy_dest, length in A/X
+
+
+end: .res 1
+
 startup_copymem:
 	sta end
 	ldy #0
@@ -149,7 +151,7 @@ init:
   dex
   bpl :-
 
-  ldax #$0000   ;load address will be first 2 bytes of file we dowload (LO/HI order)
+  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
   stax tftp_load_address
 
   ldax #downloading_msg
@@ -162,11 +164,27 @@ init:
   jmp bad_boot
   
 @file_downloaded_ok:  
-
+  ;set up to jump to where we just d/led the file to
   lda #$4C  ;opcode for JMP
   sta bin_file_jmp
   ldax  tftp_load_address
   stax bin_file_jmp+1
+  
+  ;but before we go, we need to shift the file down by 2 bytes (to skip over the file length)
+  ldax tftp_load_address
+  stax  copy_dest
+  clc
+  adc #02
+  bcc :+
+  inx
+:
+  stax  copy_src
+  ldy #0
+  lda (copy_dest+1),y ;currently this is the high byte of the length
+  tax
+  lda (copy_dest),y   ;currently this is the low byte of the length
+  jsr copymem
+  
   jsr bin_file_jmp
   jmp $3d0
 
