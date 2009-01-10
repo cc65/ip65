@@ -1,5 +1,9 @@
 	.zeropage
 pptr:		.res 2
+.bss
+temp_bin: .res 1
+temp_bcd: .res 2
+
 .code
 .macro print_driver_init
   ldax #cs_driver_name

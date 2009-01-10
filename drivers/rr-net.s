@@ -30,5 +30,6 @@ cs_init:
 	sta rr_ctl
 	rts
 
+.rodata
 cs_driver_name:
 	.asciiz "RR-NET"

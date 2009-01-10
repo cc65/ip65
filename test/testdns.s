@@ -13,11 +13,6 @@
   .import  __RODATA_SIZE__
   .import  __DATA_SIZE__
   
-	.bss
-
-temp_bin: .res 1
-temp_bcd: .res 2
-
 
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 

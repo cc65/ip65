@@ -37,8 +37,6 @@
   
 	.bss
 
-temp_bin: .res 1
-temp_bcd: .res 2
 
 bin_file_jmp: .res 3
 
@@ -224,3 +222,4 @@ tftp_download_ok_msg:
 	.asciiz "DOWNLOAD OK"
 
 startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V0.1",0
+
