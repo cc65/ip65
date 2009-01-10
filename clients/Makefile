@@ -28,8 +28,8 @@ rrnetboot.bin: rrnetboot.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m rrnetboot.map -C ../cfg/rrbin.cfg -o rrnetboot.bin  $(AFLAGS) $< $(IP65LIB) $(C64NETLIB)  
 	ruby fix_cart.rb rrnetboot.bin
   
-utherboot.bin: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -m utherboot.map -C ../cfg/a2bin.cfg -o utherboot.bin  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
+utherboot.bin: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
+	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o utherboot.bin  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
 
 utherboot.dsk: utherboot.bin
 	dsktool.rb --init dos33 utherboot.dsk -a utherboot.bin -t B

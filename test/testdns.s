@@ -2,18 +2,24 @@
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
   
+  .import exit_to_basic  
+  
   .import dns_set_hostname
   .import dns_resolve
   .import dns_ip
   .import dns_status
-
+  .import  __CODE_LOAD__
+  .import  __CODE_SIZE__
+  .import  __RODATA_SIZE__
+  .import  __DATA_SIZE__
+  
 	.bss
 
 temp_bin: .res 1
 temp_bcd: .res 2
 
 
-	.segment "STARTUP"
+	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
 
@@ -29,14 +35,19 @@ basicstub:
 @nextline:
 	.word 0
 
+.segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
+        .addr           __CODE_LOAD__-$11                ; Start address
+        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
+        jmp init
 
-	.code
+.code
 
 init:
     
- jsr print_ip_config
+  jsr print_cr
+  jsr print_ip_config
  
- init_ip_via_dhcp 
+  init_ip_via_dhcp 
  
 ;  jsr overwrite_with_hardcoded_dns_server
   jsr print_ip_config
@@ -59,17 +70,18 @@ init:
   ldax #hostname_6
   jsr do_dns_query  
 
-  rts
+  jmp exit_to_basic
+
 
 do_dns_query:
   pha
   jsr print
   lda #' '
-  jsr $ffd2
+  jsr print_a
   lda #':'
-  jsr $ffd2
+  jsr print_a
   lda #' '
-  jsr $ffd2
+  jsr print_a
   pla
   jsr dns_set_hostname
   jsr dns_resolve
@@ -87,8 +99,7 @@ do_dns_query:
   lda dns_status+1
   jsr print_hex
   jsr print_cr
-
-	rts
+  rts
 
 overwrite_with_hardcoded_dns_server:
   ldx #3
@@ -104,6 +115,7 @@ overwrite_with_hardcoded_dns_server:
 	.rodata
 
 
+buffer1: .res 256
 hostname_1:
   .byte "SLASHDOT.ORG",0          ;this should be an A record
 

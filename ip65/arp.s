@@ -1,5 +1,6 @@
 ; ARP address resolution
 
+;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
 
 .include "../inc/common.i"
 

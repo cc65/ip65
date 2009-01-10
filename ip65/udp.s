@@ -1,3 +1,5 @@
+;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+
 .include "../inc/common.i"
 
 	;.import dbg_dump_udp_header

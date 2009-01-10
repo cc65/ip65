@@ -1,3 +1,5 @@
+;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+
 ; ip65 main routines
 
 .include "../inc/common.i"

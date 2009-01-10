@@ -1,3 +1,5 @@
+;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+
 ; timer routines
 ;
 ; the timer should be a 16-bit counter that's incremented by about

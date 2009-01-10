@@ -1,3 +1,5 @@
+;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+
 ; Ethernet driver for CS8900A
 ;
 ; Based on Doc Bacardi's tftp source
