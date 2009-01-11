@@ -43,18 +43,4 @@ $0e	volume number of last access
 $0f	slot number of last acces * 16
 $10	drive number of last access 
 
-
-WE NEED:
-
-	- about 4K of BSS space for ethernet buffers
-	- about 6K of code
-
-	- we will load in at $0800
-	- we will get copied to $D000-$C000 in the language card
-	
-
-TODO:
-	- copy monitor rom to same spot in language card (F800-FFFF)
-	- turn on bank 1 of language card
-	- set up a jump point in page 3	
 	
