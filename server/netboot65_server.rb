@@ -5,6 +5,7 @@
 # 
 #
 
+
 def log_msg(msg)
   puts "#{Time.now} #{msg}"
 end
