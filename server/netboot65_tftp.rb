@@ -51,8 +51,31 @@ class Netboot65TFTPServer
     blocks_to_send.times do |block_number|
       block_data=data_to_send[block_number*512,512]
       packet=[3,block_number+1,block_data].pack("nnA*")
-      log_msg("sending block #{block_number+1}/#{blocks_to_send} to #{client_ip}:#{client_port} - #{block_data.length} bytes")
-      client_sock.send(packet,0,client_ip,client_port)
+      got_ack=false
+      TFTP_MAX_RESENDS.times do |attempt_number|
+        log_msg("sending block #{block_number+1}/#{blocks_to_send} of #{filename} to #{client_ip}:#{client_port} - #{block_data.length} bytes - attempt #{attempt_number+1}")
+        client_sock.send(packet,0,client_ip,client_port)
+        if (IO.select([client_sock], nil, nil, 1)) then
+          data,addr_info=client_sock.recvfrom(4096)
+          client_ip=addr_info[3]
+          client_port=addr_info[1]        
+          opcode=data[0,2].unpack("n")[0]
+          opcode_description=TFTP_OPCODES[opcode]
+          if opcode==4  then
+            acked_block_number=data[2,2].unpack("n")[0]
+            log_msg "TFTP: ACK from #{client_ip}:#{client_port} - block #{acked_block_number}"
+            got_ack=true if acked_block_number==block_number+1
+          else             
+            opcode_description="[UNK]" if opcode_description.nil?          
+            log_msg "TFTP: response from #{client_ip}:#{client_port} - opcode #{opcode} : #{opcode_description}"
+          end
+        end
+        break if got_ack
+      end
+      if !got_ack then
+        log_msg "TFTP: timed out waiting for ACK of block #{block_number} from #{client_ip}"
+        break
+      end
     end
   end
 
@@ -65,7 +88,7 @@ class Netboot65TFTPServer
         socket=UDPSocket.open
         socket.setsockopt Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1
         log_msg "waiting for TFTP client to connect"
-        socket.bind(nil,port)
+        socket.bind("",port)
         data,addr_info=socket.recvfrom(4096)
         client_ip=addr_info[3]
         client_port=addr_info[1]        
@@ -83,7 +106,7 @@ class Netboot65TFTPServer
            else
              full_filename="#{bootfile_dir}/#{filename}"
              if File.file?(full_filename) then
-               send_file(client_ip,client_port,full_filename)
+               Thread.new {send_file(client_ip,client_port,full_filename)}
             else
               send_error(client_ip,client_port,1,"'#{filename}' not found") 
             end
