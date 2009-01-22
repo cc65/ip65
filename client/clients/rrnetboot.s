@@ -30,8 +30,8 @@
 
 	.bss
 
-temp_bin: .res 1
-temp_bcd: .res 2
+;temp_bin: .res 1
+;temp_bcd: .res 2
 
 bin_file_jmp: .res 3
 
