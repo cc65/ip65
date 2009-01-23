@@ -27,15 +27,15 @@ class TNDPServer
     @server_thread=Thread.start do
       @socket=UDPSocket.open
       @socket.bind("",port)
-      log("serving #{root_directory} on UDP port #{port}")
+      log_msg("serving #{root_directory} on UDP port #{port}")
       loop do 
         data,addr_info=@socket.recvfrom(4096)
         client_port=addr_info[1]
         client_ip=addr_info[3]
-        log "#{data.length} bytes received from #{client_ip}:#{client_port}"
+        log_msg "#{data.length} bytes received from #{client_ip}:#{client_port}"
          begin
           request=TNDP.message_from_buffer(data)
-          log(request.to_s)          
+          log_msg(request.to_s)          
           case request.opcode
             when TNDP::CapabilitiesRequestMessage::OPCODE                
                 supported_architectures={}
@@ -60,15 +60,15 @@ class TNDPServer
         rescue Exception=>e        
           response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INTERNAL_SERVER_ERROR,e.to_s)
         end
-        log("Response:")
-        log(response.to_s)
+        log_msg("Response:")
+        log_msg(response.to_s)
         @socket.send(response.to_buffer,0,client_ip,client_port)
       end
     end
   end
   
   def shutdown
-    log("TNDP server on UDP port #{port} shutting down")
+    log_msg("TNDP server on UDP port #{port} shutting down")
     @server_thread.kill
     
   end
