@@ -40,7 +40,7 @@ class TestServer <Test::Unit::TestCase
       desired_system_architecture=a[0]
       desired_file_system=a[1]
       log_msg ("TESTING CATALOG FOR ARCHITECTURE #{desired_system_architecture} / FILE SYSTEM #{desired_file_system}")
-    
+      
       done=false
       catalog_offset=0
       while !done do
@@ -50,6 +50,7 @@ class TestServer <Test::Unit::TestCase
         volume_catalog_response_msg=send_request_and_get_response(volume_catalog_request_msg)
         assert(volume_catalog_response_msg.respond_to?(:catalog_entries),"volume catalogue response message should include list of volumes on server")
         assert(volume_catalog_response_msg.catalog_entries.length>0,"volume catalogue response message should have at least 1 entry")
+        entry_count=0
         volume_catalog_response_msg.catalog_entries.each do |entry|
           assert_equal(desired_system_architecture,entry[1],"each entry should be for specified architecture") unless desired_system_architecture==:any
           assert_equal(desired_file_system,entry[2],"each entry should be for specified file system") unless desired_file_system==:any
@@ -57,11 +58,12 @@ class TestServer <Test::Unit::TestCase
           track_no=entry[3]-1 #last track
           sector_no=1
           sector_length=entry[4]
-          assert_equal(TNDP::ErrorCodes::INVALID_VOLUME_NAME,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>"invalid file name"})).errorcode,"invalid volume name should return error")
-          assert_equal(TNDP::ErrorCodes::INVALID_TRACK_NUMBER,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>0xDEAD,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name})).errorcode,"invalid track number should return error")
-          assert_equal(TNDP::ErrorCodes::INVALID_SECTOR_NUMBER,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>0xBEEF,:sector_length=>sector_length,:volume_name=>volume_name})).errorcode,"invalid sector number should return error")
-          assert_equal(TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>0xD00D,:volume_name=>volume_name})).errorcode,"invalid sector length should return error")
-
+          if entry_count==0 then  #do these tests only once for each combination of architecture/file system
+            assert_equal(TNDP::ErrorCodes::INVALID_VOLUME_NAME,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>"invalid file name"})).errorcode,"invalid volume name should return error")
+            assert_equal(TNDP::ErrorCodes::INVALID_TRACK_NUMBER,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>0xDEAD,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name})).errorcode,"invalid track number should return error")
+            assert_equal(TNDP::ErrorCodes::INVALID_SECTOR_NUMBER,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>0xBEEF,:sector_length=>sector_length,:volume_name=>volume_name})).errorcode,"invalid sector number should return error")
+            assert_equal(TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>0xD00D,:volume_name=>volume_name})).errorcode,"invalid sector length should return error")
+          end
           file_system_image=RipXplore.best_fit_from_filename("#{TEST_IMAGES_DIR}/#{volume_name}")
           assert_equal(sector_length,file_system_image.get_sector(track_no,sector_no).length,"sector as read from disk should be of correct length")      
           sector_read_request_msg=TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name})
@@ -70,6 +72,7 @@ class TestServer <Test::Unit::TestCase
           assert(sector_read_response_msg.respond_to?(:sector_data),"sector read response message should include sector data")  
           assert_equal(sector_length,sector_read_response_msg.sector_data.length,"sector read response message should include full length sector")
           assert_equal(TNDP.hex_dump(file_system_image.get_sector(track_no,sector_no)),TNDP.hex_dump(sector_read_response_msg.sector_data),"data returned from server should match data read directly from disk")
+          entry_count+=1
         end
         catalog_offset+=volume_catalog_response_msg.catalog_entries.length
         done=(catalog_offset>volume_catalog_response_msg.total_catalog_size-1)
