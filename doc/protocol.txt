@@ -2,7 +2,7 @@ TRIVIAL NETWORK DISK PROTOCOL
 
 * "CAPABILITIES REQUEST" is the only message type that should be broadcast. Everything else should be unicast
 
-All fields are in network byte order (lo/hi)
+All fields are in network byte order (hi/lo)
 
 FOR ALL MESSAGES
 Offset	meaning
@@ -45,8 +45,8 @@ For READ/WRITE:
 $08..$09	2 byte track #
 $0A..$0B	2 byte sector #
 $0C..$0D	2 byte sector length (in bytes) 
-$0E..$4B	volume name (null padded 61 bytes)
-$4C		null byte (i.e. filename can be 61 bytes long, MUST be at least 1 null at the 62nd byte)
+$0E..$4B	volume name (null padded 55 bytes)
+$4C		null byte (i.e. filename can be 55 bytes long, MUST be at least 1 null at the 56th byte)
 FOR WRITE
 $4d..		sector data
 
@@ -79,11 +79,11 @@ The list of supported architectures should end with an entry for architecture ID
 file system ID $00 (any) which should have a count of all volumes available for all architectures on this server.
 
 FOR VOLUME CATALOG
-$06..$07	Total Catalogue Entries
-$08..$09	Catalogue Offset (i.e. how many entries are there in the catalogue before the first entry in this response)
-$0a		Number of Entries in this response (maximum of 10)
+$08..$09	Total Catalogue Entries
+$0A..$0B	Catalogue Offset (i.e. how many entries are there in the catalogue before the first entry in this response)
+$0C		Number of Entries in this response (maximum of 10)
 
-$0b.. 		the volume catalog entries.
+$0D.. 		the volume catalog entries.
 for each entry
 
 $00..$3c	volume name (up to 56 chars, null padded)
@@ -91,8 +91,8 @@ $37		null byte
 $38		system architecture ID
 $39		file system ID
 $3A..$3B	number of tracks
-$3C..$3D	number of sectors
-$3E..$3F	sector length (in bytes) 
+$3C..$3D	sector length (in bytes) 
+$3E..$3F	??
 
 
 

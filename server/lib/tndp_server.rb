@@ -7,23 +7,30 @@ require 'tndp'
 require 'socket'
 require 'RipXplore'
 
+  SYSTEM_ARCHITECTURE_TRANSLATIONS={
+    "Apple2"=>:apple2,
+   "C64"=>:c64,
+  }
+  FILE_SYSTEM_TRANSLATIONS={
+    "AppleDos"=>:apple_dos_33,
+    "CbmDos"=>:cbm_dos,
+    "RawDisk"=>:raw,
+    "ProDos"=>:prodos,
+    "AppleCPM"=>:cpm,
+  }
+
+
 class TNDPServer
   LISTENING_PORT=6502
-  attr_reader :root_directory,:port ,:server_thread,:socket
+  attr_reader :root_directory,:port ,:server_thread,:socket,:volume_catalog
   def initialize(root_directory,port=LISTENING_PORT)
     @root_directory=root_directory
     @port=port
   end
-  
-  def file_system_images_in_directory
-    image_files=[]
-    Dir.foreach(@root_directory) do |filename|
-      image_files<< RipXplore.best_fit_from_filename("#{@root_directory}/#{filename}") if FileSystemImage.is_file_system_image_filename?(filename)
-    end
-    image_files
-  end
+    
   
   def start
+    create_volume_catalog
     @server_thread=Thread.start do
       @socket=UDPSocket.open
       @socket.bind("",port)
@@ -37,24 +44,34 @@ class TNDPServer
           request=TNDP.message_from_buffer(data)
           log_msg(request.to_s)          
           case request.opcode
-            when TNDP::CapabilitiesRequestMessage::OPCODE                
+            when TNDP::CapabilitiesRequestMessage::OPCODE
                 supported_architectures={}
-                file_system_images_in_directory.each do |file_system_image|
-                if file_system_image.image_format.host_system==Apple2
-                then
-                  architecture_id=TNDP::SYSTEM_ARCHITECTURES[:apple2 ]
-                elsif file_system_image.image_format.host_system==C64 then
-                  architecture_id=TNDP::SYSTEM_ARCHITECTURES[:c64]
-                else 
-                  architecture_id=TNDP::SYSTEM_ARCHITECTURES[:other]
-                end
-                supported_architectures[architecture_id]=1+TNDP.coalesce(supported_architectures[architecture_id],0)
+                volume_catalog.each do |entry|
+                supported_architectures[entry[1]]=1+TNDP.coalesce(supported_architectures[entry[1]],0)
               end
               response=TNDP::CapabilitiesResponseMessage.new({:supported_architectures=>supported_architectures})
-            when TNDP::VolumeCatalogRequestMessage::OPCODE                
-              response=TNDP::VolumeCatalogResponseMessage.new() 
+            when TNDP::VolumeCatalogRequestMessage::OPCODE
+              catalog_subset=subset_volume_catalog(request.system_architecture,request.file_system)
+              catalog_offset=request.catalog_offset
+              catalog_entries=catalog_subset[catalog_offset,TNDP::MAX_CATALOG_ENTRIES_PER_MESSAGE]
+              response=TNDP::VolumeCatalogResponseMessage.new({:catalog_entries=>catalog_entries,:catalog_offset=>catalog_offset,:total_catalog_size=>catalog_subset.length})
+            when TNDP::SectorReadRequestMessage::OPCODE
+                file_system_image=nil
+                begin
+                file_system_image=RipXplore.best_fit_from_filename("#{@root_directory}/#{request.volume_name}")
+                rescue Exception=>e
+                  response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_VOLUME_NAME,e.to_s)  
+                end
+                if !(file_system_image.nil?) then
+                  track_no=request.track_no
+                  sector_no=request.sector_no
+                  sector_length=request.sector_length
+                  if (track_no<file_system_image.start_track) || (track_no>file_system_image.end_track)  then
+                    response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_TRACK_NUMBER,"requested track $#{"%X"% track_no} outside allowable range of $#{"%X"% file_system_image.start_track}..$#{"%X"% file_system_image.end_track}")
+                  end
+                end                
             else              
-              response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::UNKNOWN_OPCODE,"unknown opcode 0x#{"%02X" % request.opcode}")
+              response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::UNKNOWN_OPCODE,"unknown opcode $#{"%02X" % request.opcode}")
           end
           response.transaction_id=request.transaction_id
         rescue Exception=>e        
@@ -69,7 +86,38 @@ class TNDPServer
   
   def shutdown
     log_msg("TNDP server on UDP port #{port} shutting down")
-    @server_thread.kill
-    
+    @server_thread.kill  
   end
+  
+  #return a subset of the total volume catalog that includes just the entries that match the passed in system architecture & file system
+  def subset_volume_catalog(system_architecture,file_system)
+#    return volume_catalog
+    vc=[]
+    volume_catalog.each do |entry|
+      vc<<entry if (system_architecture==:any || system_architecture==entry[1]) && (file_system==:any || file_system==entry[2])
+    end
+    vc
+  end
+  
+private
+
+def create_volume_catalog
+    @volume_catalog=[]
+    Dir.foreach(@root_directory) do |filename|
+      if FileSystemImage.is_file_system_image_filename?(filename) then
+        begin
+        file_system_image=RipXplore.best_fit_from_filename("#{@root_directory}/#{filename}")      
+        system_architecture=TNDP.coalesce(SYSTEM_ARCHITECTURE_TRANSLATIONS[file_system_image.image_format.host_system.to_s],:unknown)
+        file_system=TNDP.coalesce(FILE_SYSTEM_TRANSLATIONS[file_system_image.file_system.to_s],:unknown)
+        start_track=file_system_image.start_track
+        puts filename
+        @volume_catalog<<[filename,system_architecture,file_system,file_system_image.track_count,file_system_image.get_sector(start_track,0).length]
+        rescue Exception=>e        
+        #don't stop if anything throws an exception
+        log_msg("ERROR: parsing of #{filename} failed:\n"+e.to_s)
+        end
+      end
+    end
+  end
+
 end

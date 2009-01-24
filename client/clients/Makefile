@@ -15,6 +15,8 @@ IP65LIB=../ip65/ip65.lib
 C64NETLIB=../drivers/c64net.lib
 APPLE2NETLIB=../drivers/apple2net.lib
 
+BOOTA2.BIN=../../server/boot/BOOTA2.BIN
+
 INCFILES=\
   ../inc/common.i\
   ../inc/commonprint.i\
@@ -23,6 +25,7 @@ INCFILES=\
 all: \
 	rrnetboot.bin \
 	utherboot.dsk \
+	$(BOOTA2.BIN) \  
   
 rrnetboot.bin: rrnetboot.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m rrnetboot.map -C ../cfg/rrbin.cfg -o rrnetboot.bin  $(AFLAGS) $< $(IP65LIB) $(C64NETLIB)  
@@ -34,6 +37,9 @@ utherboot.bin: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2langu
 utherboot.dsk: utherboot.bin
 	dsktool.rb --init dos33 utherboot.dsk -a utherboot.bin -t B
 	dsktool.rb utherboot.dsk -a hello -t A
+
+$(BOOTA2.BIN): bootmenu.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
+	$(LD) -m bootmenu.map -C ../cfg/a2language_card.cfg -o $(BOOTA2.BIN)  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
   
 clean:
 	rm -f *.o
