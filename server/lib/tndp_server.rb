@@ -68,6 +68,15 @@ class TNDPServer
                   sector_length=request.sector_length
                   if (track_no<file_system_image.start_track) || (track_no>file_system_image.end_track)  then
                     response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_TRACK_NUMBER,"requested track $#{"%X"% track_no} outside allowable range of $#{"%X"% file_system_image.start_track}..$#{"%X"% file_system_image.end_track}")
+                  else
+                    sector_data=file_system_image.get_sector(track_no,sector_no)
+                    if sector_data.nil? then 
+                      response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_SECTOR_NUMBER,"requested sector $#{"%X"% sector_no} not found in track $#{"%X"% track_no}")
+                    elsif (sector_data.length)!=sector_length then
+                      response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,"requested track $#{"%X"% track_no}/sector $#{"%X"% sector_no} is of length $#{"%X"% sector_data.length}, not $#{"%X"% sector_length}")
+                    else
+                      response=TNDP::SectorReadResponseMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>request.volume_name,:sector_data=>sector_data})
+                    end
                   end
                 end                
             else              
@@ -75,7 +84,7 @@ class TNDPServer
           end
           response.transaction_id=request.transaction_id
         rescue Exception=>e        
-          response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INTERNAL_SERVER_ERROR,e.to_s)
+          response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INTERNAL_SERVER_ERROR,e.to_s+e.backtrace[0])
         end
         log_msg("Response:")
         log_msg(response.to_s)

@@ -63,11 +63,13 @@ class TestServer <Test::Unit::TestCase
           assert_equal(TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,send_request_and_get_response(TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>0xD00D,:volume_name=>volume_name})).errorcode,"invalid sector length should return error")
 
           file_system_image=RipXplore.best_fit_from_filename("#{TEST_IMAGES_DIR}/#{volume_name}")
+          assert_equal(sector_length,file_system_image.get_sector(track_no,sector_no).length,"sector as read from disk should be of correct length")      
           sector_read_request_msg=TNDP::SectorReadRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name})
           sector_read_response_msg=send_request_and_get_response(sector_read_request_msg)                    
           
           assert(sector_read_response_msg.respond_to?(:sector_data),"sector read response message should include sector data")  
-          assert(file_system_image.get_sector(track_no,sector_no)==sector_read_response_msg.sector_data,"data returned from server should match data read directly from disk")
+          assert_equal(sector_length,sector_read_response_msg.sector_data.length,"sector read response message should include full length sector")
+          assert_equal(TNDP.hex_dump(file_system_image.get_sector(track_no,sector_no)),TNDP.hex_dump(sector_read_response_msg.sector_data),"data returned from server should match data read directly from disk")
         end
         catalog_offset+=volume_catalog_response_msg.catalog_entries.length
         done=(catalog_offset>volume_catalog_response_msg.total_catalog_size-1)

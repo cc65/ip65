@@ -33,7 +33,7 @@ module TNDP
   }
 
   MAX_CATALOG_ENTRIES_PER_MESSAGE=8
-  MAX_VOLUME_NAME_LENGTH=57
+  MAX_VOLUME_NAME_LENGTH=127
   SYSTEM_ARCHITECTURES={
     :any=>0x00,
     :c64=>0x64,
@@ -154,10 +154,6 @@ OPCODE:         $#{"%02X"%opcode} [#{OPCODES[opcode].nil? ? "UNKNOWN" : OPCODES[
       TNDP.hex_dump(raw_bytes)
     end
     def initialize(args={}) 
-  #    puts "args:"
-  #    args.keys.each do |key|
-  #      puts "#{key}: #{args[key]}\n"
-  #    end
       @signature=TNDP.coalesce(args[:signature],MESSAGE_SIGNATURE)
       @version_id=TNDP.coalesce(args[:version_id],0x01)
       @transaction_id=TNDP.coalesce(args[:transaction_id],TNDP.next_transaction_id)
@@ -337,22 +333,25 @@ SECTOR LENGTH:  $#{"%04x" % sector_length}"
   end
 
   class SectorReadResponseMessage < SectorReadRequestMessage
+    OPCODE=0x82
     attr_reader :sector_data
     def initialize(args={})
       raise "sector_data must be specified in a #{self.class}" if args[:sector_data].nil?
-      @sector_data=args[:sector_data]      
+      @sector_data=args[:sector_data]
       super(args)
+      @opcode=OPCODE
+      raise "length of sector_data #{@sector_data.length} must match specified sector_length #{@sector_length}" unless @sector_data.length==@sector_length
     end
     def to_s
       super+"\nSECTOR DATA:\n"+TNDP.hex_dump(sector_data)
     end
     
     def to_buffer
-      super+sector_data.pack("C#{sector_length}")
+      super+[sector_data].pack("A#{sector_length}")
     end
     
-    def from_buffer
-      signature,version_id,transaction_id,opcode,track_no,sector_no,sector_length,volume_name,sector_data=buffer.unpack("Z4CnCnnnZ#{TNDP::MAX_VOLUME_NAME_LENGTH+1}C*")
+    def self.from_buffer(buffer)
+      signature,version_id,transaction_id,opcode,track_no,sector_no,sector_length,volume_name,sector_data=buffer.unpack("Z4CnCnnnZ#{TNDP::MAX_VOLUME_NAME_LENGTH+1}a*")
       self.new({:signature=>signature,:version=>version_id,:transaction_id=>transaction_id,
       :opcode=>opcode,:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name,:sector_data=>sector_data})
     end
