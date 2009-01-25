@@ -126,7 +126,8 @@ class Netboot65TFTPServer
              Dir.chdir(bootfile_dir) do
                Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000#{File.size(filename)}\000"}
              end
-             Thread.new {send_data(client_ip,client_port,full_filename,data_to_send)}
+             data_to_send<<0.chr
+             Thread.new {send_data(client_ip,client_port,"DIR of #{filemask}",data_to_send)}
           end          
           else
             send_error(client_ip,client_port,4,"opcode #{opcode} not supported")

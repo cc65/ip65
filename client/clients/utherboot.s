@@ -17,7 +17,8 @@
   .import tftp_load_address
   .import tftp_ip
   .import tftp_download
-
+  .import tftp_directory_listing 
+  
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
@@ -49,6 +50,10 @@ bin_file_jmp: .res 3
 
 ; ------------------------------------------------------------------------
 
+.bss
+tftp_dir_buffer:  .res 1024
+
+filename_locations: .res 256
 
 .segment        "STARTUP"
   
@@ -141,7 +146,9 @@ init:
   jsr print_cr
 
   init_ip_via_dhcp 
-  bcs bad_boot
+  bcc :+
+  jmp bad_boot
+:  
   jsr print_ip_config
   
   ldx #3
@@ -151,6 +158,42 @@ init:
   dex
   bpl :-
 
+
+  ldax #tftp_dir_buffer
+  stax tftp_load_address
+
+  ldax #getting_dir_listing_msg
+	jsr print
+
+  ldax #tftp_dir_filemask
+  stax tftp_filename
+  jsr print
+  jsr print_cr
+
+  jsr tftp_directory_listing 
+	bcs @dir_failed
+ 
+  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
+  stax tftp_load_address
+
+  jsr select_filename_from_dir
+  stax tftp_filename
+
+  ldax #downloading_msg
+	jsr print
+  
+  ldax tftp_filename
+  jsr download
+  bcc @file_downloaded_ok
+  jmp bad_boot
+
+@dir_failed:
+
+  ldax #tftp_dir_listing_fail_msg
+  jsr print
+  jsr print_cr
+  
+  
   ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
   stax tftp_load_address
 
@@ -220,11 +263,22 @@ download:
   clc
   rts
 
+select_filename_from_dir:
+  ldax  #tftp_dir_buffer
+  rts
 	.rodata
 downloading_msg:  .asciiz "DOWNLOADING "
 
+getting_dir_listing_msg: .asciiz "RETRIEVING TFTP DIRECTORY "
+
+tftp_dir_listing_fail_msg:
+	.asciiz "DIR LISTING FAILED"
+
 tftp_file:  
-  .asciiz "BOOTA2.BIN"
+  .asciiz "BOOTA2.PG2"
+
+tftp_dir_filemask:  
+  .asciiz "*.PG2"
 
 tftp_download_fail_msg:
 	.asciiz "DOWNLOAD FAILED"
