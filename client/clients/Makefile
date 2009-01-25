@@ -4,10 +4,16 @@ LD=ld65
 CFLAGS=-Oirs -t $(TARGET)
 AFLAGS=
 
+INCFILES=\
+  ../inc/common.i\
+  ../inc/commonprint.i\
+  ../inc/net.i\
+  ../inc/menu.i\
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
 
-%.o: %.s ../inc/print.i
+%.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 
 IP65LIB=../ip65/ip65.lib
@@ -17,11 +23,7 @@ APPLE2NETLIB=../drivers/apple2net.lib
 
 BOOTA2.PG2=../../server/boot/BOOTA2.PG2
 
-INCFILES=\
-  ../inc/common.i\
-  ../inc/commonprint.i\
-  ../inc/net.i\
-
+  
 all: \
 	rrnetboot.bin \
 	utherboot.dsk \

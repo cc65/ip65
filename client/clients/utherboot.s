@@ -11,7 +11,10 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
+  .include "../inc/menu.i"
   .import cls
+  .import get_key
+
 	
   .importzp tftp_filename
   .import tftp_load_address
@@ -52,8 +55,6 @@ bin_file_jmp: .res 3
 
 .bss
 tftp_dir_buffer:  .res 1024
-
-filename_locations: .res 256
 
 .segment        "STARTUP"
   
@@ -137,13 +138,16 @@ startup_copymem:
 .code
 
 
-init:
+init:  
 
   jsr cls
+  
+  jsr select_filename_from_dir
   
   ldax  #startup_msg
   jsr print
   jsr print_cr
+
 
   init_ip_via_dhcp 
   bcc :+
@@ -241,6 +245,7 @@ init:
   jmp disable_language_card
 
 bad_boot:
+  
   jmp $3d0
 
 
@@ -264,12 +269,68 @@ download:
   rts
 
 select_filename_from_dir:
-  ldax  #tftp_dir_buffer
+  ldax  #downloading_msg
+  stax  option_description_pointers
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+2
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+4
+  ldax  #downloading_msg
+  stax  option_description_pointers+6
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+8
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+10
+  ldax  #downloading_msg
+  stax  option_description_pointers+12
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+14
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+16
+  ldax  #downloading_msg
+  stax  option_description_pointers+18
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+20
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+22
+  ldax  #downloading_msg
+  stax  option_description_pointers+24
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+26
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+28
+  ldax  #downloading_msg
+  stax  option_description_pointers+30
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+32
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+34
+  ldax  #downloading_msg
+  stax  option_description_pointers+36
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+38
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+40
+  ldax  #downloading_msg
+  stax  option_description_pointers+42
+  ldax  #tftp_dir_listing_fail_msg
+  stax  option_description_pointers+44
+  ldax  #tftp_download_ok_msg  
+  stax  option_description_pointers+46
+
+  lda  #24
+  sta number_of_options
+  
+  jsr select_option_from_menu
+  sta current_option
+  jsr print_hex
+@fixme:
+  jmp @fixme
   rts
 	.rodata
 downloading_msg:  .asciiz "DOWNLOADING "
 
-getting_dir_listing_msg: .asciiz "RETRIEVING TFTP DIRECTORY "
+getting_dir_listing_msg: .asciiz "FETCHING TFTP DIRECTORY FOR "
 
 tftp_dir_listing_fail_msg:
 	.asciiz "DIR LISTING FAILED"
