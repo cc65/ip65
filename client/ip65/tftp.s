@@ -1,15 +1,25 @@
 ;########################
 ; minimal tftp implementation (client only)
+; supports file download (not upload) and directory listing per http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt draft RFC
 ; written by jonno@jamtronix.com 2009
 ;
 ;########################
-; to use -
+; to get a directory listing
+; set tftp_ip to host to download from (which can be broadcast address 255.255.255.255)
+; set tftp_load_address to point to memory location that dir will be stored in
+; set tftp_filename to null terminated filemask  (e.g. "*.prg")
+; then call tftp_directory_listing
+; on exit: carry flag is set if there was an error. 
+;
+; to d/l a file:
 ; set tftp_ip to host to download from (which can be broadcast address 255.255.255.255)
 ; set tftp_load_address to point to memory location that file will be downloaded to
 ; OR set tftp_load_address to $0000, and first 2 bytes of downloaded file will be treated as the load address
 ; set tftp_filename to null terminated filename to download
 ; then call tftp_download
-; on exit: carry flag is set if there was an error. tftp_load_address will be set to address file loaded to (i.e. gets overwritten if originally set to $0000)f
+; on exit: carry flag is set if there was an error. tftp_load_address will be set to address file loaded to (i.e. gets overwritten if originally set to $0000)
+
+;
 ;########################
 
   TFTP_MAX_RESENDS=10
@@ -21,7 +31,7 @@
   .export tftp_load_address
   .export tftp_ip
   .export tftp_download
-  
+  .export tftp_directory_listing 
     
 	.import ip65_process
 
@@ -88,10 +98,18 @@ tftp_actual_server_ip: .res 4     ;this is read from the reply - it may not be t
 
 tftp_just_set_new_load_address: .res 1
 
+tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doing a DIR
+
 .code
 
-tftp_download:
+tftp_directory_listing:
+  ldax  #$0700      ;opcode 07 = DIR (http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt draft RFC)
+  jmp set_tftp_opcode
 
+tftp_download:
+  ldax  #$0100      ;opcode 01 = RRQ
+set_tftp_opcode:  
+  stax  tftp_opcode
   lda #tftp_initializing
   sta tftp_state  
   sta tftp_expected_block_number ;(tftp_initializing=1)
@@ -120,7 +138,7 @@ tftp_download:
   lda tftp_state
   cmp #tftp_initializing
   bne @not_initializing
-  jsr send_read_request
+  jsr send_request_packet
   jmp @inner_delay_loop
   
 @not_initializing:
@@ -150,7 +168,7 @@ tftp_download:
   jsr send_ack
   jmp @inner_delay_loop
 @not_receiving:
-  jsr send_read_request  
+  jsr send_request_packet  
 
 @inner_delay_loop:    
   
@@ -167,10 +185,10 @@ tftp_download:
   bne @outer_delay_loop
   jmp @exit_with_error  
 
-send_read_request:
+send_request_packet:
   lda #tftp_initializing
 	sta tftp_state
-  ldax  #$0100      ;opcode 01 = RRQ
+  ldax  tftp_opcode  
   stax tftp_outp
   
   ldx #$01          ;we inc x/y at start of loop, so
