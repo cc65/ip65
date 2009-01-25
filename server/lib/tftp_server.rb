@@ -1,6 +1,8 @@
 #
 # minimal TFTP server implementation for use with netboot65
 #
+# supports RRQ and DIR requests per http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt
+# however, DIR "information string" contains file size only (as an ASCII string), NOT the full UTC timestamp
 # Jonno Downes (jonno@jamtronix.com) - January, 2009
 # 
 #
@@ -14,6 +16,7 @@ class Netboot65TFTPServer
     3=>'DATA',
     4=>'ACK',
     5=>'ERROR',
+    7=>'DIR',
   }
   
   TFTP_ERRORCODES={
@@ -41,11 +44,11 @@ class Netboot65TFTPServer
     log_msg("sent error #{error_code}:'#{error_msg}' to #{client_ip}:#{client_port}")
   end
   
-  def send_file(client_ip,client_port,filename)
+  def send_data(client_ip,client_port,filename,data_to_send)
     
     client_sock=UDPSocket.open
     client_sock.connect(client_ip,client_port)
-    data_to_send=File.open(filename,"rb").read
+    
     blocks_to_send=(data_to_send.length.to_f/512.0).ceil    
     log_msg("sending #{filename} to #{client_ip}:#{client_port} (#{blocks_to_send} blocks)")
     blocks_to_send.times do |block_number|
@@ -106,11 +109,25 @@ class Netboot65TFTPServer
            else
              full_filename="#{bootfile_dir}/#{filename}"
              if File.file?(full_filename) then
-               Thread.new {send_file(client_ip,client_port,full_filename)}
+               data_to_send=File.open(full_filename,"rb").read
+               Thread.new {send_data(client_ip,client_port,full_filename,data_to_send)}
             else
               send_error(client_ip,client_port,1,"'#{filename}' not found") 
             end
           end
+          when 7 : #DIR REQUEST
+           opcode,filemask_and_mode=data.unpack("nA*")
+           filemask,mode=filemask_and_mode.split(0.chr)
+           log_msg "DIR for #{filemask} (#{mode})"
+           if filename=~/^\./ || filename=~/\.\./ then #looks like something dodgy - either a dotfile or a directory traversal attempt
+            send_error(client_ip,client_port,1,"'#{filemask}' invalid") 
+           else
+             data_to_send=""
+             Dir.chdir(bootfile_dir) do
+               Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000#{File.size(filename)}\000"}
+             end
+             Thread.new {send_data(client_ip,client_port,full_filename,data_to_send)}
+          end          
           else
             send_error(client_ip,client_port,4,"opcode #{opcode} not supported")
           end

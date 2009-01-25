@@ -20,7 +20,7 @@ bootfile_dir=File.expand_path(File.dirname(__FILE__)+'/../boot')
 tftp_server=Netboot65TFTPServer.new(bootfile_dir)
 tftp_server.start
 
-tndp_server=TNDPServer.new(File.dirname(__FILE__)+"/../test_images")
+tndp_server=TNDPServer.new(File.dirname(__FILE__)+"/../file_system_images")
 tndp_server.start
 begin
   loop do
