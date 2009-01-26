@@ -1,6 +1,6 @@
 ;########################
 ; minimal tftp implementation (client only)
-; supports file download (not upload) and directory listing per http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt draft RFC
+; supports file download (not upload) and custom directory listing (using opcode of 0x65)
 ; written by jonno@jamtronix.com 2009
 ;
 ;########################
@@ -103,7 +103,7 @@ tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doi
 .code
 
 tftp_directory_listing:
-  ldax  #$0700      ;opcode 07 = DIR (http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt draft RFC)
+  ldax  #$6500      ;opcode 65 = netboot65 DIR (non-standard opcode)
   jmp set_tftp_opcode
 
 tftp_download:

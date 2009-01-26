@@ -1,5 +1,5 @@
 
-OPTIONS_PER_PAGE = 5
+OPTIONS_PER_PAGE = 7
 .bss
 
 number_of_options: .res 1
@@ -13,11 +13,51 @@ option_description_pointers: .res 256  ;table of addresses of up to 128 filename
 .code
 
 
+;on entry, AX should point to the list of null terminated option strings to be selected from
+;on exit, AX points to the selected string
 select_option_from_menu:
+
+  stax  @lda_from_options_source+1
+  ldy #0
+  sty number_of_options
+  
+  
+@copy_one_pointer:
+  jsr @lda_from_options_source
+  beq @found_last_option_string
+  
+  lda   @lda_from_options_source+1
+  sta   option_description_pointers,y
+  lda   @lda_from_options_source+2
+  sta   option_description_pointers+1,y
+  iny
+  iny  
+  
+  inc number_of_options
+  
+@scan_for_null_byte:
+  jsr @move_to_next_byte
+  jsr @lda_from_options_source
+  bne @scan_for_null_byte
+  
+  jsr @move_to_next_byte
+  jmp @copy_one_pointer
+  
+@lda_from_options_source:
+  lda $FFFF ;filled in from above
+  rts
+
+@move_to_next_byte:
+  inc @lda_from_options_source+1
+  bne :+
+  inc @lda_from_options_source+2
+:  
+  rts
+  
+@found_last_option_string:  
 
 @display_first_page_of_options:
   lda   #0
-;  lda   #15
   sta   first_option_this_page
 
 @print_current_page:
@@ -42,6 +82,7 @@ select_option_from_menu:
   lda   #')'
   jsr   print_a
   jsr   print_cr
+  jsr   print_cr
   lda   #0
   sta   options_shown_this_page
 
@@ -52,9 +93,12 @@ select_option_from_menu:
   adc   #'A'
   jsr print_a
   
-  lda  #'-'
+  lda  #')'
   jsr print_a
-  
+
+  lda  #' '
+  jsr print_a
+
   lda   current_option
   asl
   tax
@@ -77,8 +121,8 @@ select_option_from_menu:
   jmp @print_loop
   
 @get_keypress:
+  lda #'?'
   jsr get_key
-;  jsr print_hex  ;for debugging
   cmp #$95
   beq @forward_one_page
   cmp #$8a
@@ -94,7 +138,7 @@ select_option_from_menu:
   bcc @get_keypress ;if we have underflowed, it wasn't a valid option
   cmp #OPTIONS_PER_PAGE-1
   beq @got_valid_option
-  bpl@get_keypress ;if we have underflowed, it wasn't a valid option
+  bpl @get_keypress ;if we have underflowed, it wasn't a valid option
   
 @got_valid_option:
 
@@ -104,8 +148,14 @@ select_option_from_menu:
   bcs @get_keypress   ;this cmp/bcs is to check the case where we are on the last page of options (which can have less than then
                       ;normal number of options) and have pressed a letter that is not a valid option for this page, but is for all other
                       ;pages.
+                      ;a now contains the index of the selected option
+  asl   ;double it
+  tay
+  lda option_description_pointers+1,y
+  tax
+  lda option_description_pointers,y
   rts
-jmp @get_keypress
+
 
 @forward_one_page:  
   clc
@@ -114,6 +164,7 @@ jmp @get_keypress
   sta first_option_this_page
   cmp number_of_options
   bmi @not_last_page_of_options
+@back_to_first_page:    
   jmp @display_first_page_of_options
 @not_last_page_of_options:
   jmp @print_current_page
@@ -123,13 +174,13 @@ jmp @get_keypress
   lda first_option_this_page
   sbc #OPTIONS_PER_PAGE
   bcc @show_last_page_of_options
-@back_to_first_page:  
   sta first_option_this_page
   jmp @print_current_page
 @show_last_page_of_options:
   sec
   lda number_of_options
   sbc #OPTIONS_PER_PAGE
+  bcc @back_to_first_page
   sta first_option_this_page
   jmp @print_current_page
 ;  ldax  #tftp_dir_buffer

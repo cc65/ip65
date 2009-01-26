@@ -53,8 +53,8 @@ bin_file_jmp: .res 3
 
 ; ------------------------------------------------------------------------
 
-.bss
-tftp_dir_buffer:  .res 1024
+  
+tftp_dir_buffer = $4000
 
 .segment        "STARTUP"
   
@@ -141,9 +141,7 @@ startup_copymem:
 init:  
 
   jsr cls
-  
-  jsr select_filename_from_dir
-  
+
   ldax  #startup_msg
   jsr print
   jsr print_cr
@@ -180,7 +178,8 @@ init:
   ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
   stax tftp_load_address
 
-  jsr select_filename_from_dir
+  ldax  #tftp_dir_buffer
+  jsr select_option_from_menu  
   stax tftp_filename
 
   ldax #downloading_msg
@@ -194,6 +193,7 @@ init:
 @dir_failed:
 
   ldax #tftp_dir_listing_fail_msg
+  
   jsr print
   jsr print_cr
   
@@ -268,65 +268,6 @@ download:
   clc
   rts
 
-select_filename_from_dir:
-  ldax  #downloading_msg
-  stax  option_description_pointers
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+2
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+4
-  ldax  #downloading_msg
-  stax  option_description_pointers+6
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+8
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+10
-  ldax  #downloading_msg
-  stax  option_description_pointers+12
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+14
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+16
-  ldax  #downloading_msg
-  stax  option_description_pointers+18
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+20
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+22
-  ldax  #downloading_msg
-  stax  option_description_pointers+24
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+26
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+28
-  ldax  #downloading_msg
-  stax  option_description_pointers+30
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+32
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+34
-  ldax  #downloading_msg
-  stax  option_description_pointers+36
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+38
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+40
-  ldax  #downloading_msg
-  stax  option_description_pointers+42
-  ldax  #tftp_dir_listing_fail_msg
-  stax  option_description_pointers+44
-  ldax  #tftp_download_ok_msg  
-  stax  option_description_pointers+46
-
-  lda  #24
-  sta number_of_options
-  
-  jsr select_option_from_menu
-  sta current_option
-  jsr print_hex
-@fixme:
-  jmp @fixme
-  rts
 	.rodata
 downloading_msg:  .asciiz "DOWNLOADING "
 
@@ -348,4 +289,3 @@ tftp_download_ok_msg:
 	.asciiz "DOWNLOAD OK"
 
 startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V0.1",0
-

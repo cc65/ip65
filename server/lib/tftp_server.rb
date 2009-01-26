@@ -1,8 +1,7 @@
 #
 # minimal TFTP server implementation for use with netboot65
 #
-# supports RRQ and DIR requests per http://www.watersprings.org/pub/id/draft-johnston-tftp-directory-01.txt
-# however, DIR "information string" contains file size only (as an ASCII string), NOT the full UTC timestamp
+# supports RRQ and a custom DIR request (opcode 0x65 - returns null terminated list of filenames that match specified filemask)
 # Jonno Downes (jonno@jamtronix.com) - January, 2009
 # 
 #
@@ -16,7 +15,7 @@ class Netboot65TFTPServer
     3=>'DATA',
     4=>'ACK',
     5=>'ERROR',
-    7=>'DIR',
+    0x65=>'DIR',
   }
   
   TFTP_ERRORCODES={
@@ -115,7 +114,7 @@ class Netboot65TFTPServer
               send_error(client_ip,client_port,1,"'#{filename}' not found") 
             end
           end
-          when 7 : #DIR REQUEST
+          when 0x65 : #DIR REQUEST
            opcode,filemask_and_mode=data.unpack("nA*")
            filemask,mode=filemask_and_mode.split(0.chr)
            log_msg "DIR for #{filemask} (#{mode})"
@@ -124,7 +123,7 @@ class Netboot65TFTPServer
            else
              data_to_send=""
              Dir.chdir(bootfile_dir) do
-               Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000#{File.size(filename)}\000"}
+               Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000"}
              end
              data_to_send<<0.chr
              Thread.new {send_data(client_ip,client_port,"DIR of #{filemask}",data_to_send)}
