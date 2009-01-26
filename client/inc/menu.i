@@ -1,5 +1,5 @@
 
-OPTIONS_PER_PAGE = 7
+OPTIONS_PER_PAGE = 18
 .bss
 
 number_of_options: .res 1
