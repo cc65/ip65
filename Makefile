@@ -7,9 +7,12 @@ client:
 
 clean:	
 	make -C client clean
-
+	rm -rf dist/netboot65
+	rmdir dist/netboot65
+	rm -f dist/*.zip
+  
 dist:
-	ruby dist\make_dist.rb
+	ruby dist/make_dist.rb
   
 distclean:
 	make -C client distclean

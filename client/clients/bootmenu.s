@@ -9,7 +9,9 @@
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
   .import cls
-	
+
+  .import exit_to_basic
+  
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
@@ -131,11 +133,13 @@ init:
   ldax  #startup_msg
   jsr print
   jsr print_cr
-
-;  init_ip_via_dhcp 
-;  bcs bad_boot
-  jsr print_ip_config
+  
+  jmp exit_to_basic
   
 	.rodata
-startup_msg: .byte "NETBOOT65 MENU FOR APPLE 2  V0.1",0
+startup_msg: .byte "NETBOOT65 FOR APPLE 2  V0.1",13
+.byte "SEE README.TXT FOR MORE INFO (INCLUDING",13
+.byte "HOW TO RUN SOMETHING MORE INTERESTING)",13
+.byte 0
+
 
