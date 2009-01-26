@@ -39,10 +39,12 @@
   .import __CODE_RUN__
   .import __CODE_SIZE__
 
-.segment        "PAGE3"
+;.segment        "PAGE3"
+;disable_language_card: .res 3
+;bin_file_jmp: .res 3
 
-disable_language_card: .res 3
-bin_file_jmp: .res 3
+disable_language_card = $101
+bin_file_jmp = $104
 
 ; ------------------------------------------------------------------------
 

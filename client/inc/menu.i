@@ -8,7 +8,7 @@ current_option: .res 1
 first_option_this_page: .res 1
 options_shown_this_page: .res 1
 
-option_description_pointers: .res 256  ;table of addresses of up to 128 filenames
+option_description_pointers: .res 256  ;table of addresses of up to 128 options
 
 .code
 
@@ -32,7 +32,7 @@ select_option_from_menu:
   sta   option_description_pointers+1,y
   iny
   iny  
-  
+  beq @found_last_option_string ;if we overflow y, then stop scanning options
   inc number_of_options
   
 @scan_for_null_byte:
@@ -64,6 +64,14 @@ select_option_from_menu:
   jsr   cls
   ldax  #select_from_following_options
   jsr   print
+  
+  lda   number_of_options
+  cmp   #OPTIONS_PER_PAGE
+  bcc   :+
+  ldax  #arrow_keys_to_move
+  jsr   print
+  
+:  
   lda   #'('
   jsr   print_a
   lda   #'$'
@@ -75,7 +83,7 @@ select_option_from_menu:
   jsr   print_hex
   lda   #'/'
   jsr   print_a
-    lda   #'$'
+  lda   #'$'
   jsr   print_a
   lda   number_of_options
   jsr   print_hex
@@ -188,3 +196,4 @@ select_option_from_menu:
 
 .rodata
 select_from_following_options: .byte "SELECT ONE OF THE FOLLOWING OPTIONS:",13,0
+arrow_keys_to_move: .byte "ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13,0
