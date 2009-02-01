@@ -10,6 +10,7 @@ first_option_this_page: .res 2
 options_shown_this_page: .res 1
 options_table_pointer: .res 2
 jump_to_prefix: .res 1
+last_page_flag: .res 1
 .code
 
 
@@ -98,7 +99,8 @@ select_option_from_menu:
   sta   current_option
   lda   first_option_this_page+1
   sta   current_option+1
-  
+  lda   #0
+  sta   last_page_flag
   
   jsr   @move_to_current_option
   
@@ -168,6 +170,7 @@ select_option_from_menu:
   lda current_option+1
   cmp number_of_options+1
   bne :+
+  inc last_page_flag
   jmp @print_instructions_and_get_keypress
 :  
   inc options_shown_this_page
@@ -266,25 +269,17 @@ select_option_from_menu:
 
 @forward_one_page:  
   clc
+  lda last_page_flag
+  beq :+
+@back_to_first_page:  
+  jmp @display_first_page_of_options
+:  
   lda first_option_this_page
   adc #OPTIONS_PER_PAGE
   sta first_option_this_page
   bcc :+
   inc first_option_this_page+1
 :
-  lda first_option_this_page+1  
-  cmp number_of_options+1
-  beq :+    
-  bcc @back_to_first_page
-  bcs @not_last_page_of_options
-:  
-  lda first_option_this_page
-  cmp number_of_options
-  bcc @not_last_page_of_options
-  
-@back_to_first_page:    
-  jmp @display_first_page_of_options
-@not_last_page_of_options:
 
   jmp @print_current_page
 
