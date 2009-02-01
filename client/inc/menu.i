@@ -108,34 +108,28 @@ select_option_from_menu:
   ldax  #select_from_following_options
   jsr   print
   
-  lda   number_of_options+1
-  bne   @print_arrow_keys_msg
-  lda   number_of_options
-  cmp   #OPTIONS_PER_PAGE
-  bcc   :+
-@print_arrow_keys_msg:  
-  ldax  #arrow_keys_to_move
-  jsr   print  
-:  
-  lda   #'('
-  jsr   print_a
-  lda   #'$'
-  jsr   print_a
-  lda   first_option_this_page+1
-  jsr   print_hex
-  lda   first_option_this_page
-  jsr   print_hex
-  lda   #'/'
-  jsr   print_a
-  lda   #'$'
-  jsr   print_a
-  lda   number_of_options+1
-  jsr   print_hex
-  lda   number_of_options
-  jsr   print_hex
-  lda   #')'
-  jsr   print_a
-  jsr   print_cr
+
+;  lda   #'('
+;  jsr   print_a
+;  lda   #'$'
+;  jsr   print_a
+;  lda   first_option_this_page+1
+;  jsr   print_hex
+;  lda   first_option_this_page
+;  jsr   print_hex
+;  lda   #'/'
+;  jsr   print_a
+;  lda   #'$'
+;  jsr   print_a
+;  lda   number_of_options+1
+;  jsr   print_hex
+;  lda   number_of_options
+;  jsr   print_hex
+;  lda   #')'
+;  jsr   print_a
+;  jsr   print_cr
+  
+  
   jsr   print_cr
   lda   #0
   sta   options_shown_this_page
@@ -174,12 +168,12 @@ select_option_from_menu:
   lda current_option+1
   cmp number_of_options+1
   bne :+
-  jmp @get_keypress
+  jmp @print_instructions_and_get_keypress
 :  
   inc options_shown_this_page
   lda options_shown_this_page
   cmp #OPTIONS_PER_PAGE
-  beq @get_keypress
+  beq @print_instructions_and_get_keypress
   jmp @print_loop
 
 @jump_to:
@@ -188,33 +182,50 @@ select_option_from_menu:
   jsr print
   lda #'?'
   jsr get_key
-  ora #$e0      ;make it a lower case letter with high bit set
+  ora #$80      ;set the high bit
   
   sta jump_to_prefix
   ldax  options_table_pointer
   stax @get_current_byte+1
   lda #0
-  sta first_option_this_page
-  sta first_option_this_page+1
+  sta current_option
+  sta current_option+1
   
 @check_if_at_jump_to_prefix:  
   jsr @get_current_byte
-  ora #$e0      ;make it a lower case letter with high bit set
+  ora #$80      ;set high bit
   cmp jump_to_prefix
-;  bmi @gone_past_prefix
   beq @at_prefix
   jsr @skip_past_next_null_byte
-  inc  first_option_this_page
+  inc  current_option
   bne :+
-  inc  first_option_this_page+1
-:      
-  jmp @check_if_at_jump_to_prefix
-@gone_past_prefix:
+  inc  current_option+1
+:  
+  jsr @get_current_byte
+  bne @check_if_at_jump_to_prefix
+  jsr beep  ;if we got to the end of the options table without finding the char we want, then sound a beep
+  jmp @jump_to_finished
 @at_prefix:
+  lda current_option
+  sta first_option_this_page
+  lda current_option+1
+  sta first_option_this_page+1
+@jump_to_finished:  
    jmp  @print_current_page
 
   
 
+
+@print_instructions_and_get_keypress:
+  lda   number_of_options+1
+  bne   @navigation_instructions
+  lda   number_of_options
+  cmp   #OPTIONS_PER_PAGE
+  bcc   :+
+@navigation_instructions:  
+  ldax  #navigation_instructions
+  jsr   print  
+:  
 @get_keypress:
   lda #'?'
   jsr get_key
@@ -246,6 +257,7 @@ select_option_from_menu:
   adc first_option_this_page+1
 
   sta  current_option+1
+
   jsr  @move_to_current_option
   ldax @get_current_byte+1
   
@@ -260,13 +272,15 @@ select_option_from_menu:
   bcc :+
   inc first_option_this_page+1
 :
-
-  lda first_option_this_page+1
+  lda first_option_this_page+1  
   cmp number_of_options+1
-  bne @not_last_page_of_options
+  beq :+    
+  bcc @back_to_first_page
+  bcs @not_last_page_of_options
+:  
   lda first_option_this_page
   cmp number_of_options
-  bne @not_last_page_of_options
+  bcc @not_last_page_of_options
   
 @back_to_first_page:    
   jmp @display_first_page_of_options
@@ -298,5 +312,7 @@ select_option_from_menu:
 
 .rodata
 select_from_following_options: .byte "SELECT ONE OF THE FOLLOWING OPTIONS:",13,0
-arrow_keys_to_move: .byte "ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13,0
+navigation_instructions: .byte 13,"ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13
+.byte "/ TO JUMP ",13
+.byte 0
 jump_to_prompt: .byte "JUMP TO:",0

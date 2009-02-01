@@ -14,7 +14,7 @@
   .include "../inc/menu.i"
   .import cls
   .import get_key
-
+  .import beep
 	
   .importzp tftp_filename
   .import tftp_load_address

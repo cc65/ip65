@@ -2,7 +2,7 @@
 .export print_a
 .export print_cr
 .export cls
-
+.export beep
 .code
 
 print_a:
@@ -18,4 +18,6 @@ print_cr:
   
 cls:
     jmp $fc58
-  rts
+
+beep:
+  jmp $fbdd
