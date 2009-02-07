@@ -37,8 +37,8 @@ utherboot.pg2: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2langu
 	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o utherboot.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
 
 utherboot.dsk: utherboot.pg2
-	dsktool.rb --init dos33 utherboot.dsk -a utherboot.pg2 -t B
-	dsktool.rb utherboot.dsk -a hello -t A
+	ripxplore.rb --init AppleDos utherboot.dsk -a utherboot.pg2 -t AppleBinary
+	ripxplore.rb utherboot.dsk -a hello -t Applesoft
 
 $(BOOTA2.PG2): bootmenu.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
 	$(LD) -m bootmenu.map -C ../cfg/a2language_card.cfg -o $(BOOTA2.PG2)  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  

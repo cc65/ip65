@@ -1,0 +1,2 @@
+- ca65
+- ripxplore.rb >=0.7.0
