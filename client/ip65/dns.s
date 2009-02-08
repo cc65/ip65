@@ -24,6 +24,10 @@
   
   .import cfg_dns
   
+  .import parse_dotted_quad
+  .import dotted_quad_value
+
+  
 	.import ip65_process
 
 	.import udp_add_listener
@@ -91,6 +95,7 @@ hostname_copied:  .res 1
 
 questions_in_response: .res 1
 
+hostname_was_dotted_quad: .res 1
 
 	.code
 
@@ -98,9 +103,27 @@ dns_set_hostname:
   stax  dns_hostname
                                       ;copy the hostname into  a buffer suitable to copy directly into the qname field
                                       ;we need to split on dots
+
+  jsr parse_dotted_quad      ; if we are passed an IP address instead of a hostname, don't bother looking it up in dns
+  bcs @wasnt_dotted_quad
+                             ;if the string was a dotted quad, then copy the parsed 4 bytes in to dns_ip
+  lda #1
+  sta hostname_was_dotted_quad
+  ldx #3				; set destination address
+: lda dotted_quad_value,x
+	sta dns_ip,x
+	dex
+	bpl :-
+  
+  rts     ;done!
+  
+@wasnt_dotted_quad:
+  
+  
   ldy #0                            ;input pointer
   ldx #1                            ;output pointer (start at 1, to skip first length offset, which will be filled in later)
   
+  sty hostname_was_dotted_quad
   sty dns_current_label_length
   sty dns_current_label_offset
   sty hostname_copied
@@ -156,6 +179,12 @@ dns_set_hostname:
   rts
 
 dns_resolve:
+  lda hostname_was_dotted_quad
+  beq @hostname_not_dotted_quad
+  clc
+  rts     ;we already set dns_ip when copying the hostname
+@hostname_not_dotted_quad:
+
   ldax #dns_in
 	stax udp_callback 
   lda #53

@@ -25,6 +25,7 @@ ETHOBJS= \
 	debug.o \
   dhcp.o \
   dns.o \
+  dottedquad.o \
   tftp.o \  
   
 all: ip65.lib 
