@@ -123,7 +123,7 @@ hostname_3:
 hostname_4:
   .byte "FOO.BAR.BOGUS",0         ;this should fail
 
-hostname_5:                       ;this currently fails, would be nice if we noticed it was an IP address
+hostname_5:                       ;this should work (without hitting dns)
   .byte "111.22.3.4",0
 
 hostname_6:                       ;make sure doesn't get treated as a number

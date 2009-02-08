@@ -11,7 +11,6 @@
 
 
   .include "../inc/common.i"
-  .import print_a
  
   
   .export parse_dotted_quad

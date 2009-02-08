@@ -91,24 +91,23 @@ test_dotted_quad_string:
 
 
 dotted_quad_1:
-  .byte "1.1.1.1",0
+  .byte "1.1.1.1",0 ;should work
 
 dotted_quad_2:
-  .byte "GOOBER",0
+  .byte "GOOBER",0  ;should fail
 
 dotted_quad_3:
-  .byte "255.255.255.0",0     
+  .byte "255.255.255.0",0     ;should work
 
 dotted_quad_4:
-  .byte "111.222.333.444",0         
+  .byte "111.222.333.444",0   ;should fail 
 
 dotted_quad_5:   
-  .byte "111.22.3",0
-
+  .byte "111.22.3",0  ; should fail
 
 dotted_quad_6:   
-  .byte "111.22.3.4",0
+  .byte "111.22.3.4",0 ; should work
   
 dotted_quad_7:   
-  .byte "3.4.5.6X",0
+  .byte "3.4.5.6X",0 ; should fail
 

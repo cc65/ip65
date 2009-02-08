@@ -23,26 +23,26 @@ INCFILES=\
 %.prg: %.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64NETLIB)  
 
-%.bin: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -m  $*.map -C ../cfg/a2bin.cfg -o  $*.bin  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)
+%.pg2: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -m  $*.map -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)
 
 ip65test.d64: testdns.prg testdottedquad.prg
 
-ip65test.dsk: testdns.bin testdottedquad.bin
-		ripxplore.rb --init AppleDos ip65test.dsk -a testdns.bin -t AppleBinary
-		ripxplore.rb ip65test.dsk -a testdns.bin -t AppleBinary
+ip65test.dsk: testdns.pg2 testdottedquad.pg2
+		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
+		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
 
 all: \
 	ip65test.dsk \
 	testdns.prg \
-	testdns.bin \
-	testdottedquad.bin \
+	testdns.pg2 \
+	testdottedquad.pg2 \
 	testdottedquad.prg \
 	ip65test.d64 \
   
 clean:
 	rm -f *.o
-	rm -f testdns.prg testdns.map testdns.bin testdottedquad.prg testdottedquad.bin
+	rm -f testdns.prg testdns.map testdns.pg2 testdottedquad.prg testdottedquad.pg2
 	rm -f ip65test.dsk
 
 distclean: clean
