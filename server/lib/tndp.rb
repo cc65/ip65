@@ -25,10 +25,12 @@ module TNDP
 		0x01 =>"VOLUME CATALOG REQUEST",
 		0x02 =>"READ SECTOR REQUEST",
 		0x03 =>"WRITE SECTOR REQUEST",
+    0x04=>"INIT VOLUME REQUEST",
     0x80 =>"CAPABILITIES RESPONSE",
 		0x81 =>"VOLUME CATALOG RESPONSE",
 		0x82 =>"READ SECTOR RESPONSE",
 		0x83 =>"WRITE SECTOR RESPONSE",
+    0x84=>"INIT VOLUME RESPONSE",
 		0xFF =>"ERROR RESPONSE",
   }
 
@@ -356,6 +358,52 @@ SECTOR LENGTH:  $#{"%04x" % sector_length}"
       :opcode=>opcode,:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name,:sector_data=>sector_data})
     end
   end
+
+  class CreateVolumeRequestMessage < BaseMessage
+    attr_reader :system_architecture,:volume_name,:track_count,:sector_length
+    OPCODE=0x04
+    def initialize(args={})
+      args[:opcode]=OPCODE if args[:opcode].nil?
+      [:system_architecture,:volume_name,:track_count,:sector_length].each do |arg|
+        raise "#{arg} must be specified in a #{self.class}" if args[arg].nil?
+      end
+      @system_architecture=args[:system_architecture]
+      @track_count=args[:track_count]
+      @sector_length=args[:sector_length]
+      @volume_name=args[:volume_name]
+      
+      super(args)
+    end
+  
+  def to_s
+      system_architecture_id=TNDP::SYSTEM_ARCHITECTURES[system_architecture]
+
+              super+"
+VOLUME NAME:    #{volume_name}              
+ARCHITECTURE:   #{system_architecture} [$#{"%02X"%system_architecture_id}]
+TRACK COUNT:    $#{"%04X"%track_count}
+SECTOR LENGTH:  $#{"%04x" % sector_length}"
+    end
+   
+    def to_buffer
+      super+[volume_name[0,MAX_VOLUME_NAME_LENGTH],TNDP::SYSTEM_ARCHITECTURES[system_architecture],track_count,sector_length].pack("Z#{TNDP::MAX_VOLUME_NAME_LENGTH+1}Cnn")
+    end
+
+    def self.from_buffer(buffer)
+      signature,version_id,transaction_id,opcode,volume_name,system_architecture_id,track_count,sector_length=buffer.unpack("Z4CnCZ#{TNDP::MAX_VOLUME_NAME_LENGTH+1}Cnn")
+      self.new({:signature=>signature,:version=>version_id,:transaction_id=>transaction_id,:opcode=>opcode,:volume_name=>volume_name,
+      :system_architecture=>TNDP::SYSTEM_ARCHITECTURES.key_by_value(system_architecture_id), :track_count=>track_count,:sector_length=>sector_length})
+    end
+  end
+
+  class CreateVolumeResponseMessage < CreateVolumeRequestMessage
+    OPCODE=0x84
+    def initialize(args={})
+      args[:opcode]=OPCODE
+      super(args)
+    end
+  end
+
 
   class ErrorResponseMessage < BaseMessage
     OPCODE=0xFF

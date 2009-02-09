@@ -19,6 +19,7 @@ $07		1 byte opcode
 		$01 = VOLUME CATALOG REQUEST
 		$02 = READ T/S REQUEST
 		$03 = WRITE T/S REQUEST
+		$04 = INIT VOLUME REQUEST
 
 FOR CAPABILITIES REQUEST
 No further data
@@ -49,6 +50,16 @@ $0E..$4B	volume name (null padded 55 bytes)
 $4C		null byte (i.e. filename can be 55 bytes long, MUST be at least 1 null at the 56th byte)
 FOR WRITE
 $4d..		sector data
+
+FOR INIT VOLUME
+$00..$3c	volume name (up to 56 chars, null padded)
+$37		null byte
+$38		system architecture ID
+$39		file system ID
+$3A..$3B	number of tracks
+$3C..$3D	sector length (in bytes) 
+$3E..$3F	??
+
 
 FOR ALL RESPONSES
 		
@@ -106,6 +117,16 @@ $0A..$49	volume name (null padded 64 bytes)
 
 FOR READ
 $4A..		sector data
+
+FOR INIT VOLUME
+$00..$3c	volume name (up to 56 chars, null padded)
+$37		null byte
+$38		system architecture ID
+$39		file system ID
+$3A..$3B	number of tracks
+$3C..$3D	sector length (in bytes) 
+
+
 	
 FOR ERROR
 	
@@ -130,4 +151,5 @@ $04..$05	Error Code
 $06..$0b	bytes $04..$09 from original request
 $0c..$4c	error message (null padded 63 bytes)
 $4d 		null byte
+
 

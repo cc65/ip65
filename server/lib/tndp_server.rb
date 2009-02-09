@@ -19,6 +19,10 @@ require 'LibRipXplore'
     "AppleCPM"=>:cpm,
   }
 
+VOLUME_CREATION_PARAMATERS={
+  :apple2=>["0.chr*request.track_count*request.sector_length*16",RawDisk,A2DskPhysicalOrder,256],
+  :c64=>["0.chr*((17*21)+(7*19)+(6*18)+((request.track_count-30)*17))*256",RawDisk,D64,256],
+}
 
 class TNDPServer
   LISTENING_PORT=6502
@@ -78,7 +82,21 @@ class TNDPServer
                       response=TNDP::SectorReadResponseMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>request.volume_name,:sector_data=>sector_data})
                     end
                   end
-                end                
+                end
+            when TNDP::CreateVolumeRequestMessage::OPCODE
+              volume_file="#{@root_directory}/#{request.volume_name}"
+              volume_creation_paramaters=VOLUME_CREATION_PARAMATERS[request.system_architecture]                
+              if volume_creation_paramaters.nil? then
+                response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::ARCHITECTURE_NOT_SUPPORTED,"create volume requests for #{request.system_architecture} not supported")    
+              elsif request.sector_length!=volume_creation_paramaters[3] then
+                response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,"create volume requests for #{request.system_architecture} should have sector length #{volume_creation_paramaters[3]}")    
+
+              else
+                  file_bytes=eval(volume_creation_paramaters[0],binding)
+                  volume=FileSystemImage.new(file_bytes,volume_creation_paramaters[1],volume_creation_paramaters[2],volume_file)
+                  volume.save_as(volume_file)
+                  response=TNDP::CreateVolumeResponseMessage.new({:volume_name=>request.volume_name,:system_architecture=>request.system_architecture,:track_count=>request.track_count,:sector_length=>request.sector_length} )
+              end              
             else              
               response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::UNKNOWN_OPCODE,"unknown opcode $#{"%02X" % request.opcode}")
           end

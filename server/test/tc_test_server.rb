@@ -36,6 +36,29 @@ class TestServer <Test::Unit::TestCase
     
     assert(capabilities_response_msg.supported_architectures[:apple2]>0,"should be at least 1 apple2 image")
     assert(capabilities_response_msg.supported_architectures[:c64]>0,"should be at least 1 C64 image")
+    [
+      [:apple2,'SCRATCH_TEST.DSK',35,256],
+      [:apple2,'SCRATCH_TEST2.DO',40,256],
+      [:c64,'SCRATCH_TEST.D64',35,256],
+      [:c64,'SCRATCH_TEST2.D64',40,256],
+    ].each do |a|
+    #try to make a new blank disk    
+      system_architecture=a[0]
+      image_name=a[1]
+      track_count=a[2]
+      sector_length=a[3]
+      image_full_path="#{TEST_IMAGES_DIR}\\#{image_name}"
+      File.delete(image_full_path) if File.exist?(image_full_path)
+      create_volume_request_msg=TNDP::CreateVolumeRequestMessage.new({:volume_name=>image_name,:system_architecture=>system_architecture,:track_count=>track_count,:sector_length=>sector_length})
+      create_volume_response_msg=send_request_and_get_response(create_volume_request_msg)
+      assert_equal(TNDP::CreateVolumeResponseMessage::OPCODE,create_volume_response_msg.opcode,"init volume request message should have correct opcode")
+      assert_equal(system_architecture,create_volume_response_msg.system_architecture)      
+      assert(File.exist?(image_full_path),"file just created should exist at #{image_full_path}")
+      file_system_image=RipXplore.best_fit_from_filename(image_full_path)
+      assert_equal(track_count,file_system_image.track_count,"file just created should have correct number of tracks")
+ end
+ raise "done"
+    #test every combination of host and file system
     [[:apple2,:apple_dos_33],[:apple2,:prodos],[:apple2,:any],[:c64,:cbm_dos],[:any,:any],[:any,:prodos]].each do |a|
       desired_system_architecture=a[0]
       desired_file_system=a[1]
