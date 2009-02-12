@@ -83,6 +83,34 @@ class TNDPServer
                     end
                   end
                 end
+            when TNDP::SectorWriteRequestMessage::OPCODE
+                file_system_image=nil
+                begin
+                file_system_image_path="#{@root_directory}/#{request.volume_name}"
+                file_system_image=RipXplore.best_fit_from_filename(file_system_image_path)
+                rescue Exception=>e
+                  response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_VOLUME_NAME,e.to_s)  
+                end
+                if !(file_system_image.nil?) then
+                  track_no=request.track_no
+                  sector_no=request.sector_no
+                  sector_length=request.sector_length
+                  sector_data=request.sector_data
+                  if (track_no<file_system_image.start_track) || (track_no>file_system_image.end_track)  then
+                    response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_TRACK_NUMBER,"requested track $#{"%X"% track_no} outside allowable range of $#{"%X"% file_system_image.start_track}..$#{"%X"% file_system_image.end_track}")
+                  else
+                    existing_sector_data=file_system_image.get_sector(track_no,sector_no)
+                    if existing_sector_data.nil? then 
+                      response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_SECTOR_NUMBER,"requested sector $#{"%X"% sector_no} not found in track $#{"%X"% track_no}")
+                    elsif (existing_sector_data.length)!=sector_length then
+                      response=TNDP::ErrorResponseMessage.create_error_response(data,TNDP::ErrorCodes::INVALID_SECTOR_LENGTH,"requested track $#{"%X"% track_no}/sector $#{"%X"% sector_no} is of length $#{"%X"% sector_data.length}, not $#{"%X"% sector_length}")
+                    else
+                      file_system_image.set_sector(track_no,sector_no,sector_data)
+                      file_system_image.save_as(file_system_image_path)
+                      response=TNDP::SectorWriteResponseMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>request.volume_name})
+                    end
+                  end
+                end                
             when TNDP::CreateVolumeRequestMessage::OPCODE
               volume_file="#{@root_directory}/#{request.volume_name}"
               volume_creation_paramaters=VOLUME_CREATION_PARAMATERS[request.system_architecture]                

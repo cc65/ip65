@@ -302,7 +302,7 @@ CATALOG OFFSET: $#{"%04x" % catalog_offset}"
     attr_reader :track_no,:sector_no,:sector_length,:volume_name
     OPCODE=0x02
     def initialize(args={})
-      args[:opcode]=OPCODE
+      args[:opcode]=OPCODE 
       [:track_no,:sector_no,:sector_length,:volume_name].each do |arg|
         raise "#{arg} must be specified in a #{self.class}" if args[arg].nil?
       end
@@ -358,6 +358,24 @@ SECTOR LENGTH:  $#{"%04x" % sector_length}"
       :opcode=>opcode,:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name,:sector_data=>sector_data})
     end
   end
+
+  class SectorWriteRequestMessage < SectorReadResponseMessage
+    OPCODE=0x03
+    def initialize(args={})
+      super(args)
+      @opcode=OPCODE
+    end
+  end
+
+  
+  class SectorWriteResponseMessage < SectorReadRequestMessage
+    OPCODE=0x83
+    def initialize(args={})
+      super(args)
+      @opcode=OPCODE
+    end
+  end
+
 
   class CreateVolumeRequestMessage < BaseMessage
     attr_reader :system_architecture,:volume_name,:track_count,:sector_length

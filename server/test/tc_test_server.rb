@@ -44,18 +44,27 @@ class TestServer <Test::Unit::TestCase
     ].each do |a|
     #try to make a new blank disk    
       system_architecture=a[0]
-      image_name=a[1]
+      volume_name=a[1]
       track_count=a[2]
       sector_length=a[3]
-      image_full_path="#{TEST_IMAGES_DIR}\\#{image_name}"
+      image_full_path="#{TEST_IMAGES_DIR}\\#{volume_name}"
       File.delete(image_full_path) if File.exist?(image_full_path)
-      create_volume_request_msg=TNDP::CreateVolumeRequestMessage.new({:volume_name=>image_name,:system_architecture=>system_architecture,:track_count=>track_count,:sector_length=>sector_length})
+      create_volume_request_msg=TNDP::CreateVolumeRequestMessage.new({:volume_name=>volume_name,:system_architecture=>system_architecture,:track_count=>track_count,:sector_length=>sector_length})
       create_volume_response_msg=send_request_and_get_response(create_volume_request_msg)
-      assert_equal(TNDP::CreateVolumeResponseMessage::OPCODE,create_volume_response_msg.opcode,"init volume request message should have correct opcode")
+      assert_equal(TNDP::CreateVolumeResponseMessage::OPCODE,create_volume_response_msg.opcode,"init volume response message should have correct opcode")
       assert_equal(system_architecture,create_volume_response_msg.system_architecture)      
       assert(File.exist?(image_full_path),"file just created should exist at #{image_full_path}")
+      sector_data=([system_architecture.to_s,volume_name,track_count,sector_length].pack("Z12Z30CC")*200)[0,sector_length]
+      track_no=track_count-1
+      sector_no=1
+      sector_write_request_msg=TNDP::SectorWriteRequestMessage.new({:track_no=>track_no,:sector_no=>sector_no,:sector_length=>sector_length,:volume_name=>volume_name,:sector_data=>sector_data})
+      sector_write_response_msg=send_request_and_get_response(sector_write_request_msg)
+      assert_equal(TNDP::SectorWriteResponseMessage::OPCODE,sector_write_response_msg.opcode,"sector write response message should have correct opcode")
+
       file_system_image=RipXplore.best_fit_from_filename(image_full_path)
       assert_equal(track_count,file_system_image.track_count,"file just created should have correct number of tracks")
+      assert_equal(sector_data,file_system_image.get_sector(track_no,sector_no),"file just created should have sector data set correctly")
+      
  end
  raise "done"
     #test every combination of host and file system
