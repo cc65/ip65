@@ -20,7 +20,7 @@ all: $(DRIVERS)
 apple2net.lib: a2print.o uthernet.o a2timer.o a2kernal.o a2input.o
 	ar65 a apple2net.lib $^
 
-c64net.lib: c64print.o rr-net.o c64timer.o c64kernal.o
+c64net.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o
 	ar65 a c64net.lib $^
 
 clean:

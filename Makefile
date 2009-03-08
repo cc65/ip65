@@ -13,6 +13,9 @@ clean:
   
 dist:
 	ruby dist/make_dist.rb
+
+dist-ip65:
+	ruby dist/make_dist_ip65.rb
   
 distclean:
 	make -C client distclean

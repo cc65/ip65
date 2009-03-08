@@ -12,13 +12,17 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
-  
+  .include "../inc/menu.i"
+  .import cls
+  .import get_key
+  .import beep
+
 
   .importzp tftp_filename
   .import tftp_load_address
-  .import tftp_ip  
+  .import tftp_ip
   .import tftp_download
-  .import cfg_tftp_server
+  .import tftp_directory_listing 
 
 	.import copymem
 	.importzp copy_src
@@ -34,6 +38,8 @@
 ;temp_bcd: .res 2
 
 bin_file_jmp: .res 3
+tftp_dir_buffer: .res 2000
+
 
 .segment "CARTRIDGE_HEADER"
 .word init  ;cold start vector
@@ -55,6 +61,12 @@ init:
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
 
+  ;switch to lower case charset
+  lda #23
+  sta $d018
+
+
+  
   ldax  #startup_msg
   jsr print
  
@@ -69,27 +81,49 @@ init:
 
 
   init_ip_via_dhcp 
-  
-	
+    bcc :+
+  jmp bad_boot
+:  
   jsr print_ip_config
 
-  ldx #3
+    ldx #3
 : 
   lda cfg_tftp_server,x
   sta tftp_ip,x
   dex
   bpl :-
 
+
+  ldax #tftp_dir_buffer
+  stax tftp_load_address
+
+  ldax #getting_dir_listing_msg
+	jsr print
+
+  ldax #tftp_dir_filemask
+  stax tftp_filename
+  jsr print
+  jsr print_cr
+
+  jsr tftp_directory_listing 
+	bcs @dir_failed
+
   ldax #$0000   ;load address will be first 2 bytes of file we dowload (LO/HI order)
   stax tftp_load_address
+
+  ldax  #tftp_dir_buffer
+  jsr select_option_from_menu  
+  stax tftp_filename
+
 
   ldax #downloading_msg
 	jsr print
 
-  ldax #tftp_file
+
+  ldax tftp_filename
   jsr download
-  
   bcc @file_downloaded_ok
+@dir_failed:  
   jmp bad_boot
   
 @file_downloaded_ok:  
@@ -146,12 +180,14 @@ download:
   
 	.rodata
 
-startup_msg: .byte "RR-NET NETWORK BOOK CLIENT V0.1",13,0
+startup_msg: .byte "NETBOOT65 - C64 NETWORK BOOK CLIENT V0.1",13,0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
-tftp_file:  
-  .asciiz "BOOTC64.PRG"
+getting_dir_listing_msg: .asciiz "FETCHING TFTP DIRECTORY FOR "
+
+tftp_dir_listing_fail_msg:
+	.asciiz "DIR LISTING FAILED"
 
 tftp_download_fail_msg:
 	.byte "DOWNLOAD FAILED", 13, 0
@@ -159,5 +195,5 @@ tftp_download_fail_msg:
 tftp_download_ok_msg:
 	.byte "DOWNLOAD OK", 13, 0
   
-
-  
+tftp_dir_filemask:  
+  .asciiz "*.PRG"

@@ -272,8 +272,7 @@ tftp_in:
   bne @not_an_error
 @recv_error:
   lda #tftp_error
-  sta tftp_state
-
+  sta tftp_state  
   rts
 @not_an_error:
 
@@ -296,7 +295,8 @@ tftp_in:
 
 @dont_set_load_address:
   lda tftp_inp+3                  ;get the (low byte) of the data block
-  bmi @recv_error                 ;if we get to block $80, we've d/led more than 64k!
+  
+;  bmi @recv_error                 ;if we get to block $80, we've d/led more than 64k!
   cmp tftp_expected_block_number
     beq :+
   jmp @not_expected_block_number

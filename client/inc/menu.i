@@ -11,6 +11,10 @@ options_shown_this_page: .res 1
 options_table_pointer: .res 2
 jump_to_prefix: .res 1
 last_page_flag: .res 1
+
+get_current_byte: .res 4
+  
+
 .code
 
 
@@ -19,7 +23,13 @@ last_page_flag: .res 1
 select_option_from_menu:
 
   stax options_table_pointer
-  stax @get_current_byte+1
+  stax get_current_byte+1
+;set the 'LDA' and RTS' opcodes for the 'get current byte' subroutine, which is self-modified-code, hence must be located in RAM not ROM
+  lda #$ad  ;opcode for LDA absolute
+  sta get_current_byte
+  lda #$60  ;opcode for RTS
+  sta get_current_byte+3  
+
   lda #0
   sta current_option
   sta current_option+1
@@ -34,33 +44,30 @@ select_option_from_menu:
   bne :+
   inc number_of_options+1
 :
-  jsr @get_current_byte
+  jsr get_current_byte
   bne @count_strings 
 
  jmp @display_first_page_of_options
 
 @skip_past_next_null_byte:
   jsr @move_to_next_byte
-  jsr @get_current_byte
+  jsr get_current_byte
   bne @skip_past_next_null_byte  
   jsr @move_to_next_byte
   rts
   
-@get_current_byte:
-  lda $FFFF ;filled in from above
-  rts
 
 @move_to_next_byte:
-  inc @get_current_byte+1
+  inc get_current_byte+1
   bne :+
-  inc @get_current_byte+2
+  inc get_current_byte+2
 :  
   rts
 
 ;move the ptr along till it's pointing at the whatever is the value of current_option
 @move_to_current_option:
   ldax  options_table_pointer
-  stax @get_current_byte+1
+  stax get_current_byte+1
   lda #0
   sta temp_option_counter
   sta temp_option_counter+1
@@ -90,8 +97,6 @@ select_option_from_menu:
   lda   #0
   sta   first_option_this_page
   sta   first_option_this_page+1
-;  lda   #$D1
-;  sta   first_option_this_page
   
 
 @print_current_page:
@@ -149,13 +154,13 @@ select_option_from_menu:
   lda  #' '
   jsr print_a
 
-;  lda @get_current_byte+2
+;  lda get_current_byte+2
 ;  jsr print_hex
-;  lda @get_current_byte+1
+;  lda get_current_byte+1
 ;  jsr print_hex
  
-  lda @get_current_byte+1
-  ldx @get_current_byte+2
+  lda get_current_byte+1
+  ldx get_current_byte+2
  
   jsr print
   jsr print_cr
@@ -184,18 +189,20 @@ select_option_from_menu:
   ldax #jump_to_prompt
   jsr print
   lda #'?'
+  
   jsr get_key
   ora #$80      ;set the high bit
   
+  
   sta jump_to_prefix
   ldax  options_table_pointer
-  stax @get_current_byte+1
+  stax get_current_byte+1
   lda #0
   sta current_option
   sta current_option+1
   
 @check_if_at_jump_to_prefix:  
-  jsr @get_current_byte
+  jsr get_current_byte
   ora #$80      ;set high bit
   cmp jump_to_prefix
   beq @at_prefix
@@ -204,7 +211,7 @@ select_option_from_menu:
   bne :+
   inc  current_option+1
 :  
-  jsr @get_current_byte
+  jsr get_current_byte
   bne @check_if_at_jump_to_prefix
   jsr beep  ;if we got to the end of the options table without finding the char we want, then sound a beep
   jmp @jump_to_finished
@@ -214,9 +221,7 @@ select_option_from_menu:
   lda current_option+1
   sta first_option_this_page+1
 @jump_to_finished:  
-   jmp  @print_current_page
-
-  
+   jmp  @print_current_page  
 
 
 @print_instructions_and_get_keypress:
@@ -231,7 +236,13 @@ select_option_from_menu:
 :  
 @get_keypress:
   lda #'?'
+
   jsr get_key
+
+ jsr print_hex
+;  @fixme:
+;    jmp @fixme
+
   cmp #'/'+$80
   beq @jump_to
   cmp #$95
@@ -262,7 +273,7 @@ select_option_from_menu:
   sta  current_option+1
 
   jsr  @move_to_current_option
-  ldax @get_current_byte+1
+  ldax get_current_byte+1
   
   rts
 
