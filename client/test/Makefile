@@ -26,8 +26,6 @@ INCFILES=\
 %.pg2: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -m  $*.map -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)
 
-ip65test.d64: testdns.prg testdottedquad.prg
-
 ip65test.dsk: testdns.pg2 testdottedquad.pg2
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
@@ -38,7 +36,6 @@ all: \
 	testdns.pg2 \
 	testdottedquad.pg2 \
 	testdottedquad.prg \
-	ip65test.d64 \
   
 clean:
 	rm -f *.o

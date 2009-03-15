@@ -15,6 +15,7 @@ dist:
 	ruby dist/make_dist.rb
 
 dist-ip65:
+	rm  -rf dist/ip65
 	ruby dist/make_dist_ip65.rb
   
 distclean:

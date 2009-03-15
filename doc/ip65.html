@@ -66,6 +66,11 @@ td {
   font-weight: bold;
 }
 
+.history_entry {
+ background-color: #ffffff;  
+  font-weight: normal;
+}
+
 </style>
 
 <body>
@@ -141,14 +146,15 @@ IP65 is a TCP/IP stack for 6502 based computers.
 
 <h2>History</h2>
 <pre>
-  2009-03-08	Added DHCP, DNS, TFTP + moved to sourceforge
-  2009-01-22	Added copymem fix from Jonno Downes. Added MPL license.
-  2008-09-27	Added timeout fix for ineth_tx from David Schmidt.
-  2006-09-20	Fixed checksum calculation for odd packet sizes.
-  2006-02-22	Added fix for sending of packets larger than 256 bytes
-		from Ewen Wannop and Glenn Jones.
+  Release	Maintainer	Changes
+  -------	----------	-------
+  2009-03-08	Jonno Downes	Added DHCP, DNS & TFTP
+  2009-01-22	Per Olofsson	Added copymem fix from Jonno Downes. Added MPL license.
+  2008-09-27	Per Olofsson 	Added timeout fix for ineth_tx from David Schmidt.
+  2006-09-20	Per Olofsson 	Fixed checksum calculation for odd packet sizes.
+  2006-02-22	Per Olofsson 	Added fix for sending of packets larger than 256 bytes
+				from Ewen Wannop and Glenn Jones.
 </pre>
-
 
 <h2>Sample UDP listener source</h2>
 
