@@ -1,3 +1,7 @@
+
+$:.unshift(File.dirname(__FILE__)) unless
+	$:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
+
 gem 'archive-zip' 
 require 'archive/zip'
 require 'ftools'
@@ -21,6 +25,7 @@ end
   dest="#{WORKING_DIR}/#{args[1]}"
   File.copy(src,dest)
 end
+
 
 zipfile_name=File.dirname(__FILE__)+"/netboot65-#{Time.now.strftime("%Y-%m-%d")}.zip"
 Archive::Zip.archive(zipfile_name, WORKING_DIR)

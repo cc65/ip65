@@ -1,14 +1,3 @@
-;########################
-; helper routine to convert a string representing a dotted quad (IP address, netmask) into 4 octets
-; written by jonno@jamtronix.com 2009
-;
-;########################
-; to use -
-; ldax with ptr of dotted quad string
-; then call parse_dotted_quad
-; on exit: carry flag is set if there was an error. if carry flag is clear, then dotted_quad_value will be set 
-;########################
-
 
   .include "../inc/common.i"
  
@@ -17,15 +6,21 @@
   .export dotted_quad_value
   
 	.bss
-  dotted_quad_value: .res 4
+  dotted_quad_value: .res 4 ;set to 32 bit ip address on a succesful call to parse_dotted_quad
   
   dotted_quad_ptr:  .res 4
   
 	.code
 
 
-  
-  parse_dotted_quad:
+; convert a string representing a dotted quad (IP address, netmask) into 4 octets
+; inputs:
+;   AX= pointer to null-terminated string containing dotted quad
+;         e.g. "192.168.1.0",0
+; outputs:
+;   carry flag is set if there was an error, clear otherwise
+;   dotted_quad_value: will be set to (32 bit) ip address (if no error)
+parse_dotted_quad:
     stax  dotted_quad_ptr+1
     
     lda #$AD  ; $AD='LDA immediate'

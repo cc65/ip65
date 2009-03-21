@@ -1,23 +1,18 @@
-;########################
-; minimal dhcp implementation
-; written by jonno@jamtronix.com 2009
-;
-;########################
-; to use - first call ip65_init, then call dhcp_init
-; no inputs required.
-; on return, carry flag clear means IP config has been
-; sucesfully obtained (cfg_ip, cfg_netmask, cfg_gateway and cfg_dns set as appropriate).
-; if carry flag is set, IP config could not be set. that could be because of a network
-; error or because there was no response from a DHCP server within about 5 seconds.
-;########################
-
+; minimal dhcp implementation - ip addresses are requested from a dhcp server
+; (aka 'leased') but are not renewed or released. although this is not correct 
+; behaviour according to the DHCP RFC, this works fine in practice in a typical
+; home network environment.
+; 
+; cfg_ip,cfg_netmask,cfg_gateway and cfg_dns variables are all overwritten,
+; therefore, these values must be stored in RAM not ROM
+; 
 
 MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
   .include "../inc/common.i"
   .export dhcp_init
-  .export dhcp_server
-  .export dhcp_state
+  .export dhcp_server ;will be set address of dhcp server that configuration was obtained from
+  .export dhcp_state  
   
   .import cfg_mac
   .import cfg_ip
@@ -79,7 +74,8 @@ dhcp_ready_to_request = 3 ; got a DHCPOFFER, ready to send a DHCPREQUEST
 dhcp_requesting = 4   ; sent a DHCPREQUEST, waiting for a DHCPACK
 dhcp_bound = 5         ; we have been allocated an IP address
 
-dhcp_state:	.res 1		; current activity
+;flag indicating current state of dhcp initialization.
+dhcp_state:	.res 1		
 
 dhcp_message_sent_count: .res 1
 dhcp_timer:  .res 1
@@ -103,9 +99,21 @@ DHCPINFORM    =8
 
 
 	.code
-
+;
+;inputs: none (although ip65_init should be called first)
+;outputs:
+; carry flag clear means IP config has been sucesfully obtained and
+; cfg_ip, cfg_netmask, cfg_gateway and cfg_dns will be set per response from dhcp server.
+; dhcp_server will be set to address of server that provided configuration
+; if carry flag is set there was an error.
+; in either case, dhcp_state will indicate where dhcp initialization ended (to help debug)
+; possible values for dhcp_state are:
+;     1	- initial state
+;     2	- sent a DHCPDISCOVER, waiting for a DHCPOFFER
+;     3 - got a DHCPOFFER, ready to send a DHCPREQUEST
+;     4 - sent a DHCPREQUEST, waiting for a DHCPACK
+;     5 - we have been allocated an IP address
 dhcp_init:
-
 
 	ldx #3				; rewrite ip address
   lda #0

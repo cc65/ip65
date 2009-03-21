@@ -14,7 +14,9 @@
 
 	.code
 
-; initialize timers
+;initialize timers
+;inputs: none
+;outputs: none
 timer_init:
 	lda #$80		; stop timers
 	sta $dd0e
@@ -35,7 +37,9 @@ timer_init:
 	rts
 
 
-; return the current value
+;initialize timers
+;inputs: none
+;outputs: AX = count in milliseconds sent last call to timer_init
 timer_read:
 	lda $dd07		; cia counts backwards, return inverted value
 	eor #$ff

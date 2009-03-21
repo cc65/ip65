@@ -1,17 +1,4 @@
-;########################
-; minimal dns implementation
-; requires a DNS server that supports recursion
-; written by jonno@jamtronix.com 2009
-;
-;########################
-; to use -
-; ensure cfg_dns points to a DNS server that supports recursion
-; call dns_set_hostname with AX pointing to null terminated hostname
-; then call dns_resolve 
-; on exit: carry flag is set if there was an error. if carry flag is clear, then dns_ip will point to the
-; IP address of the hostname
-;########################
-
+; minimal dns implementation - requires a DNS server that supports recursion
 
   MAX_DNS_MESSAGES_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
@@ -67,7 +54,7 @@ dns_qname=12
 dns_server_port=53
 dns_client_port_low_byte: .res 1
 
-dns_ip: .res 4
+dns_ip: .res 4  ;will be contain ip address of hostname after succesful exection of dns_resolve
 
 dns_msg_id: .res 2
 
@@ -84,12 +71,12 @@ dns_query_sent	= 2		  ; sent a query, waiting for a response
 dns_complete = 3        ; got a good response
 dns_failed = 4        ; got either a 'no such name' or 'recursion declined' response
 
-dns_state:	.res 1		; current activity
+dns_state:	.res 1		; flag indicating the current stage in the dns resolution process
 dns_timer:  .res 1
 dns_loop_count: .res 1
 dns_break_polling_loop: .res 1
 
-dns_status: .res 2
+dns_status: .res 2  ; for debugging purposes only (behaviour not garuanteed)
 
 hostname_copied:  .res 1
 
@@ -98,7 +85,14 @@ questions_in_response: .res 1
 hostname_was_dotted_quad: .res 1
 
 	.code
-
+  
+; sets up for resolution of a hostname to an ip address
+; inputs:
+;   AX = pointer to null terminated string that contains either a dns hostname
+;     (e.g. "host.example.com",0) or an address in "dotted quad" format,
+;     (e.g. "192.168.1.0",0)
+; outputs: 
+;   carry flag is set on error (i.e. hostname too long), clear otherwise
 dns_set_hostname:  
   stax  dns_hostname
                                       ;copy the hostname into  a buffer suitable to copy directly into the qname field
@@ -178,6 +172,13 @@ dns_set_hostname:
   sec
   rts
 
+; resolve a string containing a hostname (or a dotted quad) to an ip address
+; inputs:
+;   cfg_dns must point to a DNS server that supports recursion
+;   dns_set_hostname must have been called to load the string to be resolved
+; outputs: 
+;   carry flag is set if there was an error, clear otherwise 
+;   dns_ip: set to the  ip address of the hostname (if no error)
 dns_resolve:
   lda hostname_was_dotted_quad
   beq @hostname_not_dotted_quad

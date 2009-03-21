@@ -1,4 +1,4 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+;routines for dumping debug information
 
 .include "../inc/common.i"
 .include "../inc/printf.i"
@@ -26,6 +26,11 @@ cptr:	.res 2
 	.code
 
 
+;prints out the header  of ethernet packet that is ready to be sent;
+; inputs: 
+; eth_outp: pointer to ethernet packet
+; eth_outp_len: length of ethernet packet
+; outputs: none
 dbg_dump_eth_header:
 	pha
 	txa
@@ -46,7 +51,11 @@ dbg_dump_eth_header:
 	pla
 	rts
 
-
+;prints out the header  of ip packet that is ready to be sent;
+; inputs: 
+; eth_outp: pointer to ethernet packet containing an ip packet
+; eth_outp_len: length of ethernet packet
+; outputs: none
 dbg_dump_ip_header:
 	pha
 	txa
@@ -72,7 +81,11 @@ dbg_dump_ip_header:
 	pla
 	rts
 
-
+;prints out the header  of udp packet that is ready to be sent;
+; inputs: 
+; eth_outp: pointer to ethernet packet containing a udp packet
+; eth_outp_len: length of ethernet packet
+; outputs: none
 dbg_dump_udp_header:
 	pha
 	txa
@@ -96,6 +109,9 @@ dbg_dump_udp_header:
 
 console_out	= $ffd2
 
+;print a string to the console
+;inputs: AX = address of (null terminated) string to print
+;outputs: none
 console_strout:
 	stax cptr
 
@@ -118,7 +134,9 @@ console_strout:
 	pla
 	rts
 
-
+;print a 32 bit number as 4 hex digits
+;inputs: AX = 32 bit number to print
+;outputs: none
 dbgout16:
 	stax val16	
 	printf "%04x", val16

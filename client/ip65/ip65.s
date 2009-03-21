@@ -1,5 +1,3 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
 ; ip65 main routines
 
 .include "../inc/common.i"
@@ -34,9 +32,14 @@ ip65_ctr_ip:	.res 1		; incremented for every incoming ip packet
 
 	.code
 
-; initialize stack
+; initialise the IP stack
+; this calls the individual protocol & driver initialisations, so this is
+; the only *_init routine that must be called by a user application,
+; except for dhcp_init which must also be called if the application
+; is using dhcp rather than hardcoded ip configuration
+; inputs: none
+; outputs: none
 ip65_init:
-
 
 	jsr eth_init		; initialize ethernet driver
   
@@ -49,8 +52,15 @@ ip65_init:
 	rts
 
 
-; maintenance routine
-; polls for packets, and dispatches to listeners
+;main ip polling loop
+;this routine should be periodically called by an application at any time
+;that an inbound packet needs to be handled.
+;it is 'non-blocking', i.e. it will return if there is no packet waiting to be
+;handled. any inbound packet will be handed off to the appropriate handler.
+;inputs: none
+;outputs: carry flag set if no packet was waiting, or packet handling caused error.
+;  since the inbound packet may trigger generation of an outbound, eth_outp 
+;  and eth_outp_len may be overwriiten. 
 ip65_process:
 	jsr eth_rx		; check for incoming packets
 	bcs @done

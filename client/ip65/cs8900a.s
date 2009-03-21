@@ -1,16 +1,10 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
-; Ethernet driver for CS8900A
+; Ethernet driver for CS8900A chip (as used in RR-NET and Uthernet adapters)
 ;
 ; Based on Doc Bacardi's tftp source
 
 
 .include "../inc/common.i"
 .include "cs8900a.i"
-
-
-	;.import dbg_dump_eth_header
-
 
 	.export eth_init
 	.export eth_rx
@@ -58,15 +52,17 @@ eth_outp_len:	.res 2		; output packet length
 eth_outp:	.res 1518	; space for output packet
 
 ; ethernet packet offsets
-eth_dest	= 0		; destination address
-eth_src		= 6		; source address
-eth_type	= 12		; packet type
-eth_data	= 14		; packet data
+eth_dest	= 0		; offset of destination mac address in an ethernet packet
+eth_src		= 6		; offset of source address in an ethernet packet
+eth_type	= 12		; offset of packet type in an ethernet packet
+eth_data	= 14		; offset of packet data in an ethernet packet
 
 
 	.code
 
-; initialize, return clc on success
+;initialize the ethernet adaptor
+;inputs: none
+;outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
 	jsr cs_init
 
@@ -86,7 +82,6 @@ eth_init:
 	write_page pp_self_ctl, $0055	; $0114, reset chip
 
 	write_page pp_rx_ctl, $0d05	; $0104, accept individual and broadcast packets
-	;write_page pp_rx_ctl, $0d85	; $0104, promiscuous mode
 
 	lda #pp_ia/2			; $0158, write mac address
 	ldx cfg_mac
@@ -113,7 +108,13 @@ eth_init:
 	rts
 
 
-; receive a packet
+;receive a packet
+;inputs: none
+;outputs:
+; if there was an error receiving the packet (or no packet was ready) then carry flag is set
+; if packet was received correctly then carry flag is clear, 
+; eth_inp contains the received packet, 
+; and eth_inp_len contains the length of the packet
 eth_rx:
 	lda #$24			; check rx status
 	sta cs_packet_page
@@ -180,9 +181,14 @@ eth_rx:
 
 
 ; send a packet
+;inputs:
+; eth_outp: packet to send
+; eth_outp_len: length of packet to send
+;outputs:
+; if there was an error sending the packet then carry flag is set
+; otherwise carry flag is cleared
 eth_tx:
-	;jsr dbg_dump_eth_header
-
+	
 	lda #$c9			; ask for buffer space
 	sta cs_tx_cmd
 	lda #0

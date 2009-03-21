@@ -1,4 +1,5 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+;ICMP implementation
+;
 
 .include "../inc/common.i"
 
@@ -48,22 +49,24 @@ icmp_cbtype:	.res icmp_cbmax		; table of listener types
 icmp_cbcount:	.res 1			; number of active listeners
 
 ; icmp packet offsets
-icmp_inp	= ip_inp + ip_data
-icmp_outp	= ip_outp + ip_data
-icmp_type	= 0
-icmp_code	= 1
-icmp_cksum	= 2
-icmp_data	= 4
+icmp_inp	= ip_inp + ip_data  ;pointer to inbound icmp packet
+icmp_outp	= ip_outp + ip_data ;pointer to outbound icmp packet
+icmp_type	= 0 ;offset of 'type' field in icmp packet
+icmp_code	= 1 ;offset of 'code' field in icmp packet
+icmp_cksum	= 2 ;offset of 'checksum' field in icmp packet
+icmp_data	= 4;offset of 'data' field in icmp packet
 
 ; icmp echo packet offsets
-icmp_echo_id	= 4
-icmp_echo_seq	= 6
-icmp_echo_data	= 8
+icmp_echo_id	= 4 ;offset of 'id' field in icmp echo request/echo response
+icmp_echo_seq	= 6 ;offset of 'sequence' field in icmp echo request/echo response
+icmp_echo_data	= 8 ;offset of 'data' field in icmp echo request/echo response
 
 
 	.code
 
 ; initialize icmp
+; inputs: none
+; outputs: none
 icmp_init:
 	lda #0
 	sta icmp_cbcount
@@ -71,8 +74,14 @@ icmp_init:
 	sta icmp_cbtmp
 	rts
 
-
-; process incoming icmp packet
+;process incoming icmp packet
+;inputs:
+;   eth_inp points to an ethernet frame containing an icmp packet
+;outputs:
+;   carry flag - set on any error, clear if OK
+;   if inbound packet is a request (e.g. 'echo request') and an icmp listener
+;   has been installed, then an appropriate response message will  be 
+;   generated and sent out (overwriting the eth_outp buffer)
 icmp_process:
 	lda icmp_inp + icmp_type
 	cmp #8				; ping
@@ -161,8 +170,12 @@ icmp_process:
 	rts
 
 
-; add an icmp listener
-; icmp type in A, vector in icmp_callback
+;add an icmp listener
+;inputs:
+; A = icmp type
+; icmp_callback: vector to call when an icmp packet of specified type arrives
+;outputs:
+; carry flag - set if error, clear if no error
 icmp_add_listener:
 	ldx icmp_cbcount		; any listeners at all?
 	beq @add
@@ -190,8 +203,12 @@ icmp_add_listener:
 	rts
 
 
-; remove an icmp listener
-; icmp type in A
+;add an icmp listener
+;inputs:
+; A = icmp type
+;outputs:
+; carry flag - set if error (i.e. no listner for this type exists), 
+;    clear if no error
 icmp_remove_listener:
 	ldx icmp_cbcount		; any listeners installed?
 	beq @notfound

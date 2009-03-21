@@ -1,9 +1,4 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
 .include "../inc/common.i"
-
-	;.import dbg_dump_ip_header
-
 
 	.export ip_init
 	.export ip_process
@@ -65,37 +60,38 @@
 	.segment "IP65ZP" : zeropage
 
 ; checksum
-ip_cksum_ptr:	.res 2		; data pointer
+ip_cksum_ptr:	.res 2		; pointer to data to be checksummed
 
 
 	.bss
 
-ip_cksum_len:	.res 2		; length of data
+ip_cksum_len:	.res 2		; length of data to be checksummed
 
 ; ip packets start at ethernet packet + 14
-ip_inp		= eth_inp + eth_data
-ip_outp		= eth_outp + eth_data
+ip_inp		= eth_inp + eth_data    ;pointer to start of IP packet in input ethernet frame
+ip_outp		= eth_outp + eth_data ;pointer to start of IP packet in output ethernet frame
 
 ; temp storage for size calculation
 len:		.res 2
 
 ; flag for incoming broadcast packets
-ip_broadcast:	.res 1
+ip_broadcast:	.res 1  ;flag set when an incoming IP packet was sent to a broadcast address
 
 ; ip packet offsets
-ip_ver_ihl	= 0
-ip_tos		= 1
-ip_len		= 2
-ip_id		= 4
-ip_frag		= 6
-ip_ttl		= 8
-ip_proto	= 9
-ip_header_cksum	= 10
-ip_src		= 12
-ip_dest		= 16
-ip_data		= 20
+ip_ver_ihl	= 0 ;offset of 4 bit "version" field and 4 bit "header length" field in an IP packet header
+ip_tos		= 1 ;offset of "type of service" field in an IP packet header
+ip_len		= 2 ;offset of "length" field in an IP packet header
+ip_id		= 4 ;offset of "identification" field in an IP packet header
+ip_frag		= 6 ;offset of "fragmentation offset" field in an IP packet header
+ip_ttl		= 8 ;offset of "time to live" field in an IP packet header
+ip_proto	= 9 ;offset of "protocol number" field in an IP packet header
+ip_header_cksum	= 10 ;offset of "ip header checksum" field in an IP packet header
+ip_src		= 12 ;offset of "source address" field in an IP packet header
+ip_dest		= 16 ;offset of "destination address" field in an IP packet header
+ip_data		= 20 ;offset of data payload in an IP packet
 
 ; ip protocols
+
 ip_proto_icmp	= 1
 ip_proto_tcp	= 6
 ip_proto_udp	= 17
@@ -112,6 +108,8 @@ bad_addr:	.res 2
 	.code
 
 ; initialize ip routines
+; inputs: none
+; outputs: none
 ip_init:
 	lda #0
 	sta bad_header
@@ -126,7 +124,13 @@ ip_init:
 	rts
 
 
-; process an incoming packet
+;process an incoming packet & call the appropriate protocol handler 
+;inputs:
+; eth_inp: should point to the received ethernet packet 
+;outputs:
+; carry flag - set on any error, clear if OK
+; depending on the packet contents and the protocol handler, a response
+; message may be generated and sent out (overwriting eth_outp buffer)
 ip_process:
 	jsr verifyheader		; ver, ihl, len, frag, checksum
 	bcc @ok
@@ -235,7 +239,13 @@ checkaddr:
 	rts
 
 
-; create a packet template
+; create an IP header (with all the appropriate flags and common fields set) inside an
+; ethernet frame
+;inputs:
+; eth_outp: should point to a buffer in which the ethernet frame is being built
+;outputs:
+; eth_outp: contains an IP header with version, TTL, flags, src address & IP header 
+; checksum fields set.
 ip_create_packet:
 	lda #$45			; set IP version and header length
 	sta ip_outp + ip_ver_ihl
@@ -273,14 +283,17 @@ ip_create_packet:
 
 
 ; send an IP packet
-;
-; but first:
-;
-; call ip_create_packet
-; set length
-; set ID
-; set protocol
-; set destination address
+;inputs
+; eth_outp: should point to an ethernet frame that has an IP header created (by 
+; calling ip_create_packet)
+; ip_len: should contain length of IP packet (header + data)
+; ip_id: should contain an ID that is unique for each packet
+; ip_protocol: should contain protocol ID
+; ip_dest: should contain the destination IP address
+;outputs:
+; eth_outp: ethernet frame updated with correct IP header, then sent out over 
+; the wire
+; carry flag - set on any error, clear if OK
 ip_send:
 	ldx #3				; get mac addr from ip
 :	lda ip_outp + ip_dest,x
@@ -338,7 +351,12 @@ ip_send:
 	jmp eth_tx			; send packet and return status
 
 
-; calculate checksum for ip header
+; calculate checksum for a buffer according to the standard IP checksum algorithm
+;inputs:
+; ip_cksum_ptr: points at buffer to be checksummed
+; AX: length of buffer to be checksumed
+;outputs:
+; AX: checkum of buffer
 ip_calc_cksum:
 	sta ip_cksum_len		; save length
 	stx ip_cksum_len + 1

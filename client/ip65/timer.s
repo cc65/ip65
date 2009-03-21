@@ -1,13 +1,11 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
 ; timer routines
 ;
 ; the timer should be a 16-bit counter that's incremented by about
 ; 1000 units per second. it doesn't have to be particularly accurate,
 ; if you're working with e.g. a 60 Hz VBLANK IRQ, adding 17 to the
 ; counter every frame would be just fine.
-
-
+;
+; this is generic timer routines, machine specific code goes in drivers/<machinename>timer.s
 	.include "../inc/common.i"
 
 
@@ -21,7 +19,9 @@ time:		.res 2
 
 	.code
 
-; check if value in A/X is smaller than current timer value
+;check if specified period of time has passed yet
+;inputs: AX - maximum number of milliseconds we are willing to wait for
+;outputs: carry flag set if timeout occured, clear otherwise
 timer_timeout:
 	pha
   txa

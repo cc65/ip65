@@ -17,14 +17,19 @@
   
 	.code
 
+;reset timer to 0
+;inputs: none
+;outputs: none
 timer_init:
   ldax  #0
   stax current_time_value
 	rts
 
-
-; return the current value (actually, delay a while, then update current value, then return it in ax)
-
+;this SHOULD just read the current timer value 
+;but since a standard apple 2 has no dedicated timing circuit,
+;each call to this function actually delays a while, then updates the current value
+; inputs: none
+; outputs: AX = current timer value (roughly equal to number of milliseconds since the last call to 'timer_init')
 timer_read:
   lda #111
   jsr $fca8 ;wait for about 33ms

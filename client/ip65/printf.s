@@ -1,5 +1,3 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
 .include "../inc/common.i"
 
 	.export console_printf
@@ -31,6 +29,19 @@ ext:		.res 2
 
 	.code
 
+;print a string to console, with (some) standard printf % codes converted
+;inputs: AX = pointer to 'argument list' 
+; first word in argument list is the string to be printed
+; subsequent words in argument list are interpolated in to the string as
+; it is displayed. (argument list is automagically created by the 'printf' macro
+; defined in inc/printf.i)
+;outputs: none
+;supported % codes:
+;   %s: string (argument interpreted as pointer to null terminated string)
+;   %d: decimal number (arguement interpreted as 16 bit number)
+;   %x: hex number (arguement interpreted as 16 bit number)
+;   %c: char (arguement interpreted as pointer to single ASCII char)
+;"field width" modifiers are also supported, e.g "%02x" to print 2 hex digits
 console_printf:
 	stax argptr
 	ldy #0

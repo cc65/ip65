@@ -1,5 +1,5 @@
-; uthernet driver
-; for the moment, always assume slot 3
+;uthernet driver
+;currently hardcoded to use slot 3 addresses only
 
 
 	.export cs_init
@@ -11,11 +11,11 @@
 	.export cs_tx_len
   .export cs_driver_name
   
-cs_rxtx_data	= $c0b0
-cs_tx_cmd	= $c0b4
-cs_tx_len	= $c0b6
-cs_packet_page	= $c0ba
-cs_packet_data	= $c0bc
+cs_rxtx_data	= $c0b0 ;address of 'recieve/transmit data' port on Uthernet
+cs_tx_cmd	= $c0b4;address of 'transmit command' port on Uthernet
+cs_tx_len	= $c0b6;address of 'transmission length' port on Uthernet
+cs_packet_page	= $c0ba;address of 'packet page' port on Uthernet
+cs_packet_data	= $c0bc;address of 'packet data' port on Uthernet
  
 
 	.code

@@ -1,26 +1,5 @@
-;########################
-; minimal tftp implementation (client only)
-; supports file download (not upload) and custom directory listing (using opcode of 0x65)
-; written by jonno@jamtronix.com 2009
-;
-;########################
-; to get a directory listing
-; set tftp_ip to host to download from (which can be broadcast address 255.255.255.255)
-; set tftp_load_address to point to memory location that dir will be stored in
-; set tftp_filename to null terminated filemask  (e.g. "*.prg")
-; then call tftp_directory_listing
-; on exit: carry flag is set if there was an error. 
-;
-; to d/l a file:
-; set tftp_ip to host to download from (which can be broadcast address 255.255.255.255)
-; set tftp_load_address to point to memory location that file will be downloaded to
-; OR set tftp_load_address to $0000, and first 2 bytes of downloaded file will be treated as the load address
-; set tftp_filename to null terminated filename to download
-; then call tftp_download
-; on exit: carry flag is set if there was an error. tftp_load_address will be set to address file loaded to (i.e. gets overwritten if originally set to $0000)
-
-;
-;########################
+;minimal tftp implementation (client only)
+;supports file download (not upload) and custom directory listing (using non-standard tftp opcode of 0x65)
 
   TFTP_MAX_RESENDS=10
   TFTP_TIMER_MASK=$F8 ;mask lower two bits, means we wait for 8 x1/4 seconds
@@ -62,20 +41,20 @@
   
 	.segment "IP65ZP" : zeropage
 
-tftp_filename: .res 2
+tftp_filename: .res 2 ;name of file to d/l or filemask to get directory listing for
   
 	.bss
 
 ;packet offsets
-tftp_inp		= udp_inp + udp_data
+tftp_inp		= udp_inp + udp_data 
 tftp_outp:	.res 128
 ;everything after filename in a request at a relative address, not fixed, so don't bother defining offset constants
 
 tftp_server_port=69
 tftp_client_port_low_byte: .res 1
 
-tftp_load_address: .res 2
-tftp_ip: .res 4
+tftp_load_address: .res 2 ;address file will be (or was) downloaded to
+tftp_ip: .res 4 ;ip address of tftp server - set to 255.255.255.255 (broadcast) to send request to all tftp servers on local lan
 
 tftp_bytes_to_copy: .res 2
 tftp_current_memloc: .res 2
@@ -102,10 +81,35 @@ tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doi
 
 .code
 
+; query a tftp server for a directory listing (uses a non-standard tftp opcode,
+; currently only supported by tftp server built in to 'netboot65' server)
+; inputs:
+;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
+;   tftp_load_address: memory location that dir will be stored in
+;   tftp_filename: pointer to null terminated filemask  (e.g. "*.prg",0)
+; outputs: carry flag is set if there was an error
+;   if there was no error, the buffer at tftp_load_address will be filled
+;   with null-terminated strings containing the names of all files on the
+;   server that matched the specified file mask, and an additional null
+;   byte will follow the null byte terminating the last file name.
+;   NB - there is no limit to the amount of memory this function will consume,
+;   so depending on where tftp_load_address is set, there is potential to
+;   overwrite other data or code
 tftp_directory_listing:
   ldax  #$6500      ;opcode 65 = netboot65 DIR (non-standard opcode)
   jmp set_tftp_opcode
 
+;download a file from a tftp server
+; inputs:
+;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
+;   tftp_load_address: memory location that dir will be stored in, or $0000 to
+;     treat first 2 bytes received from tftp server as memory address that rest
+;     of file should be loaded into (e.g. if downloading a C64 'prg' file)
+;   tftp_filename: pointer to null terminated name of file to download
+; outputs: carry flag is set if there was an error
+;   if there was no error, the buffer at tftp_load_address will be filled
+;   with file downloaded.
+;   tftp_load_address: will be set to the actual address loaded into
 tftp_download:
   ldax  #$0100      ;opcode 01 = RRQ
 set_tftp_opcode:  

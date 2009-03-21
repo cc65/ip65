@@ -10,20 +10,19 @@
 	.export cs_tx_len
   .export cs_driver_name
 
-rr_ctl		= $de01
-
-;cs_irq		= $de00
-cs_packet_page	= $de02
-cs_packet_data	= $de04
-;cs_packet_data2	= $de06
-cs_rxtx_data	= $de08
-;cs_rxtx_data2	= $de0a
-cs_tx_cmd	= $de0c
-cs_tx_len	= $de0e
+rr_ctl		= $de01 ;address of 'control' port on Retro-Replay
+cs_packet_page	= $de02 ;address of 'packet page' port on RR-Net
+cs_packet_data	= $de04;address of 'packet data' port on RR-Net
+cs_rxtx_data	= $de08 ;address of 'recieve/transmit data' port on RR-Net
+cs_tx_cmd	= $de0c;address of 'transmit command' port on RR-Net
+cs_tx_len	= $de0e;address of 'transmission length' port on RR-Net
 
 
-	.code
+.code
 
+;initialise Retro Replay so we can access the network adapter
+;inputs: none
+;outputs: none
 cs_init:
 	lda rr_ctl
 	ora #1

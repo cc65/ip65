@@ -1,6 +1,4 @@
-;originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
-
-; copy memory
+; utility routine to copy memory
 
 
 	.export copymem
@@ -22,8 +20,12 @@ end:		.res 1
 
 	.code
 
-; copy memory
-; set copy_src and copy_dest, length in A/X
+;copy memory
+;inputs:
+; copy_src is address of buffer to copy from
+; copy_dest is address of buffer to copy to
+; AX = number of bytes to copy
+;outputs: none
 copymem:
 	sta end
 	ldy #0
