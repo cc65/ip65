@@ -8,7 +8,7 @@ client:
 clean:	
 	make -C client clean
 	rm -rf dist/netboot65
-	rmdir dist/netboot65
+	rm  -rf dist/ip65
 	rm -f dist/*.zip
   
 dist:
