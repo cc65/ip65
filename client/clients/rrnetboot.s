@@ -123,7 +123,21 @@ init:
   ldax tftp_filename
   jsr download
   bcc @file_downloaded_ok
+  
 @dir_failed:  
+  ldax  #tftp_dir_listing_fail_msg
+  jsr print
+  
+  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
+  stax tftp_load_address
+
+  ldax #downloading_msg
+	jsr print
+
+  ldax #tftp_file
+  jsr download
+  
+  bcc @file_downloaded_ok
   jmp bad_boot
   
 @file_downloaded_ok:  
@@ -189,7 +203,7 @@ downloading_msg:  .asciiz "DOWNLOADING "
 getting_dir_listing_msg: .asciiz "FETCHING TFTP DIRECTORY FOR "
 
 tftp_dir_listing_fail_msg:
-	.asciiz "DIR LISTING FAILED"
+	.byte "DIR LISTING FAILED",13,0
 
 tftp_download_fail_msg:
 	.byte "DOWNLOAD FAILED", 13, 0
@@ -199,6 +213,9 @@ tftp_download_ok_msg:
   
 tftp_dir_filemask:  
   .asciiz "*.PRG"
+
+tftp_file:  
+  .asciiz "BOOTC64.PRG"
 
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
