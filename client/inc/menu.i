@@ -242,7 +242,7 @@ select_option_from_menu:
 
   jsr get_key
 
- jsr print_hex
+; jsr print_hex
 ;  @fixme:
 ;    jmp @fixme
 
