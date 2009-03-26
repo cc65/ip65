@@ -4,7 +4,7 @@
 ; requires
 ; 1) a DHCP server, and
 ; 2) a TFTP server that responds to requests on the broadcast address (255.255.255.255) and that will serve a file called 'BOOTC64.PRG'.
-; the prg file can be either BASIC or M/L, and up to 30K in length.
+; the prg file can be either BASIC or M/L, and up to 22K in length.
 ;
 ; jonno@jamtronix.com - January 2009
 ;
@@ -13,6 +13,7 @@
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
   .include "../inc/menu.i"
+  .include "../inc/c64keycodes.i"
   .import cls
   .import get_key
   .import beep
@@ -108,6 +109,10 @@ init:
   jsr tftp_directory_listing 
 	bcs @dir_failed
 
+  lda tftp_dir_buffer ;get the first byte that was downloaded
+  bne :+
+  jmp @no_files_on_server
+:  
   ldax #$0000   ;load address will be first 2 bytes of file we dowload (LO/HI order)
   stax tftp_load_address
 
@@ -138,6 +143,12 @@ init:
   jsr download
   
   bcc @file_downloaded_ok
+  jmp bad_boot
+  
+@no_files_on_server:
+  ldax #no_files_on_server
+	jsr print
+
   jmp bad_boot
   
 @file_downloaded_ok:  
@@ -216,6 +227,9 @@ tftp_dir_filemask:
 
 tftp_file:  
   .asciiz "BOOTC64.PRG"
+
+no_files_on_server:
+  .byte "TFTP SERVER HAS NO MATCHING FILES",13,0
 
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0

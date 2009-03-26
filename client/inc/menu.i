@@ -1,4 +1,7 @@
 
+;REQUIRES KEYCODES TO BE DEFINED
+
+
 OPTIONS_PER_PAGE = $10
 .bss
 
@@ -243,15 +246,15 @@ select_option_from_menu:
 ;  @fixme:
 ;    jmp @fixme
 
-  cmp #'/'+$80
+  cmp #KEYCODE_SLASH
   beq @jump_to
-  cmp #$95
+  cmp #KEYCODE_RIGHT
   beq @forward_one_page
-  cmp #$8a
+  cmp #KEYCODE_DOWN
   beq @forward_one_page
-  cmp #$8b
+  cmp #KEYCODE_UP
   beq @back_one_page
-  cmp #$88
+  cmp #KEYCODE_LEFT
   beq @back_one_page
   
   ora #$e0      ;make it a lower case letter with high bit set

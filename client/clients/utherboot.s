@@ -12,6 +12,7 @@
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
   .include "../inc/menu.i"
+  .include "../inc/a2keycodes.i"
   .import cls
   .import get_key
   .import beep
