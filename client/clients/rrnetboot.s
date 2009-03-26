@@ -62,11 +62,6 @@ init:
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
 
-  ;switch to lower case charset
-  lda #23
-  sta $d018
-
-
   
   ldax  #startup_msg 
   jsr print
@@ -94,6 +89,10 @@ init:
   dex
   bpl :-
 
+  ldax  #press_a_key_to_continue
+  jsr print
+  jsr get_key
+
 
   ldax #tftp_dir_buffer
   stax tftp_load_address
@@ -116,7 +115,11 @@ init:
   ldax #$0000   ;load address will be first 2 bytes of file we dowload (LO/HI order)
   stax tftp_load_address
 
+  ;switch to lower case charset
+  lda #23
+  sta $d018
   ldax  #tftp_dir_buffer
+  
   jsr select_option_from_menu  
   stax tftp_filename
 
