@@ -1,6 +1,6 @@
 .PHONY: client clean dist distclean
 
-all: client dist
+all: client dist dist-ip65
 
 client:
 	make -C client all
@@ -12,6 +12,7 @@ clean:
 	rm -f dist/*.zip
   
 dist:
+	rm -rf dist/netboot65
 	ruby dist/make_dist.rb
 
 dist-ip65:
