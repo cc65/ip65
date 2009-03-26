@@ -48,7 +48,7 @@ class Netboot65TFTPServer
     client_sock=UDPSocket.open
     client_sock.connect(client_ip,client_port)
     
-    blocks_to_send=(data_to_send.length.to_f/512.0).ceil    
+    blocks_to_send=1+(data_to_send.length.to_f/512.0).floor
     log_msg("sending #{filename} to #{client_ip}:#{client_port} (#{blocks_to_send} blocks)")
     blocks_to_send.times do |block_number|
       block_data=data_to_send[block_number*512,512]
