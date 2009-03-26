@@ -15,15 +15,18 @@ end
 
 [
 ["client/clients/utherboot.dsk","client/"],
+["client/clients/rrnetboot.bin","client/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
 ["server/bin/import_ags_games.rb","bin"],
 ["server/boot/BOOTA2.PG2","boot"],
-["doc/README.txt",""],
+["doc/README.*.txt",""],
 ].each do |args|
-  src="#{SRC_DIR}/#{args[0]}"
   dest="#{WORKING_DIR}/#{args[1]}"
-  File.copy(src,dest)
+  Dir["#{SRC_DIR}/#{args[0]}"].each do |src|
+    File.copy(src,dest)
+    puts "#{src}->#{dest}"
+  end  
 end
 
 
