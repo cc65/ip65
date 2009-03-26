@@ -28,12 +28,10 @@
   print_dhcp_init
   
   jsr dhcp_init
-	bcc :+
-
-  
+	bcc :+  
 	print_failed
   sec
-	rts
+  jmp @end_macro
 :
   print_ok
   clc

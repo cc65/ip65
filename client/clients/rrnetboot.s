@@ -16,7 +16,7 @@
   .import cls
   .import get_key
   .import beep
-
+  .import exit_to_basic
 
   .importzp tftp_filename
   .import tftp_load_address
@@ -67,7 +67,7 @@ init:
 
 
   
-  ldax  #startup_msg
+  ldax  #startup_msg 
   jsr print
  
   ;relocate our r/w data
@@ -156,9 +156,10 @@ init:
 
 
 bad_boot:
-  ldax  #failed_msg
-  jmp print   ;this will also exit
-
+  ldax  #press_a_key_to_continue
+  jsr print
+  jsr get_key
+  jmp $fe66   ;do a wam start
 
 download:
   stax tftp_filename
@@ -198,3 +199,6 @@ tftp_download_ok_msg:
   
 tftp_dir_filemask:  
   .asciiz "*.PRG"
+
+press_a_key_to_continue:
+  .byte "PRESS A KEY TO CONTINUE",13,0
