@@ -156,7 +156,8 @@ init:
 
 
 bad_boot:
-  jmp bad_boot
+  ldax  #failed_msg
+  jmp print   ;this will also exit
 
 
 download:
@@ -180,7 +181,7 @@ download:
   
 	.rodata
 
-startup_msg: .byte "NETBOOT65 - C64 NETWORK BOOK CLIENT V0.1",13,0
+startup_msg: .byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.1",13,0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
