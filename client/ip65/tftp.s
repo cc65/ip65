@@ -11,7 +11,10 @@
   .export tftp_ip
   .export tftp_download
   .export tftp_directory_listing 
-    
+  .export tftp_data_block_length
+  .export tftp_set_download_callback
+  .export tftp_data_block_length
+  
 	.import ip65_process
 
 	.import udp_add_listener
@@ -56,7 +59,7 @@ tftp_client_port_low_byte: .res 1
 tftp_load_address: .res 2 ;address file will be (or was) downloaded to
 tftp_ip: .res 4 ;ip address of tftp server - set to 255.255.255.255 (broadcast) to send request to all tftp servers on local lan
 
-tftp_bytes_to_copy: .res 2
+tftp_data_block_length: .res 2
 tftp_current_memloc: .res 2
 
 ; tftp state machine
@@ -85,10 +88,15 @@ tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doi
 ; currently only supported by tftp server built in to 'netboot65' server)
 ; inputs:
 ;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
-;   tftp_load_address: memory location that dir will be stored in
 ;   tftp_filename: pointer to null terminated filemask  (e.g. "*.prg",0)
-; outputs: carry flag is set if there was an error
-;   if there was no error, the buffer at tftp_load_address will be filled
+;   tftp_load_address: memory location that dir will be stored in (NB - this field is
+;       ignored if a callback vector has been set with tftp_set_download_callback)
+; outputs: carry flag is set if there was an error, clear otherwise
+;   if a callback vector has been set with tftp_set_download_callback
+;   then the specified routine will be called once for each 512 byte packet
+;   sent from the tftp server (each time AX will point at data block just arrived,
+;   and tftp_data_block_length will contain number of bytes in that data block)
+;   otherwise, the buffer at tftp_load_address will be filled
 ;   with null-terminated strings containing the names of all files on the
 ;   server that matched the specified file mask, and an additional null
 ;   byte will follow the null byte terminating the last file name.
@@ -102,14 +110,19 @@ tftp_directory_listing:
 ;download a file from a tftp server
 ; inputs:
 ;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
+;   tftp_filename: pointer to null terminated name of file to download
 ;   tftp_load_address: memory location that dir will be stored in, or $0000 to
 ;     treat first 2 bytes received from tftp server as memory address that rest
 ;     of file should be loaded into (e.g. if downloading a C64 'prg' file)
-;   tftp_filename: pointer to null terminated name of file to download
 ; outputs: carry flag is set if there was an error
-;   if there was no error, the buffer at tftp_load_address will be filled
+;   if a callback vector has been set with tftp_set_download_callback
+;   then the specified routine will be called once for each 512 byte packet
+;   sent from the tftp server (each time AX will point at data block just arrived,
+;   and tftp_data_block_length will contain number of bytes in that data block)
+;   otherwise, the buffer at tftp_load_address will be filled
 ;   with file downloaded.
-;   tftp_load_address: will be set to the actual address loaded into
+;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
+;       ignored if a callback vector has been set with tftp_set_download_callback)
 tftp_download:
   ldax  #$0100      ;opcode 01 = RRQ
 set_tftp_opcode:  
@@ -285,12 +298,17 @@ tftp_in:
   jmp @not_data_block
 :  
 
+  
   lda #0
   sta tftp_just_set_new_load_address ;clear the flag
   clc 
   lda tftp_load_address       
   adc tftp_load_address+1     ;is load address currently $0000?
   bne @dont_set_load_address
+  
+  lda tftp_callback_address_set ;have we overridden the default handler?
+  bne @dont_set_load_address  ;if so, don't skip the first two bytes in the file
+  
   ldax udp_inp+$0c            ;get first two bytes of data
   stax tftp_load_address      ;make them the new load adress
   stax tftp_current_memloc    ;also the current memory destination
@@ -336,30 +354,21 @@ tftp_in:
   sbc #$0e              ;take off the length of the UDP header+OPCODE + BLOCK + first 2 bytes (memory location)
 @adjusted_header_length:
 
-  sta tftp_bytes_to_copy
+  sta tftp_data_block_length
   lda udp_inp+4        ;get high byte of the length of the UDP packet
   sbc #0
-  sta tftp_bytes_to_copy+1
+  sta tftp_data_block_length+1
 
   lda tftp_just_set_new_load_address 
   bne @skip_first_2_bytes_in_calculating_copy_src
   ldax #udp_inp+$0c
-  jmp @got_copy_src
+  jmp @got_pointer_to_tftp_data
 @skip_first_2_bytes_in_calculating_copy_src:
   ldax #udp_inp+$0e
-@got_copy_src:  
-  stax copy_src
-  ldax tftp_current_memloc
-  stax  copy_dest
-  ldax  tftp_bytes_to_copy
-  jsr copymem
-  clc
-  lda tftp_bytes_to_copy  ;update the location where the next data will go
-  adc tftp_current_memloc
-  sta tftp_current_memloc
-  lda tftp_bytes_to_copy+1
-  adc tftp_current_memloc+1
-  sta tftp_current_memloc+1
+@got_pointer_to_tftp_data:
+  
+  jsr tftp_download_callback
+
   lda udp_inp+4         ;check the length of the UDP packet
   cmp #02
   bne @last_block
@@ -375,5 +384,43 @@ tftp_in:
   lda #tftp_complete
   sta tftp_state
   rts
+  
+  
+;default handler when block arrives:
+;copy to RAM
+;assumes tftp_data_block_length has been set, and AX should point to start of data
+copy_tftp_block_to_ram:
+  stax copy_src
+  ldax tftp_current_memloc
+  stax  copy_dest
+  ldax  tftp_data_block_length
+  jsr copymem
+  clc
+  lda tftp_data_block_length  ;update the location where the next data will go
+  adc tftp_current_memloc
+  sta tftp_current_memloc
+  lda tftp_data_block_length+1
+  adc tftp_current_memloc+1
+  sta tftp_current_memloc+1
+  rts
+
+;set up vector of routine to be called when each 512 packet arrives from tftp server
+;when vector is called, AX will point to data that was downloaded, and
+;tftp_data_block_length will be set to length of downloaded data block. This will be 
+;equal to $200 (512) for each block EXCEPT the final block. THe final block will
+;always be less than $200 bytes - if the file is an exact multiple if $200 bytes
+;long, then a final block will be received with length $00.
+; inputs:
+; AX - address of routine to call for each packet.
+; outputs: none
+tftp_set_download_callback:
+  stax  tftp_download_callback+1
+  
 .rodata
   tftp_octet_mode: .asciiz "OCTET"
+  
+.data
+tftp_download_callback:
+    jmp copy_tftp_block_to_ram  ;vector for action to take when a data block received (default is to store block in RAM)
+
+tftp_callback_address_set:  .byte 0
