@@ -2,7 +2,7 @@ CC=cl65
 AS=ca65
 LD=ld65
 CFLAGS=-Oirs -t $(TARGET)
-AFLAGS=
+AFLAGS= 
 
 INCFILES=\
   ../inc/common.i\
@@ -30,18 +30,18 @@ all: \
 	$(BOOTA2.PG2) \  
   
 rrnetboot.bin: rrnetboot.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/rrbin.cfg
-	$(LD) -m rrnetboot.map -C ../cfg/rrbin.cfg -o rrnetboot.bin  $(AFLAGS) $< $(IP65LIB) $(C64NETLIB)  
+	$(LD) -m rrnetboot.map -vm -C ../cfg/rrbin.cfg -o rrnetboot.bin  $< $(IP65LIB) $(C64NETLIB)  
 	ruby fix_cart.rb rrnetboot.bin
   
 utherboot.pg2: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
-	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o utherboot.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
+	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o utherboot.pg2  $< $(IP65LIB) $(APPLE2NETLIB)  
 
 utherboot.dsk: utherboot.pg2
 	ripxplore.rb --init AppleDos utherboot.dsk -a utherboot.pg2 -t AppleBinary
 	ripxplore.rb utherboot.dsk -a hello -t Applesoft
 
 $(BOOTA2.PG2): bootmenu.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
-	$(LD) -m bootmenu.map -C ../cfg/a2language_card.cfg -o $(BOOTA2.PG2)  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)  
+	$(LD) -m bootmenu.map -C ../cfg/a2language_card.cfg -o $(BOOTA2.PG2)  $< $(IP65LIB) $(APPLE2NETLIB)  
   
 clean:
 	rm -f *.o

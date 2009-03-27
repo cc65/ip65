@@ -24,7 +24,8 @@
   .import tftp_ip
   .import tftp_download
   .import tftp_directory_listing 
-
+  .import tftp_set_download_callback
+  
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
@@ -32,6 +33,13 @@
   .import  __DATA_LOAD__
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
+
+
+  .export jmp_ip65_init          
+  .export jmp_dhcp_init         
+  .export jmp_tftp_download  
+  .export jmp_tftp_directory_listing 
+  .export jmp_tftp_set_download_callback
 
 	.bss
 
@@ -47,8 +55,26 @@ tftp_dir_buffer: .res 2000
 .word init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 
-.code
+.segment "JUMP_TABLE"
 
+jmp_ip65_init:  
+  jmp ip65_init
+  
+jmp_dhcp_init:  
+  jmp dhcp_init
+  
+jmp_tftp_directory_listing:  
+  jmp tftp_directory_listing
+
+jmp_tftp_download:  
+  jmp tftp_download
+  
+jmp_tftp_set_download_callback:  
+  jmp tftp_set_download_callback
+  
+filler:
+.res 17
+.code
   
 init:
   
@@ -62,11 +88,8 @@ init:
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
 
-  
-  ldax  #startup_msg 
-  jsr print
- 
-  ;relocate our r/w data
+
+;relocate our r/w data
   ldax #__DATA_LOAD__
   stax copy_src
   ldax #__DATA_RUN__
@@ -74,7 +97,24 @@ init:
   ldax #__DATA_SIZE__
   jsr copymem
 
+  
+  ldax  #startup_msg 
+  jsr print
 
+@get_key:
+  jsr get_key
+  cmp #KEYCODE_F1
+  beq @tftp_boot
+  cmp #KEYCODE_F3
+    
+  beq @exit_to_basic
+  
+  jmp @get_key
+
+@exit_to_basic:
+  jmp $fe66   ;do a wam start
+
+@tftp_boot:  
 
   init_ip_via_dhcp 
     bcc :+
@@ -210,7 +250,10 @@ download:
   
 	.rodata
 
-startup_msg: .byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.1",13,0
+startup_msg: 
+.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.2",13
+.byte "F1=TFTP BOOT, F3=BASIC",13
+.byte 0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
