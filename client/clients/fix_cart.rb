@@ -11,8 +11,9 @@ if filename.nil? then
   exit
 end
   
-puts "fixing length of #{filename} to #{FILE_LENGTH} bytes"  
+
 infile=File.open(filename,"rb").read
+puts "fixing length of #{filename} from #{infile.length} to #{FILE_LENGTH} bytes"  
 outfile=File.open(filename,"wb")
 outfile<<infile
 outfile<<PAD_BYTE*(FILE_LENGTH-infile.length)
