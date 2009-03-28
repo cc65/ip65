@@ -1,4 +1,8 @@
-	.zeropage
+.ifndef NB65_API_VERSION
+.include "../inc/nb65_constants.i"
+.endif
+
+.zeropage
 pptr:		.res 2
 .bss
 temp_bin: .res 1
@@ -38,41 +42,66 @@ temp_bcd: .res 2
 .import print_a
 .import print_cr
 .import cs_driver_name
-
+.import cfg_get_configuration_ptr
 print_ip_config:
+  
+
   ldax #ip_address_msg
   jsr print
-  ldax #cfg_ip
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_IP
+  bcc :+
+  inx
+:  
   jsr print_dotted_quad
   jsr print_cr
 
   ldax #netmask_msg
   jsr print
-  ldax #cfg_netmask
+   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_NETMASK
+  bcc :+
+  inx
+: 
   jsr print_dotted_quad
   jsr print_cr
 
   ldax #gateway_msg
   jsr print
-  ldax #cfg_gateway
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_GATEWAY
+  bcc :+
+  inx
+:
   jsr print_dotted_quad
   jsr print_cr
 
   ldax #dns_server_msg
   jsr print
-  ldax #cfg_dns
-  jsr print_dotted_quad
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_DNS_SERVER
+  bcc :+
+  inx
+:  jsr print_dotted_quad
   jsr print_cr
 
   ldax #dhcp_server_msg
   jsr print
-  ldax #dhcp_server
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_DHCP_SERVER
+  bcc :+
+  inx
+:
   jsr print_dotted_quad
   jsr print_cr
 
   ldax #tftp_server_msg
   jsr print
-  ldax #cfg_tftp_server
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  adc #NB65_CFG_TFTP_SERVER
+  bcc :+
+  inx
+:
   jsr print_dotted_quad
   jsr print_cr
 

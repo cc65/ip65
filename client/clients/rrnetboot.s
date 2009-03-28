@@ -1,4 +1,4 @@
-;#############
+; #############
 ; 
 ; This will boot a C64 with RR-NET from the network
 ; requires
@@ -9,18 +9,17 @@
 ; jonno@jamtronix.com - January 2009
 ;
 
-RRNETBOOT_IP65_DISPATCHER = $800d 
-RRNETBOOT_IP65_PROCESS =$8010
-RRNETBOOT_IP65_VBL =$8013
+NB65_DISPATCH_VECTOR = $800d 
+NB65_PERIODIC_PROCESSING_VECTOR =$8010
+NB65_VBL_VECTOR =$8013
 
-
-
+  .include "../inc/nb65_constants.i"
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/menu.i"
   .include "../inc/net.i"
   .include "../inc/c64keycodes.i"
-  .include "../inc/ip65_function_numbers.i"
+  
   .import cls
   .import get_key
   .import beep
@@ -45,12 +44,12 @@ RRNETBOOT_IP65_VBL =$8013
   .import  __DATA_SIZE__
 
 	.bss
-
-;temp_bin: .res 1
-;temp_bcd: .res 2
+  
+ip65_param_buffer: .res $10  
 
 bin_file_jmp: .res 3
 tftp_dir_buffer: .res 2000
+
 
 
 .segment "CARTRIDGE_HEADER"
@@ -58,9 +57,9 @@ tftp_dir_buffer: .res 2000
 .word init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte "NB65"  ;netboot 65 signature
-jmp ip65_dispatcher    ; RRNETBOOT_IP65_DISPATCHER   : entry point for IP65 functions
-jmp ip65_process          ;RRNETBOOT_IP65_PROCESS : routine to be periodically called to check for arrival of ethernet packects
-jmp timer_vbl_handler     ;RRNETBOOT_IP65_VBL : routine to be called during each vertical blank interrupt
+jmp ip65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for IP65 functions
+jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
+jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
 
 .data
 jmp_old_irq:
@@ -71,7 +70,7 @@ jmp_old_irq:
   
 
 irq_handler:
-  jsr RRNETBOOT_IP65_VBL
+  jsr NB65_VBL_VECTOR
   jmp jmp_old_irq
 
 remove_irq_handler:
@@ -131,9 +130,14 @@ init:
 
 @tftp_boot:  
 
-print_driver_init
-  ldy #FN_IP65_INIT
-  jsr RRNETBOOT_IP65_DISPATCHER 
+  ldy #NB65_GET_DRIVER_NAME
+  jsr NB65_DISPATCH_VECTOR 
+  jsr print
+  ldax #init_msg
+	jsr print
+  
+  ldy #NB65_INIT_IP
+  jsr NB65_DISPATCH_VECTOR 
 
 	bcc :+
   print_failed
@@ -144,8 +148,8 @@ print_driver_init
   
   print_dhcp_init
   
-  ldy #FN_DHCP_INIT
-  jsr RRNETBOOT_IP65_DISPATCHER 
+  ldy #NB65_INIT_DHCP
+  jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
 	print_failed
   jmp bad_boot
@@ -154,7 +158,7 @@ print_driver_init
 
   jsr print_ip_config
 
-    ldx #3
+  ldx #3
 : 
   lda cfg_tftp_server,x
   sta tftp_ip,x
