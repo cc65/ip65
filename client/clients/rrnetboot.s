@@ -9,15 +9,25 @@
 ; jonno@jamtronix.com - January 2009
 ;
 
+RRNETBOOT_IP65_DISPATCHER = $800d 
+RRNETBOOT_IP65_PROCESS =$8010
+RRNETBOOT_IP65_VBL =$8013
+
+
+
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
-  .include "../inc/net.i"
   .include "../inc/menu.i"
+  .include "../inc/net.i"
   .include "../inc/c64keycodes.i"
+  .include "../inc/ip65_function_numbers.i"
   .import cls
   .import get_key
   .import beep
   .import exit_to_basic
+  .import timer_vbl_handler
+  .import ip65_dispatcher
+  .import ip65_process
 
   .importzp tftp_filename
   .import tftp_load_address
@@ -34,13 +44,6 @@
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
 
-
-  .export jmp_ip65_init          
-  .export jmp_dhcp_init         
-  .export jmp_tftp_download  
-  .export jmp_tftp_directory_listing 
-  .export jmp_tftp_set_download_callback
-
 	.bss
 
 ;temp_bin: .res 1
@@ -54,27 +57,29 @@ tftp_dir_buffer: .res 2000
 .word init  ;cold start vector
 .word init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
+.byte "NB65"  ;netboot 65 signature
+jmp ip65_dispatcher    ; RRNETBOOT_IP65_DISPATCHER   : entry point for IP65 functions
+jmp ip65_process          ;RRNETBOOT_IP65_PROCESS : routine to be periodically called to check for arrival of ethernet packects
+jmp timer_vbl_handler     ;RRNETBOOT_IP65_VBL : routine to be called during each vertical blank interrupt
 
-.segment "JUMP_TABLE"
-
-jmp_ip65_init:  
-  jmp ip65_init
+.data
+jmp_old_irq:
+  jmp $0000
   
-jmp_dhcp_init:  
-  jmp dhcp_init
-  
-jmp_tftp_directory_listing:  
-  jmp tftp_directory_listing
-
-jmp_tftp_download:  
-  jmp tftp_download
-  
-jmp_tftp_set_download_callback:  
-  jmp tftp_set_download_callback
-  
-filler:
-.res 17
 .code
+
+  
+
+irq_handler:
+  jsr RRNETBOOT_IP65_VBL
+  jmp jmp_old_irq
+
+remove_irq_handler:
+  ldax  jmp_old_irq+1  ;previous IRQ handler
+  sei ;don't want any interrupts while we fiddle with the vector
+  stax  $314   
+  cli
+  rts
   
 init:
   
@@ -89,6 +94,8 @@ init:
   jsr $e3bf   ;initialize zero page
 
 
+
+
 ;relocate our r/w data
   ldax #__DATA_LOAD__
   stax copy_src
@@ -97,7 +104,14 @@ init:
   ldax #__DATA_SIZE__
   jsr copymem
 
-  
+;install our IRQ handler
+  ldax  $314    ;previous IRQ handler
+  stax  jmp_old_irq+1
+  sei ;don't want any interrupts while we fiddle with the vector
+  ldax #irq_handler
+  stax  $314    ;previous IRQ handler
+  cli
+
   ldax  #startup_msg 
   jsr print
 
@@ -112,14 +126,32 @@ init:
   jmp @get_key
 
 @exit_to_basic:
+  jsr remove_irq_handler
   jmp $fe66   ;do a wam start
 
 @tftp_boot:  
 
-  init_ip_via_dhcp 
-    bcc :+
+print_driver_init
+  ldy #FN_IP65_INIT
+  jsr RRNETBOOT_IP65_DISPATCHER 
+
+	bcc :+
+  print_failed
+  jmp bad_boot    
+:
+  
+  print_ok
+  
+  print_dhcp_init
+  
+  ldy #FN_DHCP_INIT
+  jsr RRNETBOOT_IP65_DISPATCHER 
+	bcc :+  
+	print_failed
   jmp bad_boot
-:  
+:
+  print_ok
+
   jsr print_ip_config
 
     ldx #3
@@ -195,6 +227,8 @@ init:
   jmp bad_boot
   
 @file_downloaded_ok:  
+
+  jsr remove_irq_handler  
                           ;check whether the file we just downloaded was a BASIC prg
   lda tftp_load_address
   cmp #01
@@ -214,7 +248,7 @@ init:
   jsr $a659  ; CLR (reset variables)
   jmp $a7ae  ; jump to BASIC interpreter loop 
   
-@not_a_basic_file:
+@not_a_basic_file:  
   lda #$4C  ;opcode for JMP
   sta bin_file_jmp
   ldax  tftp_load_address
@@ -227,6 +261,7 @@ bad_boot:
   ldax  #press_a_key_to_continue
   jsr print
   jsr get_key
+  jsr remove_irq_handler
   jmp $fe66   ;do a wam start
 
 download:
