@@ -8,6 +8,9 @@
 	.export ip65_ctr
 	.export ip65_ctr_arp
 	.export ip65_ctr_ip
+  
+  .export ip65_error
+  
 
 	.import eth_init
 	.import timer_init
@@ -29,6 +32,7 @@ ip65_ctr:	.res 1		; incremented for every incoming packet
 ip65_ctr_arp:	.res 1		; incremented for every incoming arp packet
 ip65_ctr_ip:	.res 1		; incremented for every incoming ip packet
 
+ip65_error: .res 1  ;last error code
 
 	.code
 
