@@ -1,3 +1,0 @@
-
-FN_IP65_INIT= 1 
-FN_DHCP_INIT=2
