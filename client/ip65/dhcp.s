@@ -11,7 +11,7 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
 
   .include "../inc/common.i"
   .export dhcp_init
-  .export dhcp_server ;will be set address of dhcp server that configuration was obtained from
+  .import dhcp_server 
   .export dhcp_state  
   
   .import cfg_mac
@@ -82,7 +82,7 @@ dhcp_timer:  .res 1
 dhcp_loop_count: .res 1
 dhcp_break_polling_loop: .res 1
 
-dhcp_server: .res 4   
+
 
 ;DHCP constants
 BOOTREQUEST   =1
