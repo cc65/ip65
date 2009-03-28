@@ -35,5 +35,5 @@ cfg_ip:		.byte 0,0,0,0 ;ip address of local machine (will be overwritten if dhcp
 cfg_netmask:	.byte 255, 255, 255, 0; netmask of local network (will be overwritten if dhcp_init is called)
 cfg_gateway:	.byte 0, 0, 0, 0 ;ip address of router on local network (will be overwritten if dhcp_init is called)
 cfg_dns:	.byte 0, 0, 0, 0; ip address of dns server to use (will be overwritten if dhcp_init is called)
-cfg_tftp_server: .byte $ff,$ff,$ff,$ff ; ip address of server to send tftp requests to (can be a broadcast address)
 dhcp_server: .res 4   ;will be set address of dhcp server that configuration was obtained from
+cfg_tftp_server: .byte $ff,$ff,$ff,$ff ; ip address of server to send tftp requests to (can be a broadcast address)

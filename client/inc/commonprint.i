@@ -1,6 +1,4 @@
-.ifndef NB65_API_VERSION
 .include "../inc/nb65_constants.i"
-.endif
 
 .zeropage
 pptr:		.res 2
@@ -89,16 +87,6 @@ print_ip_config:
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #NB65_CFG_DHCP_SERVER
-  bcc :+
-  inx
-:
-  jsr print_dotted_quad
-  jsr print_cr
-
-  ldax #tftp_server_msg
-  jsr print
-  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_TFTP_SERVER
   bcc :+
   inx
 :
@@ -241,9 +229,6 @@ dns_server_msg:
 
 dhcp_server_msg:
   .byte "DHCP SERVER:", 0
-
-tftp_server_msg:
-  .byte "TFTP SERVER: ", 0
 
 dhcp_msg:
   .byte "DHCP",0

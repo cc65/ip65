@@ -1,11 +1,14 @@
 ;minimal tftp implementation (client only)
 ;supports file download (not upload) and custom directory listing (using non-standard tftp opcode of 0x65)
 
+
   TFTP_MAX_RESENDS=10
   TFTP_TIMER_MASK=$F8 ;mask lower two bits, means we wait for 8 x1/4 seconds
 
   .include "../inc/common.i"
-  
+  .include "../inc/nb65_constants.i"
+
+
   .exportzp tftp_filename
   .export tftp_load_address
   .export tftp_ip
@@ -14,9 +17,11 @@
   .export tftp_data_block_length
   .export tftp_set_download_callback
   .export tftp_data_block_length
+  .export tftp_clear_callbacks
   
 	.import ip65_process
-
+  .import ip65_error
+  
 	.import udp_add_listener
   .import udp_remove_listener
 
@@ -140,6 +145,8 @@ set_tftp_opcode:
 	jsr udp_add_listener
   
 	bcc :+      ;bail if we couldn't listen on the port we want
+  lda #NB65_ERROR_PORT_IN_USE
+  sta ip65_error
 	rts
 :
 
@@ -200,6 +207,8 @@ set_tftp_opcode:
   
   dec tftp_resend_counter
   bne @outer_delay_loop
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error
   jmp @exit_with_error  
 
 send_request_packet:
@@ -250,7 +259,8 @@ send_request_packet:
   sta tftp_state
   rts
 @error_in_send:  
-
+  lda #NB65_ERROR_TRANSMIT_FAILED
+  sta ip65_error
   sec
   rts
 
@@ -289,7 +299,9 @@ tftp_in:
   bne @not_an_error
 @recv_error:
   lda #tftp_error
-  sta tftp_state  
+  sta tftp_state
+  lda #NB65_ERROR_TRANSMISSION_REJECTED_BY_PEER
+  sta ip65_error  
   rts
 @not_an_error:
 
@@ -415,7 +427,15 @@ copy_tftp_block_to_ram:
 ; outputs: none
 tftp_set_download_callback:
   stax  tftp_download_callback+1
+  rts
   
+;clear callback vectors, i.e. all future transfers read from/write to RAM
+;inputs: none
+;outputs: none
+tftp_clear_callbacks:
+  ldax #copy_tftp_block_to_ram
+  jmp tftp_set_download_callback
+
 .rodata
   tftp_octet_mode: .asciiz "OCTET"
   

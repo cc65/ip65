@@ -17,7 +17,7 @@ NB65_VBL_VECTOR =$8013
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/menu.i"
-  .include "../inc/net.i"
+;  .include "../inc/net.i"
   .include "../inc/c64keycodes.i"
   
   .import cls
@@ -25,15 +25,15 @@ NB65_VBL_VECTOR =$8013
   .import beep
   .import exit_to_basic
   .import timer_vbl_handler
-  .import ip65_dispatcher
+  .import nb65_dispatcher
   .import ip65_process
 
-  .importzp tftp_filename
-  .import tftp_load_address
-  .import tftp_ip
-  .import tftp_download
-  .import tftp_directory_listing 
-  .import tftp_set_download_callback
+;  .importzp tftp_filename
+;    .import tftp_load_address
+;  .import tftp_ip
+;  .import tftp_download
+;  .import tftp_directory_listing 
+;  .import tftp_set_download_callback
   
 	.import copymem
 	.importzp copy_src
@@ -45,7 +45,7 @@ NB65_VBL_VECTOR =$8013
 
 	.bss
   
-ip65_param_buffer: .res $10  
+nb65_param_buffer: .res $10  
 
 bin_file_jmp: .res 3
 tftp_dir_buffer: .res 2000
@@ -57,7 +57,7 @@ tftp_dir_buffer: .res 2000
 .word init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte "NB65"  ;netboot 65 signature
-jmp ip65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for IP65 functions
+jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
 
@@ -139,8 +139,9 @@ init:
   ldy #NB65_INIT_IP
   jsr NB65_DISPATCH_VECTOR 
 
-	bcc :+
+	bcc :+  
   print_failed
+  jsr print_errorcode
   jmp bad_boot    
 :
   
@@ -152,77 +153,64 @@ init:
   jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
 	print_failed
+  jsr print_errorcode  
   jmp bad_boot
 :
   print_ok
 
   jsr print_ip_config
 
-  ldx #3
-: 
-  lda cfg_tftp_server,x
-  sta tftp_ip,x
-  dex
-  bpl :-
-
   ldax  #press_a_key_to_continue
   jsr print
   jsr get_key
 
-
+  jsr setup_param_buffer_for_tftp_call
+  
   ldax #tftp_dir_buffer
-  stax tftp_load_address
+  stax nb65_param_buffer+NB65_TFTP_POINTER
 
   ldax #getting_dir_listing_msg
 	jsr print
 
   ldax #tftp_dir_filemask
-  stax tftp_filename
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+
   jsr print
   jsr print_cr
 
-  jsr tftp_directory_listing 
+  ldax  #nb65_param_buffer
+  ldy #NB65_TFTP_DIRECTORY_LISTING
+  jsr NB65_DISPATCH_VECTOR 
+  
 	bcs @dir_failed
 
   lda tftp_dir_buffer ;get the first byte that was downloaded
   bne :+
   jmp @no_files_on_server
 :  
-  ldax #$0000   ;load address will be first 2 bytes of file we dowload (LO/HI order)
-  stax tftp_load_address
 
   ;switch to lower case charset
   lda #23
   sta $d018
+
+
   ldax  #tftp_dir_buffer
   
   jsr select_option_from_menu  
-  stax tftp_filename
 
-
-  ldax #downloading_msg
-	jsr print
-
-
-  ldax tftp_filename
+@tftp_filename_set:
   jsr download
   bcc @file_downloaded_ok
+  jmp bad_boot
   
 @dir_failed:  
   ldax  #tftp_dir_listing_fail_msg
   jsr print
+  jsr print_errorcode
+  jsr print_cr
   
-  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
-  stax tftp_load_address
-
-  ldax #downloading_msg
-	jsr print
-
   ldax #tftp_file
-  jsr download
-  
-  bcc @file_downloaded_ok
-  jmp bad_boot
+  jmp @tftp_filename_set
   
 @no_files_on_server:
   ldax #no_files_on_server
@@ -233,11 +221,11 @@ init:
 @file_downloaded_ok:  
 
   jsr remove_irq_handler  
-                          ;check whether the file we just downloaded was a BASIC prg
-  lda tftp_load_address
+  ;check whether the file we just downloaded was a BASIC prg
+  lda nb65_param_buffer+NB65_TFTP_POINTER
   cmp #01
   bne @not_a_basic_file
-  lda tftp_load_address+1
+  lda nb65_param_buffer+NB65_TFTP_POINTER+1
   cmp #$08
   bne @not_a_basic_file
 
@@ -255,11 +243,30 @@ init:
 @not_a_basic_file:  
   lda #$4C  ;opcode for JMP
   sta bin_file_jmp
-  ldax  tftp_load_address
+  ldax  nb65_param_buffer+NB65_TFTP_POINTER
   stax bin_file_jmp+1
-  jsr bin_file_jmp
-  rts
+  jmp bin_file_jmp
 
+print_errorcode:
+  ldax #error_code
+  jsr print
+  ldy #NB65_GET_LAST_ERROR
+  jsr NB65_DISPATCH_VECTOR
+  jsr print_hex
+  jmp print_cr
+  
+
+setup_param_buffer_for_tftp_call:
+  lda #$00    ;'normal' tftp call mode, i.e. TFTP_POINTER is where data should be written to
+  sta nb65_param_buffer+NB65_TFTP_CALL_MODE
+  
+  ldx #3
+  lda #$ff    ;255.255.255.255 = broadcast address
+: 
+  sta nb65_param_buffer+NB65_TFTP_IP,x
+  dex
+  bpl :-
+  rts
 
 bad_boot:
   ldax  #press_a_key_to_continue
@@ -268,16 +275,26 @@ bad_boot:
   jsr remove_irq_handler
   jmp $fe66   ;do a wam start
 
-download:
-  stax tftp_filename
-  jsr print
-  jsr print_cr
+download: ;AX should point at filename to download
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
+  stax nb65_param_buffer+NB65_TFTP_POINTER
 
-  jsr tftp_download  
+  ldax #downloading_msg
+	jsr print
+  ldax nb65_param_buffer+NB65_TFTP_FILENAME
+  jsr print  
+  jsr print_cr
+  
+  jsr setup_param_buffer_for_tftp_call
+  ldy #NB65_TFTP_DOWNLOAD
+  ldax #nb65_param_buffer
+  jsr NB65_DISPATCH_VECTOR 
 	bcc :+
   
-	ldax #tftp_download_fail_msg
+	ldax #tftp_download_fail_msg  
 	jsr print
+  jsr print_errorcode
   sec
   rts
   
@@ -307,6 +324,9 @@ tftp_download_fail_msg:
 tftp_download_ok_msg:
 	.byte "DOWNLOAD OK", 13, 0
   
+error_code:  
+  .asciiz "ERROR CODE: "
+
 tftp_dir_filemask:  
   .asciiz "*.PRG"
 
