@@ -3,12 +3,12 @@
 NB65_API_VERSION=$0001
 
 ;offsets in NB65 configuration structure
-NB65_CFG_MAC        = $00                       ;6 byte MAC address
-NB65_CFG_IP         = NB65_CFG_MAC+$06          ;4 byte local IP address (will be overwritten by DHCP)
-NB65_CFG_NETMASK    = NB65_CFG_IP+$04           ;4 byte local netmask (will be overwritten by DHCP)
-NB65_CFG_GATEWAY    = NB65_CFG_NETMASK+$04      ;4 byte local gateway (will be overwritten by DHCP)
-NB65_CFG_DNS_SERVER = NB65_CFG_GATEWAY+$04      ;4 byte IP address of DNS server (will be overwritten by DHCP)
-NB65_CFG_DHCP_SERVER = NB65_CFG_DNS_SERVER+$04  ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
+NB65_CFG_MAC        = $00     ;6 byte MAC address
+NB65_CFG_IP         = $06     ;4 byte local IP address (will be overwritten by DHCP)
+NB65_CFG_NETMASK    = $0A     ;4 byte local netmask (will be overwritten by DHCP)
+NB65_CFG_GATEWAY    = $0D     ;4 byte local gateway (will be overwritten by DHCP)
+NB65_CFG_DNS_SERVER = $12     ;4 byte IP address of DNS server (will be overwritten by DHCP)
+NB65_CFG_DHCP_SERVER = $16    ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
 
 ;offsets in TFTP paramater structure
 NB65_TFTP_CALL_MODE = $00                     ;1 byte for 'mode' : $00 means read/write from RAM, (and TFTP_POINTER is address to read from
@@ -20,6 +20,12 @@ NB65_TFTP_POINTER   = $07                     ;2 byte pointer to memory location
 
 
 ;function numbers
+;to make a function call:
+; Y = function number
+; AX = pointer to paramater buffer (for functions that take paramaters)
+; then JSR NB65_DISPATCH_VECTOR
+; on return, carry flag is set if there is an error, or clear otherwise
+; some functions return results in AX directly, others will update the paramater buffer they were called with.
 NB65_GET_API_VERSION          =$00 ;no inputs, outputs  X=major version number, A=minor version number
 NB65_GET_DRIVER_NAME          =$01 ;no inputs, outputs AX=pointer to asciiz driver name
 NB65_GET_IP_CONFIG_PTR        =$02 ;no inputs, outputs AX=pointer to IP configuration structure (which can be modified)

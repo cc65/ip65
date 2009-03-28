@@ -1,0 +1,20 @@
+The purpose of this API is to allow applications to be developed that use network functionality in a netboo65 cartridge/card.
+
+The API is a jump table that lives at a fixed location within the cartridge/card.
+The jump table entries and their location in a C64 cartridge are:
+
+		NB65_DISPATCH_VECTOR = $800d 
+		NB65_PERIODIC_PROCESSING_VECTOR =$8010
+		NB65_VBL_VECTOR =$8013
+
+Immediately before this jump table are the bytes "NB65" (so an app can check the API is available to it)
+
+To use the API, an app should do the following:
+
+1) set up a custom IRQ handler that will call the NB65_VBL_VECTOR routine 60 times a second - (this routine ends with a RTS not RTI). All this routine does is count clock ticks, so it uses very little raster time
+
+2) use whatever network functions are desired, by setting up an appropriate buffer of parameters, then setting the function number of the desired function into Y, setting AX to point to the buffer of paramaters, and then calling (via JSR)  NB65_DISPATCH_VECTOR. Every function uses the carry flag to indicate errors (set on error, clear otherwise). Some functions return values, either in A, AX, or by updating the buffer that was originally passed in.
+
+3) it is necessary to call the NB65_PERIODIC_PROCESSING_VECTOR several times a second to check for any inbound packets. If a packet has arrived, it will be processed, and potentially a callback handler may create and send an outbound message in response. This means processing time can vary, and ocassionaly be quite long. Therefore this routine should not be called inside time critical code e..g. an interrupt service routine. 
+
+Functions are defined in the file nb65_constants.i

@@ -8,7 +8,7 @@ require 'ftools'
 
 WORKING_DIR=File.expand_path(File.dirname(__FILE__)+"/netboot65")
 SRC_DIR=File.expand_path(File.dirname(__FILE__)+"/../")
-["","client","lib","bin","boot",].each do |dir_suffix|
+["","client","lib","bin","boot","doc"].each do |dir_suffix|
   dir_path="#{WORKING_DIR}/#{dir_suffix}"
   Dir.mkdir(dir_path) unless File.exist?(dir_path)
 end
@@ -20,7 +20,9 @@ end
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
 ["server/bin/import_ags_games.rb","bin"],
 ["server/boot/BOOTA2.PG2","boot"],
-["doc/README.*.txt",""],
+["doc/README.*.txt","doc"],
+["doc/netboot65_api.txt","doc"],
+["client/inc/nb65_constants.i","doc"],
 ].each do |args|
   dest="#{WORKING_DIR}/#{args[1]}"
   Dir["#{SRC_DIR}/#{args[0]}"].each do |src|
