@@ -40,7 +40,6 @@ temp_bcd: .res 2
 .import print_a
 .import print_cr
 .import cs_driver_name
-.import cfg_get_configuration_ptr
 print_ip_config:
   
 

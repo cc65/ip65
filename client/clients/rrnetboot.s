@@ -9,15 +9,11 @@
 ; jonno@jamtronix.com - January 2009
 ;
 
-NB65_DISPATCH_VECTOR = $800d 
-NB65_PERIODIC_PROCESSING_VECTOR =$8010
-NB65_VBL_VECTOR =$8013
 
   .include "../inc/nb65_constants.i"
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/menu.i"
-;  .include "../inc/net.i"
   .include "../inc/c64keycodes.i"
   
   .import cls
@@ -27,13 +23,6 @@ NB65_VBL_VECTOR =$8013
   .import timer_vbl_handler
   .import nb65_dispatcher
   .import ip65_process
-
-;  .importzp tftp_filename
-;    .import tftp_load_address
-;  .import tftp_ip
-;  .import tftp_download
-;  .import tftp_directory_listing 
-;  .import tftp_set_download_callback
   
 	.import copymem
 	.importzp copy_src
@@ -54,31 +43,17 @@ tftp_dir_buffer: .res 2000
 
 .segment "CARTRIDGE_HEADER"
 .word init  ;cold start vector
-.word init  ;warm start vector
+.word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte "NB65"  ;netboot 65 signature
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
 
-.data
-jmp_old_irq:
-  jmp $0000
   
 .code
 
   
-
-irq_handler:
-  jsr NB65_VBL_VECTOR
-  jmp jmp_old_irq
-
-remove_irq_handler:
-  ldax  jmp_old_irq+1  ;previous IRQ handler
-  sei ;don't want any interrupts while we fiddle with the vector
-  stax  $314   
-  cli
-  rts
   
 init:
   
@@ -103,13 +78,6 @@ init:
   ldax #__DATA_SIZE__
   jsr copymem
 
-;install our IRQ handler
-  ldax  $314    ;previous IRQ handler
-  stax  jmp_old_irq+1
-  sei ;don't want any interrupts while we fiddle with the vector
-  ldax #irq_handler
-  stax  $314    ;previous IRQ handler
-  cli
 
   ldax  #startup_msg 
   jsr print
@@ -125,7 +93,6 @@ init:
   jmp @get_key
 
 @exit_to_basic:
-  jsr remove_irq_handler
   jmp $fe66   ;do a wam start
 
 @tftp_boot:  
@@ -220,7 +187,6 @@ init:
   
 @file_downloaded_ok:  
 
-  jsr remove_irq_handler  
   ;check whether the file we just downloaded was a BASIC prg
   lda nb65_param_buffer+NB65_TFTP_POINTER
   cmp #01
@@ -257,8 +223,6 @@ print_errorcode:
   
 
 setup_param_buffer_for_tftp_call:
-  lda #$00    ;'normal' tftp call mode, i.e. TFTP_POINTER is where data should be written to
-  sta nb65_param_buffer+NB65_TFTP_CALL_MODE
   
   ldx #3
   lda #$ff    ;255.255.255.255 = broadcast address
@@ -272,7 +236,6 @@ bad_boot:
   ldax  #press_a_key_to_continue
   jsr print
   jsr get_key
-  jsr remove_irq_handler
   jmp $fe66   ;do a wam start
 
 download: ;AX should point at filename to download
@@ -303,11 +266,15 @@ download: ;AX should point at filename to download
 	jsr print
   clc
   rts
-  
+
+cfg_get_configuration_ptr:
+  ldy #NB65_GET_IP_CONFIG_PTR
+  jmp NB65_DISPATCH_VECTOR 
+
 	.rodata
 
 startup_msg: 
-.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.2",13
+.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.3",13
 .byte "F1=TFTP BOOT, F3=BASIC",13
 .byte 0
 

@@ -33,6 +33,7 @@ ip65test.dsk: testdns.pg2 testdottedquad.pg2
 all: \
 	ip65test.dsk \
 	testdns.prg \
+	test_cart_api.prg \
 	testdns.pg2 \
 	testdottedquad.pg2 \
 	testdottedquad.prg \

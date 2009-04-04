@@ -8,6 +8,8 @@
   .import dns_resolve
   .import dns_ip
   .import dns_status
+  .import cfg_get_configuration_ptr
+
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
   .import  __RODATA_SIZE__

@@ -11,7 +11,8 @@
   .import dhcp_init
   .import dhcp_server
   
-
+  .import cfg_get_configuration_ptr
+  
 .macro init_ip_via_dhcp
 
   print_driver_init
