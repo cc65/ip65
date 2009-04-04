@@ -1,3 +1,8 @@
+;this is some very quick and dirty glue to make the most useful IP65 functions available via a single entry point.
+;this allows user applications to be developed that don't link ip65 in directly, rather they use an instance of ip65 that is preloaded (or in a cartridge/ROM)
+;this whole file could (and should) be greatly optimised by making it all table driven, but since this file is probably only going to be used in a bankswitched ROM where
+;space is not at such a premium, I'll go with the gross hack for now.
+
 
 .include "../inc/nb65_constants.i"
 .include "../inc/common.i"
@@ -15,15 +20,27 @@
 .import ip65_error
 .import tftp_clear_callbacks
 .import tftp_download
-
+.import dns_ip
+.import dns_resolve
+.import dns_set_hostname
 .zeropage
 nb65_params:		.res 2
 
+.data
+jmp_old_irq:
+  jmp $0000
+
+irq_handler_installed_flag:
+  .byte 0
+  
 .code
+
+irq_handler:
+  jsr NB65_VBL_VECTOR
+  jmp jmp_old_irq
 
 
 set_tftp_params:
-  stax nb65_params
   ldy #NB65_TFTP_IP
   lda (nb65_params),y
   sta tftp_ip
@@ -44,11 +61,6 @@ set_tftp_params:
   lda (nb65_params),y
   sta tftp_filename+1
 
-  ldy #NB65_TFTP_CALL_MODE
-  lda (nb65_params),y  
-  
-  bne @callback_mode  
-  ;direct mode
   ldy #NB65_TFTP_POINTER
   lda (nb65_params),y
   sta tftp_load_address
@@ -60,14 +72,9 @@ set_tftp_params:
   
   clc
   rts
-@callback_mode: ;FIXME: callback mode not supported yet
-  lda #NB65_ERROR_OPTION_NOT_SUPPORTED
-  sta ip65_error
-  sec 
-  rts
 
 nb65_dispatcher:
-
+  stax nb65_params
   cpy #NB65_GET_API_VERSION
   bne :+
   ldax  #NB65_API_VERSION
@@ -89,6 +96,17 @@ nb65_dispatcher:
 
   cpy #NB65_INIT_IP
   bne :+
+  lda irq_handler_installed_flag
+  bne irq_handler_installed
+  ;install our IRQ handler
+  ldax  $314    ;previous IRQ handler
+  stax  jmp_old_irq+1
+  sei ;don't want any interrupts while we fiddle with the vector
+  ldax #irq_handler
+  stax  $314    ;previous IRQ handler
+  cli
+  sta irq_handler_installed_flag
+irq_handler_installed:  
   jmp ip65_init
 :
 
@@ -113,6 +131,7 @@ nb65_dispatcher:
   sta (nb65_params),y  
   clc
 @tftp_error:
+@dns_error:   
   rts
 :
 
@@ -123,6 +142,44 @@ nb65_dispatcher:
   jsr tftp_download
   jmp @after_tftp_call
 :
+
+  cpy #NB65_DNS_RESOLVE_HOSTNAME
+  bne :+  
+  ldy #NB65_DNS_HOSTNAME+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y
+  jsr dns_set_hostname  
+  bcs @dns_error
+  jsr dns_resolve
+  bcs @dns_error
+  ldy #NB65_DNS_HOSTNAME_IP
+  ldx #4
+@copy_dns_ip:
+  lda dns_ip,y
+  sta (nb65_params),y
+  iny
+  dex  
+  bne @copy_dns_ip
+  rts
+:
+
+  cpy #NB65_UDP_ADD_LISTENER
+  bne :+  
+  ldy #NB65_UDP_LISTENER_CALLBACK
+  lda (nb65_params),y
+  sta udp_callback
+  iny
+  lda (nb65_params),y
+  sta udp_callback+1
+  ldy #NB65_UDP_LISTENER_PORT+1
+  lda (nb65_params),y
+  tax
+  dey
+  jmp udp_add_listener
+:
+
 
   cpy #NB65_GET_LAST_ERROR
   bne :+
