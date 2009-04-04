@@ -10,10 +10,13 @@
 MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
   .include "../inc/common.i"
+  .include "../inc/nb65_constants.i"
+  
   .export dhcp_init
   .import dhcp_server 
   .export dhcp_state  
   
+  .import ip65_error
   .import cfg_mac
   .import cfg_ip
   .import cfg_netmask
@@ -190,6 +193,8 @@ dhcp_init:
   rts
 
 @too_many_messages_sent:
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error
   sec             ;signal an error
   rts
   
