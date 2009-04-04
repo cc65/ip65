@@ -3,12 +3,13 @@
   MAX_DNS_MESSAGES_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
 .include "../inc/common.i"
+.include "../inc/nb65_constants.i"
 
   .export dns_set_hostname
   .export dns_resolve
   .export dns_ip
   .export dns_status
-  
+  .import ip65_error
   .import cfg_dns
   
   .import parse_dotted_quad
@@ -169,6 +170,8 @@ dns_set_hostname:
   rts
 
 @hostname_too_long:
+  lda #NB65_ERROR_INPUT_TOO_LARGE
+  sta ip65_error
   sec
   rts
 
@@ -250,7 +253,9 @@ dns_resolve:
 @failed:
   lda #53
   ldx dns_client_port_low_byte    
-	jsr udp_remove_listener  
+	jsr udp_remove_listener
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error  
   sec             ;signal an error
   rts
 
@@ -276,7 +281,11 @@ send_dns_query:
   lda dns_packed_hostname,x
   sta dns_outp+dns_qname,x
   inx
-  bmi @error_on_send                ;if we got past 128 bytes, there's a problem
+  bpl  @hostname_still_ok
+  lda #NB65_ERROR_INPUT_TOO_LARGE
+  sta ip65_error
+  jmp @error_on_send                ;if we got past 128 bytes, there's a problem
+@hostname_still_ok:  
   cmp #0
   bne :-                                  ;keep looping until we have a zero byte.
   
@@ -312,7 +321,6 @@ send_dns_query:
   sta dns_state
   rts
 @error_on_send:  
-
   sec
   rts
   
