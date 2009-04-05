@@ -23,6 +23,9 @@
 .import dns_ip
 .import dns_resolve
 .import dns_set_hostname
+.import udp_callback
+.import udp_add_listener
+.import ip_inp
 .zeropage
 nb65_params:		.res 2
 
@@ -177,13 +180,32 @@ irq_handler_installed:
   lda (nb65_params),y
   tax
   dey
+  lda (nb65_params),y
+  
   jmp udp_add_listener
 :
 
 
+  cpy #NB65_GET_INPUT_PACKET_PTR
+  bne :+
+  ldax #ip_inp
+  clc
+  rts
+:  
+
   cpy #NB65_GET_LAST_ERROR
   bne :+
   lda ip65_error
+  clc
+  rts
+:  
+
+  cpy #NB65_UNHOOK_VBL_IRQ
+  bne :+
+  ldax  jmp_old_irq+1
+  sei ;don't want any interrupts while we fiddle with the vector
+  stax  $314    ;previous IRQ handler
+  cli
   clc
   rts
 :  
