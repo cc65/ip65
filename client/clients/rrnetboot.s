@@ -32,12 +32,13 @@
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
 
+  tftp_dir_buffer = $6000
 	.bss
   
 nb65_param_buffer: .res $10  
 
 bin_file_jmp: .res 3
-tftp_dir_buffer: .res 2000
+
 
 
 
@@ -186,7 +187,11 @@ init:
   jmp bad_boot
   
 @file_downloaded_ok:  
-
+  
+  ;remove the IP timer code from IRQ chain
+  ldy #NB65_UNHOOK_VBL_IRQ
+  jsr NB65_DISPATCH_VECTOR
+  
   ;check whether the file we just downloaded was a BASIC prg
   lda nb65_param_buffer+NB65_TFTP_POINTER
   cmp #01
