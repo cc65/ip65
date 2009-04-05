@@ -48,7 +48,7 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
 
 ; dhcp packet offsets
 dhcp_inp		= udp_inp + udp_data
-dhcp_outp:	.res 576
+dhcp_outp:	.res 256
 dhcp_op = 0
 dhcp_htype = 1
 dhcp_hlen = 2
