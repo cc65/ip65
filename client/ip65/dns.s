@@ -43,7 +43,7 @@
 
 ; dns packet offsets
 dns_inp		= udp_inp + udp_data
-dns_outp:	.res 256
+dns_outp:	.res 220
 dns_id  = 0
 dns_flags=2
 dns_qdcount=4

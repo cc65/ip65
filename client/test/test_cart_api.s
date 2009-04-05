@@ -7,6 +7,9 @@
   .bss
   nb65_param_buffer: .res $10  
 
+  .zeropage
+  buffer_ptr:		.res 2
+
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
@@ -47,6 +50,8 @@ init:
  
   jsr print_ip_config
   
+  jmp callback_test
+  
   ldax #hostname_1
   jsr do_dns_query  
 
@@ -67,12 +72,14 @@ init:
 
 
   
-  
+
+callback_test:
   
   ldax  #64
   stax nb65_param_buffer+NB65_UDP_LISTENER_PORT
   ldax  #udp_callback
   stax nb65_param_buffer+NB65_UDP_LISTENER_CALLBACK
+  ldax  #nb65_param_buffer
   ldy   #NB65_UDP_ADD_LISTENER
   jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
@@ -80,6 +87,9 @@ init:
   jsr print_errorcode
   jmp bad_boot    
 :
+
+  ldax #listening
+  jsr print
 @loop_forever:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
   jmp @loop_forever
@@ -87,8 +97,14 @@ init:
   jmp $a7ae  ;exit to basic
   
 udp_callback:
-  lda #'*'
-  jmp print_a
+  ldax #recv_from
+  jsr print
+  ldy #NB65_GET_INPUT_PACKET_PTR
+  jsr NB65_DISPATCH_VECTOR 
+  stax buffer_ptr
+  
+  rts
+  
   
 do_dns_query: ;AX points at the hostname on entry 
   stax nb65_param_buffer+NB65_DNS_HOSTNAME
@@ -161,6 +177,12 @@ hostname_6:
   .byte 'X'
   .endrepeat
   .byte 0     ;this should generate an error as it is too long
+
+recv_from:  
+  .asciiz "RECEIVED FROM: "
+  
+listening:  
+  .byte "LISTENING.",13,0
 
 error_code:  
   .asciiz "ERROR CODE: "
