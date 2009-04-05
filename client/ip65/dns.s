@@ -14,10 +14,9 @@
   
   .import parse_dotted_quad
   .import dotted_quad_value
-
   
 	.import ip65_process
-
+  
 	.import udp_add_listener
   .import udp_remove_listener
 
@@ -25,7 +24,7 @@
 	.import udp_send
 
 	.import udp_inp
-
+  .import output_buffer
 	.importzp udp_data
 
 	.import udp_send_dest
@@ -43,7 +42,6 @@
 
 ; dns packet offsets
 dns_inp		= udp_inp + udp_data
-dns_outp:	.res 220
 dns_id  = 0
 dns_flags=2
 dns_qdcount=4
@@ -265,21 +263,21 @@ send_dns_query:
   inx
   adc #0
   stax  dns_msg_id
-  stax  dns_outp+dns_id
+  stax  output_buffer+dns_id
 
   ldax #$0001          ;QR =0 (query), opcode=0 (query), AA=0, TC=0,RD=1,RA=0,Z=0,RCODE=0
-  stax dns_outp+dns_flags
+  stax output_buffer+dns_flags
   ldax #$0100          ;we ask 1 question 
-  stax dns_outp+dns_qdcount
+  stax output_buffer+dns_qdcount
   ldax #$0000                 
-  stax dns_outp+dns_ancount     ;we send no answers
-  stax dns_outp+dns_nscount     ;we send no name servers
-  stax dns_outp+dns_arcount     ;we send no authorative records
+  stax output_buffer+dns_ancount     ;we send no answers
+  stax output_buffer+dns_nscount     ;we send no name servers
+  stax output_buffer+dns_arcount     ;we send no authorative records
   
   ldx #0
 :  
   lda dns_packed_hostname,x
-  sta dns_outp+dns_qname,x
+  sta output_buffer+dns_qname,x
   inx
   bpl  @hostname_still_ok
   lda #NB65_ERROR_INPUT_TOO_LARGE
@@ -290,11 +288,11 @@ send_dns_query:
   bne :-                                  ;keep looping until we have a zero byte.
   
   lda #0
-  sta dns_outp+dns_qname,x        ;high byte of QTYPE=1 (A)
-  sta dns_outp+dns_qname+2,x     ;high byte of QLASS=1 (IN)
+  sta output_buffer+dns_qname,x        ;high byte of QTYPE=1 (A)
+  sta output_buffer+dns_qname+2,x     ;high byte of QLASS=1 (IN)
   lda #1
-  sta dns_outp+dns_qname+1,x     ;low byte of QTYPE=1 (A)
-  sta dns_outp+dns_qname+3,x     ;low byte of QLASS=1 (IN)
+  sta output_buffer+dns_qname+1,x     ;low byte of QTYPE=1 (A)
+  sta output_buffer+dns_qname+3,x     ;low byte of QLASS=1 (IN)
   
   txa
   clc
@@ -314,7 +312,7 @@ send_dns_query:
 
 	ldax #dns_server_port			; set destination port
 	stax udp_send_dest_port
-  ldax #dns_outp
+  ldax #output_buffer
 	jsr udp_send
   bcs @error_on_send
   lda #dns_query_sent

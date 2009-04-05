@@ -26,6 +26,7 @@ ETHOBJS= \
   dhcp.o \
   dns.o \
   dottedquad.o \
+  output_buffer.o\
   tftp.o \
   function_dispatcher.o \  
   

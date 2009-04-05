@@ -36,7 +36,9 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
 	.import udp_inp
 
 	.importzp udp_data
-
+  
+  .import output_buffer
+  
 	.import udp_send_dest
 	.import udp_send_src_port
 	.import udp_send_dest_port
@@ -48,7 +50,7 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
 
 ; dhcp packet offsets
 dhcp_inp		= udp_inp + udp_data
-dhcp_outp:	.res 256
+
 dhcp_op = 0
 dhcp_htype = 1
 dhcp_hlen = 2
@@ -200,57 +202,57 @@ dhcp_init:
   
 dhcp_create_request_msg:
   lda #BOOTREQUEST  
-  sta dhcp_outp+dhcp_op
+  sta output_buffer+dhcp_op
   lda #1                                ;htype 1 = "10 MB ethernet"
-  sta dhcp_outp+dhcp_htype
+  sta output_buffer+dhcp_htype
   lda #6                                ;ethernet MACs are 6 bytes
-  sta dhcp_outp+dhcp_hlen
+  sta output_buffer+dhcp_hlen
   lda #0                                ;hops = 0
-  sta dhcp_outp+dhcp_hops
+  sta output_buffer+dhcp_hops
   ldx #3                                ;set xid to be "1234"
   clc
 : txa
   adc #01
-  sta dhcp_outp+dhcp_xid,x
+  sta output_buffer+dhcp_xid,x
   dex
   bpl :-
   
   lda #0                              ;secs =00
-  sta dhcp_outp+dhcp_secs
-  sta dhcp_outp+dhcp_secs+1
+  sta output_buffer+dhcp_secs
+  sta output_buffer+dhcp_secs+1
                                         ;initially turn off all flags 
-  sta dhcp_outp+dhcp_flags  
-  sta dhcp_outp+dhcp_flags+1
+  sta output_buffer+dhcp_flags  
+  sta output_buffer+dhcp_flags+1
   
   ldx #$0F                          ;set ciaddr to 0.0.0.0
                                     ;set yiaddr to 0.0.0.0
                                     ;set siaddr to 0.0.0.0
                                     ;set giaddr to 0.0.0.0
-: sta dhcp_outp+dhcp_ciaddr,x
+: sta output_buffer+dhcp_ciaddr,x
   dex
   bpl :-
   
   ldx #5                          ;set chaddr to mac  
 :	lda cfg_mac,x
-  sta dhcp_outp+dhcp_chaddr,x
+  sta output_buffer+dhcp_chaddr,x
   dex
   bpl :-
 
   ldx #192                          ;set sname & file both to null
   lda #0
-:	sta dhcp_outp+dhcp_sname-1,x
+:	sta output_buffer+dhcp_sname-1,x
   dex
   bne :-
   
         
   lda #$63                      ;copy the magic cookie
-  sta dhcp_outp+dhcp_cookie+0
+  sta output_buffer+dhcp_cookie+0
   lda #$82
-  sta dhcp_outp+dhcp_cookie+1
+  sta output_buffer+dhcp_cookie+1
   lda #$53
-  sta dhcp_outp+dhcp_cookie+2
+  sta output_buffer+dhcp_cookie+2
   lda #$63
-  sta dhcp_outp+dhcp_cookie+3
+  sta output_buffer+dhcp_cookie+3
   
 	ldax #dhcp_client_port			; set source port
 	stax udp_send_src_port
@@ -267,16 +269,16 @@ send_dhcpdiscover:
   jsr dhcp_create_request_msg
 
   lda #$80                           ;broadcast flag =1, all other bits 0
-  sta dhcp_outp+dhcp_flags
+  sta output_buffer+dhcp_flags
   
   lda #53                           ;option 53 - DHCP message type
-  sta dhcp_outp+dhcp_options+0
+  sta output_buffer+dhcp_options+0
   lda #1                            ;option length is 1  
-  sta dhcp_outp+dhcp_options+1
+  sta output_buffer+dhcp_options+1
   lda #DHCPDISCOVER           
-  sta dhcp_outp+dhcp_options+2
+  sta output_buffer+dhcp_options+2
   lda #$FF                           ;option FF = end of options
-  sta dhcp_outp+dhcp_options+3
+  sta output_buffer+dhcp_options+3
 
   ldx #3				; set destination address
   lda #$FF      ; des = 255.255.255.255 (broadcast)
@@ -286,7 +288,7 @@ send_dhcpdiscover:
 
   ldax #dhcp_options+4
   stax udp_send_len
-  ldax #dhcp_outp
+  ldax #output_buffer
 	jsr udp_send
 	bcc :+
   rts
@@ -417,42 +419,42 @@ dhcp_in:
 send_dhcprequest:
   jsr dhcp_create_request_msg
   lda #53                           ;option 53 - DHCP message type
-  sta dhcp_outp+dhcp_options+0
+  sta output_buffer+dhcp_options+0
   lda #1                            ;option length is 1  
-  sta dhcp_outp+dhcp_options+1
+  sta output_buffer+dhcp_options+1
   lda #DHCPREQUEST
-  sta dhcp_outp+dhcp_options+2
+  sta output_buffer+dhcp_options+2
 
   lda #50                           ;option 50 - requested IP address
-  sta dhcp_outp+dhcp_options+3
+  sta output_buffer+dhcp_options+3
   ldx #4                               ;option length is 4  
-  stx dhcp_outp+dhcp_options+4
+  stx output_buffer+dhcp_options+4
   dex
 : lda cfg_ip,x
-  sta dhcp_outp+dhcp_options+5,x
+  sta output_buffer+dhcp_options+5,x
   dex
   bpl :-
 
   lda #54                           ;option 54 - DHCP server
-  sta dhcp_outp+dhcp_options+9
+  sta output_buffer+dhcp_options+9
   ldx #4                            ;option length is 4  
-  stx dhcp_outp+dhcp_options+10
+  stx output_buffer+dhcp_options+10
   dex
 
 : lda dhcp_server,x
-  sta dhcp_outp+dhcp_options+11,x
+  sta output_buffer+dhcp_options+11,x
 	sta udp_send_dest,x  
   dex
   bpl :-
 
 
   lda #$FF                           ;option FF = end of options
-  sta dhcp_outp+dhcp_options+17
+  sta output_buffer+dhcp_options+17
 
   ldax #dhcp_options+18
   stax udp_send_len
 
-  ldax #dhcp_outp
+  ldax #output_buffer
 	jsr udp_send
   bcs :+            ;if we didn't send the message we probably need to wait for an ARP reply to come back.
   lda #dhcp_bound   ;technically, we should wait till we get a DHCPACK message. but we'll assume success
