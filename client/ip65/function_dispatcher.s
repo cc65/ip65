@@ -3,10 +3,9 @@
 ;this whole file could (and should) be greatly optimised by making it all table driven, but since this file is probably only going to be used in a bankswitched ROM where
 ;space is not at such a premium, I'll go with the gross hack for now.
 
-
 .include "../inc/nb65_constants.i"
 .include "../inc/common.i"
-
+.include "../inc/commonprint.i"
 .export nb65_dispatcher
 
 .import ip65_init
@@ -26,6 +25,12 @@
 .import udp_callback
 .import udp_add_listener
 .import ip_inp
+
+.import copymem
+.import cfg_mac
+.importzp copy_src
+.importzp copy_dest
+
 .zeropage
 nb65_params:		.res 2
 
@@ -78,13 +83,8 @@ set_tftp_params:
 
 nb65_dispatcher:
   stax nb65_params
-  cpy #NB65_GET_API_VERSION
-  bne :+
-  ldax  #NB65_API_VERSION
-  clc
-  rts
-:
-
+  
+  
   cpy #NB65_GET_DRIVER_NAME
   bne :+
   ldax  #cs_driver_name
@@ -94,7 +94,14 @@ nb65_dispatcher:
 
   cpy #NB65_GET_IP_CONFIG_PTR
   bne :+
-  jmp cfg_get_configuration_ptr
+  stax  copy_dest
+  ldax  #cfg_mac
+  stax  copy_src
+  ldax  #NB65_CFG_DHCP_SERVER+4 ;bytes to copy
+  jsr copymem
+  clc
+  ldax nb65_params
+  rts
 :
 
   cpy #NB65_INIT_IP
@@ -186,19 +193,13 @@ irq_handler_installed:
 :
 
 
-  cpy #NB65_GET_INPUT_PACKET_PTR
+  cpy #NB65_GET_INPUT_PACKET_INFO
   bne :+
-  ldax #ip_inp
+fixme:
   clc
   rts
 :  
 
-  cpy #NB65_GET_LAST_ERROR
-  bne :+
-  lda ip65_error
-  clc
-  rts
-:  
 
   cpy #NB65_UNHOOK_VBL_IRQ
   bne :+
@@ -209,6 +210,44 @@ irq_handler_installed:
   clc
   rts
 :  
+
+  cpy #NB65_PRINT_ASCIIZ
+  bne :+
+  jsr print
+  clc
+  rts
+:  
+
+  cpy #NB65_PRINT_HEX_DIGIT
+  bne :+
+  jsr print_hex
+  clc
+  rts
+:  
+
+  cpy #NB65_PRINT_DOTTED_QUAD
+  bne :+
+  jsr print_dotted_quad
+  clc
+  rts
+:  
+
+  cpy #NB65_PRINT_IP_CONFIG
+  bne :+
+  jsr print_ip_config
+  clc
+  rts
+:
+
+
+
+  cpy #NB65_GET_LAST_ERROR
+  bne :+
+  lda ip65_error
+  clc
+  rts
+:  
+
 
 ;default function handler
   lda #NB65_ERROR_FUNCTION_NOT_SUPPORTED

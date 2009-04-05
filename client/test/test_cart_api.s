@@ -1,9 +1,28 @@
 ;test the "NETBOOT65 Cartridge API"
  .include "../inc/nb65_constants.i"
- .include "../inc/common.i"
- .include "../inc/commonprint.i"
+ 
 
-  .import get_key
+
+; load A/X macro
+	.macro ldax arg
+	.if (.match (.left (1, arg), #))	; immediate mode
+	lda #<(.right (.tcount (arg)-1, arg))
+	ldx #>(.right (.tcount (arg)-1, arg))
+	.else					; assume absolute or zero page
+	lda arg
+	ldx 1+(arg)
+	.endif
+	.endmacro
+
+; store A/X macro
+	.macro stax arg
+	sta arg
+	stx 1+(arg)
+	.endmacro	
+
+
+  print_a = $ffd2
+    
   .bss
   nb65_param_buffer: .res $10  
 
@@ -13,6 +32,27 @@
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
+
+.macro print_failed
+  ldax #failed_msg
+	ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
+  print_cr
+.endmacro
+
+
+.macro print_ok
+  ldax #ok_msg
+	ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
+  print_cr
+.endmacro
+
+.macro print_cr
+  lda #13
+	jsr print_a
+.endmacro
+
 
 basicstub:
 	.word @nextline
@@ -31,8 +71,9 @@ init:
   lda #$01    
   sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
   
-  jsr print_cr
-  jsr print_ip_config
+  print_cr
+  ldy #NB65_PRINT_IP_CONFIG
+  jsr NB65_DISPATCH_VECTOR 
  
   ldy #NB65_INIT_IP
   jsr NB65_DISPATCH_VECTOR 
@@ -51,9 +92,11 @@ init:
   jmp bad_boot    
 :
  
-  jsr print_ip_config
+  ldy #NB65_PRINT_IP_CONFIG
+  jsr NB65_DISPATCH_VECTOR 
+ 
   
-  jmp callback_test
+  ;jmp callback_test
   
   ldax #hostname_1
   jsr do_dns_query  
@@ -92,7 +135,9 @@ callback_test:
 :
 
   ldax #listening
-  jsr print
+	ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
+
 @loop_forever:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
   jmp @loop_forever
@@ -101,8 +146,9 @@ callback_test:
   
 udp_callback:
   ldax #recv_from
-  jsr print
-  ldy #NB65_GET_INPUT_PACKET_PTR
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
+  ldy #NB65_GET_INPUT_PACKET_INFO
   jsr NB65_DISPATCH_VECTOR 
   stax buffer_ptr
   
@@ -112,51 +158,60 @@ udp_callback:
 do_dns_query: ;AX points at the hostname on entry 
   stax nb65_param_buffer+NB65_DNS_HOSTNAME
 
-  jsr print
-  
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
 
-  pha
-  jsr print
   lda #' '
   jsr print_a
   lda #':'
   jsr print_a
   lda #' '
   jsr print_a
-  pla
   ldax  #nb65_param_buffer
   ldy #NB65_DNS_RESOLVE_HOSTNAME
   jsr NB65_DISPATCH_VECTOR 
   bcc :+
   ldax #dns_lookup_failed_msg
-  jsr print
-  jsr print_cr
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
+  print_cr
   jmp print_errorcode
 :  
   ldax #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
-  jsr print_dotted_quad  
-  jsr print_cr
+  ldy #NB65_PRINT_DOTTED_QUAD
+  jsr NB65_DISPATCH_VECTOR
+  print_cr
   rts
 
 bad_boot:
   ldax  #press_a_key_to_continue
-  jsr print
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
   jsr get_key
   jmp $fe66   ;do a wam start
 
 
 print_errorcode:
   ldax #error_code
-  jsr print
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR 
   ldy #NB65_GET_LAST_ERROR
   jsr NB65_DISPATCH_VECTOR
-  jsr print_hex
-  jmp print_cr
+  ldy #NB65_PRINT_HEX_DIGIT
+  jsr NB65_DISPATCH_VECTOR
+  print_cr
+  rts
 
-cfg_get_configuration_ptr:
-  ldy #NB65_GET_IP_CONFIG_PTR
-  jmp NB65_DISPATCH_VECTOR 
 
+;use C64 Kernel ROM function to read a key
+;inputs: none
+;outputs: A contains ASCII value of key just pressed
+get_key:
+  jsr $ffe4
+  cmp #0
+  beq get_key
+  rts
+  
 	.rodata
 
 buffer1: .res 256
@@ -191,3 +246,12 @@ error_code:
   .asciiz "ERROR CODE: "
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
+
+failed_msg:
+	.byte "FAILED", 0
+
+ok_msg:
+	.byte "OK", 0
+ 
+dns_lookup_failed_msg:
+ .byte "DNS LOOKUP FAILED", 0

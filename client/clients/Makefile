@@ -9,7 +9,8 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
   ../inc/menu.i\
-
+  ../inc/nb65_constants.i\
+  
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
 

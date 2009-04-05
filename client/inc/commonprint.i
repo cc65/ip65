@@ -1,5 +1,13 @@
 .include "../inc/nb65_constants.i"
 
+ .export print_hex
+ .export print_ip_config
+ .export dhcp_msg
+ .export ok_msg
+ .export failed_msg
+ .export init_msg
+ .export print
+ 
 .zeropage
 pptr:		.res 2
 .bss
@@ -42,6 +50,29 @@ temp_bcd: .res 2
 .import cs_driver_name
 print_ip_config:
   
+
+  ldax #mac_address_msg
+  jsr print
+  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  ;first 6 bytes of cfg_get_configuration_ptr is MAC address
+  stax pptr  
+  ldy #0
+@one_mac_digit:
+  tya   ;just to set the Z flag
+  pha
+  beq @dont_print_colon
+  lda #':'
+  jsr print_a
+@dont_print_colon:
+  pla 
+  tay
+  lda (pptr),y
+  jsr print_hex
+  iny
+  cpy #06
+  bne @one_mac_digit
+  
+  jsr print_cr
 
   ldax #ip_address_msg
   jsr print
@@ -213,6 +244,9 @@ print_hex:
 .rodata
 hexdigits:
 .byte "0123456789ABCDEF"
+
+mac_address_msg:
+	.byte "MAC ADDRESS: ", 0
 
 ip_address_msg:
 	.byte "IP ADDRESS: ", 0

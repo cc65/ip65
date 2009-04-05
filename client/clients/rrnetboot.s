@@ -10,9 +10,21 @@
 ;
 
 
+  .macro print_failed
+    ldax #failed_msg
+    jsr print
+    jsr print_cr
+  .endmacro
+
+  .macro print_ok
+    ldax #ok_msg
+    jsr print
+    jsr print_cr
+  .endmacro
+
+
   .include "../inc/nb65_constants.i"
   .include "../inc/common.i"
-  .include "../inc/commonprint.i"
   .include "../inc/menu.i"
   .include "../inc/c64keycodes.i"
   
@@ -23,7 +35,16 @@
   .import timer_vbl_handler
   .import nb65_dispatcher
   .import ip65_process
-  
+
+  .import print_hex
+  .import print_ip_config
+  .import dhcp_msg
+  .import ok_msg
+  .import failed_msg
+  .import init_msg
+  .import print_a
+  .import print_cr
+  .import print
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
@@ -43,11 +64,7 @@ jmp_to_downloaded_prg:
    
 	.bss
 
-nb65_param_buffer: .res $10  
-
-
-
-
+nb65_param_buffer: .res $20
 
 
 .segment "CARTRIDGE_HEADER"
@@ -124,7 +141,10 @@ init:
   
   print_ok
   
-  print_dhcp_init
+  ldax #dhcp_msg
+  jsr print
+  ldax #init_msg
+	jsr print
   
   ldy #NB65_INIT_DHCP
   jsr NB65_DISPATCH_VECTOR 
@@ -283,8 +303,9 @@ download: ;AX should point at filename to download
 
 cfg_get_configuration_ptr:
   ldy #NB65_GET_IP_CONFIG_PTR
+  ldax #nb65_param_buffer  
   jmp NB65_DISPATCH_VECTOR 
-
+  
 	.rodata
 
 startup_msg: 
