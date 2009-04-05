@@ -7,7 +7,7 @@
  .export failed_msg
  .export init_msg
  .export print
- 
+ .export print_decimal 
 .zeropage
 pptr:		.res 2
 .bss

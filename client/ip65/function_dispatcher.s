@@ -25,6 +25,7 @@
 .import udp_callback
 .import udp_add_listener
 .import ip_inp
+.import udp_inp
 
 .import copymem
 .import cfg_mac
@@ -92,7 +93,7 @@ nb65_dispatcher:
   rts
 :
 
-  cpy #NB65_GET_IP_CONFIG_PTR
+  cpy #NB65_GET_IP_CONFIG
   bne :+
   stax  copy_dest
   ldax  #cfg_mac
@@ -192,10 +193,47 @@ irq_handler_installed:
   jmp udp_add_listener
 :
 
-
   cpy #NB65_GET_INPUT_PACKET_INFO
   bne :+
-fixme:
+  ldy #3
+@copy_src_ip:  
+  lda ip_inp+12,y  ;src IP 
+  sta (nb65_params),y
+  dey
+  bpl @copy_src_ip
+  
+  ldy #NB65_REMOTE_PORT
+  lda udp_inp+1 ;src port (lo byte)
+  sta (nb65_params),y
+  iny
+  lda udp_inp+0 ;src port (high byte)
+  sta (nb65_params),y
+  iny
+  lda udp_inp+3 ;dest port (lo byte)
+  sta (nb65_params),y
+  iny
+  lda udp_inp+2 ;dest port (high byte)
+  sta (nb65_params),y
+
+  iny
+  sec
+  lda udp_inp+5 ;payload length (lo byte)
+  sbc #8  ;to remove length of header
+  sta (nb65_params),y
+
+  iny
+  lda udp_inp+4 ;payload length (hi byte)
+  sbc #0  ;in case there was a carry from the lo byte
+  sta (nb65_params),y
+  
+  iny
+  lda #<udp_inp+8 ;payload ptr (lo byte)
+  sta (nb65_params),y
+
+  iny
+  lda #>udp_inp+8 ;payload ptr (hi byte)
+  sta (nb65_params),y
+
   clc
   rts
 :  
@@ -218,7 +256,7 @@ fixme:
   rts
 :  
 
-  cpy #NB65_PRINT_HEX_DIGIT
+  cpy #NB65_PRINT_HEX
   bne :+
   jsr print_hex
   clc
@@ -238,7 +276,6 @@ fixme:
   clc
   rts
 :
-
 
 
   cpy #NB65_GET_LAST_ERROR

@@ -49,8 +49,10 @@ NB65_PAYLOAD_POINTER =$0A                          ;2 byte pointer to payload of
 ; then JSR NB65_DISPATCH_VECTOR
 ; on return, carry flag is set if there is an error, or clear otherwise
 ; some functions return results in AX directly, others will update the parameter buffer they were called with.
+; any register not specified in outputs will have an undefined value on exit
+
 NB65_GET_DRIVER_NAME          =$01 ;no inputs, outputs AX=pointer to asciiz driver name
-NB65_GET_IP_CONFIG_PTR        =$02 ;AX=pointer to buffer where IP configuration structure written, outputs AX=points to same buffer, which has now been written to
+NB65_GET_IP_CONFIG            =$02 ;AX=pointer to buffer where IP configuration structure written, outputs AX=points to same buffer, which has now been written to
 NB65_INIT_IP                  =$03 ;no inputs or outputs - also sets IRQ chain to call NB65_VBL_VECTOR at @ 60hz
 NB65_INIT_DHCP                =$04 ;no inputs or outputs (NB65_INIT_IP should be called first
 NB65_TFTP_DIRECTORY_LISTING   =$05 ;inputs: AX points to a TFTP parameter structure, outputs: none
@@ -63,9 +65,9 @@ NB65_GET_INPUT_PACKET_INFO    =$09 ;inputs: AX points to a UDP packet parameter 
 NB65_UNHOOK_VBL_IRQ           =$0A ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
 
 NB65_PRINT_ASCIIZ             =$80 ;inputs: AX= pointer to null terminated string to be printed to screen, outputs: none
-NB65_PRINT_HEX_DIGIT          =$81 ;inputs: A = hex digit to be printed (to screen)
+NB65_PRINT_HEX                =$81 ;inputs: A = byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 NB65_PRINT_DOTTED_QUAD        =$82 ;inputs: AX= pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
-NB65_PRINT_IP_CONFIG          =$83 ;no inputs, no outputs, prints (to screen) current IP configuration
+NB65_PRINT_IP_CONFIG          =$83 ;no inputs, no outputs, prints to screen current IP configuration
 
 
 NB65_GET_LAST_ERROR           =$FF ;no inputs, outputs A = error code (from last function that set the global error value, not necessarily the

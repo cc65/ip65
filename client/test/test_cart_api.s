@@ -1,7 +1,6 @@
 ;test the "NETBOOT65 Cartridge API"
- .include "../inc/nb65_constants.i"
+.include "../inc/nb65_constants.i"
  
-
 
 ; load A/X macro
 	.macro ldax arg
@@ -23,11 +22,12 @@
 
   print_a = $ffd2
     
-  .bss
-  nb65_param_buffer: .res $10  
-
   .zeropage
-  buffer_ptr:		.res 2
+temp_ptr:		.res 2
+  
+  .bss
+  nb65_param_buffer: .res $20  
+
 
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
@@ -70,11 +70,7 @@ init:
   
   lda #$01    
   sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
-  
-  print_cr
-  ldy #NB65_PRINT_IP_CONFIG
-  jsr NB65_DISPATCH_VECTOR 
- 
+   
   ldy #NB65_INIT_IP
   jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
@@ -82,7 +78,19 @@ init:
   jsr print_errorcode
   jmp bad_boot    
 :
-  
+
+  ldy #NB65_GET_DRIVER_NAME
+  jsr NB65_DISPATCH_VECTOR 
+
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
+
+  ldax #initialized
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
+
+  print_cr
+
   ldy #NB65_INIT_DHCP
   jsr NB65_DISPATCH_VECTOR 
 
@@ -95,8 +103,7 @@ init:
   ldy #NB65_PRINT_IP_CONFIG
   jsr NB65_DISPATCH_VECTOR 
  
-  
-  ;jmp callback_test
+  jmp callback_test
   
   ldax #hostname_1
   jsr do_dns_query  
@@ -116,8 +123,6 @@ init:
   ldax #hostname_6
   jsr do_dns_query  
 
-
-  
 
 callback_test:
   
@@ -145,15 +150,77 @@ callback_test:
   jmp $a7ae  ;exit to basic
   
 udp_callback:
+
+  ldax #nb65_param_buffer
+  ldy #NB65_GET_INPUT_PACKET_INFO
+  jsr NB65_DISPATCH_VECTOR 
+
+  ldax #port
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
+
+  lda nb65_param_buffer+NB65_LOCAL_PORT+1
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+
+  lda nb65_param_buffer+NB65_LOCAL_PORT
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+
+  print_cr
+
   ldax #recv_from
   ldy #NB65_PRINT_ASCIIZ
   jsr NB65_DISPATCH_VECTOR 
-  ldy #NB65_GET_INPUT_PACKET_INFO
+
+  ldax #nb65_param_buffer+NB65_REMOTE_IP
+  ldy #NB65_PRINT_DOTTED_QUAD
   jsr NB65_DISPATCH_VECTOR 
-  stax buffer_ptr
   
-  rts
+  lda #' '
+  jsr print_a
+  ldax #port
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
   
+  lda nb65_param_buffer+NB65_REMOTE_PORT+1
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+  lda nb65_param_buffer+NB65_REMOTE_PORT
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+  
+  print_cr
+  
+  ldax #length
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
+
+  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH+1
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH
+  ldy #NB65_PRINT_HEX
+  jsr NB65_DISPATCH_VECTOR
+  
+  ldax #data
+  ldy #NB65_PRINT_ASCIIZ
+  jsr NB65_DISPATCH_VECTOR
+
+  ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
+  stax temp_ptr
+  ldx nb65_param_buffer+NB65_PAYLOAD_LENGTH ;assumes length is < 255
+  ldy #0
+:
+  lda (temp_ptr),y
+  jsr print_a
+  iny
+  dex
+  bne :-
+  
+  print_cr
+
+  rts  
   
 do_dns_query: ;AX points at the hostname on entry 
   stax nb65_param_buffer+NB65_DNS_HOSTNAME
@@ -197,7 +264,7 @@ print_errorcode:
   jsr NB65_DISPATCH_VECTOR 
   ldy #NB65_GET_LAST_ERROR
   jsr NB65_DISPATCH_VECTOR
-  ldy #NB65_PRINT_HEX_DIGIT
+  ldy #NB65_PRINT_HEX
   jsr NB65_DISPATCH_VECTOR
   print_cr
   rts
@@ -242,6 +309,18 @@ recv_from:
 listening:  
   .byte "LISTENING.",13,0
 
+  
+initialized:  
+  .byte " INITIALIZED.",13,0
+
+port:  
+  .byte "PORT: ",0
+
+length:  
+  .byte "LENGTH: ",0
+data:
+  .byte "DATA: ",0
+  
 error_code:  
   .asciiz "ERROR CODE: "
 press_a_key_to_continue:

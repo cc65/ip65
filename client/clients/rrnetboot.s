@@ -302,7 +302,7 @@ download: ;AX should point at filename to download
   rts
 
 cfg_get_configuration_ptr:
-  ldy #NB65_GET_IP_CONFIG_PTR
+  ldy #NB65_GET_IP_CONFIG
   ldax #nb65_param_buffer  
   jmp NB65_DISPATCH_VECTOR 
   
