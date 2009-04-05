@@ -33,11 +33,19 @@
   .import  __DATA_SIZE__
 
   tftp_dir_buffer = $6000
-	.bss
   
+  .data
+exit_cart:
+  lda #$02    
+  sta $de00   ;turns off RR cartridge - obviously we need to execut this from RAM else we fall into never-never land :-)
+jmp_to_downloaded_prg: 
+    jmp $0000 ;overwritten when we load a file
+   
+	.bss
+
 nb65_param_buffer: .res $10  
 
-bin_file_jmp: .res 3
+
 
 
 
@@ -94,7 +102,8 @@ init:
   jmp @get_key
 
 @exit_to_basic:
-  jmp $fe66   ;do a wam start
+  ldax #$fe66 ;do a wam start
+  jmp exit_to_cart_via_ax
 
 @tftp_boot:  
 
@@ -209,14 +218,14 @@ init:
   stx $2d    ;save end-of-BASIC pointer (lo byte)
   sty $2e    ;save end-of-BASIC pointer (hi byte)
   jsr $a659  ; CLR (reset variables)
-  jmp $a7ae  ; jump to BASIC interpreter loop 
+  ldax  #$a7ae  ; jump to BASIC interpreter loop   
+  jmp exit_to_cart_via_ax
   
 @not_a_basic_file:  
-  lda #$4C  ;opcode for JMP
-  sta bin_file_jmp
   ldax  nb65_param_buffer+NB65_TFTP_POINTER
-  stax bin_file_jmp+1
-  jmp bin_file_jmp
+exit_to_cart_via_ax:  
+  stax jmp_to_downloaded_prg+1
+  jmp exit_cart
 
 print_errorcode:
   ldax #error_code

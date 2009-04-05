@@ -28,6 +28,9 @@ basicstub:
 
 init:
   
+  lda #$01    
+  sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
+  
   jsr print_cr
   jsr print_ip_config
  
