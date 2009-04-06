@@ -6,14 +6,6 @@ NB65_DISPATCH_VECTOR            = $800d
 NB65_PERIODIC_PROCESSING_VECTOR = $8010
 NB65_VBL_VECTOR                 = $8013
 
-;offsets in IP packet of various interesting bits:
-NB65_IP_SRC	          = 12  ;offset of "source address" field in an IP packet header
-NB65_IP_DEST		      = 16  ;offset of "destination address" field in an IP packet header
-NB65_UDP_SRC_PORT	    = 20  ;offset of udp source port field in ip packet
-NB65_UDP_DEST_PORT    = 22  ;offset of udp source port field in ip packet
-NB65_UDP_DATA_LENGTH  = 24  ;offset of length field in udp packet
-NB65_UDP_DATA	        = 28  ;offset of data in udp packet
-
 ;offsets in NB65 configuration structure
 NB65_CFG_MAC        = $00     ;6 byte MAC address
 NB65_CFG_IP         = $06     ;4 byte local IP address (will be overwritten by DHCP)
@@ -62,7 +54,8 @@ NB65_DNS_RESOLVE_HOSTNAME     =$07 ;inputs: AX points to a DNS parameter structu
                                    ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
 NB65_UDP_ADD_LISTENER         =$08 ;inputs: AX points to a UDP listener parameter structure, outputs: none
 NB65_GET_INPUT_PACKET_INFO    =$09 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
-NB65_UNHOOK_VBL_IRQ           =$0A ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
+NB65_SEND_UDP_PACKET          =$0A ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
+NB65_UNHOOK_VBL_IRQ           =$0B ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
 
 NB65_PRINT_ASCIIZ             =$80 ;inputs: AX= pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                =$81 ;inputs: A = byte digit to be displayed on screen as (zero padded) hex digit, outputs: none

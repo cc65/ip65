@@ -23,7 +23,7 @@
   print_a = $ffd2
     
   .zeropage
-temp_ptr:		.res 2
+  temp_ptr:		.res 2
   
   .bss
   nb65_param_buffer: .res $20  
@@ -202,12 +202,13 @@ udp_callback:
   lda nb65_param_buffer+NB65_PAYLOAD_LENGTH
   ldy #NB65_PRINT_HEX
   jsr NB65_DISPATCH_VECTOR
-  
+  print_cr  
   ldax #data
   ldy #NB65_PRINT_ASCIIZ
   jsr NB65_DISPATCH_VECTOR
 
   ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
+  
   stax temp_ptr
   ldx nb65_param_buffer+NB65_PAYLOAD_LENGTH ;assumes length is < 255
   ldy #0
@@ -216,12 +217,27 @@ udp_callback:
   jsr print_a
   iny
   dex
-  bne :-
+  bpl :-
   
   print_cr
 
-  rts  
-  
+;make and send reply
+  ldax #reply_message
+  stax nb65_param_buffer+NB65_PAYLOAD_POINTER
+
+  ldax #reply_message_length
+  stax nb65_param_buffer+NB65_PAYLOAD_LENGTH
+ 
+  ldax #nb65_param_buffer
+  ldy #NB65_SEND_UDP_PACKET
+  jsr NB65_DISPATCH_VECTOR
+  bcc :+
+  jmp print_errorcode
+:
+  ldax #reply_sent
+  ldy #NB65_PRINT_ASCIIZ
+  jmp NB65_DISPATCH_VECTOR 
+
 do_dns_query: ;AX points at the hostname on entry 
   stax nb65_param_buffer+NB65_DNS_HOSTNAME
 
@@ -309,7 +325,11 @@ recv_from:
 listening:  
   .byte "LISTENING.",13,0
 
-  
+
+reply_sent:  
+  .byte "REPLY SENT.",13,0
+
+
 initialized:  
   .byte " INITIALIZED.",13,0
 
@@ -334,3 +354,8 @@ ok_msg:
  
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0
+
+reply_message:
+  .byte "PONG!"
+reply_message_end:
+reply_message_length=reply_message_end-reply_message

@@ -26,7 +26,12 @@
 .import udp_add_listener
 .import ip_inp
 .import udp_inp
-
+.import udp_send
+.import udp_send_src
+.import udp_send_src_port
+.import udp_send_dest
+.import udp_send_dest_port
+.import udp_send_len
 .import copymem
 .import cfg_mac
 .importzp copy_src
@@ -227,18 +232,59 @@ irq_handler_installed:
   sta (nb65_params),y
   
   iny
-  lda #<udp_inp+8 ;payload ptr (lo byte)
+  lda #<(udp_inp+8) ;payload ptr (lo byte)
   sta (nb65_params),y
 
   iny
-  lda #>udp_inp+8 ;payload ptr (hi byte)
+  lda #>(udp_inp+8) ;payload ptr (hi byte)
   sta (nb65_params),y
 
   clc
   rts
 :  
 
+  cpy #NB65_SEND_UDP_PACKET
+  bne :+
+  ldy #3
+@copy_dest_ip:  
+  lda (nb65_params),y
+  sta udp_send_dest,y
+  dey
+  bpl @copy_dest_ip
+  
+  ldy #NB65_REMOTE_PORT  
+  lda (nb65_params),y
+  sta udp_send_dest_port
+  iny
+  lda (nb65_params),y
+  sta udp_send_dest_port+1
+  iny
 
+  lda (nb65_params),y
+  sta udp_send_src_port
+  iny
+  lda (nb65_params),y
+  sta udp_send_src_port+1
+  iny
+
+
+  lda (nb65_params),y
+  sta udp_send_len
+  iny
+  lda (nb65_params),y
+  sta udp_send_len+1
+  iny
+
+  ;AX should point at data to send
+  lda (nb65_params),y
+  pha
+  iny
+  lda (nb65_params),y  
+  tax
+  pla
+  jmp udp_send
+
+:  
   cpy #NB65_UNHOOK_VBL_IRQ
   bne :+
   ldax  jmp_old_irq+1
