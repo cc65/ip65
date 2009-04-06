@@ -11,10 +11,21 @@ Immediately before this jump table are the bytes "NB65" (so an app can check the
 
 To use the API, an app should do the following:
 
-1) set up a custom IRQ handler that will call the NB65_VBL_VECTOR routine 60 times a second - (this routine ends with a RTS not RTI). All this routine does is count clock ticks, so it uses very little raster time
+1) turn on the cartridge ROM (LDA #$01 / STA $de00) - the netboot65 code turns the cartridge ROM just before exiting to BASIC or starting whatever program it has loaded via tftp.
 
-2) use whatever network functions are desired, by setting up an appropriate buffer of parameters, then setting the function number of the desired function into Y, setting AX to point to the buffer of paramaters, and then calling (via JSR)  NB65_DISPATCH_VECTOR. Every function uses the carry flag to indicate errors (set on error, clear otherwise). Some functions return values, either in A, AX, or by updating the buffer that was originally passed in.
+2) make sure that NB65_VBL_VECTOR routine 60 times a second. This is automatically inserted into the IRQ handler chain by the NB65_INIT_IP function, but if
+you install your own IRQ handler and don't chain via the previous contents of $314, then you should do a JSR to NB65_VBL_VECTOR every vertical blank.(This routine ends with a RTS not RTI). All this routine does is count clock ticks, so it uses very little raster time. If you miss the occasional VBL, it won't
+matter too much.
 
-3) it is necessary to call the NB65_PERIODIC_PROCESSING_VECTOR several times a second to check for any inbound packets. If a packet has arrived, it will be processed, and potentially a callback handler may create and send an outbound message in response. This means processing time can vary, and ocassionaly be quite long. Therefore this routine should not be called inside time critical code e..g. an interrupt service routine. 
+3) use whatever network functions are desired, by setting up an appropriate buffer of parameters, then setting the function number of the desired function into Y, setting AX to point to the buffer of paramaters, and then calling (via JSR)  NB65_DISPATCH_VECTOR. Every function uses the carry flag to indicate errors (set on error, clear otherwise). Some functions return values, either in A, AX, or by updating the buffer that was originally passed in.
+
+4) it is necessary to call the NB65_PERIODIC_PROCESSING_VECTOR several times a second to check for any inbound packets. If a packet has arrived, it will be processed, and potentially a callback handler may create and send an outbound message in response. This means processing time can vary, and ocassionaly be quite long. Therefore this routine should not be called inside time critical code e..g. an interrupt service routine. 
 
 Functions are defined in the file nb65_constants.i
+
+Some sample code (in ca65 format) is in test_cart_api.s
+
+
+---
+2009-04-06
+jonno@jamtronix.com 
