@@ -110,6 +110,18 @@ nb65_dispatcher:
   rts
 :
 
+  cpy #NB65_SET_IP_CONFIG
+  bne :+
+  stax  copy_src
+  ldax  #cfg_mac
+  stax  copy_dest
+  ldax  #NB65_CFG_DHCP_SERVER+4 ;bytes to copy
+  jsr copymem
+  clc
+  ldax nb65_params
+  rts
+:
+
   cpy #NB65_INIT_IP
   bne :+
   lda irq_handler_installed_flag
@@ -283,8 +295,8 @@ irq_handler_installed:
   tax
   pla
   jmp udp_send
-
 :  
+
   cpy #NB65_UNHOOK_VBL_IRQ
   bne :+
   ldax  jmp_old_irq+1

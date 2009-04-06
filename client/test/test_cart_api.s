@@ -1,7 +1,6 @@
 ;test the "NETBOOT65 Cartridge API"
 .include "../inc/nb65_constants.i"
  
-
 ; load A/X macro
 	.macro ldax arg
 	.if (.match (.left (1, arg), #))	; immediate mode
@@ -14,13 +13,17 @@
 	.endmacro
 
 ; store A/X macro
-	.macro stax arg
+.macro stax arg
 	sta arg
 	stx 1+(arg)
-	.endmacro	
+.endmacro	
 
+print_a = $ffd2
 
-  print_a = $ffd2
+.macro cout arg
+  lda arg
+  jsr print_a
+.endmacro   
     
   .zeropage
   temp_ptr:		.res 2
@@ -28,36 +31,30 @@
   .bss
   nb65_param_buffer: .res $20  
 
+.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
+.word basicstub		; load address
 
-	.word basicstub		; load address
-
-.macro print_failed
-  ldax #failed_msg
+.macro print arg
+  ldax arg
 	ldy #NB65_PRINT_ASCIIZ
   jsr NB65_DISPATCH_VECTOR 
-  print_cr
-.endmacro
-
-
-.macro print_ok
-  ldax #ok_msg
-	ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
-  print_cr
-.endmacro
+.endmacro 
 
 .macro print_cr
   lda #13
 	jsr print_a
 .endmacro
 
+.macro call arg
+	ldy arg
+  jsr NB65_DISPATCH_VECTOR   
+.endmacro
 
 basicstub:
 	.word @nextline
 	.word 2003
-	.byte $9e
+	.byte $9e 
 	.byte <(((init / 1000) .mod 10) + $30)
 	.byte <(((init / 100 ) .mod 10) + $30)
 	.byte <(((init / 10  ) .mod 10) + $30)
@@ -70,142 +67,123 @@ init:
   
   lda #$01    
   sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
-   
-  ldy #NB65_INIT_IP
-  jsr NB65_DISPATCH_VECTOR 
-	bcc :+  
-  print_failed
-  jsr print_errorcode
-  jmp bad_boot    
-:
 
   ldy #NB65_GET_DRIVER_NAME
   jsr NB65_DISPATCH_VECTOR 
-
+  
   ldy #NB65_PRINT_ASCIIZ
   jsr NB65_DISPATCH_VECTOR
 
-  ldax #initialized
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+  print #initializing
 
-  print_cr
-
-  ldy #NB65_INIT_DHCP
+  ldy #NB65_INIT_IP
   jsr NB65_DISPATCH_VECTOR 
+	bcc :+  
+  print #failed
+  jsr print_errorcode
+  jmp bad_boot    
+:  
+
+  print #ok
+  print_cr
+  
+  print #dhcp
+  print #initializing
+  
+  call #NB65_INIT_DHCP  
 
 	bcc :+  
-  print_failed
+  print #failed
   jsr print_errorcode
   jmp bad_boot    
 :
  
-  ldy #NB65_PRINT_IP_CONFIG
-  jsr NB65_DISPATCH_VECTOR 
- 
-  jmp callback_test
+  print #ok
+  print_cr
+  call #NB65_PRINT_IP_CONFIG
   
-  ldax #hostname_1
-  jsr do_dns_query  
-
-  ldax #hostname_2
-  jsr do_dns_query  
-
-  ldax #hostname_3
-  jsr do_dns_query  
-
-  ldax #hostname_4
-  jsr do_dns_query  
-
-  ldax #hostname_5
-  jsr do_dns_query  
-
-  ldax #hostname_6
-  jsr do_dns_query  
-
-
-callback_test:
+;DNS resolution test 
   
-  ldax  #64
+  ldax #test_hostname
+  stax nb65_param_buffer+NB65_DNS_HOSTNAME
+
+  call #NB65_PRINT_ASCIIZ  
+
+  cout #' '
+  cout #':'
+  cout #' '
+  
+  ldax  #nb65_param_buffer
+  call #NB65_DNS_RESOLVE_HOSTNAME  
+  bcc :+
+  print #dns_lookup_failed_msg
+  print_cr
+  jmp print_errorcode
+:  
+  ldax #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
+  call #NB65_PRINT_DOTTED_QUAD
+  print_cr
+
+;callback test
+  
+  ldax  #64     ;listen on port 64
   stax nb65_param_buffer+NB65_UDP_LISTENER_PORT
   ldax  #udp_callback
   stax nb65_param_buffer+NB65_UDP_LISTENER_CALLBACK
   ldax  #nb65_param_buffer
-  ldy   #NB65_UDP_ADD_LISTENER
-  jsr NB65_DISPATCH_VECTOR 
+  call   #NB65_UDP_ADD_LISTENER
 	bcc :+  
-  print_failed
+  print #failed
   jsr print_errorcode
   jmp bad_boot    
 :
 
-  ldax #listening
-	ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
+  print #listening	
+  
 
 @loop_forever:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
   jmp @loop_forever
   
-  jmp $a7ae  ;exit to basic
-  
 udp_callback:
 
   ldax #nb65_param_buffer
-  ldy #NB65_GET_INPUT_PACKET_INFO
-  jsr NB65_DISPATCH_VECTOR 
+  call #NB65_GET_INPUT_PACKET_INFO
 
-  ldax #port
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+  print #port
 
   lda nb65_param_buffer+NB65_LOCAL_PORT+1
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX
 
   lda nb65_param_buffer+NB65_LOCAL_PORT
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX
 
   print_cr
 
-  ldax #recv_from
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
+  print #recv_from
 
   ldax #nb65_param_buffer+NB65_REMOTE_IP
-  ldy #NB65_PRINT_DOTTED_QUAD
-  jsr NB65_DISPATCH_VECTOR 
+  call #NB65_PRINT_DOTTED_QUAD
   
-  lda #' '
-  jsr print_a
-  ldax #port
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+  cout #' '
+  
+  print #port
   
   lda nb65_param_buffer+NB65_REMOTE_PORT+1
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX  
   lda nb65_param_buffer+NB65_REMOTE_PORT
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX
   
   print_cr
   
-  ldax #length
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+  print #length
 
   lda nb65_param_buffer+NB65_PAYLOAD_LENGTH+1
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX
   lda nb65_param_buffer+NB65_PAYLOAD_LENGTH
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_PRINT_HEX
   print_cr  
-  ldax #data
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+  print #data
 
   ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
   
@@ -229,62 +207,25 @@ udp_callback:
   stax nb65_param_buffer+NB65_PAYLOAD_LENGTH
  
   ldax #nb65_param_buffer
-  ldy #NB65_SEND_UDP_PACKET
-  jsr NB65_DISPATCH_VECTOR
+  call #NB65_SEND_UDP_PACKET  
   bcc :+
   jmp print_errorcode
 :
-  ldax #reply_sent
-  ldy #NB65_PRINT_ASCIIZ
-  jmp NB65_DISPATCH_VECTOR 
-
-do_dns_query: ;AX points at the hostname on entry 
-  stax nb65_param_buffer+NB65_DNS_HOSTNAME
-
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
-
-  lda #' '
-  jsr print_a
-  lda #':'
-  jsr print_a
-  lda #' '
-  jsr print_a
-  ldax  #nb65_param_buffer
-  ldy #NB65_DNS_RESOLVE_HOSTNAME
-  jsr NB65_DISPATCH_VECTOR 
-  bcc :+
-  ldax #dns_lookup_failed_msg
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
-  print_cr
-  jmp print_errorcode
-:  
-  ldax #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
-  ldy #NB65_PRINT_DOTTED_QUAD
-  jsr NB65_DISPATCH_VECTOR
-  print_cr
+  print #reply_sent
   rts
-
+  
 bad_boot:
-  ldax  #press_a_key_to_continue
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
+  print  #press_a_key_to_continue
   jsr get_key
-  jmp $fe66   ;do a wam start
+  jmp $fce2   ;do a cold start
 
 
 print_errorcode:
-  ldax #error_code
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
-  ldy #NB65_GET_LAST_ERROR
-  jsr NB65_DISPATCH_VECTOR
-  ldy #NB65_PRINT_HEX
-  jsr NB65_DISPATCH_VECTOR
+  print #error_code
+  call #NB65_GET_LAST_ERROR
+  call #NB65_PRINT_HEX
   print_cr
   rts
-
 
 ;use C64 Kernel ROM function to read a key
 ;inputs: none
@@ -296,61 +237,45 @@ get_key:
   rts
   
 	.rodata
-
-buffer1: .res 256
-hostname_1:
-  .byte "SLASHDOT.ORG",0          ;this should be an A record
-
-hostname_2:
-  .byte "VICTA.JAMTRONIX.COM",0   ;this should be a CNAME
-
-hostname_3:
-  .byte "FOO.BAR.BOGUS",0         ;this should fail
-
-hostname_4:                       ;this should work (without hitting dns)
-  .byte "111.22.3.4",0
-
-hostname_5:                       ;make sure doesn't get treated as a number
-  .byte "3COM.COM",0
-
-hostname_6:
-  .repeat 200
-  .byte 'X'
-  .endrepeat
-  .byte 0     ;this should generate an error as it is too long
+test_hostname:
+  .byte "RETROHACKERS.COM",0          ;this should be an A record
 
 recv_from:  
   .asciiz "RECEIVED FROM: "
   
 listening:  
-  .byte "LISTENING.",13,0
+  .byte "LISTENING ON UDP PORT 64",13,0
 
 
 reply_sent:  
   .byte "REPLY SENT.",13,0
 
 
-initialized:  
-  .byte " INITIALIZED.",13,0
+initializing:  
+  .byte " INITIALIZING ",0
+
+dhcp:
+.byte "DHCP",0
 
 port:  
-  .byte "PORT: ",0
+  .byte "PORT: $",0
 
 length:  
-  .byte "LENGTH: ",0
+  .byte "LENGTH: $",0
+  
 data:
   .byte "DATA: ",0
   
 error_code:  
-  .asciiz "ERROR CODE: "
+  .asciiz "ERROR CODE: $"
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
 
-failed_msg:
-	.byte "FAILED", 0
+failed:
+	.byte "FAILED ", 0
 
-ok_msg:
-	.byte "OK", 0
+ok:
+	.byte "OK ", 0
  
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0

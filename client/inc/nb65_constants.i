@@ -6,6 +6,40 @@ NB65_DISPATCH_VECTOR            = $800d
 NB65_PERIODIC_PROCESSING_VECTOR = $8010
 NB65_VBL_VECTOR                 = $8013
 
+
+;function numbers
+;to make a function call:
+; Y = function number
+; AX = pointer to parameter buffer (for functions that take parameters)
+; then JSR NB65_DISPATCH_VECTOR
+; on return, carry flag is set if there is an error, or clear otherwise
+; some functions return results in AX directly, others will update the parameter buffer they were called with.
+; any register not specified in outputs will have an undefined value on exit
+
+NB65_GET_DRIVER_NAME          =$01 ;no inputs, outputs AX=pointer to asciiz driver name
+NB65_GET_IP_CONFIG            =$02 ;AX=pointer to buffer where IP configuration structure written, outputs AX=points to same buffer, which has now been written to
+NB65_SET_IP_CONFIG            =$03 ;AX=pointer to buffer where IP configuration structure written, outputs AX=points to same buffer, which has now been written to
+NB65_INIT_IP                  =$04 ;no inputs or outputs - also sets IRQ chain to call NB65_VBL_VECTOR at @ 60hz
+NB65_INIT_DHCP                =$05 ;no inputs or outputs (NB65_INIT_IP should be called first
+NB65_TFTP_DIRECTORY_LISTING   =$06 ;inputs: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_DOWNLOAD            =$07 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
+                                   ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
+NB65_DNS_RESOLVE_HOSTNAME     =$08 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
+                                   ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
+NB65_UDP_ADD_LISTENER         =$09 ;inputs: AX points to a UDP listener parameter structure, outputs: none
+NB65_GET_INPUT_PACKET_INFO    =$0A ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
+NB65_SEND_UDP_PACKET          =$0B ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
+NB65_UNHOOK_VBL_IRQ           =$0C ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
+
+NB65_PRINT_ASCIIZ             =$80 ;inputs: AX= pointer to null terminated string to be printed to screen, outputs: none
+NB65_PRINT_HEX                =$81 ;inputs: A = byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
+NB65_PRINT_DOTTED_QUAD        =$82 ;inputs: AX= pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
+NB65_PRINT_IP_CONFIG          =$83 ;no inputs, no outputs, prints to screen current IP configuration
+
+
+NB65_GET_LAST_ERROR           =$FF ;no inputs, outputs A = error code (from last function that set the global error value, not necessarily the
+                                   ;last function that was called)
+
 ;offsets in NB65 configuration structure
 NB65_CFG_MAC        = $00     ;6 byte MAC address
 NB65_CFG_IP         = $06     ;4 byte local IP address (will be overwritten by DHCP)
@@ -33,38 +67,6 @@ NB65_REMOTE_PORT    = $04                          ;2 byte port number of remote
 NB65_LOCAL_PORT     = $06                          ;2 byte port number of local machine (src of outbound packets, dest of inbound packets)
 NB65_PAYLOAD_LENGTH = $08                          ;2 byte length of payload of packet (after all ethernet,IP,UDP headers)
 NB65_PAYLOAD_POINTER =$0A                          ;2 byte pointer to payload of packet (after all headers)
-
-;function numbers
-;to make a function call:
-; Y = function number
-; AX = pointer to parameter buffer (for functions that take parameters)
-; then JSR NB65_DISPATCH_VECTOR
-; on return, carry flag is set if there is an error, or clear otherwise
-; some functions return results in AX directly, others will update the parameter buffer they were called with.
-; any register not specified in outputs will have an undefined value on exit
-
-NB65_GET_DRIVER_NAME          =$01 ;no inputs, outputs AX=pointer to asciiz driver name
-NB65_GET_IP_CONFIG            =$02 ;AX=pointer to buffer where IP configuration structure written, outputs AX=points to same buffer, which has now been written to
-NB65_INIT_IP                  =$03 ;no inputs or outputs - also sets IRQ chain to call NB65_VBL_VECTOR at @ 60hz
-NB65_INIT_DHCP                =$04 ;no inputs or outputs (NB65_INIT_IP should be called first
-NB65_TFTP_DIRECTORY_LISTING   =$05 ;inputs: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_DOWNLOAD            =$06 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
-                                   ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
-NB65_DNS_RESOLVE_HOSTNAME     =$07 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
-                                   ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
-NB65_UDP_ADD_LISTENER         =$08 ;inputs: AX points to a UDP listener parameter structure, outputs: none
-NB65_GET_INPUT_PACKET_INFO    =$09 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
-NB65_SEND_UDP_PACKET          =$0A ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
-NB65_UNHOOK_VBL_IRQ           =$0B ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
-
-NB65_PRINT_ASCIIZ             =$80 ;inputs: AX= pointer to null terminated string to be printed to screen, outputs: none
-NB65_PRINT_HEX                =$81 ;inputs: A = byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
-NB65_PRINT_DOTTED_QUAD        =$82 ;inputs: AX= pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
-NB65_PRINT_IP_CONFIG          =$83 ;no inputs, no outputs, prints to screen current IP configuration
-
-
-NB65_GET_LAST_ERROR           =$FF ;no inputs, outputs A = error code (from last function that set the global error value, not necessarily the
-                                   ;last function that was called)
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                   = $80
