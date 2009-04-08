@@ -2,10 +2,13 @@
 
 NB65_API_VERSION=$0001
 
+
+NB65_CART_SIGNATURE             = $8009
 NB65_DISPATCH_VECTOR            = $800d 
 NB65_PERIODIC_PROCESSING_VECTOR = $8010
 NB65_VBL_VECTOR                 = $8013
-
+NB65_RAM_STUB_SIGNATURE         = $C000
+NB65_RAM_STUB_ACTIVATE          = $C004
 
 ;function numbers
 ;to make a function call:

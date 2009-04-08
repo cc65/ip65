@@ -63,16 +63,41 @@ basicstub:
 @nextline:
 	.word 0
 
+
+look_for_signature: ;look for NB65 signature at location pointed at by AX
+  stax temp_ptr
+  ldy #3
+@check_one_byte:
+  lda (temp_ptr),y
+  cmp nb65_signature,y
+  bne @bad_match  
+  dey 
+  bpl@check_one_byte  
+  clc
+  rts
+@bad_match:
+  sec
+  rts
+  
 init:
   
-  lda #$01    
-  sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
 
-  ldy #NB65_GET_DRIVER_NAME
-  jsr NB65_DISPATCH_VECTOR 
+  ldax #NB65_CART_SIGNATURE  ;where signature should be in cartridge
+  jsr  look_for_signature
+  bcc @found_nb65_signature
+
+  ldax #NB65_RAM_STUB_SIGNATURE  ;where signature should be in RAM
+  jsr  look_for_signature
+  bcc :+
+  jmp nb65_signature_not_found
+:  
+  jsr NB65_RAM_STUB_ACTIVATE     ;we need to turn on NB65 cartridge
   
-  ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR
+@found_nb65_signature:
+  call #NB65_GET_DRIVER_NAME
+  
+  
+  call #NB65_PRINT_ASCIIZ
 
   print #initializing
 
@@ -216,6 +241,7 @@ udp_callback:
   
 bad_boot:
   print  #press_a_key_to_continue
+restart:    
   jsr get_key
   jmp $fce2   ;do a cold start
 
@@ -226,6 +252,17 @@ print_errorcode:
   call #NB65_PRINT_HEX
   print_cr
   rts
+
+nb65_signature_not_found:
+
+  ldy #0
+:
+  lda nb65_signature_not_found_message,y
+  beq restart
+  jsr print_a
+  iny
+  jmp :-
+  
 
 ;use C64 Kernel ROM function to read a key
 ;inputs: none
@@ -277,6 +314,9 @@ failed:
 ok:
 	.byte "OK ", 0
  
+ nb65_signature_not_found_message:
+ .byte "NO NB65 API FOUND",13,"PRESS ANY KEY TO RESET", 0
+ 
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0
 
@@ -284,3 +324,6 @@ reply_message:
   .byte "PONG!"
 reply_message_end:
 reply_message_length=reply_message_end-reply_message
+
+nb65_signature:
+  .byte $4E,$42,$36,$35  ; "NB65"  - API signature

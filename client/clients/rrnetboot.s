@@ -71,7 +71,7 @@ nb65_param_buffer: .res $20
 .word init  ;cold start vector
 .word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
-.byte "NB65"  ;netboot 65 signature
+.byte $4E,$42,$36,$35  ; "NB65"  - API signature
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
@@ -104,7 +104,16 @@ init:
   ldax #__DATA_SIZE__
   jsr copymem
 
+;copy the RAM stub to RAM
+  ldax #nb65_ram_stub
+  stax copy_src
+  ldax #NB65_RAM_STUB_SIGNATURE
+  stax copy_dest
+  ldax #nb65_ram_stub_length
+  jsr copymem
 
+  
+  
   ldax  #startup_msg 
   jsr print
 
@@ -340,3 +349,11 @@ no_files_on_server:
 
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
+
+nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
+.byte $4E,$42,$36,$35  ; "NB65"  - API signature
+  lda #$01    
+  sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
+  rts
+nb65_ram_stub_end:
+nb65_ram_stub_length=nb65_ram_stub_end-nb65_ram_stub
