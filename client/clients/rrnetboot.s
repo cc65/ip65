@@ -38,7 +38,6 @@
 
   .import print_hex
   .import print_ip_config
-  .import dhcp_msg
   .import ok_msg
   .import failed_msg
   .import init_msg
@@ -72,6 +71,8 @@ nb65_param_buffer: .res $20
 .word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature
+.byte $01 ;NB65_API_VERSION
+.byte $02 ;NB65_BANKSWITCH_SUPPORT
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
@@ -133,13 +134,10 @@ init:
 
 @tftp_boot:  
 
-  ldy #NB65_GET_DRIVER_NAME
-  jsr NB65_DISPATCH_VECTOR 
-  jsr print
   ldax #init_msg
 	jsr print
   
-  ldy #NB65_INIT_IP
+  ldy #NB65_INITIALIZE
   jsr NB65_DISPATCH_VECTOR 
 
 	bcc :+  
@@ -150,20 +148,6 @@ init:
   
   print_ok
   
-  ldax #dhcp_msg
-  jsr print
-  ldax #init_msg
-	jsr print
-  
-  ldy #NB65_INIT_DHCP
-  jsr NB65_DISPATCH_VECTOR 
-	bcc :+  
-	print_failed
-  jsr print_errorcode  
-  jmp bad_boot
-:
-  print_ok
-
   jsr print_ip_config
 
   ldax  #press_a_key_to_continue
@@ -226,8 +210,8 @@ init:
   
 @file_downloaded_ok:  
   
-  ;remove the IP timer code from IRQ chain
-  ldy #NB65_UNHOOK_VBL_IRQ
+  ;get ready to bank out
+  ldy #NB65_DEACTIVATE 
   jsr NB65_DISPATCH_VECTOR
   
   ;check whether the file we just downloaded was a BASIC prg

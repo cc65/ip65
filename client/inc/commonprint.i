@@ -7,7 +7,9 @@
  .export failed_msg
  .export init_msg
  .export print
- .export print_decimal 
+ .export print_decimal
+.import cs_driver_name
+
 .zeropage
 pptr:		.res 2
 .bss
@@ -49,8 +51,14 @@ temp_bcd: .res 2
 .import print_cr
 .import cs_driver_name
 print_ip_config:
-  
 
+  ldax #interface_type
+  jsr print
+
+  ldax #cs_driver_name
+  jsr print
+  jsr print_cr
+  
   ldax #mac_address_msg
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
@@ -245,29 +253,32 @@ print_hex:
 hexdigits:
 .byte "0123456789ABCDEF"
 
+interface_type:
+.byte "INTERFACE   : ",0
+
 mac_address_msg:
-	.byte "MAC ADDRESS: ", 0
+.byte "MAC ADDRESS : ", 0
 
 ip_address_msg:
-	.byte "IP ADDRESS: ", 0
+.byte "IP ADDRESS  : ", 0
 
 netmask_msg:
-	.byte "NETMASK:    ", 0
+.byte "NETMASK     : ", 0
 
 gateway_msg:
-  .byte "GATEWAY:    ", 0
+.byte "GATEWAY     : ", 0
   
 dns_server_msg:
-  .byte "DNS SERVER: ", 0
+.byte "DNS SERVER  : ", 0
 
 dhcp_server_msg:
-  .byte "DHCP SERVER:", 0
+.byte "DHCP SERVER : ", 0
 
 dhcp_msg:
   .byte "DHCP",0
 
 init_msg:
-  .byte " INIT ",0
+  .byte "INIT ",0
 
 failed_msg:
 	.byte "FAILED", 0

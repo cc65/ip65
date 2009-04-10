@@ -10,7 +10,6 @@
 
 .import ip65_init
 .import dhcp_init
-.import cs_driver_name
 .import cfg_get_configuration_ptr
 .import tftp_load_address
 .importzp tftp_filename
@@ -91,38 +90,8 @@ nb65_dispatcher:
   stax nb65_params
   
   
-  cpy #NB65_GET_DRIVER_NAME
-  bne :+
-  ldax  #cs_driver_name
-  clc
-  rts
-:
 
-  cpy #NB65_GET_IP_CONFIG
-  bne :+
-  stax  copy_dest
-  ldax  #cfg_mac
-  stax  copy_src
-  ldax  #NB65_CFG_DHCP_SERVER+4 ;bytes to copy
-  jsr copymem
-  clc
-  ldax nb65_params
-  rts
-:
-
-  cpy #NB65_SET_IP_CONFIG
-  bne :+
-  stax  copy_src
-  ldax  #cfg_mac
-  stax  copy_dest
-  ldax  #NB65_CFG_DHCP_SERVER+4 ;bytes to copy
-  jsr copymem
-  clc
-  ldax nb65_params
-  rts
-:
-
-  cpy #NB65_INIT_IP
+  cpy #NB65_INITIALIZE
   bne :+
   lda irq_handler_installed_flag
   bne irq_handler_installed
@@ -135,13 +104,18 @@ nb65_dispatcher:
   cli
   sta irq_handler_installed_flag
 irq_handler_installed:  
-  jmp ip65_init
-:
-
-  cpy #NB65_INIT_DHCP
-  bne :+
+  jsr ip65_init
   jmp dhcp_init
 :
+
+  cpy #NB65_GET_IP_CONFIG
+  bne :+
+  ldax  #cfg_mac
+  clc
+  rts
+:
+
+
 
   cpy #NB65_TFTP_DIRECTORY_LISTING  
   bne :+
@@ -171,7 +145,7 @@ irq_handler_installed:
   jmp @after_tftp_call
 :
 
-  cpy #NB65_DNS_RESOLVE_HOSTNAME
+  cpy #NB65_DNS_RESOLVE
   bne :+  
   ldy #NB65_DNS_HOSTNAME+1
   lda (nb65_params),y
@@ -297,7 +271,7 @@ irq_handler_installed:
   jmp udp_send
 :  
 
-  cpy #NB65_UNHOOK_VBL_IRQ
+  cpy #NB65_DEACTIVATE
   bne :+
   ldax  jmp_old_irq+1
   sei ;don't want any interrupts while we fiddle with the vector

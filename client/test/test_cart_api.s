@@ -94,14 +94,10 @@ init:
   jsr NB65_RAM_STUB_ACTIVATE     ;we need to turn on NB65 cartridge
   
 @found_nb65_signature:
-  call #NB65_GET_DRIVER_NAME
-  
-  
-  call #NB65_PRINT_ASCIIZ
 
   print #initializing
 
-  ldy #NB65_INIT_IP
+  ldy #NB65_INITIALIZE
   jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
   print #failed
@@ -112,19 +108,6 @@ init:
   print #ok
   print_cr
   
-  print #dhcp
-  print #initializing
-  
-  call #NB65_INIT_DHCP  
-
-	bcc :+  
-  print #failed
-  jsr print_errorcode
-  jmp bad_boot    
-:
- 
-  print #ok
-  print_cr
   call #NB65_PRINT_IP_CONFIG
   
 ;DNS resolution test 
@@ -139,7 +122,7 @@ init:
   cout #' '
   
   ldax  #nb65_param_buffer
-  call #NB65_DNS_RESOLVE_HOSTNAME  
+  call #NB65_DNS_RESOLVE
   bcc :+
   print #dns_lookup_failed_msg
   print_cr
@@ -289,10 +272,7 @@ reply_sent:
 
 
 initializing:  
-  .byte " INITIALIZING ",0
-
-dhcp:
-.byte "DHCP",0
+  .byte "INITIALIZING ",0
 
 port:  
   .byte "PORT: $",0
