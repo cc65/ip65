@@ -23,7 +23,7 @@ end
 ["doc/README.*.txt","doc"],
 ["doc/nb65_api_technical_reference.doc","doc"],
 ["client/inc/nb65_constants.i","inc"],
-["client/test/test_cart_api.s","examples"],
+["client/examples/dasm_example.asm","examples/"],
 ].each do |args|
   dest="#{WORKING_DIR}/#{args[1]}"
   Dir["#{SRC_DIR}/#{args[0]}"].each do |src|
