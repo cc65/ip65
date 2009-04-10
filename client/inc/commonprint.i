@@ -1,4 +1,7 @@
-.include "../inc/nb65_constants.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
 
  .export print_hex
  .export print_ip_config

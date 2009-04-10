@@ -3,7 +3,10 @@
 ;this whole file could (and should) be greatly optimised by making it all table driven, but since this file is probably only going to be used in a bankswitched ROM where
 ;space is not at such a premium, I'll go with the gross hack for now.
 
-.include "../inc/nb65_constants.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
 .include "../inc/common.i"
 .include "../inc/commonprint.i"
 .export nb65_dispatcher

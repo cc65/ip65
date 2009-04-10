@@ -1,5 +1,8 @@
 ;test the "NETBOOT65 Cartridge API"
-.include "../inc/nb65_constants.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
  
 ; load A/X macro
 	.macro ldax arg
@@ -64,7 +67,8 @@ basicstub:
 	.word 0
 
 
-look_for_signature: ;look for NB65 signature at location pointed at by AX
+;look for NB65 signature at location pointed at by AX
+look_for_signature: 
   stax temp_ptr
   ldy #3
 @check_one_byte:

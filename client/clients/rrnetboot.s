@@ -23,7 +23,10 @@
   .endmacro
 
 
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
   .include "../inc/nb65_constants.i"
+.endif
   .include "../inc/common.i"
   .include "../inc/menu.i"
   .include "../inc/c64keycodes.i"
@@ -57,9 +60,11 @@
   .data
 exit_cart:
   lda #$02    
-  sta $de00   ;turns off RR cartridge - obviously we need to execut this from RAM else we fall into never-never land :-)
-jmp_to_downloaded_prg: 
-    jmp $0000 ;overwritten when we load a file
+  sta $de00   ;turns off RR cartridge - obviously we need to execute this from RAM else we fall into never-never land :-)
+call_downloaded_prg: 
+   jsr $0000 ;overwritten when we load a file
+   jsr $c004 ;bank cartridge in again
+   jmp init
    
 	.bss
 
@@ -130,7 +135,7 @@ init:
 
 @exit_to_basic:
   ldax #$fe66 ;do a wam start
-  jmp exit_to_cart_via_ax
+  jmp exit_cart_via_ax
 
 @tftp_boot:  
 
@@ -232,12 +237,12 @@ init:
   sty $2e    ;save end-of-BASIC pointer (hi byte)
   jsr $a659  ; CLR (reset variables)
   ldax  #$a7ae  ; jump to BASIC interpreter loop   
-  jmp exit_to_cart_via_ax
+  jmp exit_cart_via_ax
   
 @not_a_basic_file:  
   ldax  nb65_param_buffer+NB65_TFTP_POINTER
-exit_to_cart_via_ax:  
-  stax jmp_to_downloaded_prg+1
+exit_cart_via_ax:  
+  stax call_downloaded_prg+1
   jmp exit_cart
 
 print_errorcode:
@@ -302,7 +307,7 @@ cfg_get_configuration_ptr:
 	.rodata
 
 startup_msg: 
-.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.3",13
+.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.4",13
 .byte "F1=TFTP BOOT, F3=BASIC",13
 .byte 0
 
