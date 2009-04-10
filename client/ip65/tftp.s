@@ -6,8 +6,10 @@
   TFTP_TIMER_MASK=$F8 ;mask lower two bits, means we wait for 8 x1/4 seconds
 
   .include "../inc/common.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
   .include "../inc/nb65_constants.i"
-
+.endif
 
   .exportzp tftp_filename
   .export tftp_load_address

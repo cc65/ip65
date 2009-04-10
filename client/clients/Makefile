@@ -1,4 +1,3 @@
-CC=cl65
 AS=ca65
 LD=ld65
 CFLAGS=-Oirs -t $(TARGET)
@@ -11,11 +10,6 @@ INCFILES=\
   ../inc/menu.i\
   ../inc/nb65_constants.i\
   
-%.o: %.c
-	$(CC) -c $(CFLAGS) $<
-
-%.o: %.s $(INCFILES) 
-	$(AS) $(AFLAGS) $<
 
 IP65LIB=../ip65/ip65.lib
 
@@ -23,17 +17,30 @@ C64NETLIB=../drivers/c64net.lib
 APPLE2NETLIB=../drivers/apple2net.lib
 
 BOOTA2.PG2=../../server/boot/BOOTA2.PG2
-
   
 all: \
 	rrnetboot.bin \
 	utherboot.dsk \
+	64nicboot.bin  \
 	$(BOOTA2.PG2) \  
-  
+
+rrnetboot.o: rrnetboot.s $(INCFILES)
+	$(AS) -DBANKSWITCH_SUPPORT=2 $(AFLAGS) $<
+
+64nicboot.o: rrnetboot.s $(INCFILES)
+	$(AS) -DBANKSWITCH_SUPPORT=1 $(AFLAGS) -o 64nicboot.o $<
+
+%.o: %.s $(INCFILES) 
+	$(AS) $(AFLAGS) $<
+
 rrnetboot.bin: rrnetboot.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m rrnetboot.map -vm -C ../cfg/rrbin.cfg -o rrnetboot.bin  $< $(IP65LIB) $(C64NETLIB)  
-	ruby fix_cart.rb rrnetboot.bin
-  
+	ruby fix_cart.rb rrnetboot.bin 8193
+
+64nicboot.bin: 64nicboot.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/rrbin.cfg
+	$(LD) -C ../cfg/rrbin.cfg -o 64nicboot.bin  $< $(IP65LIB) $(C64NETLIB)  
+	ruby fix_cart.rb 64nicboot.bin 8192
+
 utherboot.pg2: utherboot.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2language_card.cfg
 	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o utherboot.pg2  $< $(IP65LIB) $(APPLE2NETLIB)  
 
@@ -47,6 +54,7 @@ $(BOOTA2.PG2): bootmenu.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2langua
 clean:
 	rm -f *.o
 	rm -f rrnetboot.bin rrnetboot.map 
+	rm -f 64nicboot.bin 64nicboot.map 
 	rm -f utherboot.pg2 utherboot.map utherboot.dsk
 	rm -f $(BOOTA2.PG2)
 

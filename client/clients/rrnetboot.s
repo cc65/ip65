@@ -9,6 +9,15 @@
 ; jonno@jamtronix.com - January 2009
 ;
 
+;possible bankswitch values are:
+;$00 = no bankswitching (i.e. NB65 API in RAM only)
+;$01 = standard bankswitching (via HIRAM/LORAM)
+;$02 = advanced bankswitching (via custom registers, e.g. $de00 on the Retro Replay cart)
+
+.ifndef BANKSWITCH_SUPPORT
+  .error "must define BANKSWITCH_SUPPORT"
+  
+.endif 
 
   .macro print_failed
     ldax #failed_msg
@@ -59,8 +68,14 @@
   
   .data
 exit_cart:
+.if (BANKSWITCH_SUPPORT=$01)
   lda #$02    
-  sta $de00   ;turns off RR cartridge - obviously we need to execute this from RAM else we fall into never-never land :-)
+  sta $de00   ;turns off RR cartridge by modifying GROUND and EXROM
+.elseif (BANKSWITCH_SUPPORT=$02)
+  lda #$36
+  sta $0001   ;turns off ordinary cartridge by modifying HIRAM/LORAM (this will also bank out BASIC)
+.endif
+
 call_downloaded_prg: 
    jsr $0000 ;overwritten when we load a file
    jsr $c004 ;bank cartridge in again
@@ -77,7 +92,7 @@ nb65_param_buffer: .res $20
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature
 .byte $01 ;NB65_API_VERSION
-.byte $02 ;NB65_BANKSWITCH_SUPPORT
+.byte BANKSWITCH_SUPPORT ;
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
@@ -118,7 +133,14 @@ init:
   ldax #nb65_ram_stub_length
   jsr copymem
 
-  
+;if this is a 'normal' cart then we will end up swapping BASIC out, so copy it to the RAM under ROM
+.if (BANKSWITCH_SUPPORT=$01)
+  ldax #$A000
+  stax copy_src
+  stax copy_dest
+  ldax #$2000
+  jsr copymem
+.endif  
   
   ldax  #startup_msg 
   jsr print
@@ -341,8 +363,15 @@ press_a_key_to_continue:
 
 nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature
+  
+.if (BANKSWITCH_SUPPORT=$01)
   lda #$01    
   sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
+.elseif (BANKSWITCH_SUPPORT=$02)
+  lda #$37
+  sta $0001   ;turns on ordinary cartridge by modifying HIRAM/LORAM (this will also bank in BASIC)
+.endif
+
   rts
 nb65_ram_stub_end:
 nb65_ram_stub_length=nb65_ram_stub_end-nb65_ram_stub

@@ -16,6 +16,7 @@ end
 [
 ["client/clients/utherboot.dsk","client/"],
 ["client/clients/rrnetboot.bin","client/"],
+["client/clients/64nicboot.bin","client/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
 ["server/bin/import_ags_games.rb","bin"],

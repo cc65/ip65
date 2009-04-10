@@ -3,18 +3,24 @@
 # so we want to make sure the bin file is an odd length - specifically 8193 bytes
 #
 
-FILE_LENGTH=8193
+
 PAD_BYTE=0xff.chr
 filename=ARGV[0]
+
 if filename.nil? then
   puts "no filename specified"
   exit
 end
-  
+
+if ARGV[1].nil? then
+  puts "no padding length specified"
+  exit
+end
+file_length=ARGV[1].to_i
 
 infile=File.open(filename,"rb").read
-puts "fixing length of #{filename} from #{infile.length} to #{FILE_LENGTH} bytes"  
+puts "fixing length of #{filename} from #{infile.length} to #{file_length} bytes"  
 outfile=File.open(filename,"wb")
 outfile<<infile
-outfile<<PAD_BYTE*(FILE_LENGTH-infile.length)
+outfile<<PAD_BYTE*(file_length-infile.length)
 outfile.close

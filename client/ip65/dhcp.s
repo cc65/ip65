@@ -10,7 +10,10 @@
 MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
   .include "../inc/common.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
   .include "../inc/nb65_constants.i"
+.endif
   
   .export dhcp_init
   .import dhcp_server 

@@ -3,7 +3,10 @@
   MAX_DNS_MESSAGES_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
 .include "../inc/common.i"
-.include "../inc/nb65_constants.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
 
   .export dns_set_hostname
   .export dns_resolve
