@@ -84,37 +84,16 @@ found_nb65_signature
 ;print out the current configuration
   nb65call #NB65_PRINT_IP_CONFIG
   
-;test out DNS resolution:
-  
-  ldaxi #test_hostname
-  stax nb65_param_buffer+NB65_DNS_HOSTNAME
-
-  nb65call #NB65_PRINT_ASCIIZ  
-
-  print #space_colon_space
-  
-  ldaxi  #nb65_param_buffer
-  nb65call #NB65_DNS_RESOLVE
-  bcc .no_dns_error
-  print #dns_lookup_failed_msg
-  print_cr
-  jsr print_errorcode
-  jmp reset_after_keypress
-.no_dns_error
-
-  ldaxi #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
-  nb65call #NB65_PRINT_DOTTED_QUAD
-  print_cr
   
 ;now set up for the nb65callback test
   
   ldaxi  #64     ;listen on port 64
   stax nb65_param_buffer+NB65_UDP_LISTENER_PORT
   ldaxi  #udp_nb65callback
-  stax nb65_param_buffer+NB65_UDP_LISTENER_nb65callBACK
+  stax nb65_param_buffer+NB65_UDP_LISTENER_CALLBACK
   ldaxi  #nb65_param_buffer
   nb65call   #NB65_UDP_ADD_LISTENER
-	bcc .add_listener_ok 
+  bcc .add_listener_ok 
   print #failed
   jsr print_errorcode
   jmp reset_after_keypress
@@ -240,8 +219,6 @@ error_code dc.b "ERROR CODE: $",0
 press_a_key_to_continue dc.b "PRESS A KEY TO CONTINUE",13,0
 failed dc.b "FAILED ", 0
 ok dc.b "OK ", 0
-test_hostname dc.b "RETROHACKERS.COM",0          ;this should be an A record
-dns_lookup_failed_msg dc.b "DNS LOOKUP FAILED", 0
 recv_from dc.b"RECEIVED FROM: ",0
 listening dc.b "LISTENING ON UDP PORT 64",13,0
 reply_sent dc.b "REPLY SENT.",0

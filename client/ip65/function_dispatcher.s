@@ -108,9 +108,11 @@ nb65_dispatcher:
   stax  $314    ;previous IRQ handler
   cli
   sta irq_handler_installed_flag
-irq_handler_installed:  
   jsr ip65_init
   jmp dhcp_init
+irq_handler_installed:  
+  clc
+  rts
 :
 
   cpy #NB65_GET_IP_CONFIG

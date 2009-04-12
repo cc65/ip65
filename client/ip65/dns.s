@@ -183,13 +183,12 @@ dns_set_hostname:
 ; outputs: 
 ;   carry flag is set if there was an error, clear otherwise 
 ;   dns_ip: set to the  ip address of the hostname (if no error)
-dns_resolve:
+dns_resolve:  
   lda hostname_was_dotted_quad
   beq @hostname_not_dotted_quad
   clc
   rts     ;we already set dns_ip when copying the hostname
 @hostname_not_dotted_quad:
-
   ldax #dns_in
 	stax udp_callback 
   lda #53
@@ -245,6 +244,7 @@ dns_resolve:
   jmp @dns_polling_loop
   
 @complete:
+
   lda #53
 	ldx dns_client_port_low_byte    
 	jsr udp_remove_listener  
@@ -260,8 +260,7 @@ dns_resolve:
   sec             ;signal an error
   rts
 
-send_dns_query:
-  
+send_dns_query:  
   ldax  dns_msg_id
   inx
   adc #0
@@ -316,10 +315,11 @@ send_dns_query:
 	ldax #dns_server_port			; set destination port
 	stax udp_send_dest_port
   ldax #output_buffer
-	jsr udp_send
+	jsr udp_send  
   bcs @error_on_send
   lda #dns_query_sent
   sta dns_state
+
   rts
 @error_on_send:  
   sec

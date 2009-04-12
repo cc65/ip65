@@ -31,6 +31,10 @@
     jsr print_cr
   .endmacro
 
+  .macro nb65call arg
+    ldy arg
+    jsr NB65_DISPATCH_VECTOR
+  .endmacro
 
 .ifndef NB65_API_VERSION_NUMBER
   .define EQU     =
@@ -47,7 +51,11 @@
   .import timer_vbl_handler
   .import nb65_dispatcher
   .import ip65_process
-
+  .import get_filtered_input
+  .import filter_text
+  .import filter_dns
+  
+  .import print_dotted_quad
   .import print_hex
   .import print_ip_config
   .import ok_msg
@@ -59,11 +67,11 @@
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
-
+  .import get_filtered_input
   .import  __DATA_LOAD__
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
-
+  .import cfg_tftp_server
   tftp_dir_buffer = $6000
   
   .data
@@ -115,7 +123,13 @@ init:
   jsr $e3bf   ;initialize zero page
 
 
-
+  ;set some funky colours
+  LDA #$05  ;green
+  STA $D020 ;background
+  LDA #$00  ;black 
+  STA $D021 ;background
+  lda #$1E
+  jsr print_a
 
 ;relocate our r/w data
   ldax #__DATA_LOAD__
@@ -142,16 +156,31 @@ init:
   jsr copymem
 .endif  
   
-  ldax  #startup_msg 
+ldax #init_msg
+	jsr print
+  
+  nb65call #NB65_INITIALIZE
+  
+main_menu:
+  jsr cls  
+  ldax  #netboot65_msg
   jsr print
+  ldax  #main_menu_msg
+  jsr print
+  jsr print_ip_config
+  jsr print_cr
 
 @get_key:
   jsr get_key
   cmp #KEYCODE_F1
-  beq @tftp_boot
-  cmp #KEYCODE_F3
-    
+  bne @not_tftp
+  jmp @tftp_boot
+ @not_tftp:  
+  cmp #KEYCODE_F3    
   beq @exit_to_basic
+  cmp #KEYCODE_F7
+  beq @change_config
+  
   
   jmp @get_key
 
@@ -159,27 +188,47 @@ init:
   ldax #$fe66 ;do a wam start
   jmp exit_cart_via_ax
 
-@tftp_boot:  
-
-  ldax #init_msg
-	jsr print
-  
-  ldy #NB65_INITIALIZE
-  jsr NB65_DISPATCH_VECTOR 
-
-	bcc :+  
-  print_failed
-  jsr print_errorcode
-  jmp bad_boot    
-:
-  
-  print_ok
-  
-  jsr print_ip_config
-
-  ldax  #press_a_key_to_continue
+@change_config:
+  jsr cls  
+  ldax  #netboot65_msg
   jsr print
-  jsr get_key
+  ldax  #config_menu_msg
+  jsr print
+  ldax #current
+  jsr print
+  ldax #tftp_server
+  jsr print
+  ldax #cfg_tftp_server
+  jsr print_dotted_quad
+  jsr print_cr
+  ldax #enter_new_tftp_server
+  jsr print
+  jsr print_cr
+  ldax #filter_dns
+  jsr get_filtered_input
+  bcs @no_server_entered
+  stax nb65_param_buffer 
+  jsr print_cr  
+  ldax #resolving
+  jsr print
+  ldax #nb65_param_buffer
+  nb65call #NB65_DNS_RESOLVE  
+  bcs @resolve_error  
+  ldax #nb65_param_buffer
+  stax copy_src
+  ldax #cfg_tftp_server
+  stax copy_dest
+  ldax #4
+  jsr copymem
+@no_server_entered:  
+  jmp main_menu
+
+@resolve_error:
+  print_failed
+  jsr wait_for_keypress
+  jmp main_menu
+  
+@tftp_boot:  
 
   jsr setup_param_buffer_for_tftp_call
   
@@ -196,8 +245,7 @@ init:
   jsr print_cr
 
   ldax  #nb65_param_buffer
-  ldy #NB65_TFTP_DIRECTORY_LISTING
-  jsr NB65_DISPATCH_VECTOR 
+  nb65call #NB65_TFTP_DIRECTORY_LISTING  
   
 	bcs @dir_failed
 
@@ -238,8 +286,7 @@ init:
 @file_downloaded_ok:  
   
   ;get ready to bank out
-  ldy #NB65_DEACTIVATE 
-  jsr NB65_DISPATCH_VECTOR
+  nb65call #NB65_DEACTIVATE   
   
   ;check whether the file we just downloaded was a BASIC prg
   lda nb65_param_buffer+NB65_TFTP_POINTER
@@ -273,8 +320,7 @@ exit_cart_via_ax:
 print_errorcode:
   ldax #error_code
   jsr print
-  ldy #NB65_GET_LAST_ERROR
-  jsr NB65_DISPATCH_VECTOR
+  nb65call #NB65_GET_LAST_ERROR
   jsr print_hex
   jmp print_cr
   
@@ -282,7 +328,7 @@ print_errorcode:
 setup_param_buffer_for_tftp_call:
   
   ldx #3
-  lda #$ff    ;255.255.255.255 = broadcast address
+  lda cfg_tftp_server,x
 : 
   sta nb65_param_buffer+NB65_TFTP_IP,x
   dex
@@ -290,9 +336,7 @@ setup_param_buffer_for_tftp_call:
   rts
 
 bad_boot:
-  ldax  #press_a_key_to_continue
-  jsr print
-  jsr get_key
+  jsr wait_for_keypress
   jmp $fe66   ;do a wam start
 
 download: ;AX should point at filename to download
@@ -307,9 +351,8 @@ download: ;AX should point at filename to download
   jsr print_cr
   
   jsr setup_param_buffer_for_tftp_call
-  ldy #NB65_TFTP_DOWNLOAD
   ldax #nb65_param_buffer
-  jsr NB65_DISPATCH_VECTOR 
+  nb65call #NB65_TFTP_DOWNLOAD  
 	bcc :+
   
 	ldax #tftp_download_fail_msg  
@@ -324,17 +367,29 @@ download: ;AX should point at filename to download
   clc
   rts
 
+wait_for_keypress:
+  ldax  #press_a_key_to_continue
+  jsr print
+  jsr get_key
+  rts
+
 cfg_get_configuration_ptr:
-  ldy #NB65_GET_IP_CONFIG
   ldax #nb65_param_buffer  
-  jmp NB65_DISPATCH_VECTOR 
+  nb65call #NB65_GET_IP_CONFIG
+  rts
   
 	.rodata
 
-startup_msg: 
+netboot65_msg: 
 .byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.4",13
-.byte "F1=TFTP BOOT, F3=BASIC",13
 .byte 0
+main_menu_msg:
+.byte "F1: TFTP BOOT        F3: BASIC",13
+.byte "F7: CONFIG",13,13
+.byte 0
+
+config_menu_msg:
+.byte "NETBOOT65 CONFIGURATION",13,0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
@@ -352,6 +407,16 @@ tftp_download_ok_msg:
 error_code:  
   .asciiz "ERROR CODE: "
 
+current:
+.byte "CURRENT ",0
+enter_new_tftp_server:
+.byte"ENTER "
+
+new_tftp_server:
+  .byte "NEW "
+tftp_server:  
+.byte "TFTP SERVER: ",0
+  
 tftp_dir_filemask:  
   .asciiz "*.PRG"
 
@@ -363,6 +428,9 @@ no_files_on_server:
 
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
+
+resolving:
+  .byte "RESOLVING ",0
 
 nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature

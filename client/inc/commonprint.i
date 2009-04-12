@@ -11,9 +11,10 @@
  .export init_msg
  .export print
  .export print_decimal
+ .export print_dotted_quad
 .import cs_driver_name
 .importzp copy_src
-
+.import cfg_tftp_server
 ;reuse the copy_src zero page var
 pptr = copy_src
 .bss
@@ -123,6 +124,12 @@ print_ip_config:
   bcc :+
   inx
 :  jsr print_dotted_quad
+  jsr print_cr
+
+  ldax #tftp_server_msg
+  jsr print
+  ldax #cfg_tftp_server
+  jsr print_dotted_quad
   jsr print_cr
 
   ldax #dhcp_server_msg
@@ -278,11 +285,14 @@ dns_server_msg:
 dhcp_server_msg:
 .byte "DHCP SERVER : ", 0
 
+tftp_server_msg:
+.byte "TFTP SERVER : ", 0
+
 dhcp_msg:
   .byte "DHCP",0
 
 init_msg:
-  .byte "INIT ",0
+  .byte " INITIALIZING ",0
 
 failed_msg:
 	.byte "FAILED", 0
