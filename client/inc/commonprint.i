@@ -12,9 +12,10 @@
  .export print
  .export print_decimal
 .import cs_driver_name
+.importzp copy_src
 
-.zeropage
-pptr:		.res 2
+;reuse the copy_src zero page var
+pptr = copy_src
 .bss
 temp_bin: .res 1
 temp_bcd: .res 2

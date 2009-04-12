@@ -68,10 +68,10 @@
   
   .data
 exit_cart:
-.if (BANKSWITCH_SUPPORT=$01)
+.if (BANKSWITCH_SUPPORT=$02)
   lda #$02    
   sta $de00   ;turns off RR cartridge by modifying GROUND and EXROM
-.elseif (BANKSWITCH_SUPPORT=$02)
+.elseif (BANKSWITCH_SUPPORT=$01)
   lda #$36
   sta $0001   ;turns off ordinary cartridge by modifying HIRAM/LORAM (this will also bank out BASIC)
 .endif
@@ -245,6 +245,7 @@ init:
   lda nb65_param_buffer+NB65_TFTP_POINTER
   cmp #01
   bne @not_a_basic_file
+
   lda nb65_param_buffer+NB65_TFTP_POINTER+1
   cmp #$08
   bne @not_a_basic_file
@@ -258,13 +259,15 @@ init:
   stx $2d    ;save end-of-BASIC pointer (lo byte)
   sty $2e    ;save end-of-BASIC pointer (hi byte)
   jsr $a659  ; CLR (reset variables)
-  ldax  #$a7ae  ; jump to BASIC interpreter loop   
+  ldax  #$a7ae  ; jump to BASIC interpreter loop
   jmp exit_cart_via_ax
   
 @not_a_basic_file:  
   ldax  nb65_param_buffer+NB65_TFTP_POINTER
 exit_cart_via_ax:  
-  stax call_downloaded_prg+1
+  sta call_downloaded_prg+1
+  stx call_downloaded_prg+2
+  
   jmp exit_cart
 
 print_errorcode:
@@ -364,10 +367,10 @@ press_a_key_to_continue:
 nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature
   
-.if (BANKSWITCH_SUPPORT=$01)
+.if (BANKSWITCH_SUPPORT=$02)
   lda #$01    
   sta $de00   ;turns on RR cartridge (since it will have been banked out when exiting to BASIC)
-.elseif (BANKSWITCH_SUPPORT=$02)
+.elseif (BANKSWITCH_SUPPORT=$01)
   lda #$37
   sta $0001   ;turns on ordinary cartridge by modifying HIRAM/LORAM (this will also bank in BASIC)
 .endif

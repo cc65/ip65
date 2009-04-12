@@ -39,10 +39,12 @@
 .importzp copy_src
 .importzp copy_dest
 
-.zeropage
-nb65_params:		.res 2
+;reuse the copy_src zero page location
+nb65_params = copy_src
 
 .data
+
+old_ax: .res 2
 jmp_old_irq:
   jmp $0000
 
@@ -91,7 +93,7 @@ set_tftp_params:
 
 nb65_dispatcher:
   stax nb65_params
-  
+  stax old_ax
   
 
   cpy #NB65_INITIALIZE
@@ -128,12 +130,16 @@ irq_handler_installed:
 
 @after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
   bcs @tftp_error
+  ldax old_ax
+  stax nb65_params
+
   ldy #NB65_TFTP_POINTER
   lda tftp_load_address
   sta (nb65_params),y  
   iny
   lda tftp_load_address+1
-  sta (nb65_params),y  
+  sta (nb65_params),y
+  
   clc
 @tftp_error:
 @dns_error:   
