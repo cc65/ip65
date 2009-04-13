@@ -183,6 +183,9 @@ init:
 
   ldax  #tftp_dir_buffer
   jsr select_option_from_menu  
+  bcc @option_selected
+  jmp bad_boot
+@option_selected:  
   stax tftp_filename
 
   ldax #downloading_msg
