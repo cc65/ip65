@@ -45,7 +45,6 @@
   .include "../inc/c64keycodes.i"
   
   .import cls
-  .import get_key
   .import beep
   .import exit_to_basic
   .import timer_vbl_handler
@@ -54,7 +53,8 @@
   .import get_filtered_input
   .import filter_text
   .import filter_dns
-  
+  .import print_arp_cache
+
   .import print_dotted_quad
   .import print_hex
   .import print_ip_config
@@ -169,7 +169,7 @@ main_menu:
   jsr print
   jsr print_ip_config
   jsr print_cr
-
+  
 @get_key:
   jsr get_key
   cmp #KEYCODE_F1
@@ -178,6 +178,8 @@ main_menu:
  @not_tftp:  
   cmp #KEYCODE_F3    
   beq @exit_to_basic
+  cmp #KEYCODE_F5 
+  beq @util_menu
   cmp #KEYCODE_F7
   beq @change_config
   
@@ -187,6 +189,24 @@ main_menu:
 @exit_to_basic:
   ldax #$fe66 ;do a wam start
   jmp exit_cart_via_ax
+
+@util_menu:
+  jsr cls  
+  ldax  #netboot65_msg
+  jsr print
+  ldax  #util_menu_msg
+  jsr print
+@get_key_util_menu:
+  jsr get_key
+  cmp #KEYCODE_F1
+  bne @not_arp_cache
+  jsr print_arp_cache
+  jmp @get_key_util_menu
+ @not_arp_cache:
+  cmp #KEYCODE_F7
+  beq main_menu
+  jmp @get_key_util_menu
+
 
 @change_config:
   jsr cls  
@@ -262,7 +282,10 @@ main_menu:
   ldax  #tftp_dir_buffer
   
   jsr select_option_from_menu  
-
+  bcc @tftp_filename_set
+  lda #21 ;switch back to upper case
+  sta $d018
+  jmp main_menu
 @tftp_filename_set:
   jsr download
   bcc @file_downloaded_ok
@@ -352,7 +375,8 @@ download: ;AX should point at filename to download
   
   jsr setup_param_buffer_for_tftp_call
   ldax #nb65_param_buffer
-  nb65call #NB65_TFTP_DOWNLOAD  
+  nb65call #NB65_TFTP_DOWNLOAD
+  
 	bcc :+
   
 	ldax #tftp_download_fail_msg  
@@ -370,8 +394,18 @@ download: ;AX should point at filename to download
 wait_for_keypress:
   ldax  #press_a_key_to_continue
   jsr print
-  jsr get_key
+@loop:  
+  jsr $ffe4
+  beq @loop
   rts
+
+get_key:
+@loop:  
+  jsr NB65_PERIODIC_PROCESSING_VECTOR
+  jsr $ffe4
+  beq @loop
+  rts
+
 
 cfg_get_configuration_ptr:
   ldax #nb65_param_buffer  
@@ -385,7 +419,12 @@ netboot65_msg:
 .byte 0
 main_menu_msg:
 .byte "F1: TFTP BOOT        F3: BASIC",13
-.byte "F7: CONFIG",13,13
+.byte "F5: UTILITIES        F7: CONFIG",13,13
+.byte 0
+
+util_menu_msg:
+.byte "F1: ARP TABLE",13
+.byte "                     F7: MAIN MENU",13,13
 .byte 0
 
 config_menu_msg:

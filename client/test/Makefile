@@ -6,8 +6,10 @@ AFLAGS=
 
 
 IP65LIB=../ip65/ip65.lib
-C64NETLIB=../drivers/c64net.lib
-APPLE2NETLIB=../drivers/apple2net.lib
+
+C64PROGLIB=../drivers/c64prog.lib
+C64PNB65LIB=../drivers/c64nb65.lib
+APPLE2PROGLIB=../drivers/apple2prog.lib
 
 INCFILES=\
   ../inc/common.i\
@@ -21,10 +23,10 @@ INCFILES=\
 	$(AS) $(AFLAGS) $<
 
 %.prg: %.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64NETLIB)  
+	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
 
 %.pg2: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -m  $*.map -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2NETLIB)
+	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
 ip65test.dsk: testdns.pg2 testdottedquad.pg2
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary

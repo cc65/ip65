@@ -2,46 +2,43 @@
 ;
 ; the timer should be a 16-bit counter that's incremented by about
 ; 1000 units per second. it doesn't have to be particularly accurate.
-; this C64 implementation requires the routine timer_vbl_handler be called 60 times per second
 
 	.include "../inc/common.i"
 
 
 	.export timer_init
 	.export timer_read
-  .export timer_vbl_handler
   
 	.code
-  .bss
-  current_time_value: .res 2
   
-	.code
-
-;reset timer to 0
-;inputs: none
-;outputs: none
+; initialize timers
 timer_init:
-  ldax  #0
-  stax current_time_value
+	lda #$80		; stop timers
+	sta $dd0e
+	sta $dd0f
+
+	ldax #999		; timer A to 1000 cycles
+	stax $dd04
+
+	ldax #$ffff		; timer B to max cycles
+	stax $dd06
+
+	lda #$81		; timer A in continuous mode
+	sta $dd0e
+
+	lda #$c1		; timer B to count timer A underflows
+	sta $dd0f
+
 	rts
 
-;read the current timer value 
-; inputs: none
-; outputs: AX = current timer value (roughly equal to number of milliseconds since the last call to 'timer_init')
-timer_read:
-  ldax  current_time_value
-  rts
 
-; tick over the current timer value - should be called 60 times per second
-; inputs: none
-; outputs: none (all registers preserved, by carry flag can be modified)
-timer_vbl_handler:
-  pha
-  lda #$11
-  adc current_time_value
-  sta current_time_value
-  bcc :+
-  inc current_time_value+1
-:
-  pla
-  rts
+; return the current value
+timer_read:
+	lda $dd07		; cia counts backwards, return inverted value
+	eor #$ff
+	tax
+	lda $dd06
+	eor #$ff
+	rts
+
+

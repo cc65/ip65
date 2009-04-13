@@ -12,15 +12,20 @@
  .export print
  .export print_decimal
  .export print_dotted_quad
+ .export print_arp_cache
+ .import arp_cache
+ .importzp ac_size
+  
 .import cs_driver_name
 .importzp copy_src
 .import cfg_tftp_server
 ;reuse the copy_src zero page var
 pptr = copy_src
+
 .bss
 temp_bin: .res 1
 temp_bcd: .res 2
-
+temp_ptr: .res 2
 .code
 .macro print_driver_init
   ldax #cs_driver_name
@@ -68,23 +73,7 @@ print_ip_config:
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   ;first 6 bytes of cfg_get_configuration_ptr is MAC address
-  stax pptr  
-  ldy #0
-@one_mac_digit:
-  tya   ;just to set the Z flag
-  pha
-  beq @dont_print_colon
-  lda #':'
-  jsr print_a
-@dont_print_colon:
-  pla 
-  tay
-  lda (pptr),y
-  jsr print_hex
-  iny
-  cpy #06
-  bne @one_mac_digit
-  
+  jsr print_mac
   jsr print_cr
 
   ldax #ip_address_msg
@@ -144,6 +133,7 @@ print_ip_config:
 
   rts
   
+  
 print:
 	sta pptr
 	stx pptr + 1
@@ -159,6 +149,51 @@ print:
   bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
 @done_print:
   rts
+
+print_arp_cache:
+  ldax #arp_cache_header
+  jsr print
+	ldax #arp_cache
+	stax temp_ptr  
+	lda #ac_size    
+@print_one_arp_entry:
+  pha
+  lda #'$'
+  jsr print_a
+  lda temp_ptr+1
+  jsr print_hex
+  lda temp_ptr
+  jsr print_hex
+  lda #' '
+  jsr print_a
+  
+	ldax temp_ptr  
+  jsr print_mac
+  lda #' '
+  jsr print_a
+  ldax temp_ptr
+	clc
+  adc #6
+	bcc :+
+	inx
+:  
+  stax temp_ptr
+  jsr print_dotted_quad
+  ldax temp_ptr
+	clc
+  adc #4
+	bcc :+
+	inx
+: 
+  stax temp_ptr
+  jsr print_cr
+  pla
+  sec
+  sbc #1
+  
+	bne @print_one_arp_entry
+  clc
+	rts
 
 
 ;print the 4 bytes pointed at by AX as dotted decimals
@@ -188,7 +223,26 @@ print_dotted_quad:
   jsr print_decimal
   
   rts
-
+  
+;print 6 bytes printed at by AX as a MAC address  
+print_mac:
+  stax pptr  
+  ldy #0
+@one_mac_digit:
+  tya   ;just to set the Z flag
+  pha
+  beq @dont_print_colon
+  lda #':'
+  jsr print_a
+@dont_print_colon:
+  pla 
+  tay
+  lda (pptr),y
+  jsr print_hex
+  iny
+  cpy #06
+  bne @one_mac_digit
+  rts
 print_decimal:  ;print byte in A as a decimal number
   pha
   sta temp_bin   ;save 
@@ -293,6 +347,9 @@ dhcp_msg:
 
 init_msg:
   .byte " INITIALIZING ",0
+
+arp_cache_header:
+  .byte " MEM          MAC         IP",13,0
 
 failed_msg:
 	.byte "FAILED", 0

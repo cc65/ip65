@@ -26,7 +26,7 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
   .import cfg_gateway
   .import cfg_dns
 
-  .import arp_init
+  .import arp_calculate_gateway_mask
 
 	.import ip65_process
 
@@ -407,7 +407,7 @@ dhcp_in:
 
 
 @finished_unpacking_dhcp_options:
-  jsr arp_init                ;we have modified our netmask, so we need to recalculate gw_test
+  jsr arp_calculate_gateway_mask                ;we have modified our netmask, so we need to recalculate gw_test
   lda dhcp_state
   cmp #dhcp_bound
   beq :+
@@ -461,6 +461,7 @@ send_dhcprequest:
 	jsr udp_send
   bcs :+            ;if we didn't send the message we probably need to wait for an ARP reply to come back.
   lda #dhcp_bound   ;technically, we should wait till we get a DHCPACK message. but we'll assume success
-	sta dhcp_state
+	sta dhcp_state  
+  rts
 :  
   rts

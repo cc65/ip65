@@ -23,6 +23,7 @@ get_current_byte: .res 4
 
 ;on entry, AX should point to the list of null terminated option strings to be selected from
 ;on exit, AX points to the selected string
+;carry is set of QUIT was selected, clear otherwise
 select_option_from_menu:
 
   stax options_table_pointer
@@ -261,6 +262,9 @@ select_option_from_menu:
   sec
   sbc #$e1
   bcc @get_keypress ;if we have underflowed, it wasn't a valid option
+  cmp #$10  ;Q
+  beq @quit
+
   cmp #OPTIONS_PER_PAGE-1
   beq @got_valid_option
   bpl @get_keypress ;if we have underflowed, it wasn't a valid option
@@ -277,10 +281,13 @@ select_option_from_menu:
 
   jsr  @move_to_current_option
   ldax get_current_byte+1
-  
+  clc
   rts
 
-
+@quit:
+  sec
+  rts
+  
 @forward_one_page:  
   clc
   lda last_page_flag
@@ -322,6 +329,6 @@ select_option_from_menu:
 .rodata
 select_from_following_options: .byte "SELECT ONE OF THE FOLLOWING OPTIONS:",13,0
 navigation_instructions: .byte 13,"ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13
-.byte "/ TO JUMP ",13
+.byte "/ TO JUMP  or Q to QUIT",13
 .byte 0
 jump_to_prompt: .byte "JUMP TO:",0

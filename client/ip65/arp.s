@@ -6,11 +6,12 @@
 	.export arp_lookup
 	.export arp_process
 	.export arp_add 
-
+  .export arp_calculate_gateway_mask
 	.export arp_ip
 	.export arp_mac
 	.export arp_cache
-
+  .exportzp ac_size
+  
 	.import eth_inp
 	.import eth_inp_len
 	.import eth_outp
@@ -20,7 +21,7 @@
 	.import eth_set_my_mac_src
 	.import eth_set_proto
 	.importzp eth_proto_arp
-
+  
 	.import cfg_mac
 	.import cfg_ip
 	.import cfg_netmask
@@ -28,8 +29,7 @@
 
 	.import timer_read
 	.import timer_timeout
-
-
+  
 	.segment "IP65ZP" : zeropage
 
 ap:		.res 2
@@ -82,9 +82,12 @@ arp_init:
 	lda #0
 
 	ldx #(6+4)*ac_size - 1	; clear cache
-:	sta arp_cache,x
+:	
+  sta arp_cache,x
 	dex
 	bpl :-
+
+arp_calculate_gateway_mask:
 
 	lda #$ff		; counter for netmask length - 1
 	sta gw_last
@@ -222,9 +225,9 @@ arp_lookup:
 ; find arp_ip in the cache
 ; clc returns pointer to entry in (ap)
 findip:
-	ldax #arp_cache
-	stax ap
 
+	ldax #arp_cache
+	stax ap  
 	ldx #ac_size
 @compare:			; compare cache entry
 	ldy #ac_ip
@@ -237,7 +240,7 @@ findip:
 	cpy #ac_ip + 4
 	bne :-
     
-	clc			; return
+	clc			; return  
 	rts
 
 @next:				; next entry
@@ -335,7 +338,7 @@ arp_process:
 
 	lda #arp_idle
 	sta arp_state
-
+  
 	rts
 
 
@@ -354,6 +357,7 @@ arp_add:
 	sta (ap),y
 	dey
 	bpl :-
+  
 	rts
 
 @add:
@@ -364,10 +368,8 @@ arp_add:
 ac_add_source:
 	stax ap
 
-
 	ldx #9			; make space in the arp cache
 :
-
 
 	lda arp_cache + 60,x
 	sta arp_cache + 70,x
@@ -375,7 +377,6 @@ ac_add_source:
 	sta arp_cache + 60,x
 	lda arp_cache + 40,x
 	sta arp_cache + 50,x
-
 	lda arp_cache + 30,x
 	sta arp_cache + 40,x
 	lda arp_cache + 20,x
