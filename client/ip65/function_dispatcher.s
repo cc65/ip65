@@ -21,6 +21,7 @@
 .import ip65_error
 .import tftp_clear_callbacks
 .import tftp_download
+.import tftp_set_download_callback
 .import dns_ip
 .import dns_resolve
 .import dns_set_hostname
@@ -88,7 +89,6 @@ set_tftp_params:
   
   jsr tftp_clear_callbacks
   
-  clc
   rts
 
 nb65_dispatcher:
@@ -151,7 +151,6 @@ irq_handler_installed:
   cpy #NB65_TFTP_DOWNLOAD
   bne :+
   jsr set_tftp_params
-  bcs @tftp_error
   jsr tftp_download
   jmp @after_tftp_call
 :
@@ -291,6 +290,19 @@ irq_handler_installed:
   clc
   rts
 :  
+
+  cpy #NB65_TFTP_CALLBACK_DOWNLOAD
+  bne :+
+  jsr set_tftp_params
+  ldy #NB65_TFTP_POINTER+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y  
+  jsr tftp_set_download_callback
+  jmp tftp_download
+:
+
 
   cpy #NB65_PRINT_ASCIIZ
   bne :+

@@ -34,7 +34,7 @@ NB65_UDP_ADD_LISTENER          EQU $06 ;inputs: AX points to a UDP listener para
 NB65_GET_INPUT_PACKET_INFO     EQU $07 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
 NB65_SEND_UDP_PACKET           EQU $08 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
 NB65_DEACTIVATE                EQU $09 ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
-
+NB65_TFTP_CALLBACK_DOWNLOAD    EQU $0A ;inputs: AX points to a TFTP parameter structure, outputs: none
 NB65_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
@@ -56,7 +56,7 @@ NB65_DRIVER_NAME     EQU $1A     ;2 byte pointer to name of driver
 ;offsets in TFTP parameter structure (used by NB65_TFTP_DIRECTORY_LISTING & NB65_TFTP_DOWNLOAD)
 NB65_TFTP_IP         EQU $00                     ;4 byte IP address of TFTP server
 NB65_TFTP_FILENAME   EQU $04                     ;2 byte pointer to asciiz filename (or filemask in case of NB65_TFTP_DIRECTORY_LISTING)
-NB65_TFTP_POINTER    EQU $06                     ;2 byte pointer to memory location data to be stored in
+NB65_TFTP_POINTER    EQU $06                     ;2 byte pointer to memory location data to be stored in OR address of callback function
 
 ;offsets in DNS parameter structure (used by NB65_DNS_RESOLVE)
 NB65_DNS_HOSTNAME    EQU $00                         ;2 byte pointer to asciiz hostname to resolve (can also be a dotted quad string)

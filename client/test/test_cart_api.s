@@ -33,7 +33,8 @@ print_a = $ffd2
   
   .bss
   nb65_param_buffer: .res $20  
-
+  block_number: .res $0
+  
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 .word basicstub		; load address
@@ -136,7 +137,24 @@ init:
   call #NB65_PRINT_DOTTED_QUAD
   print_cr
 
-;callback test
+;tftp callback test
+  lda #0
+  sta block_number
+  lda #$FF
+  ldx #$03
+:
+  sta nb65_param_buffer,x   ;set TFTP server as broadcast address
+  dex
+  bpl :-
+  ldax #test_file
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  ldax #tftp_callback
+  stax nb65_param_buffer+NB65_TFTP_POINTER
+  ldax #nb65_param_buffer
+  call #NB65_TFTP_CALLBACK_DOWNLOAD
+
+
+;udp callback test
   
   ldax  #64     ;listen on port 64
   stax nb65_param_buffer+NB65_UDP_LISTENER_PORT
@@ -156,6 +174,15 @@ init:
 @loop_forever:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
   jmp @loop_forever
+  
+  
+tftp_callback:
+  inc block_number
+  print #block_no
+  lda block_number
+  jsr print_hex
+  print_cr
+  rts
   
 udp_callback:
 
@@ -260,7 +287,28 @@ get_key:
   beq get_key
   rts
   
-	.rodata
+  print_hex:
+  pha  
+  pha  
+  lsr
+  lsr
+  lsr
+  lsr
+  tax
+  lda hexdigits,x
+  jsr print_a
+  pla
+  and #$0F
+  tax
+  lda hexdigits,x
+  jsr print_a
+  pla
+  rts
+
+.rodata
+hexdigits:
+.byte "0123456789ABCDEF"
+
 test_hostname:
   .byte "RETROHACKERS.COM",0          ;this should be an A record
 
@@ -286,7 +334,10 @@ length:
   
 data:
   .byte "DATA: ",0
-  
+
+block_no:  
+  .byte "BLOCK: $",0
+
 error_code:  
   .asciiz "ERROR CODE: $"
 press_a_key_to_continue:
@@ -308,6 +359,9 @@ reply_message:
   .byte "PONG!"
 reply_message_end:
 reply_message_length=reply_message_end-reply_message
+
+test_file:
+.byte "BOOTA2.PG2",0
 
 nb65_signature:
   .byte $4E,$42,$36,$35  ; "NB65"  - API signature
