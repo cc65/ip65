@@ -119,27 +119,6 @@ select_option_from_menu:
   ldax  #select_from_following_options
   jsr   print
   
-
-;  lda   #'('
-;  jsr   print_a
-;  lda   #'$'
-;  jsr   print_a
-;  lda   first_option_this_page+1
-;  jsr   print_hex
-;  lda   first_option_this_page
-;  jsr   print_hex
-;  lda   #'/'
-;  jsr   print_a
-;  lda   #'$'
-;  jsr   print_a
-;  lda   number_of_options+1
-;  jsr   print_hex
-;  lda   number_of_options
-;  jsr   print_hex
-;  lda   #')'
-;  jsr   print_a
-;  jsr   print_cr
-  
   
   jsr   print_cr
   lda   #0
@@ -157,11 +136,6 @@ select_option_from_menu:
 
   lda  #' '
   jsr print_a
-
-;  lda get_current_byte+2
-;  jsr print_hex
-;  lda get_current_byte+1
-;  jsr print_hex
  
   lda get_current_byte+1
   ldx get_current_byte+2
@@ -243,10 +217,12 @@ select_option_from_menu:
 
   jsr get_key
 
-; jsr print_hex
+;  jsr print_hex
 ;  @fixme:
 ;    jmp @fixme
 
+  cmp #KEYCODE_ABORT
+  beq @quit
   cmp #KEYCODE_SLASH
   beq @jump_to
   cmp #KEYCODE_RIGHT
@@ -262,9 +238,8 @@ select_option_from_menu:
   sec
   sbc #$e1
   bcc @get_keypress ;if we have underflowed, it wasn't a valid option
-  cmp #$10  ;Q
-  beq @quit
-
+  
+  
   cmp #OPTIONS_PER_PAGE-1
   beq @got_valid_option
   bpl @get_keypress ;if we have underflowed, it wasn't a valid option
@@ -327,8 +302,11 @@ select_option_from_menu:
   jmp @print_current_page
 
 .rodata
+
 select_from_following_options: .byte "SELECT ONE OF THE FOLLOWING OPTIONS:",13,0
 navigation_instructions: .byte 13,"ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13
-.byte "/ TO JUMP  or Q to QUIT",13
-.byte 0
+.byte "/ TO JUMP OR "
+.byte KEYNAME_ABORT
+.byte " TO QUIT",13,0
+
 jump_to_prompt: .byte "JUMP TO:",0

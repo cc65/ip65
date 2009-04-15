@@ -41,8 +41,8 @@
   .include "../inc/nb65_constants.i"
 .endif
   .include "../inc/common.i"
-  .include "../inc/menu.i"
   .include "../inc/c64keycodes.i"
+  .include "../inc/menu.i"
   
   .import cls
   .import beep
@@ -182,7 +182,7 @@ main_menu:
   cmp #KEYCODE_F7
   beq @change_config
   
-  
+  jsr print_hex
   jmp @get_key
 
 @exit_to_basic:
