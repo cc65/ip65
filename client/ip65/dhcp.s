@@ -46,7 +46,7 @@ MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 1
 	.import udp_send_src_port
 	.import udp_send_dest_port
 	.import udp_send_len
-
+  .import check_for_abort_key
   .import timer_read
   
 	.bss
@@ -157,6 +157,12 @@ dhcp_init:
 
 @inner_delay_loop:  
   jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  rts
+@no_abort:  
   lda #0
   cmp dhcp_break_polling_loop
   bne @break_polling_loop

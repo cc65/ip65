@@ -3,6 +3,8 @@
 .export filter_text
 .export filter_ip
 .export filter_dns
+.export check_for_abort_key
+
 .importzp copy_src
 
 .include "../inc/common.i"
@@ -18,6 +20,18 @@ get_key:
   beq get_key
   rts
 
+;check whether the RUN/STOP key is being pressed
+;inputs: none
+;outputs: sec if RUN/STOP pressed, clear otherwise
+check_for_abort_key:
+lda $cb ;current key pressed
+cmp #$3F
+bne :+
+sec
+rts
+:
+clc
+rts
 
 ;cribbed from http://codebase64.org/doku.php?id=base:robust_string_input
 ;======================================================================

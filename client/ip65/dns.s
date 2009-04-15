@@ -34,7 +34,7 @@
 	.import udp_send_src_port
 	.import udp_send_dest_port
 	.import udp_send_len
-
+  .import check_for_abort_key
   .import timer_read
   
 	.segment "IP65ZP" : zeropage
@@ -219,6 +219,13 @@ dns_resolve:
   
 @inner_delay_loop:  
   jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  rts
+@no_abort:  
+  
   lda dns_state
   cmp #dns_complete
   beq @complete

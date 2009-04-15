@@ -182,7 +182,6 @@ main_menu:
   cmp #KEYCODE_F7
   beq @change_config
   
-  jsr print_hex
   jmp @get_key
 
 @exit_to_basic:
