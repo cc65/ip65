@@ -17,10 +17,10 @@
   .export tftp_download
   .export tftp_directory_listing 
   .export tftp_data_block_length
-  .export tftp_set_download_callback
+  .export tftp_set_callback_vector
   .export tftp_data_block_length
   .export tftp_clear_callbacks
-  
+  .import output_buffer
 	.import ip65_process
   .import ip65_error
   
@@ -57,7 +57,7 @@ tftp_filename: .res 2 ;name of file to d/l or filemask to get directory listing 
 
 ;packet offsets
 tftp_inp		= udp_inp + udp_data 
-tftp_outp:	.res 128
+tftp_outp = output_buffer
 ;= output_buffer
 
 ;everything after filename in a request at a relative address, not fixed, so don't bother defining offset constants
@@ -383,7 +383,7 @@ tftp_in:
   ldax #udp_inp+$0e
 @got_pointer_to_tftp_data:
   
-  jsr tftp_download_callback
+  jsr tftp_callback_vector
 
   lda udp_inp+4         ;check the length of the UDP packet
   cmp #02
@@ -429,22 +429,24 @@ copy_tftp_block_to_ram:
 ; inputs:
 ; AX - address of routine to call for each packet.
 ; outputs: none
-tftp_set_download_callback:
-  stax  tftp_download_callback+1
+tftp_set_callback_vector:
+  stax  tftp_callback_vector+1
   rts
   
 ;clear callback vectors, i.e. all future transfers read from/write to RAM
 ;inputs: none
 ;outputs: none
 tftp_clear_callbacks:
+  lda #0
+  sta tftp_callback_address_set
   ldax #copy_tftp_block_to_ram
-  jmp tftp_set_download_callback
+  jmp tftp_set_callback_vector
 
 .rodata
   tftp_octet_mode: .asciiz "OCTET"
   
 .data
-tftp_download_callback:
+tftp_callback_vector:
     jmp copy_tftp_block_to_ram  ;vector for action to take when a data block received (default is to store block in RAM)
 
 tftp_callback_address_set:  .byte 0
