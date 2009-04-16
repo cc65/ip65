@@ -26,7 +26,7 @@
   
 	.import udp_add_listener
   .import udp_remove_listener
-
+  .import output_buffer
 	.import udp_callback
 	.import udp_send
 
@@ -58,6 +58,8 @@ tftp_filename: .res 2 ;name of file to d/l or filemask to get directory listing 
 ;packet offsets
 tftp_inp		= udp_inp + udp_data 
 tftp_outp:	.res 128
+;= output_buffer
+
 ;everything after filename in a request at a relative address, not fixed, so don't bother defining offset constants
 
 tftp_server_port=69

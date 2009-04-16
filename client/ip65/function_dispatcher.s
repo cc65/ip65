@@ -127,7 +127,6 @@ irq_handler_installed:
   cpy #NB65_TFTP_DIRECTORY_LISTING  
   bne :+
   jsr set_tftp_params
-  bcs @tftp_error
   jsr tftp_directory_listing
 
 @after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
