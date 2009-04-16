@@ -21,7 +21,7 @@
 .import ip65_error
 .import tftp_clear_callbacks
 .import tftp_download
-.import tftp_set_download_callback
+.import tftp_set_callback_vector
 .import dns_ip
 .import dns_resolve
 .import dns_set_hostname
@@ -298,7 +298,7 @@ irq_handler_installed:
   tax
   dey
   lda (nb65_params),y  
-  jsr tftp_set_download_callback
+  jsr tftp_set_callback_vector
   jmp tftp_download
 :
 
