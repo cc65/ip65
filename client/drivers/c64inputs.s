@@ -27,8 +27,8 @@ check_for_abort_key:
 lda $cb ;current key pressed
 cmp #$3F
 bne :+
+jsr  $ffe4 ;get the keypress out of the buffer
 sec
-rts
 :
 clc
 rts
