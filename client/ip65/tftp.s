@@ -158,7 +158,7 @@ set_tftp_opcode:
   stax  tftp_opcode
   lda #tftp_initializing
   sta tftp_state  
-  ldax #00
+  ldax #0000
   stax tftp_current_block_number
   ldax tftp_load_address
   stax tftp_current_memloc
@@ -331,7 +331,7 @@ send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UD
 got_expected_block:
   lda tftp_current_block_number
   inc tftp_current_block_number
-  bcc :+
+  bne :+
   inc tftp_current_block_number+1
 : 
   lda #tftp_transmission_in_progress
