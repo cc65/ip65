@@ -25,16 +25,22 @@ NB65_RAM_STUB_ACTIVATE           EQU $C004
 
 NB65_INITIALIZE                EQU $01 ;no inputs or outputs - initializes IP stack, also sets IRQ chain to call NB65_VBL_VECTOR at @ 60hz
 NB65_GET_IP_CONFIG             EQU $02 ;no inputs, outputs AX=pointer to IP configuration structure
-NB65_TFTP_DIRECTORY_LISTING    EQU $03 ;inputs: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_DOWNLOAD             EQU $04 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
-                                   ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
-NB65_DNS_RESOLVE               EQU $05 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
+NB65_DEACTIVATE                EQU $0F ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
+
+NB65_UDP_ADD_LISTENER          EQU $10 ;inputs: AX points to a UDP listener parameter structure, outputs: none
+NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
+NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
+
+NB65_TFTP_DIRECTORY_LISTING    EQU $20 ;inputs: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_DOWNLOAD             EQU $21 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
+                                       ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
+NB65_TFTP_CALLBACK_DOWNLOAD    EQU $22 ;inputs: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_CALLBACK_UPLOAD      EQU $23 ;upload: AX points to a TFTP parameter structure, outputs: none
+
+NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
                                    ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
-NB65_UDP_ADD_LISTENER          EQU $06 ;inputs: AX points to a UDP listener parameter structure, outputs: none
-NB65_GET_INPUT_PACKET_INFO     EQU $07 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
-NB65_SEND_UDP_PACKET           EQU $08 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
-NB65_DEACTIVATE                EQU $09 ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
-NB65_TFTP_CALLBACK_DOWNLOAD    EQU $0A ;inputs: AX points to a TFTP parameter structure, outputs: none
+
+
 NB65_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
