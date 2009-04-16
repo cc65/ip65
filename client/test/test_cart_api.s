@@ -3,7 +3,9 @@
   .define EQU     =
   .include "../inc/nb65_constants.i"
 .endif
- 
+
+.include "../ip65/copymem.s"
+
 ; load A/X macro
 	.macro ldax arg
 	.if (.match (.left (1, arg), #))	; immediate mode
@@ -137,7 +139,9 @@ init:
   call #NB65_PRINT_DOTTED_QUAD
   print_cr
 
-;tftp callback test
+
+  
+;tftp send test
   lda #0
   sta block_number
   lda #$FF
@@ -148,7 +152,25 @@ init:
   bpl :-
   ldax #test_file
   stax nb65_param_buffer+NB65_TFTP_FILENAME
-  ldax #tftp_callback
+  ldax #tftp_upload_callback
+  stax nb65_param_buffer+NB65_TFTP_POINTER
+  ldax #nb65_param_buffer
+  call #NB65_TFTP_CALLBACK_UPLOAD
+
+
+@download_test:
+;tftp download callback test
+  lda #0
+  sta block_number
+  lda #$FF
+  ldx #$03
+:
+  sta nb65_param_buffer,x   ;set TFTP server as broadcast address
+  dex
+  bpl :-
+  ldax #test_file
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  ldax #tftp_download_callback
   stax nb65_param_buffer+NB65_TFTP_POINTER
   ldax #nb65_param_buffer
   call #NB65_TFTP_CALLBACK_DOWNLOAD
@@ -176,14 +198,41 @@ init:
   jmp @loop_forever
   
   
-tftp_callback:
+tftp_upload_callback:
+  stax copy_dest
   inc block_number
+  print #sending
+  print #block_no
+  lda block_number
+  jsr print_hex
+  print_cr
+  
+  lda block_number
+  asl
+  cmp #$10
+  beq @last_block
+  clc
+  adc #$a0
+  tax
+  lda #0
+  stax copy_src
+  ldax #$200
+  jsr copymem
+  ldax #$200
+  rts
+@last_block:  
+  ldax #0
+  rts
+
+tftp_download_callback:
+  inc block_number
+  print #received
   print #block_no
   lda block_number
   jsr print_hex
   print_cr
   rts
-  
+
 udp_callback:
 
   ldax #nb65_param_buffer
@@ -199,7 +248,8 @@ udp_callback:
 
   print_cr
 
-  print #recv_from
+  print #received
+  print #from
 
   ldax #nb65_param_buffer+NB65_REMOTE_IP
   call #NB65_PRINT_DOTTED_QUAD
@@ -312,8 +362,12 @@ hexdigits:
 test_hostname:
   .byte "RETROHACKERS.COM",0          ;this should be an A record
 
-recv_from:  
-  .asciiz "RECEIVED FROM: "
+  received:  
+  .asciiz "RECEIVED "
+  sending: 
+  .asciiz "SENDING "
+  from:  
+  .asciiz " FROM: "
   
 listening:  
   .byte "LISTENING ON UDP PORT 64",13,0
@@ -361,7 +415,7 @@ reply_message_end:
 reply_message_length=reply_message_end-reply_message
 
 test_file:
-.byte "BOOTA2.PG2",0
+.byte "TESTFILE.BIN",0
 
 nb65_signature:
   .byte $4E,$42,$36,$35  ; "NB65"  - API signature

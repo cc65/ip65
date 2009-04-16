@@ -13,6 +13,13 @@
  .export print_decimal
  .export print_dotted_quad
  .export print_arp_cache
+ .export mac_address_msg
+ .export ip_address_msg
+ .export netmask_msg
+ .export gateway_msg
+ .export dns_server_msg
+ .export tftp_server_msg
+ 
  .import arp_cache
  .importzp ac_size
   

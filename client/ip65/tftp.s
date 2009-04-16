@@ -419,7 +419,14 @@ tftp_in:
 @skip_first_2_bytes_in_calculating_copy_src:
   ldax #udp_inp+$0e
 @got_pointer_to_tftp_data:
-  
+
+  stax copy_src
+  ldax #output_buffer+2
+  stax copy_dest
+  ldax  tftp_data_block_length
+  stax  output_buffer
+  jsr copymem
+  ldax #output_buffer
   jsr tftp_callback_vector
   jsr send_ack
   
@@ -477,6 +484,11 @@ tftp_in:
 ;copy to RAM
 ;assumes tftp_data_block_length has been set, and AX should point to start of data
 copy_tftp_block_to_ram:
+  clc       
+  adc #02       ;skip the 2 byte length at start of buffer
+  bcc :+
+  inx
+:  
   stax copy_src
   ldax tftp_current_memloc
   stax  copy_dest

@@ -53,14 +53,30 @@
   .import get_filtered_input
   .import filter_text
   .import filter_dns
+  .import filter_ip
   .import print_arp_cache
+  .import arp_calculate_gateway_mask
+  .import parse_dotted_quad
+  .import dotted_quad_value
 
+  .import cfg_ip
+	.import cfg_netmask
+	.import cfg_gateway
+	.import cfg_dns
+  .import cfg_tftp_server
+  
   .import print_dotted_quad
   .import print_hex
   .import print_ip_config
   .import ok_msg
   .import failed_msg
   .import init_msg
+  .import ip_address_msg
+  .import netmask_msg
+  .import gateway_msg
+  .import dns_server_msg
+  .import tftp_server_msg
+ 
   .import print_a
   .import print_cr
   .import print
@@ -101,7 +117,7 @@ call_downloaded_prg:
 .byte $01 ;NB65_API_VERSION
 .byte BANKSWITCH_SUPPORT ;
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
-jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packects
+jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
 
   
@@ -218,14 +234,114 @@ main_menu:
   jsr print
   ldax  #config_menu_msg
   jsr print
-  ldax #current
-  jsr print
-  ldax #tftp_server
-  jsr print
-  ldax #cfg_tftp_server
-  jsr print_dotted_quad
+  jsr print_ip_config
   jsr print_cr
-  ldax #enter_new_tftp_server
+  
+  jsr get_key
+  cmp #KEYCODE_F1
+  bne @not_ip
+  ldax #new
+  jsr print
+  ldax #ip_address_msg
+  jsr print
+  jsr print_cr
+  ldax #filter_ip
+  jsr get_filtered_input
+  bcs @no_ip_address_entered
+  jsr parse_dotted_quad  
+  bcc @no_ip_resolve_error  
+  jmp @change_config
+@no_ip_resolve_error:  
+  ldax #dotted_quad_value
+  stax copy_src
+  ldax #cfg_ip
+  stax copy_dest
+  ldax #4
+  jsr copymem
+@no_ip_address_entered:  
+  jmp @change_config
+  
+@not_ip:
+  cmp #KEYCODE_F2
+  bne @not_netmask
+  ldax #new
+  jsr print
+  ldax #netmask_msg
+  jsr print
+  jsr print_cr
+  ldax #filter_ip
+  jsr get_filtered_input
+  bcs @no_netmask_entered
+  jsr parse_dotted_quad  
+  bcc @no_netmask_resolve_error  
+  jmp @change_config
+@no_netmask_resolve_error:  
+  ldax #dotted_quad_value
+  stax copy_src
+  ldax #cfg_netmask
+  stax copy_dest
+  ldax #4
+  jsr copymem
+@no_netmask_entered:  
+  jmp @change_config
+  
+@not_netmask:
+  cmp #KEYCODE_F3
+  bne @not_gateway
+  ldax #new
+  jsr print
+  ldax #gateway_msg
+  jsr print
+  jsr print_cr
+  ldax #filter_ip
+  jsr get_filtered_input
+  bcs @no_gateway_entered
+  jsr parse_dotted_quad  
+  bcc @no_gateway_resolve_error  
+  jmp @change_config
+@no_gateway_resolve_error:  
+  ldax #dotted_quad_value
+  stax copy_src
+  ldax #cfg_gateway
+  stax copy_dest
+  ldax #4
+  jsr copymem
+  jsr arp_calculate_gateway_mask                ;we have modified our netmask, so we need to recalculate gw_test
+@no_gateway_entered:  
+  jmp @change_config
+  
+  
+@not_gateway:
+  cmp #KEYCODE_F4
+  bne @not_dns_server
+  ldax #new
+  jsr print
+  ldax #dns_server_msg
+  jsr print
+  jsr print_cr
+  ldax #filter_ip
+  jsr get_filtered_input
+  bcs @no_dns_server_entered
+  jsr parse_dotted_quad  
+  bcc @no_dns_resolve_error  
+  jmp @change_config
+@no_dns_resolve_error:  
+  ldax #dotted_quad_value
+  stax copy_src
+  ldax #cfg_dns
+  stax copy_dest
+  ldax #4
+  jsr copymem
+@no_dns_server_entered:  
+  
+  jmp @change_config
+  
+@not_dns_server:
+  cmp #KEYCODE_F5
+  bne @not_tftp_server
+  ldax #new
+  jsr print
+  ldax #tftp_server_msg
   jsr print
   jsr print_cr
   ldax #filter_dns
@@ -245,12 +361,22 @@ main_menu:
   ldax #4
   jsr copymem
 @no_server_entered:  
+  jmp @change_config
+  
+@not_tftp_server:
+
+cmp #KEYCODE_F6
+  bne @not_main_menu
   jmp main_menu
+@not_main_menu:
+  jmp @get_key
+    
 
 @resolve_error:
   print_failed
   jsr wait_for_keypress
-  jmp main_menu
+  jsr @change_config
+  
   
 @tftp_boot:  
 
@@ -423,17 +549,23 @@ netboot65_msg:
 .byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.4",13
 .byte 0
 main_menu_msg:
+.byte 13,"               MAIN MENU",13,13
 .byte "F1: TFTP BOOT        F3: BASIC",13
 .byte "F5: UTILITIES        F7: CONFIG",13,13
 .byte 0
 
 util_menu_msg:
+.byte 13,"               UTILITIES",13,13
 .byte "F1: ARP TABLE",13
 .byte "                     F7: MAIN MENU",13,13
 .byte 0
 
 config_menu_msg:
-.byte "NETBOOT65 CONFIGURATION",13,0
+.byte 13,"              CONFIGURATION",13,13
+.byte "F1: IP ADDRESS       F2: NETMASK",13
+.byte "F3: GATEWAY          F4: DNS SERVER",13
+.byte "F5: TFTP SERVER      F6: MAIN MENU",13,13
+.byte 0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
@@ -453,13 +585,9 @@ error_code:
 
 current:
 .byte "CURRENT ",0
-enter_new_tftp_server:
-.byte"ENTER "
 
-new_tftp_server:
-  .byte "NEW "
-tftp_server:  
-.byte "TFTP SERVER: ",0
+new:
+.byte"NEW ",0
   
 tftp_dir_filemask:  
   .asciiz "*.PRG"

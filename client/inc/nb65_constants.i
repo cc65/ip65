@@ -54,7 +54,7 @@ NB65_GET_LAST_ERROR            EQU $FF ;no inputs, outputs A  EQU error code (fr
 NB65_CFG_MAC         EQU $00     ;6 byte MAC address
 NB65_CFG_IP          EQU $06     ;4 byte local IP address (will be overwritten by DHCP)
 NB65_CFG_NETMASK     EQU $0A     ;4 byte local netmask (will be overwritten by DHCP)
-NB65_CFG_GATEWAY     EQU $0D     ;4 byte local gateway (will be overwritten by DHCP)
+NB65_CFG_GATEWAY     EQU $0E     ;4 byte local gateway (will be overwritten by DHCP)
 NB65_CFG_DNS_SERVER  EQU $12     ;4 byte IP address of DNS server (will be overwritten by DHCP)
 NB65_CFG_DHCP_SERVER  EQU $16    ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
 NB65_DRIVER_NAME     EQU $1A     ;2 byte pointer to name of driver

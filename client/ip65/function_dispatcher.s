@@ -21,6 +21,7 @@
 .import ip65_error
 .import tftp_clear_callbacks
 .import tftp_download
+.import tftp_upload
 .import tftp_set_callback_vector
 .import dns_ip
 .import dns_resolve
@@ -91,6 +92,14 @@ set_tftp_params:
   
   rts
 
+set_tftp_callback_vector:
+  ldy #NB65_TFTP_POINTER+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y  
+  jmp tftp_set_callback_vector
+  
 nb65_dispatcher:
   stax nb65_params
   stax old_ax
@@ -293,15 +302,16 @@ irq_handler_installed:
   cpy #NB65_TFTP_CALLBACK_DOWNLOAD
   bne :+
   jsr set_tftp_params
-  ldy #NB65_TFTP_POINTER+1
-  lda (nb65_params),y
-  tax
-  dey
-  lda (nb65_params),y  
-  jsr tftp_set_callback_vector
+  jsr set_tftp_callback_vector
   jmp tftp_download
 :
 
+  cpy #NB65_TFTP_CALLBACK_UPLOAD
+  bne :+
+  jsr set_tftp_params
+  jsr set_tftp_callback_vector
+  jmp tftp_upload
+:
 
   cpy #NB65_PRINT_ASCIIZ
   bne :+
