@@ -44,7 +44,7 @@ nb65_std_cart.bin: nb65_std_cart.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/r
 	ruby fix_cart.rb $@ 8192
 
 nb65_rrnet.bin: nb65_rrnet.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
-	$(LD) -m nb65_rrnet.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
+	$(LD) -m nb65_rrnet.map -Ln nb65_rr.lab -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8193
 
 utherboot.pg2: utherboot.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2language_card.cfg

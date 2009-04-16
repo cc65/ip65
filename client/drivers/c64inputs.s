@@ -24,14 +24,17 @@ get_key:
 ;inputs: none
 ;outputs: sec if RUN/STOP pressed, clear otherwise
 check_for_abort_key:
-lda $cb ;current key pressed
-cmp #$3F
-bne :+
-jsr  $ffe4 ;get the keypress out of the buffer
-sec
-:
-clc
-rts
+  lda $cb ;current key pressed
+  cmp #$3F
+  bne @not_abort
+@flush_loop:
+  jsr $ffe4
+  bne @flush_loop
+  sec
+  rts
+@not_abort:
+  clc
+  rts
 
 ;cribbed from http://codebase64.org/doku.php?id=base:robust_string_input
 ;======================================================================

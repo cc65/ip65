@@ -72,8 +72,9 @@
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
   .import cfg_tftp_server
-  tftp_dir_buffer = $6000
-  
+  tftp_dir_buffer = $6020
+ nb65_param_buffer = $6000
+
   .data
 exit_cart:
 .if (BANKSWITCH_SUPPORT=$02)
@@ -90,7 +91,6 @@ call_downloaded_prg:
    
 	.bss
 
-nb65_param_buffer: .res $20
 
 
 .segment "CARTRIDGE_HEADER"
@@ -161,6 +161,8 @@ ldax #init_msg
   nb65call #NB65_INITIALIZE
   
 main_menu:
+  lda #21 ;make sure we are in upper case
+  sta $d018
   jsr cls  
   ldax  #netboot65_msg
   jsr print
@@ -285,13 +287,14 @@ main_menu:
   
   jsr select_option_from_menu  
   bcc @tftp_filename_set
-  lda #21 ;switch back to upper case
-  sta $d018
   jmp main_menu
 @tftp_filename_set:
   jsr download
   bcc @file_downloaded_ok
-  jmp bad_boot
+@tftp_boot_failed:  
+  jsr wait_for_keypress
+  jmp main_menu
+  
   
 @dir_failed:  
   ldax  #tftp_dir_listing_fail_msg
@@ -306,7 +309,7 @@ main_menu:
   ldax #no_files_on_server
 	jsr print
 
-  jmp bad_boot
+  jmp @tftp_boot_failed
   
 @file_downloaded_ok:  
   

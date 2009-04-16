@@ -1,5 +1,5 @@
 ;minimal tftp implementation (client only)
-;supports file download (not upload) and custom directory listing (using non-standard tftp opcode of 0x65)
+;supports file download and upload and custom directory listing (using non-standard tftp opcode of 0x65)
 
 
   TFTP_MAX_RESENDS=10
@@ -15,12 +15,13 @@
   .export tftp_load_address
   .export tftp_ip
   .export tftp_download
+  .export tftp_upload
   .export tftp_directory_listing 
   .export tftp_data_block_length
   .export tftp_set_callback_vector
   .export tftp_data_block_length
   .export tftp_clear_callbacks
-  .import output_buffer
+  
 	.import ip65_process
   .import ip65_error
   
@@ -29,7 +30,7 @@
   .import output_buffer
 	.import udp_callback
 	.import udp_send
-
+  .import check_for_abort_key
 	.import udp_inp
 	.import ip_inp
 	.importzp ip_src
@@ -58,7 +59,6 @@ tftp_filename: .res 2 ;name of file to d/l or filemask to get directory listing 
 ;packet offsets
 tftp_inp		= udp_inp + udp_data 
 tftp_outp = output_buffer
-;= output_buffer
 
 ;everything after filename in a request at a relative address, not fixed, so don't bother defining offset constants
 
@@ -69,22 +69,22 @@ tftp_load_address: .res 2 ;address file will be (or was) downloaded to
 tftp_ip: .res 4 ;ip address of tftp server - set to 255.255.255.255 (broadcast) to send request to all tftp servers on local lan
 
 tftp_data_block_length: .res 2
+tftp_send_len: .res 2
 tftp_current_memloc: .res 2
 
 ; tftp state machine
 tftp_initializing	= 1		    ; initial state
-tftp_rrq_sent=2             ; sent the read request, waiting for some data
-tftp_receiving_file=3       ; we have received the first packet of file data
-tftp_complete=4             ; we have received the final packet of file data
+tftp_initial_request_sent=2 ; sent the RRQ or WRQ, waiting for some data
+tftp_transmission_in_progress=3       ; we have sent/received the first packet of file data
+tftp_complete=4             ; we have sent/received the final packet of file data
 tftp_error=5                ; we got an error
 
 tftp_state:	.res 1		; current activity
 tftp_timer:  .res 1
 tftp_resend_counter: .res 1
 tftp_break_inner_loop: .res 1
-tftp_expected_block_number: .res 1
-tftp_block_number_to_ack: .res 1
-tftp_actual_server_port: .res 2   ;this is read from the reply  - it is not (usually) the port # we send the RRQ to
+tftp_current_block_number: .res 2
+tftp_actual_server_port: .res 2   ;this is read from the reply  - it is not (usually) the port # we send the RRQ or WRQ to
 tftp_actual_server_ip: .res 4     ;this is read from the reply - it may not be the IP we sent to (e.g. if we send to broadcast)
 
 tftp_just_set_new_load_address: .res 1
@@ -93,15 +93,34 @@ tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doi
 
 .code
 
+;uploads a file to a tftp server
+; inputs:
+;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
+;   tftp_filename: pointer to null terminated name of file to download
+;     of file should be loaded into (e.g. if downloading a C64 'prg' file)
+;    a callback vector should have been set with tftp_set_callback_vector
+; outputs: carry flag is set if there was an error
+;   if a callback vector has been set with tftp_set_callback_vector
+;   then the specified routine will be called once for each 512 byte packet
+;   sent from the tftp server (each time AX will point at data block just arrived,
+;   and tftp_data_block_length will contain number of bytes in that data block)
+;   otherwise, the buffer at tftp_load_address will be filled
+;   with file downloaded.
+;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
+;       ignored if a callback vector has been set with tftp_set_callback_vector)
+tftp_upload:
+  ldax  #$0200      ;opcode 02 = WRQ
+  jmp set_tftp_opcode
+
 ; query a tftp server for a directory listing (uses a non-standard tftp opcode,
 ; currently only supported by tftp server built in to 'netboot65' server)
 ; inputs:
 ;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
 ;   tftp_filename: pointer to null terminated filemask  (e.g. "*.prg",0)
 ;   tftp_load_address: memory location that dir will be stored in (NB - this field is
-;       ignored if a callback vector has been set with tftp_set_download_callback)
+;       ignored if a callback vector has been set with tftp_set_callback_vector)
 ; outputs: carry flag is set if there was an error, clear otherwise
-;   if a callback vector has been set with tftp_set_download_callback
+;   if a callback vector has been set with tftp_set_callback_vector
 ;   then the specified routine will be called once for each 512 byte packet
 ;   sent from the tftp server (each time AX will point at data block just arrived,
 ;   and tftp_data_block_length will contain number of bytes in that data block)
@@ -124,27 +143,28 @@ tftp_directory_listing:
 ;     treat first 2 bytes received from tftp server as memory address that rest
 ;     of file should be loaded into (e.g. if downloading a C64 'prg' file)
 ; outputs: carry flag is set if there was an error
-;   if a callback vector has been set with tftp_set_download_callback
+;   if a callback vector has been set with tftp_set_callback_vector
 ;   then the specified routine will be called once for each 512 byte packet
 ;   sent from the tftp server (each time AX will point at data block just arrived,
 ;   and tftp_data_block_length will contain number of bytes in that data block)
 ;   otherwise, the buffer at tftp_load_address will be filled
 ;   with file downloaded.
 ;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
-;       ignored if a callback vector has been set with tftp_set_download_callback)
+;       ignored if a callback vector has been set with tftp_set_callback_vector)
 tftp_download:
   ldax  #$0100      ;opcode 01 = RRQ
 set_tftp_opcode:  
   stax  tftp_opcode
   lda #tftp_initializing
   sta tftp_state  
-  sta tftp_expected_block_number ;(tftp_initializing=1)
+  ldx #00
+  stax tftp_current_block_number ;(tftp_initializing=1)
   ldax tftp_load_address
   stax tftp_current_memloc
   ldax #tftp_in
 	stax udp_callback 
   lda #$69
-  inc tftp_client_port_low_byte    ;each call to resolve uses a different client address
+  inc tftp_client_port_low_byte    ;each transfer uses a different client port
 	ldx tftp_client_port_low_byte    ;so we don't get confused by late replies to a previous call
 	jsr udp_add_listener
   
@@ -187,20 +207,25 @@ set_tftp_opcode:
   jsr send_ack    ;send the ack for the last block
   lda #$69
 	ldx tftp_client_port_low_byte    
-	jsr udp_remove_listener  
+	jsr udp_remove_listener
   rts
   
 @not_complete:  
-  cmp #tftp_receiving_file
-  bne @not_receiving
-  jsr send_ack
+  cmp #tftp_transmission_in_progress
+  bne @not_transmitting
+  jsr send_tftp_packet
   jmp @inner_delay_loop
-@not_receiving:
+@not_transmitting:
   jsr send_request_packet  
 
-@inner_delay_loop:    
-  
-  jsr ip65_process  
+@inner_delay_loop:  
+  jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  jmp @exit_with_error
+@no_abort:    
   lda tftp_break_inner_loop
   bne @outer_delay_loop
   jsr timer_read
@@ -259,7 +284,7 @@ send_request_packet:
   ldax #tftp_outp
 	jsr udp_send
   bcs @error_in_send
-  lda #tftp_rrq_sent
+  lda #tftp_initial_request_sent
   sta tftp_state
   rts
 @error_in_send:  
@@ -271,8 +296,13 @@ send_request_packet:
 send_ack:
   ldax  #$0400      ;opcode 04 = ACK
   stax tftp_outp
-  ldx tftp_block_number_to_ack
+  ldx tftp_current_block_number
+  lda tftp_current_block_number+1
+  dex
   stax  tftp_outp+2 
+  ldax #04
+  stax tftp_send_len
+send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UDP&IP stuff and send
   lda #$69
 	ldx tftp_client_port_low_byte    
 	stax udp_send_src_port
@@ -288,10 +318,11 @@ send_ack:
   ldx tftp_actual_server_port
   lda tftp_actual_server_port+1
 	stax udp_send_dest_port
-  ldax #04
+  ldax tftp_send_len
   stax udp_send_len
 
   ldax #tftp_outp
+;  .byte $92
 	jsr udp_send
   rts
   
@@ -334,15 +365,13 @@ tftp_in:
 @dont_set_load_address:
   lda tftp_inp+3                  ;get the (low byte) of the data block
   
-;  bmi @recv_error                 ;if we get to block $80, we've d/led more than 64k!
-  cmp tftp_expected_block_number
+  cmp tftp_current_block_number
     beq :+
   jmp @not_expected_block_number
 :  
-  ;this is the block we wanted
-  sta tftp_block_number_to_ack
-  inc tftp_expected_block_number
-  lda #tftp_receiving_file
+  ;this is the block we wanted  
+  inc tftp_current_block_number
+  lda #tftp_transmission_in_progress
   sta tftp_state
   lda #TFTP_MAX_RESENDS
   sta tftp_resend_counter
@@ -384,7 +413,8 @@ tftp_in:
 @got_pointer_to_tftp_data:
   
   jsr tftp_callback_vector
-
+  jsr send_ack
+  
   lda udp_inp+4         ;check the length of the UDP packet
   cmp #02
   bne @last_block
@@ -392,7 +422,47 @@ tftp_in:
   lda udp_inp+5
   cmp #$0c
   bne @last_block
+  
 @not_data_block:
+
+  cmp #3  
+  beq :+
+  jmp @not_ack
+:  
+;it's an ACK, so we must be sending a file
+  ldx tftp_inp+3                  ;get the (low byte) of the data block
+  inx                             
+  cpx tftp_current_block_number  
+  beq :+
+  jmp @not_expected_block_number
+: 
+;the last block we sent was acked so now we need to send the next one
+;
+  ldax #output_buffer+4
+  jsr tftp_callback_vector  ;this (caller supplied) routine should fill the buffer with up to 512 bytes
+  stax tftp_data_block_length
+  clc
+  adc #4
+  bcc :+
+  inx
+:
+  stax tftp_send_len
+  ldax  #$0300      ;opcode 03 = DATA
+  stax tftp_outp
+  ldx tftp_current_block_number
+  lda tftp_current_block_number+1
+  stax  tftp_outp+2 
+  jsr send_tftp_packet
+  inc tftp_current_block_number
+  bcc :+
+  inc tftp_current_block_number+1
+: 
+  
+  lda tftp_data_block_length+1 ;get length of data we just sent (high byte)
+  cmp #2
+  beq @last_block
+
+@not_ack:
 @not_expected_block_number:
   rts
   

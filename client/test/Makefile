@@ -16,6 +16,16 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
 
+all: \
+	ip65test.dsk \
+	testdns.prg \
+	testdns.pg2 \
+	testtftp.prg \
+	testtftp.pg2\
+	test_cart_api.prg\
+	testdottedquad.pg2\
+	testdottedquad.prg\
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
 
@@ -28,21 +38,14 @@ INCFILES=\
 %.pg2: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
-ip65test.dsk: testdns.pg2 testdottedquad.pg2
+ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
+		ripxplore.rb ip65test.dsk -a testtftp.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
+		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary
 
-all: \
-	ip65test.dsk \
-	testdns.prg \
-	test_cart_api.prg \
-	testdns.pg2 \
-	testdottedquad.pg2 \
-	testdottedquad.prg \
-  
 clean:
-	rm -f *.o
-	rm -f testdns.prg testdns.map testdns.pg2 testdottedquad.prg testdottedquad.pg2
+	rm -f *.o *.pg2 *.prg
 	rm -f ip65test.dsk
 
 distclean: clean

@@ -16,6 +16,7 @@ end
 [
 ["client/nb65/utherboot.dsk","nb65/"],
 ["client/nb65/nb65_rrnet.bin","nb65/"],
+["client/nb65/nb65_c64_ram.prg","nb65/"],
 ["client/nb65/nb65_std_cart.bin","nb65/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],

@@ -9,6 +9,8 @@
 require 'socket'
 class Netboot65TFTPServer
 
+
+
   TFTP_OPCODES={
     1=>'RRQ', #read request
     2=>'WRQ', #write request
@@ -34,7 +36,7 @@ class Netboot65TFTPServer
     @bootfile_dir=bootfile_dir
     @port=port
     @server_thread=nil
-    
+    @current_connection={}    
   end
   
   def send_error(client_ip,client_port,error_code,error_msg)
@@ -86,12 +88,17 @@ class Netboot65TFTPServer
     
     client_sock=UDPSocket.open
     client_sock.connect(client_ip,client_port)
-    
+    client_id="#{client_ip}:#{client_port}"
+    if @current_connection[client_id]==true then
+      log_msg("already sending to #{client_id}" )
+    end
+    @current_connection[client_id]=true
     log_msg("receiving #{filename} from #{client_ip}:#{client_port}")
     got_last_block=false
-    sent_last_ack=false
+    finished=false
     block_number=0
-    until sent_last_ack do
+    finished
+    until finished do
       packet=[4,block_number].pack("nn")
       got_block=false
       TFTP_MAX_RESENDS.times do |attempt_number|
@@ -99,7 +106,7 @@ class Netboot65TFTPServer
         client_sock.send(packet,0,client_ip,client_port)
         if got_last_block then
           puts "last block received"
-          sent_last_ack=true
+          finished=true
           break
         else
           if (IO.select([client_sock], nil, nil, 1)) then
@@ -123,15 +130,17 @@ class Netboot65TFTPServer
             end
           end
           break if got_block
-          if !got_block then
-            log_msg "TFTP: timed out waiting for DATA for block #{block_number+1} from #{client_ip}"
-            break
-          end            
         end
       end
+      if !got_block && !finished then
+        log_msg "TFTP: timed out waiting for DATA for block #{block_number+1} from #{client_ip}"
+        finished=true
+        break
+      end                  
       block_number+=1
     end
     file_handle.close
+    @current_connection[client_id]=false
   end
 
   def start()
