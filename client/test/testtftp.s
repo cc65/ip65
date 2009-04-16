@@ -79,11 +79,11 @@ upload_callback:
   bne @next_byte
   cmp #7
   beq @last_block
-  ldax #512
+  ldax #512    
   jmp :+
-  @last_block:
-  ldax #0
-:
+@last_block:
+  ldax #129
+:  
   stax block_length
   jsr copymem
   ldax block_length

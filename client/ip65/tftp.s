@@ -25,6 +25,7 @@
 	.import ip65_process
   .import ip65_error
   
+
 	.import udp_add_listener
   .import udp_remove_listener
   .import output_buffer
@@ -157,8 +158,8 @@ set_tftp_opcode:
   stax  tftp_opcode
   lda #tftp_initializing
   sta tftp_state  
-  ldx #00
-  stax tftp_current_block_number ;(tftp_initializing=1)
+  ldax #00
+  stax tftp_current_block_number
   ldax tftp_load_address
   stax tftp_current_memloc
   ldax #tftp_in
@@ -296,13 +297,14 @@ send_request_packet:
 send_ack:
   ldax  #$0400      ;opcode 04 = ACK
   stax tftp_outp
-  ldx tftp_current_block_number
-  lda tftp_current_block_number+1
-  dex
-  stax  tftp_outp+2 
   ldax #04
   stax tftp_send_len
 send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UDP&IP stuff and send
+
+  ldx tftp_current_block_number
+  lda tftp_current_block_number+1
+  stax  tftp_outp+2 
+
   lda #$69
 	ldx tftp_client_port_low_byte    
 	stax udp_send_src_port
@@ -326,6 +328,26 @@ send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UD
 	jsr udp_send
   rts
   
+got_expected_block:
+  lda tftp_current_block_number
+  inc tftp_current_block_number
+  bcc :+
+  inc tftp_current_block_number+1
+: 
+  lda #tftp_transmission_in_progress
+  sta tftp_state
+  lda #TFTP_MAX_RESENDS
+  sta tftp_resend_counter
+  lda #1
+  sta tftp_break_inner_loop
+
+  ldax  udp_inp+udp_src_port
+  stax  tftp_actual_server_port
+  ldax  ip_inp+ip_src
+  stax  tftp_actual_server_ip
+  ldax  ip_inp+ip_src+2
+  stax  tftp_actual_server_ip+2
+  rts
   
 tftp_in:
     
@@ -363,28 +385,14 @@ tftp_in:
   sta tftp_just_set_new_load_address 
 
 @dont_set_load_address:
-  lda tftp_inp+3                  ;get the (low byte) of the data block
-  
-  cmp tftp_current_block_number
-    beq :+
+  ldx tftp_inp+3                  ;get the (low byte) of the data block
+  dex
+  cpx tftp_current_block_number
+  beq :+
   jmp @not_expected_block_number
 :  
   ;this is the block we wanted  
-  inc tftp_current_block_number
-  lda #tftp_transmission_in_progress
-  sta tftp_state
-  lda #TFTP_MAX_RESENDS
-  sta tftp_resend_counter
-  lda #1
-  sta tftp_break_inner_loop
-
-  ldax  udp_inp+udp_src_port
-  stax  tftp_actual_server_port
-  ldax  ip_inp+ip_src
-  stax  tftp_actual_server_ip
-  ldax  ip_inp+ip_src+2
-  stax  tftp_actual_server_ip+2
-      
+  jsr got_expected_block
   
   lda tftp_just_set_new_load_address 
   bne @skip_first_2_bytes_in_calculating_header_length
@@ -424,14 +432,13 @@ tftp_in:
   bne @last_block
   
 @not_data_block:
-
-  cmp #3  
+  cmp #4 ;ACK is opcode 4
   beq :+
   jmp @not_ack
 :  
 ;it's an ACK, so we must be sending a file
+
   ldx tftp_inp+3                  ;get the (low byte) of the data block
-  inx                             
   cpx tftp_current_block_number  
   beq :+
   jmp @not_expected_block_number
@@ -449,19 +456,13 @@ tftp_in:
   stax tftp_send_len
   ldax  #$0300      ;opcode 03 = DATA
   stax tftp_outp
-  ldx tftp_current_block_number
-  lda tftp_current_block_number+1
-  stax  tftp_outp+2 
+  jsr got_expected_block
   jsr send_tftp_packet
-  inc tftp_current_block_number
-  bcc :+
-  inc tftp_current_block_number+1
-: 
+  
   
   lda tftp_data_block_length+1 ;get length of data we just sent (high byte)
   cmp #2
-  beq @last_block
-
+  bne @last_block
 @not_ack:
 @not_expected_block_number:
   rts
@@ -490,12 +491,21 @@ copy_tftp_block_to_ram:
   sta tftp_current_memloc+1
   rts
 
-;set up vector of routine to be called when each 512 packet arrives from tftp server
-;when vector is called, AX will point to data that was downloaded, and
+;set up vector of routine to be called when each 512 packet arrives from tftp server 
+;when downloading OR for routine to be called when ready to send new block
+;when uploading.
+;when vector is called when downloading, AX will point to data that was downloaded,
 ;tftp_data_block_length will be set to length of downloaded data block. This will be 
 ;equal to $200 (512) for each block EXCEPT the final block. THe final block will
 ;always be less than $200 bytes - if the file is an exact multiple if $200 bytes
 ;long, then a final block will be received with length $00.
+;when vector is called when uploading, AX will point to a 512 byte buffer that
+;should be filled with the next block. the user supplied routine should set AX
+;to be equal to the actual number of bytes inserted into the buffer, which should
+;equal to $200 (512) for each block EXCEPT the final block. The final block must
+;always be less than $200 bytes - if the file is an exact multiple if $200 bytes
+;long, then a final block must be created with length $00.
+
 ; inputs:
 ; AX - address of routine to call for each packet.
 ; outputs: none
