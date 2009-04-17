@@ -136,7 +136,6 @@ init_failed:
   rts
 :
 
-
   cpy #NB65_DNS_RESOLVE
   bne :+  
   ldy #NB65_DNS_HOSTNAME+1

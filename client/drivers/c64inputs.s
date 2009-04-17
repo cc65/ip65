@@ -30,6 +30,9 @@ check_for_abort_key:
 @flush_loop:
   jsr $ffe4
   bne @flush_loop
+  lda $cb ;current key pressed
+  cmp #$3F
+  beq @flush_loop
   sec
   rts
 @not_abort:
