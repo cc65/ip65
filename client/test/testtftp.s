@@ -15,8 +15,10 @@
   .import  __RODATA_SIZE__
   .import  __DATA_SIZE__
   .import tftp_upload
+  .import tftp_upload_from_memory
   .import tftp_set_callback_vector
   .import tftp_ip
+  .import tftp_filesize
   .importzp tftp_filename
   
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
@@ -60,11 +62,28 @@ init:
   dex
   bpl :-  
   
-  ldax #sending
+  ldax #sending_via_callback
   jsr print
   jsr tftp_upload
-  rts
+  bcs @error
+  print_ok
+  
+  ldax #basic_file
+  stax tftp_filename
+  
+  ldax #$2000
+  stax tftp_filesize
+  ldax #sending_ram
+  jsr print
+  jsr tftp_upload_from_memory
+  bcs @error
+  print_ok
 
+rts
+  
+@error:
+  print_failed
+  rts
 upload_callback:
   stax copy_dest
   ldax #buffer1
@@ -91,8 +110,9 @@ upload_callback:
 .rodata
 
 test_file: .byte  "TESTFILE.BIN",0
-sending: .byte "SENDING...",0
-
+basic_file: .byte  "CBMBASIC.BIN",0
+sending_via_callback: .byte "SENDING VIA CALLBACK...",0
+sending_ram: .byte "SENDING RAM...",0
 .bss
 block_number: .res 1
 block_length: .res 2

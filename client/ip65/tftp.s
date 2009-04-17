@@ -22,7 +22,7 @@
   .export tftp_data_block_length
   .export tftp_clear_callbacks
   .export tftp_filesize
-  
+  .export tftp_upload_from_memory
 	.import ip65_process
   .import ip65_error
   
@@ -93,6 +93,7 @@ tftp_just_set_new_load_address: .res 1
 
 tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doing a DIR
 tftp_filesize: .res 2 ;will be set by tftp_download, needs to be set before calling tftp_upload_from_memory
+tftp_bytes_remaining: .res 2 
 
 .code
 
@@ -114,6 +115,11 @@ tftp_filesize: .res 2 ;will be set by tftp_download, needs to be set before call
 tftp_upload_from_memory:
   ldax #copy_ram_to_tftp_block
   jsr tftp_set_callback_vector
+  ldax tftp_filesize
+  stax  tftp_bytes_remaining
+  lda #00
+  sta tftp_filesize
+  sta tftp_filesize+1
   
 ;uploads a file to a tftp server with data retrieved from user supplied routine
 ; inputs:
@@ -531,7 +537,29 @@ copy_tftp_block_to_ram:
 
 ;default handler for uploading a file
 copy_ram_to_tftp_block:
+  
+  stax copy_dest
+  ldax tftp_current_memloc
+  stax  copy_src
+  clc
+  lda   tftp_bytes_remaining+1  
+  beq @last_block
+  cmp #01
+  beq @last_block  
+  dec   tftp_bytes_remaining+1 
+  dec   tftp_bytes_remaining+1
+  ldax  #$0200
+@length_is_set:
+  stax  tftp_data_block_length
+  jsr copymem
+  inc tftp_current_memloc+1
+  inc tftp_current_memloc+1
+  ldax  tftp_data_block_length
+  clc  
   rts
+@last_block:
+  ldax tftp_bytes_remaining
+  jmp @length_is_set
 
 ;set up vector of routine to be called when each 512 packet arrives from tftp server 
 ;when downloading OR for routine to be called when ready to send new block
@@ -569,6 +597,7 @@ tftp_clear_callbacks:
   
 .data
 tftp_callback_vector:
+    
     jmp copy_tftp_block_to_ram  ;vector for action to take when a data block received (default is to store block in RAM)
 
 tftp_callback_address_set:  .byte 0
