@@ -15,3 +15,15 @@
 	stx 1+(arg)
 	.endmacro	
 
+
+.macro phax
+  pha
+  txa
+  pha
+.endmacro
+
+.macro plax
+  pla
+  tax
+  pla
+.endmacro

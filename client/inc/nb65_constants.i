@@ -35,7 +35,8 @@ NB65_TFTP_DIRECTORY_LISTING    EQU $20 ;inputs: AX points to a TFTP parameter st
 NB65_TFTP_DOWNLOAD             EQU $21 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
                                        ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
 NB65_TFTP_CALLBACK_DOWNLOAD    EQU $22 ;inputs: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_CALLBACK_UPLOAD      EQU $23 ;upload: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_UPLOAD               EQU $23 ;upload: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_CALLBACK_UPLOAD      EQU $24 ;upload: AX points to a TFTP parameter structure, outputs: none
 
 NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
                                    ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
@@ -63,6 +64,7 @@ NB65_DRIVER_NAME     EQU $1A     ;2 byte pointer to name of driver
 NB65_TFTP_IP         EQU $00                     ;4 byte IP address of TFTP server
 NB65_TFTP_FILENAME   EQU $04                     ;2 byte pointer to asciiz filename (or filemask in case of NB65_TFTP_DIRECTORY_LISTING)
 NB65_TFTP_POINTER    EQU $06                     ;2 byte pointer to memory location data to be stored in OR address of callback function
+NB65_TFTP_FILESIZE   EQU $08                     ;2 byte file length (filled in by NB65_TFTP_DOWNLOAD, must be passed in to NB65_TFTP_UPLOAD)
 
 ;offsets in DNS parameter structure (used by NB65_DNS_RESOLVE)
 NB65_DNS_HOSTNAME    EQU $00                         ;2 byte pointer to asciiz hostname to resolve (can also be a dotted quad string)

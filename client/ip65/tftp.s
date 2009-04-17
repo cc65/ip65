@@ -21,6 +21,7 @@
   .export tftp_set_callback_vector
   .export tftp_data_block_length
   .export tftp_clear_callbacks
+  .export tftp_filesize
   
 	.import ip65_process
   .import ip65_error
@@ -91,15 +92,16 @@ tftp_actual_server_ip: .res 4     ;this is read from the reply - it may not be t
 tftp_just_set_new_load_address: .res 1
 
 tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doing a DIR
+tftp_filesize: .res 2 ;will be set by tftp_download, needs to be set before calling tftp_upload_from_memory
 
 .code
 
-;uploads a file to a tftp server
+;uploads a file to a tftp server with data retrieved from specified memory location
 ; inputs:
-;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
-;   tftp_filename: pointer to null terminated name of file to download
-;     of file should be loaded into (e.g. if downloading a C64 'prg' file)
-;    a callback vector should have been set with tftp_set_callback_vector
+;  tftp_ip: ip address of host to send file to (set to 255.255.255.255 for broadcast)
+;  tftp_filename: pointer to null terminated name of file to upload
+;  tftp_load_address: starting address of data to be sent
+;  tftp_filesize: length of data to send
 ; outputs: carry flag is set if there was an error
 ;   if a callback vector has been set with tftp_set_callback_vector
 ;   then the specified routine will be called once for each 512 byte packet
@@ -109,6 +111,18 @@ tftp_opcode: .res 2 ; will be set to 4 if we are doing a RRQ, or 7 if we are doi
 ;   with file downloaded.
 ;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
 ;       ignored if a callback vector has been set with tftp_set_callback_vector)
+tftp_upload_from_memory:
+  ldax #copy_ram_to_tftp_block
+  jsr tftp_set_callback_vector
+  
+;uploads a file to a tftp server with data retrieved from user supplied routine
+; inputs:
+;  tftp_ip: ip address of host to send file to (set to 255.255.255.255 for broadcast)
+;  tftp_filename: pointer to null terminated name of file to upload
+;   a callback vector should have been set with tftp_set_callback_vector
+; outputs: carry flag is set if there was an error
+;   the specified routine will be called once for each 512 byte packet
+;   to be sent from the tftp server.
 tftp_upload:
   ldax  #$0200      ;opcode 02 = WRQ
   jmp set_tftp_opcode
@@ -153,7 +167,10 @@ tftp_directory_listing:
 ;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
 ;       ignored if a callback vector has been set with tftp_set_callback_vector)
 tftp_download:
-  ldax  #$0100      ;opcode 01 = RRQ
+  lda #00
+  sta tftp_filesize
+  sta tftp_filesize+1
+  ldx #$01                      ;opcode 01 = RRQ (A should already be zero from having just reset file length)
 set_tftp_opcode:  
   stax  tftp_opcode
   lda #tftp_initializing
@@ -501,6 +518,10 @@ copy_tftp_block_to_ram:
   lda tftp_data_block_length+1
   adc tftp_current_memloc+1
   sta tftp_current_memloc+1
+  rts
+
+;default handler for uploading a file
+copy_ram_to_tftp_block:
   rts
 
 ;set up vector of routine to be called when each 512 packet arrives from tftp server 

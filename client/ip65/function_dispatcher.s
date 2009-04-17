@@ -23,6 +23,7 @@
 .import tftp_download
 .import tftp_upload
 .import tftp_set_callback_vector
+.import tftp_filesize
 .import dns_ip
 .import dns_resolve
 .import dns_set_hostname
@@ -46,7 +47,7 @@ nb65_params = copy_src
 
 .data
 
-old_ax: .res 2
+
 jmp_old_irq:
   jmp $0000
 
@@ -102,7 +103,6 @@ set_tftp_callback_vector:
   
 nb65_dispatcher:
   stax nb65_params
-  stax old_ax
   
 
   cpy #NB65_INITIALIZE
@@ -132,37 +132,6 @@ irq_handler_installed:
 :
 
 
-
-  cpy #NB65_TFTP_DIRECTORY_LISTING  
-  bne :+
-  jsr set_tftp_params
-  jsr tftp_directory_listing
-
-@after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
-  bcs @tftp_error
-  ldax old_ax
-  stax nb65_params
-
-  ldy #NB65_TFTP_POINTER
-  lda tftp_load_address
-  sta (nb65_params),y  
-  iny
-  lda tftp_load_address+1
-  sta (nb65_params),y
-  
-  clc
-@tftp_error:
-@dns_error:   
-  rts
-:
-
-  cpy #NB65_TFTP_DOWNLOAD
-  bne :+
-  jsr set_tftp_params
-  jsr tftp_download
-  jmp @after_tftp_call
-:
-
   cpy #NB65_DNS_RESOLVE
   bne :+  
   ldy #NB65_DNS_HOSTNAME+1
@@ -171,7 +140,7 @@ irq_handler_installed:
   dey
   lda (nb65_params),y
   jsr dns_set_hostname  
-  bcs @dns_error
+  bcc @dns_error
   jsr dns_resolve
   bcs @dns_error
   ldy #NB65_DNS_HOSTNAME_IP
@@ -182,7 +151,9 @@ irq_handler_installed:
   iny
   dex  
   bne @copy_dns_ip
+@dns_error:
   rts
+    
 :
 
   cpy #NB65_UDP_ADD_LISTENER
@@ -299,11 +270,52 @@ irq_handler_installed:
   rts
 :  
 
+
+  cpy #NB65_TFTP_DIRECTORY_LISTING  
+  bne :+
+  phax
+  jsr set_tftp_params
+  jsr tftp_directory_listing
+
+@after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
+  plax
+  bcs @tftp_error
+  stax nb65_params
+
+  ldy #NB65_TFTP_POINTER
+  lda tftp_load_address
+  sta (nb65_params),y  
+  iny
+  lda tftp_load_address+1
+  sta (nb65_params),y
+
+  ldy #NB65_TFTP_FILESIZE
+  lda tftp_filesize
+  sta (nb65_params),y  
+  iny
+  lda tftp_filesize+1
+  sta (nb65_params),y
+  clc
+@tftp_error:   
+  rts
+:
+
+  cpy #NB65_TFTP_DOWNLOAD
+  bne :+
+  phax
+  jsr set_tftp_params
+  jsr tftp_download
+  jmp @after_tftp_call
+:
+
+
   cpy #NB65_TFTP_CALLBACK_DOWNLOAD
   bne :+
+  phax
   jsr set_tftp_params
   jsr set_tftp_callback_vector
-  jmp tftp_download
+  jsr tftp_download
+  jmp @after_tftp_call
 :
 
   cpy #NB65_TFTP_CALLBACK_UPLOAD

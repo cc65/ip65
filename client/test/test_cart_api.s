@@ -174,8 +174,15 @@ init:
   stax nb65_param_buffer+NB65_TFTP_POINTER
   ldax #nb65_param_buffer
   call #NB65_TFTP_CALLBACK_DOWNLOAD
-
-
+  lda #'$'
+  jsr print_a
+  lda  nb65_param_buffer+NB65_TFTP_FILESIZE+1
+  jsr print_hex
+  lda  nb65_param_buffer+NB65_TFTP_FILESIZE
+  jsr print_hex
+  print #bytes_download
+  print_cr
+  
 ;udp callback test
   
   ldax  #64     ;listen on port 64
@@ -408,6 +415,8 @@ ok:
  
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0
+
+bytes_download: .byte "BYTES DOWNLOADED",13,0
 
 reply_message:
   .byte "PONG!"
