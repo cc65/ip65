@@ -156,6 +156,9 @@ init:
   stax nb65_param_buffer+NB65_TFTP_POINTER
   ldax #nb65_param_buffer
   call #NB65_TFTP_CALLBACK_UPLOAD
+  bcc :+
+  jmp print_errorcode
+:
 
 
 @download_test:
@@ -174,6 +177,9 @@ init:
   stax nb65_param_buffer+NB65_TFTP_POINTER
   ldax #nb65_param_buffer
   call #NB65_TFTP_CALLBACK_DOWNLOAD
+    bcc :+
+  jmp print_errorcode
+:
   lda #'$'
   jsr print_a
   lda  nb65_param_buffer+NB65_TFTP_FILESIZE+1

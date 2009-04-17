@@ -144,10 +144,11 @@ init_failed:
   tax
   dey
   lda (nb65_params),y
-  jsr dns_set_hostname  
-  bcc @dns_error
+  jsr dns_set_hostname 
+  bcs @dns_error
   jsr dns_resolve
   bcs @dns_error
+
   ldy #NB65_DNS_HOSTNAME_IP
   ldx #4
 @copy_dns_ip:
@@ -300,6 +301,7 @@ init_failed:
   iny
   lda tftp_filesize+1
   sta (nb65_params),y
+  .byte $92
   clc
 @tftp_error:   
   rts
