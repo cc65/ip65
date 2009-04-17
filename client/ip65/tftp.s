@@ -341,7 +341,6 @@ send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UD
   stax udp_send_len
 
   ldax #tftp_outp
-;  .byte $92
 	jsr udp_send
   rts
   
@@ -454,7 +453,7 @@ tftp_in:
   lda udp_inp+5
   cmp #$0c
   bne @last_block
-  
+  beq @not_last_block
 @not_data_block:
   cmp #4 ;ACK is opcode 4
   beq :+
@@ -487,11 +486,21 @@ tftp_in:
   lda tftp_data_block_length+1 ;get length of data we just sent (high byte)
   cmp #2
   bne @last_block
+@not_last_block:  
+  inc tftp_filesize+1 ;add $200 to file size
+  inc tftp_filesize+1 ;add $200 to file size
+  
 @not_ack:
 @not_expected_block_number:
   rts
   
 @last_block:
+  lda tftp_data_block_length
+  sta tftp_filesize; this must be the first block that is not a multiple of 512, hence till now the low byte in tftp_filesize is still $00
+  lda tftp_data_block_length+1 ;this can only be 0 or 1
+  beq :+
+  inc tftp_filesize+1
+:
   lda #tftp_complete
   sta tftp_state
   rts

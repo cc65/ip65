@@ -111,10 +111,6 @@ nb65_dispatcher:
   bne irq_handler_installed
   jsr ip65_init
   bcs init_failed
-  jsr dhcp_init
-  bcc dhcp_ok
-  jmp ip65_init   ;if DHCP failed, then reinite the IP stack (which will reset IP address etc to cartridge default values)
-dhcp_ok:  
   ;install our IRQ handler
   ldax  $314    ;previous IRQ handler
   stax  jmp_old_irq+1
@@ -123,6 +119,10 @@ dhcp_ok:
   stax  $314    ;previous IRQ handler
   sta irq_handler_installed_flag
   cli
+  jsr dhcp_init
+  bcc dhcp_ok
+  jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc to cartridge default values)
+dhcp_ok:  
 irq_handler_installed:  
   clc
 init_failed:  
@@ -138,6 +138,7 @@ init_failed:
 
   cpy #NB65_DNS_RESOLVE
   bne :+  
+  phax
   ldy #NB65_DNS_HOSTNAME+1
   lda (nb65_params),y
   tax
@@ -150,13 +151,17 @@ init_failed:
 
   ldy #NB65_DNS_HOSTNAME_IP
   ldx #4
+  plax
+  stax nb65_params
 @copy_dns_ip:
   lda dns_ip,y
   sta (nb65_params),y
   iny
   dex  
   bne @copy_dns_ip
+  rts
 @dns_error:
+  plax
   rts
     
 :
@@ -300,7 +305,6 @@ init_failed:
   iny
   lda tftp_filesize+1
   sta (nb65_params),y
-  .byte $92
   clc
 @tftp_error:   
   rts
