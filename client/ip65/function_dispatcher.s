@@ -328,6 +328,21 @@ init_failed:
   jmp @after_tftp_call
 :
 
+  cpy #NB65_TFTP_UPLOAD
+  bne :+
+  phax
+  jsr set_tftp_params
+  ldy #NB65_TFTP_POINTER
+  lda (nb65_params),y
+  sta tftp_filesize
+  iny
+  lda (nb65_params),y  
+  sta tftp_filesize+1
+  
+  jsr tftp_download
+  jmp @after_tftp_call
+:
+
   cpy #NB65_TFTP_CALLBACK_UPLOAD
   bne :+
   jsr set_tftp_params
