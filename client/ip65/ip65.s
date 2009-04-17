@@ -2,6 +2,11 @@
 
 .include "../inc/common.i"
 
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
+
 	.export ip65_init
 	.export ip65_process
 
@@ -10,8 +15,9 @@
 	.export ip65_ctr_ip
   
   .export ip65_error
+   
+  .import cfg_init
   
-
 	.import eth_init
 	.import timer_init
 	.import arp_init
@@ -44,15 +50,18 @@ ip65_error: .res 1  ;last error code
 ; inputs: none
 ; outputs: none
 ip65_init:
-
+  jsr cfg_init    ;copy default values (including MAC address) to RAM
 	jsr eth_init		; initialize ethernet driver
   
-	bcs @fail
+	bcc @ok
+  lda #NB65_ERROR_DEVICE_FAILURE
+  sta ip65_error
+  rts
+@ok:  
 	jsr timer_init		; initialize timer
 	jsr arp_init		; initialize arp
 	jsr ip_init		; initialize ip, icmp, udp, and tcp
 	clc
-@fail:
 	rts
 
 

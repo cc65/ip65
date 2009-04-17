@@ -109,18 +109,23 @@ nb65_dispatcher:
   bne :+
   lda irq_handler_installed_flag
   bne irq_handler_installed
+  jsr ip65_init
+  bcs init_failed
+  jsr dhcp_init
+  bcc dhcp_ok
+  jmp ip65_init   ;if DHCP failed, then reinite the IP stack (which will reset IP address etc to cartridge default values)
+dhcp_ok:  
   ;install our IRQ handler
   ldax  $314    ;previous IRQ handler
   stax  jmp_old_irq+1
   sei ;don't want any interrupts while we fiddle with the vector
   ldax #irq_handler
   stax  $314    ;previous IRQ handler
-  cli
   sta irq_handler_installed_flag
-  jsr ip65_init
-  jmp dhcp_init
+  cli
 irq_handler_installed:  
   clc
+init_failed:  
   rts
 :
 

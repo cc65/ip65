@@ -50,6 +50,7 @@
   .import timer_vbl_handler
   .import nb65_dispatcher
   .import ip65_process
+  .import ip65_init
   .import get_filtered_input
   .import filter_text
   .import filter_dns
@@ -120,7 +121,6 @@ jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
 jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each vertical blank interrupt
 
-  
 .code
 
   
@@ -175,6 +175,11 @@ ldax #init_msg
 	jsr print
   
   nb65call #NB65_INITIALIZE
+  bcc main_menu
+  print_failed
+  jsr print_errorcode
+  jsr wait_for_keypress  
+  jmp exit_to_basic
   
 main_menu:
   lda #21 ;make sure we are in upper case
@@ -236,7 +241,7 @@ main_menu:
   jsr print
   jsr print_ip_config
   jsr print_cr
-  
+@get_key_config_menu:  
   jsr get_key
   cmp #KEYCODE_F1
   bne @not_ip
@@ -365,11 +370,18 @@ main_menu:
   
 @not_tftp_server:
 
+
 cmp #KEYCODE_F6
+  bne @not_reset
+  jsr ip65_init ;this will reset everything
+  jmp @change_config
+@not_reset:  
+cmp #KEYCODE_F7
   bne @not_main_menu
   jmp main_menu
+  
 @not_main_menu:
-  jmp @get_key
+  jmp @get_key_config_menu
     
 
 @resolve_error:
@@ -550,21 +562,22 @@ netboot65_msg:
 .byte 0
 main_menu_msg:
 .byte 13,"               MAIN MENU",13,13
-.byte "F1: TFTP BOOT        F3: BASIC",13
-.byte "F5: UTILITIES        F7: CONFIG",13,13
+.byte "F1: TFTP BOOT     F3: BASIC",13
+.byte "F5: UTILITIES     F7: CONFIG",13,13
 .byte 0
 
 util_menu_msg:
 .byte 13,"               UTILITIES",13,13
 .byte "F1: ARP TABLE",13
-.byte "                     F7: MAIN MENU",13,13
+.byte "                  F7: MAIN MENU",13,13
 .byte 0
 
 config_menu_msg:
 .byte 13,"              CONFIGURATION",13,13
-.byte "F1: IP ADDRESS       F2: NETMASK",13
-.byte "F3: GATEWAY          F4: DNS SERVER",13
-.byte "F5: TFTP SERVER      F6: MAIN MENU",13,13
+.byte "F1: IP ADDRESS    F2: NETMASK",13
+.byte "F3: GATEWAY       F4: DNS SERVER",13
+.byte "F5: TFTP SERVER   F6: RESET TO DEFAULTS",13,13
+.byte "F7: MAIN MENU",13,13
 .byte 0
 
 downloading_msg:  .asciiz "DOWNLOADING "
