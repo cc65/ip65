@@ -144,12 +144,6 @@ init:
 ;tftp send test
   lda #0
   sta block_number
-  lda #$FF
-  ldx #$03
-:
-  sta nb65_param_buffer,x   ;set TFTP server as broadcast address
-  dex
-  bpl :-
   ldax #test_file
   stax nb65_param_buffer+NB65_TFTP_FILENAME
   ldax #tftp_upload_callback
@@ -165,12 +159,6 @@ init:
 ;tftp download callback test
   lda #0
   sta block_number
-  lda #$FF
-  ldx #$03
-:
-  sta nb65_param_buffer,x   ;set TFTP server as broadcast address
-  dex
-  bpl :-
   ldax #test_file
   stax nb65_param_buffer+NB65_TFTP_FILENAME
   ldax #tftp_download_callback

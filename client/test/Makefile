@@ -32,10 +32,10 @@ all: \
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-%.prg: %.o $(IP65LIB) $(C64NETLIB) $(INCFILES) ../cfg/c64prg.cfg
+%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
 
-%.pg2: %.o $(IP65LIB) $(APPLE2NETLIB) $(INCFILES) ../cfg/a2bin.cfg
+%.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2

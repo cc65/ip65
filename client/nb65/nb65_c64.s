@@ -392,8 +392,6 @@ cmp #KEYCODE_F7
   
 @tftp_boot:  
 
-  jsr setup_param_buffer_for_tftp_call
-  
   ldax #tftp_dir_buffer
   stax nb65_param_buffer+NB65_TFTP_POINTER
 
@@ -490,17 +488,6 @@ print_errorcode:
   jsr print_hex
   jmp print_cr
   
-
-setup_param_buffer_for_tftp_call:
-  
-  ldx #3
-  lda cfg_tftp_server,x
-: 
-  sta nb65_param_buffer+NB65_TFTP_IP,x
-  dex
-  bpl :-
-  rts
-
 bad_boot:
   jsr wait_for_keypress
   jmp $fe66   ;do a wam start
@@ -516,7 +503,6 @@ download: ;AX should point at filename to download
   jsr print  
   jsr print_cr
   
-  jsr setup_param_buffer_for_tftp_call
   ldax #nb65_param_buffer
   nb65call #NB65_TFTP_DOWNLOAD
   
@@ -576,7 +562,7 @@ config_menu_msg:
 .byte 13,"              CONFIGURATION",13,13
 .byte "F1: IP ADDRESS    F2: NETMASK",13
 .byte "F3: GATEWAY       F4: DNS SERVER",13
-.byte "F5: TFTP SERVER   F6: RESET TO DEFAULTS",13,13
+.byte "F5: TFTP SERVER   F6: RESET TO DEFAULTS",13
 .byte "F7: MAIN MENU",13,13
 .byte 0
 

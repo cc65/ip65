@@ -9,7 +9,6 @@ AFLAGS=
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-
 ETHOBJS= \
 	copymem.o \
 	config.o \
@@ -32,8 +31,7 @@ ETHOBJS= \
   
 all: ip65.lib 
 
-
-ip65.lib: $(ETHOBJS)
+ip65.lib: $(ETHOBJS) 
 	ar65 a ip65.lib $^
 
 

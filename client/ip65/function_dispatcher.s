@@ -39,6 +39,7 @@
 .import udp_send_len
 .import copymem
 .import cfg_mac
+.import cfg_tftp_server
 .importzp copy_src
 .importzp copy_dest
 
@@ -53,7 +54,10 @@ jmp_old_irq:
 
 irq_handler_installed_flag:
   .byte 0
-  
+
+ip_configured_flag:
+  .byte 0
+
 .code
 
 irq_handler:
@@ -61,19 +65,23 @@ irq_handler:
   jmp jmp_old_irq
 
 
+install_irq_handler:
+  ldax  $314    ;previous IRQ handler
+  stax  jmp_old_irq+1
+  sei ;don't want any interrupts while we fiddle with the vector
+  ldax #irq_handler
+  stax  $314    ;previous IRQ handler
+  sta irq_handler_installed_flag
+  cli
+  rts
+  
 set_tftp_params:
-  ldy #NB65_TFTP_IP
-  lda (nb65_params),y
-  sta tftp_ip
-  iny
-  lda (nb65_params),y
-  sta tftp_ip+1
-  iny
-  lda (nb65_params),y
-  sta tftp_ip+2
-  iny
-  lda (nb65_params),y
-  sta tftp_ip+3
+    ldx #$03
+:
+  lda cfg_tftp_server,x
+  sta tftp_ip,x
+  dex
+  bpl :-
 
   ldy #NB65_TFTP_FILENAME
   lda (nb65_params),y
@@ -107,25 +115,26 @@ nb65_dispatcher:
 
   cpy #NB65_INITIALIZE
   bne :+
-  lda irq_handler_installed_flag
-  bne irq_handler_installed
+  lda ip_configured_flag
+  bne ip_configured
   jsr ip65_init
   bcs init_failed
-  ;install our IRQ handler
-  ldax  $314    ;previous IRQ handler
-  stax  jmp_old_irq+1
-  sei ;don't want any interrupts while we fiddle with the vector
-  ldax #irq_handler
-  stax  $314    ;previous IRQ handler
-  sta irq_handler_installed_flag
-  cli
+  jsr install_irq_handler
   jsr dhcp_init
   bcc dhcp_ok
-  jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc to cartridge default values)
+  jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
+  lda #1
+  sta ip_configured_flag
 dhcp_ok:  
 irq_handler_installed:  
   clc
 init_failed:  
+  rts
+  
+ip_configured:
+  lda irq_handler_installed_flag
+  bne irq_handler_installed
+  jsr install_irq_handler
   rts
 :
 
@@ -275,12 +284,25 @@ init_failed:
   ldax  jmp_old_irq+1
   sei ;don't want any interrupts while we fiddle with the vector
   stax  $314    ;previous IRQ handler
+  lda #0
+  sta irq_handler_installed_flag 
   cli
   clc
   rts
 :  
 
-
+  cpy #NB65_TFTP_SET_SERVER
+  bne :+
+  ldy #3
+@copy_tftp_server_ip:  
+  lda (nb65_params),y
+  sta cfg_tftp_server,y
+  dey
+  bpl @copy_tftp_server_ip
+  clc
+  rts
+  
+:
   cpy #NB65_TFTP_DIRECTORY_LISTING  
   bne :+
   phax

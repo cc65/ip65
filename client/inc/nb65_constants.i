@@ -31,12 +31,13 @@ NB65_UDP_ADD_LISTENER          EQU $10 ;inputs: AX points to a UDP listener para
 NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
 NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
 
-NB65_TFTP_DIRECTORY_LISTING    EQU $20 ;inputs: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_DOWNLOAD             EQU $21 ;inputs: AX points to a TFTP parameter structure, outputs: TFTP param structure updated with 
+NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
+NB65_TFTP_DIRECTORY_LISTING    EQU $21 ;inputs: AX points to a TFTP transfer parameter structure, outputs: none
+NB65_TFTP_DOWNLOAD             EQU $22 ;inputs: AX points to a TFTP transfer parameter structure, outputs: TFTP param structure updated with 
                                        ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
-NB65_TFTP_CALLBACK_DOWNLOAD    EQU $22 ;inputs: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_UPLOAD               EQU $23 ;upload: AX points to a TFTP parameter structure, outputs: none
-NB65_TFTP_CALLBACK_UPLOAD      EQU $24 ;upload: AX points to a TFTP parameter structure, outputs: none
+NB65_TFTP_CALLBACK_DOWNLOAD    EQU $23 ;inputs: AX points to a TFTP transfer parameter structure, outputs: none
+NB65_TFTP_UPLOAD               EQU $24 ;upload: AX points to a TFTP transfer parameter structure, outputs: none
+NB65_TFTP_CALLBACK_UPLOAD      EQU $25 ;upload: AX points to a TFTP transfer parameter structure, outputs: none
 
 NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
                                    ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
@@ -57,14 +58,16 @@ NB65_CFG_IP          EQU $06     ;4 byte local IP address (will be overwritten b
 NB65_CFG_NETMASK     EQU $0A     ;4 byte local netmask (will be overwritten by DHCP)
 NB65_CFG_GATEWAY     EQU $0E     ;4 byte local gateway (will be overwritten by DHCP)
 NB65_CFG_DNS_SERVER  EQU $12     ;4 byte IP address of DNS server (will be overwritten by DHCP)
-NB65_CFG_DHCP_SERVER  EQU $16    ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
+NB65_CFG_DHCP_SERVER EQU $16    ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
 NB65_DRIVER_NAME     EQU $1A     ;2 byte pointer to name of driver
 
-;offsets in TFTP parameter structure (used by NB65_TFTP_DIRECTORY_LISTING & NB65_TFTP_DOWNLOAD)
-NB65_TFTP_IP         EQU $00                     ;4 byte IP address of TFTP server
-NB65_TFTP_FILENAME   EQU $04                     ;2 byte pointer to asciiz filename (or filemask in case of NB65_TFTP_DIRECTORY_LISTING)
-NB65_TFTP_POINTER    EQU $06                     ;2 byte pointer to memory location data to be stored in OR address of callback function
-NB65_TFTP_FILESIZE   EQU $08                     ;2 byte file length (filled in by NB65_TFTP_DOWNLOAD, must be passed in to NB65_TFTP_UPLOAD)
+;offsets in TFTP transfer parameter structure (used by NB65_TFTP_DIRECTORY_LISTING & NB65_TFTP_DOWNLOAD)
+NB65_TFTP_FILENAME   EQU $00                     ;2 byte pointer to asciiz filename (or filemask in case of NB65_TFTP_DIRECTORY_LISTING)
+NB65_TFTP_POINTER    EQU $02                     ;2 byte pointer to memory location data to be stored in OR address of callback function
+NB65_TFTP_FILESIZE   EQU $04                     ;2 byte file length (filled in by NB65_TFTP_DOWNLOAD, must be passed in to NB65_TFTP_UPLOAD)
+
+;offsets in TFTP Server parameter structure (used by NB65_TFTP_SET_SERVER)
+NB65_TFTP_SERVER_IP  EQU $00                     ;4 byte IP address of TFTP server
 
 ;offsets in DNS parameter structure (used by NB65_DNS_RESOLVE)
 NB65_DNS_HOSTNAME    EQU $00                         ;2 byte pointer to asciiz hostname to resolve (can also be a dotted quad string)
