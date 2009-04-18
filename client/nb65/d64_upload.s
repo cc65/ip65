@@ -15,8 +15,7 @@
   jsr print_a
 .endmacro   
 
-.data
-sector_buffer_address: .word sector_buffer
+
 
 .bss
  current_byte: .res 1
@@ -27,6 +26,7 @@ sector_buffer_address: .word sector_buffer
  command_buffer: .res 128
  sector_buffer: .res 256
  nb65_param_buffer: .res $20  
+sector_buffer_address: .res 2
 
   .zeropage
   temp_ptr:		.res 2
@@ -151,7 +151,7 @@ send_next_block:
   ldax  #$100
   rts
 @not_last_sector:
-  inc sector_buffer_address
+  inc sector_buffer_address+1
   jsr read_sector
   jsr move_to_next_sector
   ldax  #$200
@@ -444,7 +444,7 @@ move_to_next_sector:
   clc
   rts
 @not_track_25:
-  cmp #25
+  cmp #31
   bne @not_track_31
   lda #17
   sta sectors_in_track
