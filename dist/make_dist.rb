@@ -8,24 +8,31 @@ require 'ftools'
 
 WORKING_DIR=File.expand_path(File.dirname(__FILE__)+"/netboot65")
 SRC_DIR=File.expand_path(File.dirname(__FILE__)+"/../")
-["","nb65","lib","bin","boot","doc","inc","examples"].each do |dir_suffix|
+["","a2","c64","lib","bin","boot","doc","inc","examples"].each do |dir_suffix|
   dir_path="#{WORKING_DIR}/#{dir_suffix}"
   Dir.mkdir(dir_path) unless File.exist?(dir_path)
 end
 
 [
-["client/nb65/utherboot.dsk","nb65/"],
-["client/nb65/nb65_rrnet.bin","nb65/"],
-["client/nb65/nb65_c64_ram.prg","nb65/"],
-["client/nb65/nb65_std_cart.bin","nb65/"],
+["client/nb65/utherboot.dsk","a2/"],
+["client/nb65/set_ip_config.rb","bin/"],
+#["client/nb65/nb65_rrnet.bin","c64/"],
+["client/nb65/nb65_c64_ram.prg","c64/"],
+["client/nb65/nb65_std_cart.bin","c64/"],
+["client/nb65/d64_upload.prg","boot/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
 ["server/bin/import_ags_games.rb","bin"],
 ["server/boot/BOOTA2.PG2","boot"],
-["doc/README.*.txt","doc"],
-["doc/nb65_technical_reference.doc","doc"],
+["doc/README.Apple2.html","a2"],
+["doc/README.C64.html","c64"],
+["doc/nb65_api_technical_reference.doc","doc"],
+["client/inc/common.i","inc"],
 ["client/inc/nb65_constants.i","inc"],
 ["client/examples/dasm_example.asm","examples/"],
+
+#["client/nb65/d64_upload.s","examples/"],
+#["client/nb65/nb65_skeleton.s","examples/"],
 ].each do |args|
   dest="#{WORKING_DIR}/#{args[1]}"
   Dir["#{SRC_DIR}/#{args[0]}"].each do |src|

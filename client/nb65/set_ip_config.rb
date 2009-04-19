@@ -25,11 +25,12 @@ end
   puts "#{@progname} <image> <option> <value> [<option> <value> ..]"
   puts "multiple options may be set"
   show_options
+  true
  end 
  
  number_of_options=ARGV.length
- usage unless number_of_options>=3
- usage unless (number_of_options%2) ==1 #must be an odd number of options
+ usage && exit unless number_of_options>=3
+ usage && exit unless (number_of_options%2) ==1 #must be an odd number of options
  filename=ARGV[0]
  if !(FileTest.file?(filename)) then
    puts "file '#{filename}' not found"

@@ -1,0 +1,66 @@
+<h1>NETBOOT65 FOR THE C64</h1>
+
+<h2>STARTING THE SERVER</h2>
+<ol>
+	<li> unzip the archive somewhere on your local hard drive</li>
+	<li>start the bin/tftp_server.rb script (e.g. by double-clicking on it)</li>
+</ol>
+
+<h2>TO USE WITH VICE</h2>
+Run VICE with the nb65_std_cart.bin cartridge image attached (e.g. "x64.exe -cart8 nb65_std_cart.bin")
+
+<h2>TO USE WITH A REAL C64</h2>
+<h3>Option 1 - Hardcore</h3>
+	burn the nb65_std_cart.bin cartridge to an EPROM and insert in an 8KB cartridge (which should be set up to have EXROM=0, GAME=1)
+
+<h3>Option 2 - Just dabbling</h3>
+You can just run the nb65_c64_ram.prg program (which is essentially the cartridge image plus a loader prg to insert the image into the right place in RAM).
+
+
+<h2>USING THE CARTRIDGE</h2>
+
+When the cartridge starts, it will attempt to configure the IP stack via DHCP. If the DHCP config fails (either by timing out, or the user press RUN/STOP)
+then the IP stack will fall back to using the IP configuration built into the cartridge. See the section "IP CONFIGURATION" for info on how to modify the
+cartridge defaults prior to burning an image.
+<p>
+Once the IP stack is initialised, the "main menu" screen will be displayed. From the main menu, the following options are available:
+<ul>
+	<li>F1 : TFTP BOOT. THis will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed.</li>
+	<li>F3 : BASIC. This will exit to BASIC (with IP stack still configured, so NB65 aware apps can be loaded from disk and run)</li>
+	<li>F5 : UTILITY. This brings up a 'utility' menu - as of v0.5 of the cartridge, the only utility option is to display the ARP cache</li>
+	<li>F7 : CONFIG. This brings up a menu where the IP configuration can be modified. Changes made here will be persistent until the next reboot.</li>
+</ul>
+<h2>IP CONFIGURATION</h2>
+There is a script in the "bin" folder called "set_ip_config.rb" that can be used to modify the MAC address and IP config details in the cart image before
+it is burned. For example, to set the MAC address and DNS servers, use this command:
+<pre>set_ip_config.rb nb65_std_cart.bin mac ab:cd:ef:12:34:56 dns 10.5.1.1</pre>
+run "set_ip_config.rb" with no parameters to see all the options for what can be configured.
+
+
+<h2>ADDING MORE FILES</h2>
+
+Only single-load files can be used (this may change in a future release). The files need to be in "PRG" format, i.e.the first 2 bytes of the file must be
+the load address (little-endian, i.e. low/high). The files also need to have a file extension of ".PRG" (in upper case, if your operating system of choice
+is case sensitive).
+<p>
+Files need to be placed in the 'boot/' folder.
+<p>
+Due to a limitation in the menu selection code, only the first 128 PRG files in the boot/ folder can be selected.
+
+	
+<h2>REQUIREMENTS</h2>
+<ol>
+	<li>RR-NET or compatible adaptor (to use under VICE, you will need pcap or winpcap installed)</li>
+	<li>(RECOMMENDED) a DHCP server on your network</li>
+	<li>a working ruby installation</li>
+</ol>
+<h2>LICENSE</h2>
+	NETBOOT65 is licensed under the same terms as IP65, the Mozilla Public License Version 1.1.
+For details, please visit http://www.mozilla.org/MPL/
+
+
+<h2>SOURCE CODE</h2>
+	Available at http://sourceforge.net/svn/?group_id=250168
+
+<h2>AUTHOR</h2>
+	Jonno Downes - jonno@jamtronix.com
