@@ -16,8 +16,10 @@ $:.unshift(lib_path) unless $:.include?(lib_path)
 require 'tftp_server'
 
 bootfile_dir=File.expand_path(File.dirname(__FILE__)+'/../boot')
-tftp_server=Netboot65TFTPServer.new(bootfile_dir)
-tftp_server.start
+tftp_server_69=Netboot65TFTPServer.new(bootfile_dir,69)
+tftp_server_69.start
+tftp_server_6502=Netboot65TFTPServer.new(bootfile_dir,6502)
+tftp_server_6502.start
 
 begin
   loop do
@@ -26,5 +28,5 @@ begin
 rescue Interrupt
   log_msg "got interrupt signal - shutting down"
 end
-tftp_server.shutdown
+tftp_server_6502.shutdown
 log_msg "shut down complete."

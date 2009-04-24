@@ -60,10 +60,11 @@ utherboot.dsk: utherboot.pg2
 c64boot.d64: nb65_c64_ram.prg 
 	ripxplore.rb --init CbmDos $@ -a nb65_c64_ram.prg
 	ripxplore.rb $@ -a ..\test\test_cart_api.prg
-
+  
 d64_upload.d64: d64_upload.prg
+	cp d64_upload.prg ../../server/boot/
 	ripxplore.rb --init CbmDos $@ -a d64_upload.prg
-
+  
 $(BOOTA2.PG2): bootmenu.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2language_card.cfg
 	$(LD) -m bootmenu.map -C ../cfg/a2language_card.cfg -o $(BOOTA2.PG2)  $< $(IP65LIB) $(APPLE2PROGLIB)  
   

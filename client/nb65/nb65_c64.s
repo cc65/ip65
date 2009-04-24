@@ -180,15 +180,18 @@ ldax #init_msg
   jsr print_errorcode
   jsr wait_for_keypress  
   jmp exit_to_basic
-  
-main_menu:
+
+print_main_menu:
   lda #21 ;make sure we are in upper case
   sta $d018
   jsr cls  
   ldax  #netboot65_msg
   jsr print
   ldax  #main_menu_msg
-  jsr print
+  jmp print
+
+main_menu:
+  jsr print_main_menu
   jsr print_ip_config
   jsr print_cr
   
@@ -201,7 +204,11 @@ main_menu:
   cmp #KEYCODE_F3    
   beq @exit_to_basic
   cmp #KEYCODE_F5 
-  beq @util_menu
+  bne @not_util_menu
+  jsr print_main_menu
+  jsr print_arp_cache
+  jmp @get_key
+@not_util_menu:
   cmp #KEYCODE_F7
   beq @change_config
   
@@ -210,27 +217,6 @@ main_menu:
 @exit_to_basic:
   ldax #$fe66 ;do a wam start
   jmp exit_cart_via_ax
-
-@util_menu_header:
-  jsr cls  
-  ldax  #netboot65_msg
-  jsr print
-  ldax  #util_menu_msg
-  jsr print
-  rts
-@util_menu:
-  jsr @util_menu_header
-@get_key_util_menu:
-  jsr get_key
-  cmp #KEYCODE_F1
-  bne @not_arp_cache
-  jsr @util_menu_header
-  jsr print_arp_cache
-  jmp @get_key_util_menu
- @not_arp_cache:
-  cmp #KEYCODE_F7
-  beq main_menu
-  jmp @get_key_util_menu
 
 
 @change_config:
@@ -544,31 +530,25 @@ cfg_get_configuration_ptr:
 	.rodata
 
 netboot65_msg: 
-.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.4",13
+.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.9",13
 .byte 0
 main_menu_msg:
-.byte 13,"               MAIN MENU",13,13
+.byte 13,"             MAIN MENU",13,13
 .byte "F1: TFTP BOOT     F3: BASIC",13
-.byte "F5: UTILITIES     F7: CONFIG",13,13
-.byte 0
-
-util_menu_msg:
-.byte 13,"               UTILITIES",13,13
-.byte "F1: ARP TABLE",13
-.byte "                  F7: MAIN MENU",13,13
+.byte "F5: ARP TABLE     F7: CONFIG",13,13
 .byte 0
 
 config_menu_msg:
 .byte 13,"              CONFIGURATION",13,13
-.byte "F1: IP ADDRESS    F2: NETMASK",13
-.byte "F3: GATEWAY       F4: DNS SERVER",13
-.byte "F5: TFTP SERVER   F6: RESET TO DEFAULTS",13
+.byte "F1: IP ADDRESS     F2: NETMASK",13
+.byte "F3: GATEWAY        F4: DNS SERVER",13
+.byte "F5: TFTP SERVER    F6: RESET TO DEFAULT",13
 .byte "F7: MAIN MENU",13,13
 .byte 0
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
-getting_dir_listing_msg: .asciiz "FETCHING TFTP DIRECTORY FOR "
+getting_dir_listing_msg: .asciiz "FETCHING DIR FOR "
 
 tftp_dir_listing_fail_msg:
 	.byte "DIR LISTING FAILED",13,0

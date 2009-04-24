@@ -138,7 +138,10 @@ init:
   ldax #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
   call #NB65_PRINT_DOTTED_QUAD
   print_cr
-
+ 
+ ldax #64
+ call #NB65_UDP_REMOVE_LISTENER  ;should generate an error since there is no listener on  port 64
+  jsr print_errorcode
 
   
 ;tftp send test

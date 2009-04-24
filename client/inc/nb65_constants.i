@@ -30,6 +30,7 @@ NB65_DEACTIVATE                EQU $0F ;inputs: none, outputs: none (removes cal
 NB65_UDP_ADD_LISTENER          EQU $10 ;inputs: AX points to a UDP listener parameter structure, outputs: none
 NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
 NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
+NB65_UDP_REMOVE_LISTENER       EQU $13 ;inputs: AX contains UDP port number that listener will be removed from
 
 NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
 NB65_TFTP_DIRECTORY_LISTING    EQU $21 ;inputs: AX points to a TFTP transfer parameter structure, outputs: none
@@ -92,5 +93,7 @@ NB65_ERROR_TRANSMISSION_REJECTED_BY_PEER  EQU $83
 NB65_ERROR_INPUT_TOO_LARGE                EQU $84
 NB65_ERROR_DEVICE_FAILURE                 EQU $85
 NB65_ERROR_ABORTED_BY_USER                EQU $86
+NB65_ERROR_LISTENER_NOT_AVAILABLE         EQU $87
+NB65_ERROR_NO_SUCH_LISTENER               EQU $88
 NB65_ERROR_OPTION_NOT_SUPPORTED           EQU $FE
 NB65_ERROR_FUNCTION_NOT_SUPPORTED         EQU $FF

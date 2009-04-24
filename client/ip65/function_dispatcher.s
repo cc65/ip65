@@ -29,6 +29,7 @@
 .import dns_set_hostname
 .import udp_callback
 .import udp_add_listener
+.import udp_remove_listener
 .import ip_inp
 .import udp_inp
 .import udp_send
@@ -277,7 +278,13 @@ ip_configured:
   tax
   pla
   jmp udp_send
+:
+
+  cpy #NB65_UDP_REMOVE_LISTENER
+  bne :+
+  jmp udp_remove_listener
 :  
+
 
   cpy #NB65_DEACTIVATE
   bne :+

@@ -10,6 +10,8 @@
 
 .import print_a
 .import get_key
+.import get_filtered_input
+.import filter_dns
 .macro cout arg
   lda arg
   jsr print_a
@@ -22,7 +24,8 @@
  track:  .res 1
  sector: .res 1
  sectors_in_track: .res 1
-  
+ error_buffer: .res 128
+ 
  command_buffer: .res 128
  sector_buffer: .res 256
  nb65_param_buffer: .res $20  
@@ -102,7 +105,7 @@ init:
   jsr NB65_DISPATCH_VECTOR 
 	bcc :+  
   print #failed
-  jsr print_errorcode
+  jsr print_nb65_errorcode
   jmp bad_boot    
 :  
   print #ok
@@ -112,28 +115,38 @@ init:
 ; main program goes here:
 ; 
 
-  jsr open_drive_channels
-  bcs @error  
-    
-  jsr move_to_first_sector
   
-  ldax #test_file  
+  
+@send_1_image:
+  lda #$93  ;cls
+  jsr print_a
+  print #signon_message
+  jsr move_to_first_sector
+  print #enter_filename
+  ldax #filter_dns  ;this is pretty close to being a filter for legal chars in file names as well
+  jsr get_filtered_input
+  bcs @no_filename_entered
   stax nb65_param_buffer+NB65_TFTP_FILENAME
+  lda #15
+  jsr open_channel
+  print #position_cursor_for_track_display
   ldax #send_next_block
   stax nb65_param_buffer+NB65_TFTP_POINTER
   ldax #nb65_param_buffer
   call #NB65_TFTP_CALLBACK_UPLOAD
   bcc :+
-  jmp print_errorcode
+  print_cr
+  print #failed
+  jmp print_nb65_errorcode
 :
-
-  rts
-@error:  
-  pha
-  print #drive_error
-  print #error_code
-  pla
-  call #NB65_PRINT_HEX
+  lda #15      ; filenumber 15 - command channel
+  jsr $FFC3     ; call CLOSE
+  print_cr
+  print #ok
+  print  #press_a_key_to_continue
+  jsr get_key
+  jmp @send_1_image ;done! so go again
+@no_filename_entered:
   rts
 
 
@@ -144,8 +157,13 @@ send_next_block:
   lda track
   cmp #36
   beq @past_last_track
+  print #position_cursor_for_track_display
   jsr print_current_sector
   jsr read_sector
+  lda #$30
+  cmp error_buffer
+  bne @was_an_error  
+@after_error_check:
   jsr move_to_next_sector
   bcc @not_last_sector
   ldax  #$100
@@ -160,10 +178,15 @@ send_next_block:
   ldax  #$0000
   rts
 
+@was_an_error:
+  print #position_cursor_for_error_display
+  print #drive_error
+  print_cr
+  jsr print_current_sector
+  print #error_buffer
+  jmp @after_error_check
 
 print_current_sector:
-  lda #$13 ;home
-  jsr print_a
   print #track_no
   lda track
   jsr byte_to_ascii
@@ -183,22 +206,57 @@ print_current_sector:
   print_cr
   rts
 
-open_drive_channels:  
-  LDA #cname_end-cname
-  LDX #<cname
-  LDY #>cname
+
+;open whatever channel is in A
+.bss
+  channel_number: .res 1
+.code
+open_channel:     
+  sta channel_number
+  LDA #0  ;zero length filename
   JSR $FFBD     ; call SETNAM
-  LDA #$02      ; file number 2
-  LDX $BA       ; last used device number
-  BNE @skip
+  LDA channel_number     ; file number 
   LDX #$08      ; default to device 8
-@skip:
-  LDY #$02      ; secondary address 2
+  LDA channel_number      ; secondary address 2
   JSR $FFBA     ; call SETLFS
-  JSR $FFC0     ; call OPEN
-  bcc @opened_ok
+  JSR $FFC0     ; call OPEN  
+  beq @no_error
+  pha
+  print #error_opening_channel
+  lda channel_number
+  call #NB65_PRINT_HEX
+  pla
+  jsr print_a_as_errorcode
+@no_error:  
   rts
-@opened_ok:  
+  
+  
+;send ASCIIZ string in AX to channel Y  
+send_string_to_channel:
+  sty channel_number
+  stax  temp_ptr
+  ldx channel_number
+  jsr $ffc9 ;CHKOUT
+  ldy #0
+@send_one_byte:  
+  lda (temp_ptr),y  
+  bne @done
+  jsr $ffd2     ; call CHROUT (send byte through command channel)
+  beq @error
+  jmp @send_one_byte
+@done:  
+  ldx #0  ;send output to screen again
+  jsr $ffc9 ;CHKOUT
+  rts
+@error:
+pha
+  print #error_sending_to_channel
+  lda channel_number
+  call #NB65_PRINT_HEX
+  jsr $ffb7 ;READST
+  jsr print_a_as_errorcode
+  
+  jsr get_key
   rts
   
 dump_sector:
@@ -222,24 +280,12 @@ read_sector:
   
       
   jsr make_read_sector_command
-  tya
-  pha
-  print #command_buffer
-  print_cr
-  pla
-  LDX #<command_buffer
-  LDY #>command_buffer
-  JSR $FFBD     ; call SETNAM
-  LDA #$0F      ; file number 15
-  LDX $BA       ; last used device number
-  LDY #$0F      ; secondary address 15
-  JSR $FFBA     ; call SETLFS
-
-  JSR $FFC0     ; call OPEN (open command channel and send U1 command)
-  BCS @error    ; if carry set, the file could not be opened
-
+  ldax  command_buffer
+  ldy #15
+  jsr send_string_to_channel  
   jsr check_error_channel
-  
+  lda #2
+  jsr open_channel
   LDX #$02      ; filenumber 2
   JSR $FFC6     ; call CHKIN (file 2 now used as input)
 
@@ -254,55 +300,31 @@ read_sector:
   INY
   BNE @loop     ; next byte, end when 256 bytes are read
 @close:
-  LDA #$0F      ; filenumber 15
+  LDA #$02      ; filenumber 2
   JSR $FFC3     ; call CLOSE
   LDX #$00      ; filenumber 0 = keyboard
   JSR $FFC6     ; call CHKIN (keyboard now input device again)
   RTS
-@error:  
-  pha
-  print #drive_error
-  print #error_code
-  pla
-  call #NB65_PRINT_HEX
-  JMP @close    ; even if OPEN failed, the file has to be closed
-
 
 check_error_channel:
-  LDA #$00      ; no filename
-  LDX #$00
-  LDY #$00
-  JSR $FFBD     ; call SETNAM
-  LDA #$0F      ; file number 15
-  LDX $BA       ; last used device number
-  BNE @skip
-  LDX #$08      ; default to device 8
-@skip:
-  LDY #$0F      ; secondary address 15 (error channel)
-  JSR $FFBA     ; call SETLFS
-
-  JSR $FFC0     ; call OPEN
-
   LDX #$0F      ; filenumber 15
   JSR $FFC6     ; call CHKIN (file 15 now used as input)
-
   LDY #$00
 @loop:
   JSR $FFB7     ; call READST (read status byte)
   BNE @eof      ; either EOF or read error
   JSR $FFCF     ; call CHRIN (get a byte from file)
-  JSR $FFD2     ; call CHROUT (print byte to screen)
+  sta error_buffer,y
+  iny
   JMP @loop     ; next byte
 
 @eof:
-@close:
-  LDA #$0F      ; filenumber 15
-  JSR $FFC3     ; call CLOSE
-
+  lda #0
+  sta error_buffer,y
   LDX #$00      ; filenumber 0 = keyboard
   JSR $FFC6     ; call CHKIN (keyboard now input device again)
   RTS
-
+  
 bad_boot:
   print  #press_a_key_to_continue
 restart:    
@@ -310,7 +332,16 @@ restart:
   jmp $fce2   ;do a cold start
 
 
-print_errorcode:
+print_a_as_errorcode:
+  pha
+  lda #' '
+  jsr print_a
+  print #error_code
+  pla
+  call #NB65_PRINT_HEX
+  rts
+
+print_nb65_errorcode:
   print #error_code
   call #NB65_GET_LAST_ERROR
   call #NB65_PRINT_HEX
@@ -459,7 +490,7 @@ move_to_next_sector:
 .rodata
 
 error_code:  
-  .asciiz "ERROR CODE: $"
+  .byte "ERROR CODE: $",0
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
 
@@ -479,16 +510,26 @@ sector_no:
   
 signon_message:
   .byte "D64 UPLOADER V0.1",13,0
-  
+
+enter_filename:
+.byte "SEND AS: ",0
+
 drive_error:
   .byte "DRIVE ACCESS ERROR - ",0
  nb65_signature_not_found_message:
  .byte "NO NB65 API FOUND",13,"PRESS ANY KEY TO RESET", 0
- 
+ error_opening_channel:
+  .byte "ERROR OPENING CHANNEL $",0
+ error_sending_to_channel:
+  .byte "ERROR SENDING TO CHANNEL $",0
+  
 nb65_signature:
   .byte $4E,$42,$36,$35  ; "NB65"  - API signature
   .byte ' ',0 ; so we can use this as a string
-
-test_file: .byte "TEST.D64",0
-cname:  .byte 35 ;"#"
-cname_end:
+position_cursor_for_track_display:
+;  .byte $13,13,13,13,13,13,13,13,13,13,13,"      SENDING ",0
+.byte $13,13,13,"SENDING ",0
+position_cursor_for_error_display:
+  .byte $13,13,13,13,"LAST ",0
+disk_error:
+  

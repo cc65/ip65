@@ -1,9 +1,14 @@
 ;UDP (user datagram protocol) functions
 
 .include "../inc/common.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
 
 	;.import dbg_dump_udp_header
 
+  .import ip65_error
 
 	.export udp_init
 	.export udp_process
@@ -131,7 +136,9 @@ udp_process:
 	bpl @checkport
 
 @drop:
-	sec
+  lda #NB65_ERROR_NO_SUCH_LISTENER
+  sta  ip65_error
+  sec
 	rts
 
 @handle:
@@ -183,6 +190,9 @@ udp_add_listener:
 	rts
 @full:
 @busy:
+  lda #NB65_ERROR_LISTENER_NOT_AVAILABLE
+  sta  ip65_error
+  sec
 	sec
 	rts
 

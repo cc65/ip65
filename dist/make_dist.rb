@@ -19,7 +19,7 @@ end
 #["client/nb65/nb65_rrnet.bin","c64/"],
 ["client/nb65/nb65_c64_ram.prg","c64/"],
 ["client/nb65/nb65_std_cart.bin","c64/"],
-["client/nb65/d64_upload.prg","boot/"],
+#["client/nb65/d64_upload.prg","boot/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
 ["server/bin/import_ags_games.rb","bin"],
