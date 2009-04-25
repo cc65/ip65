@@ -1,4 +1,6 @@
 ;use the NB65 API to send a d64 disk via TFTP
+;
+;
 
 .ifndef NB65_API_VERSION_NUMBER
   .define EQU     =
@@ -17,7 +19,17 @@
   jsr print_a
 .endmacro   
 
-
+;######### KERNEL functions
+CHKIN   = $ffc6
+CHKOUT  = $ffc9
+CHRIN = $ffcf
+CHROUT  = $ffd2
+CLALL = $FFE7
+CLOSE = $ffc3
+OPEN = $ffc0
+READST = $ffb7
+SETNAM = $ffbd
+SETLFS = $ffba
 
 .bss
  current_byte: .res 1
@@ -115,20 +127,30 @@ init:
 ; main program goes here:
 ; 
 
+  jsr CLALL
+
+
+;  ldx #18
+;  stx track
+;  ldx #1
+;  stx sector
+;  ldx #21
+;  stx sectors_in_track
+;  ldax #sector_buffer
+;  jsr send_next_block
+;  rts
   
-  
+
 @send_1_image:
   lda #$93  ;cls
   jsr print_a
   print #signon_message
-  jsr move_to_first_sector
+  jsr reset_counters_to_first_sector
   print #enter_filename
   ldax #filter_dns  ;this is pretty close to being a filter for legal chars in file names as well
   jsr get_filtered_input
   bcs @no_filename_entered
   stax nb65_param_buffer+NB65_TFTP_FILENAME
-  lda #15
-  jsr open_channel
   print #position_cursor_for_track_display
   ldax #send_next_block
   stax nb65_param_buffer+NB65_TFTP_POINTER
@@ -140,7 +162,7 @@ init:
   jmp print_nb65_errorcode
 :
   lda #15      ; filenumber 15 - command channel
-  jsr $FFC3     ; call CLOSE
+  jsr CLOSE
   print_cr
   print #ok
   print  #press_a_key_to_continue
@@ -169,10 +191,16 @@ send_next_block:
   ldax  #$100
   rts
 @not_last_sector:
+  
+;  jsr dump_sector ;DEBUG
+
   inc sector_buffer_address+1
   jsr read_sector
   jsr move_to_next_sector
   ldax  #$200
+  
+;  jsr dump_sector ;DEBUG
+  
   rts
 @past_last_track:
   ldax  #$0000
@@ -207,57 +235,6 @@ print_current_sector:
   rts
 
 
-;open whatever channel is in A
-.bss
-  channel_number: .res 1
-.code
-open_channel:     
-  sta channel_number
-  LDA #0  ;zero length filename
-  JSR $FFBD     ; call SETNAM
-  LDA channel_number     ; file number 
-  LDX #$08      ; default to device 8
-  LDA channel_number      ; secondary address 2
-  JSR $FFBA     ; call SETLFS
-  JSR $FFC0     ; call OPEN  
-  beq @no_error
-  pha
-  print #error_opening_channel
-  lda channel_number
-  call #NB65_PRINT_HEX
-  pla
-  jsr print_a_as_errorcode
-@no_error:  
-  rts
-  
-  
-;send ASCIIZ string in AX to channel Y  
-send_string_to_channel:
-  sty channel_number
-  stax  temp_ptr
-  ldx channel_number
-  jsr $ffc9 ;CHKOUT
-  ldy #0
-@send_one_byte:  
-  lda (temp_ptr),y  
-  bne @done
-  jsr $ffd2     ; call CHROUT (send byte through command channel)
-  beq @error
-  jmp @send_one_byte
-@done:  
-  ldx #0  ;send output to screen again
-  jsr $ffc9 ;CHKOUT
-  rts
-@error:
-pha
-  print #error_sending_to_channel
-  lda channel_number
-  call #NB65_PRINT_HEX
-  jsr $ffb7 ;READST
-  jsr print_a_as_errorcode
-  
-  jsr get_key
-  rts
   
 dump_sector:
 ;hex dump sector
@@ -276,44 +253,74 @@ read_sector:
 ; - requires track and sector values be set first
 ; sector will be written to address whos value is stored in sector_data
 ; open the channel file
-  
-  
-      
-  jsr make_read_sector_command
-  ldax  command_buffer
-  ldy #15
-  jsr send_string_to_channel  
-  jsr check_error_channel
-  lda #2
-  jsr open_channel
-  LDX #$02      ; filenumber 2
-  JSR $FFC6     ; call CHKIN (file 2 now used as input)
 
-  LDA sector_buffer_address
-  STA temp_ptr
-  LDA sector_buffer_address+1
-  STA temp_ptr+1
-  LDY #$00
+  jsr make_read_sector_command
+  
+  lda #1
+  ldx #<cname
+  ldy #>cname
+  jsr SETNAM
+  lda #02
+  ldx #08
+  ldy #02
+  jsr SETLFS
+  jsr OPEN
+  bcs @error
+  ldx #<command_buffer
+  ldy #>command_buffer
+  lda #12
+  jsr SETNAM
+  lda #15
+  ldx $BA ;use whatever was last device #
+  ldy #15
+  jsr SETLFS
+  jsr OPEN
+  bcs @error
+  
+  
+  jsr check_error_channel
+  lda #$30
+  cmp error_buffer
+  beq @was_not_an_error  
+  print #error_buffer
+  
+ @was_not_an_error:
+  ldx #$02      ; filenumber 2
+  jsr CHKIN ;(file 2 now used as input)
+
+  lda sector_buffer_address
+  sta temp_ptr
+  lda sector_buffer_address+1
+  sta temp_ptr+1
+  ldy #$00
 @loop:
-  JSR $FFCF     ; call CHRIN (get a byte from file)
-  STA (temp_ptr),Y   ; write byte to memory
-  INY
-  BNE @loop     ; next byte, end when 256 bytes are read
+  jsr CHRIN ;(get a byte from file)
+  sta (temp_ptr),Y   ; write byte to memory
+  iny
+  bne @loop     ; next byte, end when 256 bytes are read
 @close:
-  LDA #$02      ; filenumber 2
-  JSR $FFC3     ; call CLOSE
-  LDX #$00      ; filenumber 0 = keyboard
-  JSR $FFC6     ; call CHKIN (keyboard now input device again)
-  RTS
+  lda #15      ; filenumber 15
+  jsr CLOSE
+  lda #$02      ; filenumber 2
+  jsr CLOSE
+  ldx #$00      ; filenumber 0 = keyboard
+  jsr CHKIN ;(keyboard now input device again)
+  rts
+@error:
+  pha
+  print #error_opening_channel
+  pla
+  call #NB65_PRINT_HEX
+  jmp @close
 
 check_error_channel:
   LDX #$0F      ; filenumber 15
-  JSR $FFC6     ; call CHKIN (file 15 now used as input)
+  JSR CHKIN ;(file 15 now used as input)
   LDY #$00
 @loop:
-  JSR $FFB7     ; call READST (read status byte)
+  JSR READST ;(read status byte)
   BNE @eof      ; either EOF or read error
-  JSR $FFCF     ; call CHRIN (get a byte from file)
+  JSR CHRIN ;(get a byte from file)
   sta error_buffer,y
   iny
   JMP @loop     ; next byte
@@ -322,7 +329,7 @@ check_error_channel:
   lda #0
   sta error_buffer,y
   LDX #$00      ; filenumber 0 = keyboard
-  JSR $FFC6     ; call CHKIN (keyboard now input device again)
+  JSR CHKIN ;(keyboard now input device again)
   RTS
   
 bad_boot:
@@ -441,7 +448,7 @@ byte_to_ascii:
   rts
  
 
-move_to_first_sector:
+reset_counters_to_first_sector:
   ldx #1
   stx track
   dex
@@ -505,6 +512,7 @@ initializing:
 track_no:
   .byte "TRACK ",0
 
+
 sector_no:
   .byte " SECTOR ",0
   
@@ -520,9 +528,10 @@ drive_error:
  .byte "NO NB65 API FOUND",13,"PRESS ANY KEY TO RESET", 0
  error_opening_channel:
   .byte "ERROR OPENING CHANNEL $",0
- error_sending_to_channel:
-  .byte "ERROR SENDING TO CHANNEL $",0
-  
+ 
+disk_access:
+.byte 13,13,13,13,13,"SENDING TO CHANNEL $",0
+
 nb65_signature:
   .byte $4E,$42,$36,$35  ; "NB65"  - API signature
   .byte ' ',0 ; so we can use this as a string
@@ -531,5 +540,5 @@ position_cursor_for_track_display:
 .byte $13,13,13,"SENDING ",0
 position_cursor_for_error_display:
   .byte $13,13,13,13,"LAST ",0
-disk_error:
-  
+
+cname: .byte '#'  
