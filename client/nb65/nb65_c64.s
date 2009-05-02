@@ -391,7 +391,7 @@ cmp #KEYCODE_F7
   jsr print_cr
 
   ldax  #nb65_param_buffer
-  nb65call #NB65_TFTP_DIRECTORY_LISTING  
+  nb65call #NB65_TFTP_DOWNLOAD
   
 	bcs @dir_failed
 
@@ -569,7 +569,7 @@ new:
 .byte"NEW ",0
   
 tftp_dir_filemask:  
-  .asciiz "*.PRG"
+  .asciiz "$*.prg"
 
 tftp_file:  
   .asciiz "BOOTC64.PRG"

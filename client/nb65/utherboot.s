@@ -21,7 +21,6 @@
   .import tftp_load_address
   .import tftp_ip
   .import tftp_download
-  .import tftp_directory_listing 
   
 	.import copymem
 	.importzp copy_src
@@ -175,7 +174,7 @@ init:
   jsr print
   jsr print_cr
 
-  jsr tftp_directory_listing 
+  jsr tftp_download
 	bcs @dir_failed
  
   ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
@@ -286,7 +285,7 @@ tftp_file:
   .asciiz "BOOTA2.PG2"
 
 tftp_dir_filemask:  
-  .asciiz "*.PG2"
+  .asciiz "$*.pg2"
 
 tftp_download_fail_msg:
 	.asciiz "DOWNLOAD FAILED"

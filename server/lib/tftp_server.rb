@@ -1,7 +1,8 @@
 #
 # minimal TFTP server implementation for use with netboot65
 #
-# supports RRQ, WRQ and a custom DIR request (opcode 0x65 - returns null terminated list of filenames that match specified filemask)
+# supports RRQ, WRQ 
+# a RRQ for a filename starting with $ is treated as a directory request
 # Jonno Downes (jonno@jamtronix.com) - January, 2009
 # 
 # TFTP spec : http://www.ietf.org/rfc/rfc1350.txt
@@ -17,7 +18,6 @@ class Netboot65TFTPServer
     3=>'DATA',
     4=>'ACK',
     5=>'ERROR',
-    0x65=>'DIR',
   }
   
   TFTP_ERRORCODES={
@@ -167,7 +167,16 @@ class Netboot65TFTPServer
            log_msg "RRQ for #{filename} (#{mode})"
            if filename=~/^\./ || filename=~/\.\./ then #looks like something dodgy - either a dotfile or a directory traversal attempt
             send_error(client_ip,client_port,1,"'#{filename}' invalid filename") 
-           else
+           elsif  filename=~/^\$(.*)/ then #it's a directory request
+              filemask=$1
+              log_msg "DIR for #{filemask}"  
+              data_to_send=""
+              Dir.chdir(bootfile_dir) do
+                Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000"}
+                end
+              data_to_send<<0.chr
+              Thread.new {send_data(client_ip,client_port,"DIR of #{filemask}",data_to_send)}
+            else
              full_filename="#{bootfile_dir}/#{filename}"
              if File.file?(full_filename) then
                data_to_send=File.open(full_filename,"rb").read

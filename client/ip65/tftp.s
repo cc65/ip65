@@ -1,5 +1,5 @@
 ;minimal tftp implementation (client only)
-;supports file download and upload and custom directory listing (using non-standard tftp opcode of 0x65)
+;supports file upload and download
 
 
   TFTP_MAX_RESENDS=10
@@ -16,7 +16,6 @@
   .export tftp_ip
   .export tftp_download
   .export tftp_upload
-  .export tftp_directory_listing 
   .export tftp_data_block_length
   .export tftp_set_callback_vector
   .export tftp_data_block_length
@@ -133,29 +132,6 @@ tftp_upload:
   ldax  #$0200      ;opcode 02 = WRQ
   jmp set_tftp_opcode
 
-; query a tftp server for a directory listing (uses a non-standard tftp opcode,
-; currently only supported by tftp server built in to 'netboot65' server)
-; inputs:
-;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
-;   tftp_filename: pointer to null terminated filemask  (e.g. "*.prg",0)
-;   tftp_load_address: memory location that dir will be stored in (NB - this field is
-;       ignored if a callback vector has been set with tftp_set_callback_vector)
-; outputs: carry flag is set if there was an error, clear otherwise
-;   if a callback vector has been set with tftp_set_callback_vector
-;   then the specified routine will be called once for each 512 byte packet
-;   sent from the tftp server (each time AX will point at data block just arrived,
-;   and tftp_data_block_length will contain number of bytes in that data block)
-;   otherwise, the buffer at tftp_load_address will be filled
-;   with null-terminated strings containing the names of all files on the
-;   server that matched the specified file mask, and an additional null
-;   byte will follow the null byte terminating the last file name.
-;   NB - there is no limit to the amount of memory this function will consume,
-;   so depending on where tftp_load_address is set, there is potential to
-;   overwrite other data or code
-tftp_directory_listing:
-  ldax  #$6500      ;opcode 65 = netboot65 DIR (non-standard opcode)
-  jmp set_tftp_opcode
-
 ;download a file from a tftp server
 ; inputs:
 ;   tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
@@ -187,9 +163,9 @@ set_tftp_opcode:
   stax tftp_current_memloc
   ldax #tftp_in
 	stax udp_callback 
-  lda #$69
+  ldx #$69
   inc tftp_client_port_low_byte    ;each transfer uses a different client port
-	ldx tftp_client_port_low_byte    ;so we don't get confused by late replies to a previous call
+	lda tftp_client_port_low_byte    ;so we don't get confused by late replies to a previous call
 	jsr udp_add_listener
   
 	bcc :+      ;bail if we couldn't listen on the port we want
@@ -218,8 +194,8 @@ set_tftp_opcode:
   bne @not_error
 
 @exit_with_error:
-  lda #$69
-	ldx tftp_client_port_low_byte    
+  ldx #$69
+	lda tftp_client_port_low_byte    
 	jsr udp_remove_listener  
   sec
   rts
@@ -229,8 +205,8 @@ set_tftp_opcode:
   cmp #tftp_complete
   bne @not_complete
   jsr send_ack    ;send the ack for the last block
-  lda #$69
-	ldx tftp_client_port_low_byte    
+  ldx #$69
+	lda tftp_client_port_low_byte    
 	jsr udp_remove_listener
   rts
   
@@ -293,8 +269,8 @@ send_request_packet:
   ldx #0
   stax udp_send_len
   
-  lda #$69
-	ldx tftp_client_port_low_byte    
+  ldx #$69
+	lda tftp_client_port_low_byte    
 	stax udp_send_src_port
 
   ldx #3				; set destination address
@@ -328,8 +304,8 @@ send_tftp_packet: ;TFTP block should be created in tftp_outp, we just add the UD
   lda tftp_current_block_number+1
   stax  tftp_outp+2 
 
-  lda #$69
-	ldx tftp_client_port_low_byte    
+  ldx #$69
+	lda tftp_client_port_low_byte    
 	stax udp_send_src_port
   
   lda tftp_actual_server_ip

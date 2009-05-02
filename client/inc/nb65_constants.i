@@ -33,7 +33,6 @@ NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parame
 NB65_UDP_REMOVE_LISTENER       EQU $13 ;inputs: AX contains UDP port number that listener will be removed from
 
 NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
-NB65_TFTP_DIRECTORY_LISTING    EQU $21 ;inputs: AX points to a TFTP transfer parameter structure, outputs: none
 NB65_TFTP_DOWNLOAD             EQU $22 ;inputs: AX points to a TFTP transfer parameter structure, outputs: TFTP param structure updated with 
                                        ;NB65_TFTP_POINTER updated to reflect actual load address (if load address $0000 originally passed in)
 NB65_TFTP_CALLBACK_DOWNLOAD    EQU $23 ;inputs: AX points to a TFTP transfer parameter structure, outputs: none

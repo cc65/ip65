@@ -17,7 +17,6 @@
 .import tftp_load_address
 .importzp tftp_filename
 .import tftp_ip
-.import tftp_directory_listing
 .import ip65_error
 .import tftp_clear_callbacks
 .import tftp_download
@@ -310,11 +309,11 @@ ip_configured:
   rts
   
 :
-  cpy #NB65_TFTP_DIRECTORY_LISTING  
+  cpy #NB65_TFTP_DOWNLOAD
   bne :+
   phax
   jsr set_tftp_params
-  jsr tftp_directory_listing
+  jsr tftp_download
 
 @after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
   plax
@@ -339,13 +338,6 @@ ip_configured:
   rts
 :
 
-  cpy #NB65_TFTP_DOWNLOAD
-  bne :+
-  phax
-  jsr set_tftp_params
-  jsr tftp_download
-  jmp @after_tftp_call
-:
 
 
   cpy #NB65_TFTP_CALLBACK_DOWNLOAD
