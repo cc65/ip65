@@ -38,6 +38,10 @@
   .import __CODE_LOAD__
   .import __CODE_RUN__
   .import __CODE_SIZE__
+  .import __IP65_DEFAULTS_LOAD__
+  .import __IP65_DEFAULTS_RUN__
+  .import __IP65_DEFAULTS_SIZE__
+  
 
 ;.segment        "PAGE3"
 ;disable_language_card: .res 3
@@ -92,6 +96,9 @@ tftp_dir_buffer = $4000
   ldax #__RODATA_SIZE__
   jsr startup_copymem
 
+ 
+;@fixme:  jmp @fixme
+
   ;relocate the DATA segment
   ldax #__DATA_LOAD__
   stax copy_src
@@ -100,6 +107,14 @@ tftp_dir_buffer = $4000
   ldax #__DATA_SIZE__
   jsr startup_copymem
 
+ ;relocate the IP65_DEFAULTS segment
+  ldax #__IP65_DEFAULTS_LOAD__
+  stax copy_src
+  ldax #__IP65_DEFAULTS_RUN__
+  stax copy_dest  
+  ldax #__IP65_DEFAULTS_SIZE__
+  jsr startup_copymem
+ 
   jmp init
   
 ; copy memory
@@ -293,4 +308,6 @@ tftp_download_fail_msg:
 tftp_download_ok_msg:
 	.asciiz "DOWNLOAD OK"
 
-startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V0.1",0
+startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V"
+.include "nb65_version.i"
+.byte 0

@@ -387,9 +387,6 @@ cmp #KEYCODE_F7
   ldax #tftp_dir_filemask
   stax nb65_param_buffer+NB65_TFTP_FILENAME
 
-  jsr print
-  jsr print_cr
-
   ldax  #nb65_param_buffer
   nb65call #NB65_TFTP_DOWNLOAD
   
@@ -530,8 +527,9 @@ cfg_get_configuration_ptr:
 	.rodata
 
 netboot65_msg: 
-.byte "NETBOOT65 - C64 NETWORK BOOT CLIENT V0.9",13
-.byte 0
+.byte 13,"  NETBOOT65 - C64 CLIENT VERSION "
+.include "nb65_version.i"
+.byte 13,0
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13
 .byte "F1: TFTP BOOT     F3: BASIC",13
@@ -548,7 +546,7 @@ config_menu_msg:
 
 downloading_msg:  .asciiz "DOWNLOADING "
 
-getting_dir_listing_msg: .asciiz "FETCHING DIR FOR "
+getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
 
 tftp_dir_listing_fail_msg:
 	.byte "DIR LISTING FAILED",13,0
