@@ -168,12 +168,14 @@ class Netboot65TFTPServer
            if filename=~/^\./ || filename=~/\.\./ then #looks like something dodgy - either a dotfile or a directory traversal attempt
             send_error(client_ip,client_port,1,"'#{filename}' invalid filename") 
            elsif  filename=~/^\$(.*)/ then #it's a directory request
-              filemask=$1
+              filemask="/#{$1}"
+              filemask="#{filemask}/*.*" unless filemask=~/\*/
               log_msg "DIR for #{filemask}"  
               data_to_send=""
-              Dir.chdir(bootfile_dir) do
-                Dir.glob(filemask).each {|filename| data_to_send<<"#{filename}\000"}
-                end
+              Dir.glob("#{bootfile_dir}#{filemask}").each do |full_filename|
+                filename=full_filename.sub(/^#{bootfile_dir}\/*/,'')  
+                data_to_send<<"#{filename}\000"
+              end
               data_to_send<<0.chr
               Thread.new {send_data(client_ip,client_port,"DIR of #{filemask}",data_to_send)}
             else
