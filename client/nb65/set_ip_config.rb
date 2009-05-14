@@ -59,15 +59,21 @@ end
   option_length=offsets[1]
   
   if option_length==6 then
-    split_values=value.split(":")
-    if (split_values.length!=6) || (split_values[5].nil?) then
-      puts "'#{value}' is not a valid MAC address. (e.g. 12:34:56:78:ab:cd)"
-      exit
-    end
-    mac=[]
-    6.times do |j|      
-      mac[j]=split_values[j].hex
-#      puts "#{split_values[j]}->#{"%02X" % mac[j]}"
+    if value.downcase=="auto" then
+      require 'digest/md5'
+      digest = Digest::MD5.digest(Time.now.to_s)
+      mac=[0x00,0x80,0x10,digest[0],digest[1],Kernel.rand(255)]
+    else
+      split_values=value.split(":")
+      if (split_values.length!=6) || (split_values[5].nil?) then
+        puts "'#{value}' is not a valid MAC address. (e.g. 12:34:56:78:ab:cd)"
+        exit
+      end
+      mac=[]
+      6.times do |j|      
+        mac[j]=split_values[j].hex
+  #      puts "#{split_values[j]}->#{"%02X" % mac[j]}"
+      end
     end
     packed_option=mac.pack("cccccc")
   else #it must be an IP
