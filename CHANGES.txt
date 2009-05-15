@@ -1,0 +1,3 @@
+0.9.7
+	- tweak directory listing code in server so $ works by itself
+	- client & server updated to support subdirectories (prefixed by $)
