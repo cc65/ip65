@@ -20,6 +20,7 @@
  @progname=File.basename($0)
  def show_options
    puts  "valid options are: #{@cartridge_offsets.keys.join(", ")}"
+   puts "mac auto will automagically generate a pseudorandom MAC"
 end
  def usage 
   puts "#{@progname} <image> <option> <value> [<option> <value> ..]"

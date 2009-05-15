@@ -102,12 +102,14 @@ exit_cart:
   sta $0001   ;turns off ordinary cartridge by modifying HIRAM/LORAM (this will also bank out BASIC)
 .endif
 
+get_value_of_axy: ;some more self-modifying code
+	lda $ffff,y
+  rts
+
 call_downloaded_prg: 
    jsr $0000 ;overwritten when we load a file
    jmp init
    
-	.bss
-
 
 
 .segment "CARTRIDGE_HEADER"
@@ -378,18 +380,22 @@ cmp #KEYCODE_F7
   
 @tftp_boot:  
 
+  
+  ldax #tftp_dir_filemask
+  
+@get_tftp_directory_listing:  
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+
+  
   ldax #tftp_dir_buffer
   stax nb65_param_buffer+NB65_TFTP_POINTER
 
   ldax #getting_dir_listing_msg
 	jsr print
 
-  ldax #tftp_dir_filemask
-  stax nb65_param_buffer+NB65_TFTP_FILENAME
-
   ldax  #nb65_param_buffer
   nb65call #NB65_TFTP_DOWNLOAD
-  
+
 	bcs @dir_failed
 
   lda tftp_dir_buffer ;get the first byte that was downloaded
@@ -408,6 +414,33 @@ cmp #KEYCODE_F7
   bcc @tftp_filename_set
   jmp main_menu
 @tftp_filename_set:
+  stax  copy_dest
+  stax  get_value_of_axy+1
+  ldy #0
+  jsr get_value_of_axy ;A now == first char in string we just downloaded
+  cmp #'$'
+  bne @not_directory_name
+  ;it's a directory name, so we need to append the file mask to end of it
+  ;this will fail if the file path is more than 255 characters long
+@look_for_trailing_zero:
+   iny
+    inc copy_dest
+    bne :+
+    inc copy_dest+1
+: 
+   jsr get_value_of_axy ;A now == next char in string we just downloaded
+   bne  @look_for_trailing_zero
+   
+; got trailing zero
+  ldax  #tftp_dir_filemask+1 ;skip the leading '$'
+  stax  copy_src
+  ldax  #$07
+  jsr copymem   
+  ldax get_value_of_axy+1
+  jmp @get_tftp_directory_listing
+
+@not_directory_name:
+  ldax  get_value_of_axy+1
   jsr download
   bcc @file_downloaded_ok
 @tftp_boot_failed:  
@@ -567,7 +600,7 @@ new:
 .byte"NEW ",0
   
 tftp_dir_filemask:  
-  .asciiz "$*.prg"
+  .asciiz "$/*.prg"
 
 tftp_file:  
   .asciiz "BOOTC64.PRG"

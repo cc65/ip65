@@ -8,6 +8,7 @@
 # TFTP spec : http://www.ietf.org/rfc/rfc1350.txt
 
 require 'socket'
+require 'file_list'
 class Netboot65TFTPServer
 
 
@@ -33,7 +34,7 @@ class Netboot65TFTPServer
   
   attr_reader :bootfile_dir,:port,:server_thread
   def initialize(bootfile_dir,port=69)
-    @bootfile_dir=bootfile_dir
+    @file_list=FileList.new(bootfile_dir)
     @port=port
     @server_thread=nil
     @current_connection={}    
@@ -165,27 +166,16 @@ class Netboot65TFTPServer
            opcode,filename_and_mode=data.unpack("nA*")
            filename,mode=filename_and_mode.split(0.chr)
            log_msg "RRQ for #{filename} (#{mode})"
-           if filename=~/^\./ || filename=~/\.\./ then #looks like something dodgy - either a dotfile or a directory traversal attempt
-            send_error(client_ip,client_port,1,"'#{filename}' invalid filename") 
-           elsif  filename=~/^\$(.*)/ then #it's a directory request
-              filemask="/#{$1}"
-              filemask="#{filemask}/*.*" unless filemask=~/\*/
-              log_msg "DIR for #{filemask}"  
-              data_to_send=""
-              Dir.glob("#{bootfile_dir}#{filemask}").each do |full_filename|
-                filename=full_filename.sub(/^#{bootfile_dir}\/*/,'')  
-                data_to_send<<"#{filename}\000"
+           if filename=~/^\./ || filename=~/\.\./  #looks like something dodgy - either a dotfile or a directory traversal attempt
+            send_error(client_ip,client_port,1,"'#{filename}' invalid filename")            
+            else
+              begin
+               data_to_send=@file_list[filename]
+               Thread.new {send_data(client_ip,client_port,filename,data_to_send)}
+              rescue Exception=>e
+                send_error(client_ip,client_port,1,"error retrieving '#{filename}':#{e.to_s}")
+                log_msg(e.backtrace.join("\n"))
               end
-              data_to_send<<0.chr
-              Thread.new {send_data(client_ip,client_port,"DIR of #{filemask}",data_to_send)}
-            else
-             full_filename="#{bootfile_dir}/#{filename}"
-             if File.file?(full_filename) then
-               data_to_send=File.open(full_filename,"rb").read
-               Thread.new {send_data(client_ip,client_port,full_filename,data_to_send)}
-            else
-              send_error(client_ip,client_port,1,"'#{filename}' not found") 
-            end
           end
           when 2 : #WRITE REQUEST
            opcode,filename_and_mode=data.unpack("nA*")
