@@ -141,11 +141,21 @@ init:
 
 
   ;set some funky colours
+  .ifdef TCP
+  LDA #$04  ;purple
+  .else
   LDA #$05  ;green
-  STA $D020 ;background
+  .endif
+
+  STA $D020 ;border
   LDA #$00  ;black 
   STA $D021 ;background
-  lda #$1E
+  .ifdef TCP
+  lda #$9c  ;petscii for purple text
+  .else
+  lda #$1E  ;petscii for green text
+  .endif
+
   jsr print_a
 
 ;relocate our r/w data
@@ -203,8 +213,10 @@ main_menu:
   bne @not_tftp
   jmp @tftp_boot
  @not_tftp:  
+.ifndef TCP 
   cmp #KEYCODE_F3    
   beq @exit_to_basic
+.endif  
   cmp #KEYCODE_F5 
   bne @not_util_menu
   jsr print_main_menu
@@ -472,10 +484,18 @@ cmp #KEYCODE_F7
   lda nb65_param_buffer+NB65_TFTP_POINTER
   cmp #01
   bne @not_a_basic_file
-
+  
   lda nb65_param_buffer+NB65_TFTP_POINTER+1
   cmp #$08
   bne @not_a_basic_file
+
+  .ifdef TCP
+  ldax #cant_boot_basic
+  jsr print
+  jsr wait_for_keypress
+  jmp init
+  
+  .else
 
   jsr $e453 ;set BASIC vectors 
   jsr $e3bf ;initialize BASIC 
@@ -488,7 +508,8 @@ cmp #KEYCODE_F7
   jsr $a659  ; CLR (reset variables)
   ldax  #$a7ae  ; jump to BASIC interpreter loop
   jmp exit_cart_via_ax
-  
+ .endif  
+ 
 @not_a_basic_file:  
   ldax  nb65_param_buffer+NB65_TFTP_POINTER
 exit_cart_via_ax:  
@@ -496,7 +517,7 @@ exit_cart_via_ax:
   stx call_downloaded_prg+2
   
   jmp exit_cart
-
+ 
 print_errorcode:
   ldax #error_code
   jsr print
@@ -565,7 +586,11 @@ netboot65_msg:
 .byte 13,0
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13
-.byte "F1: TFTP BOOT     F3: BASIC",13
+.byte "F1: TFTP BOOT"
+.ifndef TCP
+.byte "     F3: BASIC"
+.endif
+.byte 13
 .byte "F5: ARP TABLE     F7: CONFIG",13,13
 .byte 0
 
@@ -613,6 +638,10 @@ press_a_key_to_continue:
 
 resolving:
   .byte "RESOLVING ",0
+
+  .ifdef TCP
+cant_boot_basic: .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
+  .endif
 
 nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature

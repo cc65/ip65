@@ -5,7 +5,6 @@
 	.export ip_calc_cksum
 	.export ip_create_packet
 	.export ip_send
-
 	.export ip_inp
 	.export ip_outp
 	.export ip_broadcast
@@ -26,7 +25,7 @@
 	.exportzp ip_proto_tcp
 	.exportzp ip_proto_udp
 
-
+  
 	.import cfg_mac
 	.import cfg_ip
 
@@ -54,6 +53,9 @@
 	.import udp_init
 	.import udp_process
 
+  .import tcp_init
+  .import tcp_process
+
 	.importzp copy_src
 
 
@@ -63,7 +65,7 @@
 ip_cksum_ptr:	.res 2		; pointer to data to be checksummed
 
 
-	.bss
+.bss
 
 ip_cksum_len:	.res 2		; length of data to be checksummed
 
@@ -118,8 +120,8 @@ ip_init:
 	sta bad_addr + 1
 
 	jsr icmp_init
+  jsr tcp_init
 	jsr udp_init
-;	jsr tcp_init
 
 	rts
 
@@ -152,7 +154,7 @@ ip_process:
 	bne :+
 	jmp udp_process			; jump to udp handler
 :
-tcp_process:
+unknown_protocol:
 	sec				; unknown protocol
 	rts
 

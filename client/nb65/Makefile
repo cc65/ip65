@@ -13,19 +13,25 @@ INCFILES=\
 
 IP65LIB=../ip65/ip65.lib
 
+IP65TCPLIB=../ip65/ip65_tcp.lib
+
 C64PROGLIB=../drivers/c64prog.lib
 C64NB65LIB=../drivers/c64nb65.lib
 APPLE2PROGLIB=../drivers/apple2prog.lib
 
 BOOTA2.PG2=../../server/boot/BOOTA2.PG2
   
-all:  utherboot.dsk $(BOOTA2.PG2)  nb65_rrnet.bin   nb65_std_cart.bin nb65_c64_ram.prg d64_upload.prg c64boot.d64 d64_upload.d64
-  
+#all:  utherboot.dsk $(BOOTA2.PG2)  nb65_rrnet.bin   nb65_std_cart.bin nb65_c64_ram.prg d64_upload.prg c64boot.d64 d64_upload.d64
+all:  nb65_std_cart.bin nb65_tcp_cart.bin
+
 nb65_c64_ram.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=0 $(AFLAGS) -o $@ $<
 
 nb65_std_cart.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=1 $(AFLAGS) -o $@ $<
+
+nb65_tcp_cart.o: nb65_c64.s $(INCFILES)
+	$(AS) -DBANKSWITCH_SUPPORT=1 -DTCP $(AFLAGS) -o $@ $<
 
 nb65_rrnet.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=2 $(AFLAGS) -o $@ $<
@@ -46,6 +52,10 @@ nb65_c64_ram.prg: nb65_c64_ram_header.bin nb65_c64_ram.o $(IP65LIB) $(C64NB65LIB
 nb65_std_cart.bin: nb65_std_cart.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m nb65_std_cart.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8192
+
+nb65_tcp_cart.bin: nb65_tcp_cart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
+	$(LD) -m nb65_tcp_cart.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
+	ruby fix_cart.rb $@ 16384
 
 nb65_rrnet.bin: nb65_rrnet.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m nb65_rrnet.map -Ln nb65_rr.lab -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
