@@ -18,7 +18,11 @@ tcp_add_listener:
 tcp_remove_listener:
 tcp_send:
 tcp_process:
-sec
-inc $d020
+  lda #NB65_ERROR_FUNCTION_NOT_SUPPORTED
+  sta ip65_error
+  sec
 tcp_init:
-rts
+  rts
+
+
+.res 2000 ;fixme

@@ -27,20 +27,26 @@ ETHOBJS= \
   dottedquad.o \
   output_buffer.o\
   tftp.o \
+  tcp.o \
   function_dispatcher.o \
   
   
 all: ip65.lib ip65_tcp.lib
 
-ip65.lib: tcp_stub.o $(ETHOBJS)
+ip65.lib: $(ETHOBJS)
+	$(AS) $(AFLAGS) function_dispatcher.s
+	$(AS) $(AFLAGS) ip.s
 	ar65 a ip65.lib $^
 
 ip65_tcp.lib: tcp.o $(ETHOBJS)
+	$(AS) $(AFLAGS) function_dispatcher.s -DTCP
+	$(AS) $(AFLAGS) ip.s -DTCP
 	ar65 a ip65_tcp.lib $^
 
 clean:
 	rm -f *.o
 	rm -f ip65.lib
+	rm -f ip65_tcp.lib
 
 
 distclean: clean

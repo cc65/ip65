@@ -31,7 +31,7 @@ nb65_std_cart.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=1 $(AFLAGS) -o $@ $<
 
 nb65_tcp_cart.o: nb65_c64.s $(INCFILES)
-	$(AS) -DBANKSWITCH_SUPPORT=1 -DTCP $(AFLAGS) -o $@ $<
+	$(AS) -DBANKSWITCH_SUPPORT=3 $(AFLAGS) -o $@ $<
 
 nb65_rrnet.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=2 $(AFLAGS) -o $@ $<
@@ -53,8 +53,8 @@ nb65_std_cart.bin: nb65_std_cart.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/r
 	$(LD) -m nb65_std_cart.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8192
 
-nb65_tcp_cart.bin: nb65_tcp_cart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
-	$(LD) -m nb65_tcp_cart.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
+nb65_tcp_cart.bin: nb65_tcp_cart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m nb65_tcp_cart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 16384
 
 nb65_rrnet.bin: nb65_rrnet.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg

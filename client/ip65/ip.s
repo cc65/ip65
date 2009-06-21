@@ -53,9 +53,10 @@
 	.import udp_init
 	.import udp_process
 
+.ifdef TCP
   .import tcp_init
   .import tcp_process
-
+.endif
 	.importzp copy_src
 
 
@@ -120,7 +121,9 @@ ip_init:
 	sta bad_addr + 1
 
 	jsr icmp_init
+.ifdef TCP
   jsr tcp_init
+.endif
 	jsr udp_init
 
 	rts
@@ -147,9 +150,11 @@ ip_process:
 	cmp #ip_proto_icmp
 	bne :+
 	jmp icmp_process		; jump to icmp handler
+.ifdef TCP  
 :	cmp #ip_proto_tcp
 	bne :+
 	jmp tcp_process			; jump to tcp handler
+.endif  
 :	cmp #ip_proto_udp
 	bne :+
 	jmp udp_process			; jump to udp handler

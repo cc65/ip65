@@ -11,9 +11,9 @@
 
 ;possible bankswitch values are:
 ;$00 = no bankswitching (i.e. NB65 API in RAM only)
-;$01 = standard bankswitching (via HIRAM/LORAM)
-;$02 = advanced bankswitching (via custom registers, e.g. $de00 on the Retro Replay cart)
-
+;$01 = 8KB image with standard bankswitching (via HIRAM/LORAM)
+;$02 = 8KB image with advanced bankswitching (via custom registers, e.g. $de00 on the Retro Replay cart)
+;$03 = 16KB image with standard bankswitching (via HIRAM/LORAM) - BASIC is NOT avialable
 .ifndef BANKSWITCH_SUPPORT
   .error "must define BANKSWITCH_SUPPORT"
   
@@ -141,7 +141,7 @@ init:
 
 
   ;set some funky colours
-  .ifdef TCP
+.if (BANKSWITCH_SUPPORT=$03)
   LDA #$04  ;purple
   .else
   LDA #$05  ;green
@@ -150,7 +150,7 @@ init:
   STA $D020 ;border
   LDA #$00  ;black 
   STA $D021 ;background
-  .ifdef TCP
+  .if (BANKSWITCH_SUPPORT=$03)
   lda #$9c  ;petscii for purple text
   .else
   lda #$1E  ;petscii for green text
@@ -213,7 +213,7 @@ main_menu:
   bne @not_tftp
   jmp @tftp_boot
  @not_tftp:  
-.ifndef TCP 
+.if !(BANKSWITCH_SUPPORT=$03)
   cmp #KEYCODE_F3    
   beq @exit_to_basic
 .endif  
@@ -489,7 +489,7 @@ cmp #KEYCODE_F7
   cmp #$08
   bne @not_a_basic_file
 
-  .ifdef TCP
+  .if (BANKSWITCH_SUPPORT=$03)
   ldax #cant_boot_basic
   jsr print
   jsr wait_for_keypress
@@ -587,7 +587,7 @@ netboot65_msg:
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13
 .byte "F1: TFTP BOOT"
-.ifndef TCP
+.if !(BANKSWITCH_SUPPORT=$03)
 .byte "     F3: BASIC"
 .endif
 .byte 13
@@ -639,7 +639,7 @@ press_a_key_to_continue:
 resolving:
   .byte "RESOLVING ",0
 
-  .ifdef TCP
+.if (BANKSWITCH_SUPPORT=$03)
 cant_boot_basic: .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
   .endif
 

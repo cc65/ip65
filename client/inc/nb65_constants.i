@@ -2,7 +2,7 @@
 ;to use this file under CA65, then add "  .define EQU     =" to your code before this file is included.
 
 
-NB65_API_VERSION_NUMBER  EQU $01
+NB65_API_VERSION_NUMBER  EQU $02
 
 
 NB65_CART_SIGNATURE              EQU $8009
@@ -28,9 +28,13 @@ NB65_GET_IP_CONFIG             EQU $02 ;no inputs, outputs AX=pointer to IP conf
 NB65_DEACTIVATE                EQU $0F ;inputs: none, outputs: none (removes call to NB65_VBL_VECTOR on IRQ chain)
 
 NB65_UDP_ADD_LISTENER          EQU $10 ;inputs: AX points to a UDP listener parameter structure, outputs: none
-NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP packet parameter structure, outputs: UDP packet structure filled in
+NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP/TCP packet parameter structure, outputs: UDP/TCP packet structure filled in
 NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
 NB65_UDP_REMOVE_LISTENER       EQU $13 ;inputs: AX contains UDP port number that listener will be removed from
+
+NB65_TCP_CONNECT               EQU $14 ;inputs: AX points to a TCP connect parameter structure, outputs: A = connection #
+NB65_TCP_SEND_PACKET           EQU $15 ;inputs: AX points to a TCP send parameter structure, outputs: none packet is sent
+NB65_TCP_CLOSE_CONNECTION      EQU $16 ;inputs: A = connection # to close, outputs: none
 
 NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
 NB65_TFTP_DOWNLOAD             EQU $22 ;inputs: AX points to a TFTP transfer parameter structure, outputs: TFTP param structure updated with 
@@ -77,12 +81,25 @@ NB65_DNS_HOSTNAME_IP EQU $00                         ;4 byte IP address (filled 
 NB65_UDP_LISTENER_PORT      EQU $00                       ;2 byte port number
 NB65_UDP_LISTENER_CALLBACK  EQU $02                       ;2 byte address of routine to call when UDP packet arrives for specified port
 
-;offsets in UDP packet parameter structure
+
+;offsets in TCP connect parameter structure
+NB65_TCP_REMOTE_IP      EQU $00                       ;4 byte IP address of remote host (0.0.0.0 means wait for inbound i.e. server mode)
+NB65_TCP_PORT           EQU $04                       ;2 byte port number (to listen on, if ip address was 0.0.0.0, or connect to otherwise)
+NB65_TCP_CALLBACK       EQU $06                       ;2 byte address of routine to be called whenever a new packet arrives
+
+;offsets in TCP send parameter structure
+NB65_TCP_CONNECTION_NUMBER      EQU $00               ;1 byte connection number for previously set up connection
+NB65_TCP_PAYLOAD_LENGTH         EQU $01               ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
+NB65_TCP_PAYLOAD_POINTER        EQU $03               ;2 byte pointer to payload of packet (after all headers)
+
+;offsets in TCP/UDP packet parameter structure
 NB65_REMOTE_IP       EQU $00                          ;4 byte IP address of remote machine (src of inbound packets, dest of outbound packets)
 NB65_REMOTE_PORT     EQU $04                          ;2 byte port number of remote machine (src of inbound packets, dest of outbound packets)
 NB65_LOCAL_PORT      EQU $06                          ;2 byte port number of local machine (src of outbound packets, dest of inbound packets)
-NB65_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload of packet (after all ethernet,IP,UDP headers)
+NB65_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
+                                                      ; in a TCP connection, if the length is $FFFF, this actually means "end of connection"
 NB65_PAYLOAD_POINTER EQU $0A                          ;2 byte pointer to payload of packet (after all headers)
+NB65_CONNECTION_NUMBER EQU $0C                        ;1 byte "connection number" (valid for TCP connections only)
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                    EQU $80
