@@ -28,6 +28,7 @@ ETHOBJS= \
   output_buffer.o\
   tftp.o \
   tcp.o \
+  arithmetic.o\
   function_dispatcher.o \
   
   
