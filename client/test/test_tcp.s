@@ -7,6 +7,12 @@
   .import parse_dotted_quad
   .import dotted_quad_value
   
+  .import tcp_listen
+  .import tcp_callback
+  .import ip65_process
+  .import tcp_connect
+  .import tcp_remote_ip
+  
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
   .import  __RODATA_SIZE__
@@ -105,9 +111,29 @@ init:
   ldax  #$1234
   jsr test_add_16_32
 
+    
+  jsr print_cr
+  init_ip_via_dhcp 
+  jsr print_ip_config
+
+@loop_forever:
+  ldax  #tcp_callback_routine
+  stax  tcp_callback
+  ldax  tcp_dest_ip
+  stax  tcp_remote_ip
+  ldax  tcp_dest_ip+2
+  stax  tcp_remote_ip+2
+  
+  
+  ldax  #80
+  jsr tcp_connect
+
+  jsr ip65_process
+  jmp @loop_forever
   rts
 
-
+tcp_callback_routine:
+  rts
 
 
 ;assumes acc32 & op32 already set
@@ -226,3 +252,6 @@ number15:
 
 number16:
   .byte $00,$00,$00,$00
+
+tcp_dest_ip:
+  .byte 10,5,1,1
