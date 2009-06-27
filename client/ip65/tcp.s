@@ -1,5 +1,7 @@
 ;TCP (transmission control protocol) functions
 
+MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
+
 .include "../inc/common.i"
 .ifndef NB65_API_VERSION_NUMBER
   .define EQU     =
@@ -13,13 +15,31 @@
 .export tcp_listen
 .export tcp_connect
 .export tcp_callback
-.export tcp_remote_ip
+.export tcp_connect_ip
+.export tcp_send_data_len
+.export tcp_send
 
 .import ip_calc_cksum
 .import ip_send
 .import ip_create_packet
 .import ip_inp
 .import ip_outp
+.import ip65_process
+
+.import check_for_abort_key
+.import timer_read
+
+.importzp acc32
+.importzp op32
+.importzp acc16
+
+.import add_32_32
+.import add_16_32
+.import cmp_32_32
+.import cmp_16_16
+
+
+
 .importzp ip_cksum_ptr
 .importzp ip_header_cksum
 .importzp ip_src
@@ -39,9 +59,10 @@
 
 .segment "TCP_VARS"
 
+tcp_cxn_state_closed      = 0 
 tcp_cxn_state_listening   = 1  ;(waiting for an inbound SYN)
 tcp_cxn_state_syn_sent    = 2  ;(waiting for an inbound SYN/ACK)
-  
+tcp_cxn_state_established = 3  ;  
 
 ; tcp packet offsets
 tcp_inp		= ip_inp + ip_data  ;pointer to tcp packet inside inbound ethernet frame
@@ -85,10 +106,27 @@ tcp_sequence_number: .res 4
 tcp_ack_number: .res 4
 tcp_data_ptr: .res 2
 tcp_data_len: .res 2
+tcp_send_data_ptr: .res 2
+tcp_send_data_len: .res 2
 tcp_callback: .res 2
 tcp_flags: .res 1
+
+tcp_connect_sequence_number: .res 4
+tcp_connect_expected_sequence_number: .res 4
+tcp_connect_ack_number: .res 4
+
+tcp_connect_last_ack: .res 4
+
+tcp_connect_local_port: .res 2
+tcp_connect_remote_port: .res 2
+tcp_connect_ip: .res 4
+
+
+tcp_timer:  .res 1
+tcp_loop_count: .res 1
+tcp_packet_sent_count: .res 1
 .data
-tcp_client_port: .word $0004  ;=$0400 in network byte order
+tcp_client_port: .word $0400  
 
 .code
 
@@ -98,25 +136,180 @@ tcp_init:
 
 ;make outbound tcp connection
 ;inputs:
-; tcp_remote_ip:  destination ip address (4 bytes)
+; tcp_connect_ip:  destination ip address (4 bytes)
 ; AX: destination port (2 bytes)
 ; tcp_callback: vector to call when data arrives on this connection
 ;outputs:
 ;   carry flag is set if an error occured, clear otherwise
 tcp_connect:
-  stax  tcp_remote_port  
+  stax  tcp_connect_remote_port
   inc   tcp_client_port
   ldax  tcp_client_port
-  stax  tcp_local_port
+  stax  tcp_connect_local_port
   lda #tcp_cxn_state_syn_sent
   sta tcp_state
+  lda #0  ;reset the "packet sent" counter
+  sta tcp_packet_sent_count
+  
+  
+@tcp_polling_loop:
+
+  ;create a SYN packet
   lda #tcp_flag_SYN
   sta tcp_flags
-  ldax  #0
-  stax  tcp_data_len
-  stax  tcp_ack_number
-  stax  tcp_ack_number+2
+  lda  #0
+  sta  tcp_data_len
+  sta  tcp_data_len+1
+  
+	ldx #3				; 
+:	lda tcp_connect_ip,x
+	sta tcp_remote_ip,x
+	dex
+	bpl :-
+  ldax  tcp_connect_local_port
+  stax  tcp_local_port  
+  ldax  tcp_connect_remote_port
+  stax  tcp_remote_port
+  
   jsr tcp_send_packet
+  lda tcp_packet_sent_count
+  adc #1
+  sta tcp_loop_count       ;we wait a bit longer between each resend  
+@outer_delay_loop: 
+  jsr timer_read
+  stx tcp_timer            ;we only care about the high byte  
+@inner_delay_loop:  
+  jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  rts
+@no_abort:  
+  lda tcp_state  
+  cmp #tcp_cxn_state_syn_sent
+  bne @got_a_response
+
+  jsr timer_read
+  cpx tcp_timer            ;this will tick over after about 1/4 of a second
+  beq @inner_delay_loop
+  
+  dec tcp_loop_count
+  bne @outer_delay_loop  
+
+@break_polling_loop:
+  
+	inc tcp_packet_sent_count
+  lda tcp_packet_sent_count
+  cmp #MAX_TCP_PACKETS_SENT-1
+  bpl @too_many_messages_sent
+  jmp @tcp_polling_loop
+
+@too_many_messages_sent:
+@failed:
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error  
+  sec             ;signal an error
+  rts
+@got_a_response:
+  clc
+  rts
+
+;send tcp data
+;inputs:
+;   tcp connection should already be opened
+;   tcp_send_data_len: length of data to send (exclusive of any headers)
+;   AX: pointer to buffer containing data to be sent
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_send:
+	stax tcp_send_data_ptr
+	lda tcp_state
+  cmp #tcp_cxn_state_established
+  beq @connection_established
+  lda #NB65_ERROR_CONNECTION_CLOSED
+  sta ip65_error
+  sec
+  rts
+
+@connection_established:
+  ldax #tcp_connect_expected_sequence_number
+  stax acc32
+  ldax tcp_send_data_len
+  jsr add_16_32
+  
+
+@tcp_polling_loop:
+
+  ;create a data packet
+  lda #tcp_flag_ACK+tcp_flag_PSH
+  sta tcp_flags
+  ldax tcp_send_data_len
+  stax tcp_data_len
+  
+  ldax tcp_send_data_ptr
+  stax tcp_data_ptr
+  
+	ldx #3				; 
+:	lda tcp_connect_ip,x
+	sta tcp_remote_ip,x
+	dex
+	bpl :-
+  ldax  tcp_connect_local_port
+  stax  tcp_local_port  
+  ldax  tcp_connect_remote_port
+  stax  tcp_remote_port
+  
+  
+  jsr tcp_send_packet
+  
+  lda tcp_packet_sent_count
+  adc #1
+  sta tcp_loop_count       ;we wait a bit longer between each resend  
+@outer_delay_loop: 
+  jsr timer_read
+  stx tcp_timer            ;we only care about the high byte  
+@inner_delay_loop:  
+  jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  rts
+@no_abort:  
+  ldax #tcp_connect_last_ack
+  stax acc32
+  ldax #tcp_connect_expected_sequence_number
+  jsr cmp_32_32
+  beq @got_ack
+
+  jsr timer_read
+  cpx tcp_timer            ;this will tick over after about 1/4 of a second
+  beq @inner_delay_loop
+  
+  dec tcp_loop_count
+  bne @outer_delay_loop  
+
+@break_polling_loop:
+  
+	inc tcp_packet_sent_count
+  lda tcp_packet_sent_count
+  cmp #MAX_TCP_PACKETS_SENT-1
+  bpl @too_many_messages_sent
+  jmp @tcp_polling_loop
+
+@too_many_messages_sent:
+@failed:
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error  
+  sec             ;signal an error
+  rts
+@got_ack:
+  clc
   rts
 
 
@@ -156,11 +349,18 @@ tcp_send_packet:
 	lda tcp_remote_port + 1
 	sta tcp_outp + tcp_dest_port
 
-  ldx #3				; copy sequence and ack numbers (in reverse order)
+  ldx #3				; copy sequence and ack (if ACK flag set) numbers (in reverse order)
   ldy #0
 :	lda tcp_sequence_number,x
 	sta tcp_outp + tcp_seq,y
+  lda #tcp_flag_ACK
+  bit tcp_flags
+  bne @ack_set 
+  lda #0
+  beq @sta_ack
+  @ack_set:
 	lda tcp_ack_number,x
+  @sta_ack:
 	sta tcp_outp + tcp_ack,y
   iny
 	dex
@@ -174,7 +374,7 @@ tcp_send_packet:
 	lda #ip_proto_tcp
 	sta tcp_vh + tcp_vh_proto
 
-  ldax  #$1000  
+  ldax  #$0010  ;$1000 in network byte order
   stax  tcp_outp+tcp_window_size
 
 	lda #0				; clear checksum
@@ -213,10 +413,10 @@ tcp_send_packet:
 
 	jsr ip_create_packet		; create ip packet template
 
-	lda tcp_outp + tcp_data_len + 1	; ip len = tcp data length +20 byte ip header + 20 byte tcp header
-	ldx tcp_outp + tcp_data_len
+	lda tcp_data_len 	; ip len = tcp data length +20 byte ip header + 20 byte tcp header
+	ldx tcp_data_len +1
 	clc
-	adc #40
+	adc #40 
 	bcc :+
 	inx
 :	sta ip_outp + ip_len + 1	; set length
@@ -237,13 +437,168 @@ tcp_send_packet:
 tcp_listen:
   rts
 
+check_current_connection:
+;see if the ip packet we just got is for a valid (non-closed) tcp connection
+;inputs:
+; eth_inp: should contain an ethernet frame encapsulating an inbound tcp packet
+;outputs:
+; carry flag clear if inbound tcp packet part of existing connection
+  ldax  #ip_inp+ip_src
+  stax  acc32
+  ldax  #tcp_connect_ip
+  stax  op32
+  jsr   cmp_32_32
+  beq @remote_ip_matches
+  
+  sec
+  rts
+@remote_ip_matches:
+  ldax  tcp_inp+tcp_src_port
+  stax  acc16
+  lda   tcp_connect_remote_port+1 ;this value in reverse byte order to how it is presented in the TCP header
+  ldx   tcp_connect_remote_port 
+  jsr   cmp_16_16
+  beq @remote_port_matches
+  sec
+  rts
+@remote_port_matches:
+  ldax  tcp_inp+tcp_dest_port
+  stax  acc16
+  lda   tcp_connect_local_port+1 ;this value in reverse byte order to how it is presented in the TCP header
+  ldx   tcp_connect_local_port 
+  jsr   cmp_16_16
+  beq   @local_port_matches
+  sec
+  rts
+@local_port_matches:
+  clc
+  rts
+  
 tcp_process:
 ;process incoming tcp packet
 ;inputs:
 ; eth_inp: should contain an ethernet frame encapsulating an inbound tcp packet
 ;outputs:
-; carry flag set if any error occured (including if packet not part of 
-; existing connection)
-; carry flag clear if no error
-; if connection was found, an outbound message may be created, overwriting eth_outp
+; none but if connection was found, an outbound message may be created, overwriting eth_outp
+; also tcp_state and other tcp variables may be modified
+
+  lda #tcp_flag_RST
+  bit tcp_inp+tcp_flags_field
+  beq @not_reset
+  jsr check_current_connection
+  bcs @not_current_connection_on_rst
+  ;connection has been reset so mark it as closed  
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  lda #NB65_ERROR_CONNECTION_RESET_BY_PEER
+  sta ip65_error
+@not_current_connection_on_rst:
+  ;if we get a reset for a closed or nonexistent connection, then ignore it
+  rts
+@not_reset:
+  lda tcp_inp+tcp_flags_field
+  cmp #tcp_flag_SYN+tcp_flag_ACK
+  bne @not_syn_ack
+  jsr check_current_connection
+  bcs @not_current_connection_on_syn_ack
+  lda tcp_state
+  cmp #tcp_cxn_state_syn_sent
+  bne @not_expecting_syn_ack
+  ;this IS the syn/ack we are waiting for :-)
+  ldx #3				; copy sequence number to ack (in reverse order)
+  ldy #0
+:	lda tcp_inp + tcp_seq,y
+	sta tcp_connect_ack_number,x
+  iny
+	dex
+	bpl :-
+
+  ldax #tcp_connect_ack_number
+  stax acc32
+  ldax  #$0001  ;
+  jsr add_16_32 ;increment the ACK counter by 1, for the SYN we just received
+
+
+  lda #tcp_cxn_state_established
+  sta tcp_state
+@not_expecting_syn_ack: 
+  jmp @send_ack
+  
+@not_current_connection_on_syn_ack:
+@not_syn_ack:  
+
+  lda tcp_inp+tcp_flags_field
+  cmp #tcp_flag_ACK
+  bne @not_ack
+  
+  rts
+@not_ack:  
+  lda tcp_inp+tcp_flags_field
+  cmp #tcp_flag_SYN
+  bne @not_syn
+;for the moment, inbound connections not accepted. so send a RST
+;create a RST packet
+  ldx #3				; copy sequence number to ack (in reverse order)
+  ldy #0
+:	lda tcp_inp + tcp_seq,y
+	sta tcp_ack_number,x
+  iny
+	dex
+	bpl :-
+
+  ldax #tcp_ack_number 
+  stax acc32
+  ldax  #$0001  ;
+  jsr add_16_32 ;increment the ACK counter by 1, for the SYN we just received
+  
+@send_rst:
+  
+  lda #tcp_flag_RST+tcp_flag_ACK
+  sta tcp_flags
+  ldax  #0
+  stax  tcp_data_len
+	ldx #3				; 
+:	lda ip_inp+ip_src,x
+	sta tcp_remote_ip,x
+	dex
+	bpl :-
+  
+  ;copy src/dest ports in inverted byte order
+  lda tcp_inp+tcp_src_port
+	sta tcp_remote_port+1
+  lda tcp_inp+tcp_src_port+1
+	sta tcp_remote_port
+  
+  lda tcp_inp+tcp_dest_port
+	sta tcp_local_port+1
+  lda tcp_inp+tcp_dest_port+1
+	sta tcp_local_port
+  
+  jsr tcp_send_packet
+  rts
+
+@not_syn:
+  rts
+@send_ack:
+;create an ACK packet
+  lda #tcp_flag_ACK
+  sta tcp_flags
+  ldax  #0
+  stax  tcp_data_len
+	ldx #3				; 
+:	lda tcp_connect_ip,x
+	sta tcp_remote_ip,x
+  lda tcp_connect_ack_number,x
+  sta tcp_ack_number,x
+  lda tcp_connect_sequence_number,x
+  sta tcp_sequence_number,x
+	dex
+	bpl :-
+  ldax  tcp_connect_local_port
+  stax  tcp_local_port  
+  ldax  tcp_connect_remote_port
+  stax  tcp_remote_port
+  
+  
+  jsr tcp_send_packet
   rts

@@ -9,9 +9,14 @@
   
   .import tcp_listen
   .import tcp_callback
-  .import ip65_process
+;  .import ip65_process
+  .import ip65_error
+
   .import tcp_connect
-  .import tcp_remote_ip
+  .import tcp_connect_ip
+
+  .import tcp_send
+  .import tcp_send_data_len
   
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
@@ -21,9 +26,12 @@
 
   .importzp acc32
   .importzp op32
-
+  .importzp acc16
+  
   .import add_32_32
   .import add_16_32
+  .import cmp_32_32
+  .import cmp_16_16
   
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
@@ -51,7 +59,54 @@ basicstub:
 init:
     
   jsr print_cr
- 
+
+  ldax  #number1
+  stax acc32
+  stax op32
+  jsr  test_cmp_32_32
+
+  ldax  #number1
+  stax acc32
+  ldax  #number13
+  stax op32
+  jsr  test_cmp_32_32
+
+  ldax  #number1
+  stax acc32
+  ldax  #number2
+  stax op32
+  jsr  test_cmp_32_32
+
+  ldax  #$12
+  stax acc16
+  jsr  test_cmp_16_16
+
+  ldax  #$1234
+  stax acc16
+  jsr  test_cmp_16_16
+
+  ldax  #$1234
+  stax acc16
+  ldax  #$1235
+  jsr  test_cmp_16_16
+
+
+  ldax  #$1234
+  stax acc16
+  ldax  #$2234
+  jsr  test_cmp_16_16
+  
+
+  ldax  #$0000
+  stax acc16
+  jsr  test_cmp_16_16
+
+  ldax  #$FFFF
+  stax acc16
+  jsr  test_cmp_16_16
+
+
+
   ldax  #number1
   stax acc32
   ldax  #number2
@@ -116,23 +171,68 @@ init:
   init_ip_via_dhcp 
   jsr print_ip_config
 
-@loop_forever:
+  ;connect to port 81 - should be rejected
+
   ldax  #tcp_callback_routine
   stax  tcp_callback
   ldax  tcp_dest_ip
-  stax  tcp_remote_ip
+  stax  tcp_connect_ip
   ldax  tcp_dest_ip+2
-  stax  tcp_remote_ip+2
+  stax  tcp_connect_ip+2
+    
+  ldax  #81
+  jsr tcp_connect
+  jsr check_for_error
+
+  ldax  #http_get_length
+  stax  tcp_send_data_len
+  ldax  #http_get_msg
+  jsr   tcp_send
+  jsr check_for_error
   
+  ;now try to connect to port 80 - should be accepted
+
+  ldax  #tcp_callback_routine
+  stax  tcp_callback
+  ldax  tcp_dest_ip
+  stax  tcp_connect_ip
+  ldax  tcp_dest_ip+2
+  stax  tcp_connect_ip+2  
   
   ldax  #80
   jsr tcp_connect
+  jsr check_for_error
 
+  
+  ldax  #http_get_length
+  stax  tcp_send_data_len
+  ldax  #http_get_msg
+  jsr   tcp_send
+  jsr check_for_error
+;  .byte $92
+
+  ldax  #looping
+  jsr print
+@loop_forever:
   jsr ip65_process
-  jmp @loop_forever
+  jmp @loop_forever  
   rts
 
 tcp_callback_routine:
+  rts
+
+
+check_for_error:
+  lda ip65_error
+  beq @exit
+  ldax #error_code
+  jsr print
+  lda ip65_error
+  jsr  print_hex
+  jsr print_cr
+  lda #0
+  sta ip65_error
+@exit:  
   rts
 
 
@@ -167,6 +267,67 @@ test_add_32_32:
   jsr print_cr
   rts
 
+
+
+;assumes acc32 & op32 already set
+test_cmp_32_32:
+  ldy #3  
+:
+  lda  (acc32),y
+  jsr  print_hex
+  dey
+  bpl :-
+  
+  lda #'='
+  jsr print_a
+  ldy #3  
+:
+  lda  (op32),y
+  jsr  print_hex
+  dey
+  bpl :-
+  
+  lda #':'
+  jsr print_a
+  jsr cmp_32_32
+  bne @not_equal
+  lda #'T'
+  jmp @char_set
+@not_equal:
+  lda #'F'
+@char_set:
+  jsr print_a
+  jsr print_cr
+  rts
+
+;assumes acc16& AX already set
+test_cmp_16_16:
+  stax  temp_ax
+  lda acc16+1
+  jsr print_hex
+  lda acc16
+  jsr print_hex
+  
+  lda #'='
+  jsr print_a
+  lda temp_ax+1
+  jsr print_hex
+  lda temp_ax
+  jsr print_hex
+    
+  lda #':'
+  jsr print_a
+  ldax  temp_ax
+  jsr cmp_16_16
+  bne @not_equal
+  lda #'T'
+  jmp @char_set
+@not_equal:
+  lda #'F'
+@char_set:
+  jsr print_a
+  jsr print_cr
+  rts
 
 
 ;assumes acc32 & AX already set
@@ -255,3 +416,13 @@ number16:
 
 tcp_dest_ip:
   .byte 10,5,1,1
+  .byte 74,207,242,229
+error_code:  
+  .asciiz "ERROR CODE: $"
+looping:
+  .asciiz "LOOPING..."
+  
+http_get_msg:
+  .byte "GET / HTTP/1.0",13,10,13,10
+http_get_msg_end:  
+ http_get_length=http_get_msg_end-http_get_msg

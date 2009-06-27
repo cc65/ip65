@@ -3,6 +3,11 @@
 ; Based on Doc Bacardi's tftp source
 
 
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
+
 .include "../inc/common.i"
 .include "cs8900a.i"
 
@@ -29,6 +34,7 @@
 
 	.import cfg_mac
 
+  .import ip65_error
 
 	.macro write_page page, value
 	lda #page/2
@@ -198,10 +204,10 @@ eth_tx:
 	sta cs_tx_len
 	lda eth_outp_len + 1
 	sta cs_tx_len + 1
-	and #$f8
-	beq :+
-
-	inc $d020
+	cmp #7
+  bmi :+
+  lda #NB65_ERROR_INPUT_TOO_LARGE
+  sta ip65_error
 	sec				; oversized packet
 	rts
 
