@@ -28,6 +28,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 
 .import check_for_abort_key
 .import timer_read
+.import ip65_random_word
 
 .importzp acc32
 .importzp op32
@@ -111,12 +112,11 @@ tcp_send_data_len: .res 2
 tcp_callback: .res 2
 tcp_flags: .res 1
 
-tcp_connect_sequence_number: .res 4
-tcp_connect_expected_sequence_number: .res 4
-tcp_connect_ack_number: .res 4
-
-tcp_connect_last_ack: .res 4
-
+tcp_connect_sequence_number: .res 4   ;the seq number we will next send out
+tcp_connect_expected_ack_number: .res 4 ;what we expect to see in the next inbound ack
+tcp_connect_ack_number: .res 4 ;what we will next ack
+tcp_connect_last_received_seq_number: .res 4 ;the seq field in the last inbound packet for this connection
+tcp_connect_last_ack: .res 4 ;ack field in the last inbound packet for this connection
 tcp_connect_local_port: .res 2
 tcp_connect_remote_port: .res 2
 tcp_connect_ip: .res 4
@@ -125,8 +125,6 @@ tcp_connect_ip: .res 4
 tcp_timer:  .res 1
 tcp_loop_count: .res 1
 tcp_packet_sent_count: .res 1
-.data
-tcp_client_port: .word $0400  
 
 .code
 
@@ -143,13 +141,18 @@ tcp_init:
 ;   carry flag is set if an error occured, clear otherwise
 tcp_connect:
   stax  tcp_connect_remote_port
-  inc   tcp_client_port
-  ldax  tcp_client_port
+  jsr ip65_random_word
   stax  tcp_connect_local_port
   lda #tcp_cxn_state_syn_sent
   sta tcp_state
   lda #0  ;reset the "packet sent" counter
   sta tcp_packet_sent_count
+
+  ;set the low word of seq number to $0000, high word to something random
+  sta tcp_connect_sequence_number
+  sta tcp_connect_sequence_number+1
+  jsr ip65_random_word
+  stax  tcp_connect_sequence_number+2
   
   
 @tcp_polling_loop:
@@ -164,6 +167,8 @@ tcp_connect:
 	ldx #3				; 
 :	lda tcp_connect_ip,x
 	sta tcp_remote_ip,x
+  lda tcp_connect_sequence_number,x
+  sta tcp_sequence_number,x
 	dex
 	bpl :-
   ldax  tcp_connect_local_port
@@ -214,6 +219,19 @@ tcp_connect:
   sec             ;signal an error
   rts
 @got_a_response:
+;inc the sequence number to cover the SYN we have sent
+  ldax  #tcp_connect_sequence_number
+  stax  acc32
+  ldax  #$01
+  jsr add_16_32
+  
+;set the expected ack number with current seq number
+	ldx #3				; 
+:	lda tcp_connect_sequence_number,x
+  sta tcp_connect_expected_ack_number,x
+	dex
+	bpl :-
+
   clc
   rts
 
@@ -235,7 +253,8 @@ tcp_send:
   rts
 
 @connection_established:
-  ldax #tcp_connect_expected_sequence_number
+  ;increment the expected sequence number
+  ldax #tcp_connect_expected_ack_number
   stax acc32
   ldax tcp_send_data_len
   jsr add_16_32
@@ -255,6 +274,9 @@ tcp_send:
 	ldx #3				; 
 :	lda tcp_connect_ip,x
 	sta tcp_remote_ip,x
+  lda tcp_connect_sequence_number,x
+  sta tcp_sequence_number,x
+
 	dex
 	bpl :-
   ldax  tcp_connect_local_port
@@ -262,7 +284,7 @@ tcp_send:
   ldax  tcp_connect_remote_port
   stax  tcp_remote_port
   
-  
+	
   jsr tcp_send_packet
   
   lda tcp_packet_sent_count
@@ -281,7 +303,8 @@ tcp_send:
 @no_abort:  
   ldax #tcp_connect_last_ack
   stax acc32
-  ldax #tcp_connect_expected_sequence_number
+  ldax #tcp_connect_expected_ack_number
+  stax op32
   jsr cmp_32_32
   beq @got_ack
 
@@ -308,7 +331,13 @@ tcp_send:
   sta ip65_error  
   sec             ;signal an error
   rts
-@got_ack:
+@got_ack: 
+  ;finished - now we need to advance the sequence number for the data we just sent
+  ldax #tcp_connect_sequence_number
+  stax acc32
+  ldax tcp_send_data_len
+  jsr add_16_32
+
   clc
   rts
 
@@ -499,6 +528,8 @@ tcp_process:
   lda tcp_inp+tcp_flags_field
   cmp #tcp_flag_SYN+tcp_flag_ACK
   bne @not_syn_ack
+  
+  ;it's a SYN/ACK
   jsr check_current_connection
   bcs @not_current_connection_on_syn_ack
   lda tcp_state
@@ -521,22 +552,65 @@ tcp_process:
 
   lda #tcp_cxn_state_established
   sta tcp_state
-@not_expecting_syn_ack: 
+@not_expecting_syn_ack:   
   jmp @send_ack
-  
 @not_current_connection_on_syn_ack:
+  ;just ignore
+  rts
 @not_syn_ack:  
 
-  lda tcp_inp+tcp_flags_field
-  cmp #tcp_flag_ACK
-  bne @not_ack
+;is it an ACK - alone or with PSH/URGENT but not a SYN/ACK?
+  lda #tcp_flag_ACK
+  bit tcp_inp+tcp_flags_field
+  beq @not_ack
   
+  ;is this the current connection?
+  jsr check_current_connection
+  bcs @not_current_connection_on_ack
+  
+  ;if it's an ACK, then record the last ACK (reorder the bytes in the process)
+  ldx #3				; copy seq & ack fields (in reverse order)
+  ldy #0
+:	lda tcp_inp + tcp_ack,y
+  sta tcp_connect_last_ack,x
+  lda tcp_inp + tcp_seq,y
+  sta tcp_connect_last_received_seq_number,x
+  iny
+	dex
+	bpl :-
+  
+  ;was this the next sequence number we're waiting for?
+  ldax  #tcp_connect_ack_number
+  stax  acc32
+  ldax  #tcp_connect_last_received_seq_number
+  stax  op32
+  jsr   cmp_32_32
+  
+  bne   @not_expected_seq_number
+
+  ;what is the size of data in this packet?
+  lda ip_inp+ip_len+1 ;payload length (lo byte)
+  sta acc16
+  lda ip_inp+ip_len ;payload length (hi byte)
+  sta acc16+1
+  lda 
+
+;FIXME
+;  - move ack ptr along
+;  - send ack
+;  - do a callback
+  .byte $92
+  
+@not_expected_seq_number:  
+@not_current_connection_on_ack:  
   rts
 @not_ack:  
   lda tcp_inp+tcp_flags_field
   cmp #tcp_flag_SYN
   bne @not_syn
 ;for the moment, inbound connections not accepted. so send a RST
+
+@decline_syn_with_reset:
 ;create a RST packet
   ldx #3				; copy sequence number to ack (in reverse order)
   ldy #0

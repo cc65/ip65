@@ -11,7 +11,9 @@ op32 =copy_dest       ;32 bit operand (pointer)
 
 acc16 =acc32       ;16bit accumulater (value, NOT pointer)
 
-
+.bss
+temp_ax: .res 2
+.code
 ;no 16bit operand as can just use AX    
 .exportzp acc32
 .exportzp op32
@@ -19,6 +21,8 @@ acc16 =acc32       ;16bit accumulater (value, NOT pointer)
 
 .export add_32_32
 .export add_16_32
+
+.export sub_16_16   
 
 .export cmp_32_32
 .export cmp_16_16
@@ -52,6 +56,19 @@ cmp_16_16:
   txa
   cmp acc16+1
 @exit:  
+  rts
+  
+;subtract 2 16 bit numbers
+;acc16=acc16-AX
+sub_16_16:
+  stax  temp_ax
+  sec
+  lda acc16
+  sbc temp_ax
+  sta acc16
+  lda acc16+1
+  sbc temp_ax+1
+  sta acc16+1
   rts
   
 ;add a 32bit operand to the 32 bit accumulater

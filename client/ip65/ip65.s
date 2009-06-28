@@ -9,7 +9,7 @@
 
 	.export ip65_init
 	.export ip65_process
-
+  .export ip65_random_word
 	.export ip65_ctr
 	.export ip65_ctr_arp
 	.export ip65_ctr_ip
@@ -22,8 +22,10 @@
 	.import timer_init
 	.import arp_init
 	.import ip_init
+  .import timer_read
 
 	.import eth_inp
+  .import eth_outp
 	.import eth_rx
 
 	.import ip_process
@@ -31,8 +33,10 @@
 
 	.importzp eth_proto_arp
 
-
+  .export ip65_random_word
+  
 	.bss
+
 
 ip65_ctr:	.res 1		; incremented for every incoming packet
 ip65_ctr_arp:	.res 1		; incremented for every incoming arp packet
@@ -41,6 +45,28 @@ ip65_ctr_ip:	.res 1		; incremented for every incoming ip packet
 ip65_error: .res 1  ;last error code
 
 	.code
+
+;generate a 'random' 16 bit word
+;entropy comes from the last ethernet frame, counters, and timer
+;inputs: none
+;outputs: AX set to a pseudo-random 16 bit number
+ip65_random_word:
+  jsr timer_read ;sets AX
+  adc $d018 ;on a c64, this is the raster register
+  pha
+  adc ip65_ctr_arp
+  ora #$08    ;make sure we grab at least 8 bytes from eth_inp
+  tax   
+:  
+  adc eth_inp,x
+  adc eth_outp,x
+  dex
+  bne :-
+  tax
+  pla
+  adc ip65_ctr
+  eor ip65_ctr_ip
+  rts
 
 ; initialise the IP stack
 ; this calls the individual protocol & driver initialisations, so this is

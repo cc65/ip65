@@ -9,7 +9,7 @@
   
   .import tcp_listen
   .import tcp_callback
-;  .import ip65_process
+  .import ip65_random_word
   .import ip65_error
 
   .import tcp_connect
@@ -32,7 +32,9 @@
   .import add_16_32
   .import cmp_32_32
   .import cmp_16_16
-  
+
+  .import sub_16_16
+
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
@@ -57,9 +59,29 @@ basicstub:
 .code
 
 init:
-    
-  jsr print_cr
+  
 
+  ldax  #$1234
+  stax acc16
+  ldax  #$1235
+  jsr  test_sub_16_16
+
+  ldax  #$ff34
+  stax acc16
+  ldax  #$1235
+  jsr  test_sub_16_16
+
+  ldax  #$100
+  stax acc16
+  ldax  #$ffff
+  jsr  test_sub_16_16
+
+  ldax  #$ffff
+  stax acc16
+  ldax  #$100
+  jsr  test_sub_16_16
+  
+  rts
   ldax  #number1
   stax acc32
   stax op32
@@ -171,6 +193,11 @@ init:
   init_ip_via_dhcp 
   jsr print_ip_config
 
+  jsr print_cr
+
+  
+  jsr print_random_number  
+ 
   ;connect to port 81 - should be rejected
 
   ldax  #tcp_callback_routine
@@ -198,17 +225,46 @@ init:
   stax  tcp_connect_ip
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2  
-  
+ 
+
+  jmp @skip_past_normal_http
   ldax  #80
   jsr tcp_connect
   jsr check_for_error
-
   
   ldax  #http_get_length
   stax  tcp_send_data_len
   ldax  #http_get_msg
   jsr   tcp_send
   jsr check_for_error
+
+  ldax  #tcp_callback_routine
+  stax  tcp_callback
+  ldax  tcp_dest_ip
+  stax  tcp_connect_ip
+  ldax  tcp_dest_ip+2
+  stax  tcp_connect_ip+2  
+ 
+
+@skip_past_normal_http:
+  ; connect to port 80 again, and send GET in 2 parts
+
+
+  ldax  #80
+  jsr tcp_connect
+  jsr check_for_error
+  
+  ldax  #4
+  stax  tcp_send_data_len
+  ldax  #http_get_msg
+  jsr   tcp_send
+  jsr check_for_error
+  ldax  #http_get_length-4
+  stax  tcp_send_data_len
+  ldax  #http_get_msg+4
+  jsr   tcp_send
+  jsr check_for_error
+
 ;  .byte $92
 
   ldax  #looping
@@ -235,6 +291,14 @@ check_for_error:
 @exit:  
   rts
 
+print_random_number:
+  jsr ip65_random_word
+  stx  temp_ax
+  jsr print_hex
+  lda  temp_ax
+  jsr print_hex
+  jsr print_cr
+  rts
 
 ;assumes acc32 & op32 already set
 test_add_32_32:
@@ -363,6 +427,37 @@ test_add_16_32:
   rts
 
 
+;assumes acc16 & AX already set
+test_sub_16_16:
+  stax  temp_ax
+
+  lda acc16+1
+  jsr print_hex
+  lda acc16
+  jsr print_hex
+
+  lda #'-'
+  jsr print_a
+
+  lda temp_ax+1
+  jsr print_hex
+  lda temp_ax
+  jsr print_hex
+  
+  lda #'='
+  jsr print_a
+  ldax  temp_ax
+  jsr sub_16_16
+  
+  lda acc16+1
+  jsr print_hex
+  lda acc16
+  jsr print_hex
+
+  jsr print_cr
+  rts
+
+
 @error:
   ldax  #failed_msg
   jsr print
@@ -414,8 +509,9 @@ number15:
 number16:
   .byte $00,$00,$00,$00
 
+
 tcp_dest_ip:
-  .byte 10,5,1,1
+;  .byte 10,5,1,1
   .byte 74,207,242,229
 error_code:  
   .asciiz "ERROR CODE: $"
