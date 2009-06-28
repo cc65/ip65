@@ -38,6 +38,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .import add_16_32
 .import cmp_32_32
 .import cmp_16_16
+.import sub_16_16
 
 
 
@@ -593,13 +594,28 @@ tcp_process:
   sta acc16
   lda ip_inp+ip_len ;payload length (hi byte)
   sta acc16+1
-  lda 
+  lda tcp_inp+tcp_header_length   ;high 4 bites is header length in 32 bit words
+  lsr ; A=A/2
+  lsr ; A=A/2
+  clc ; A now equal to tcp header length in bytes
+  adc #20 ;add 20 bytes for IP header. this gives length of IP +TCP headers
+  ldx #0
+  jsr sub_16_16
+      ;acc16 now contains the length of data in this TCP packet
+  lda acc16
+  bne @not_empty_packet
+  lda acc16+1
+  beq @empty_packet
+@not_empty_packet:
+  .byte $92
+  jmp @send_ack
+@empty_packet:
 
+  rts
 ;FIXME
 ;  - move ack ptr along
 ;  - send ack
 ;  - do a callback
-  .byte $92
   
 @not_expected_seq_number:  
 @not_current_connection_on_ack:  

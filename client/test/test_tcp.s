@@ -81,7 +81,7 @@ init:
   ldax  #$100
   jsr  test_sub_16_16
   
-  rts
+  
   ldax  #number1
   stax acc32
   stax op32
