@@ -1,6 +1,7 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
+  .include "../inc/char_conv.i"
   
   .import exit_to_basic  
   
@@ -14,6 +15,9 @@
 
   .import tcp_connect
   .import tcp_connect_ip
+
+  .import tcp_inbound_data_ptr
+  .import tcp_inbound_data_length
 
   .import tcp_send
   .import tcp_send_data_len
@@ -55,6 +59,15 @@ basicstub:
         .addr           __CODE_LOAD__-$11                ; Start address
         .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
         jmp init
+
+.bss 
+cxn_closed: .res 1
+byte_counter: .res 1
+
+.data
+get_next_byte: 
+  lda $ffff
+  rts
 
 .code
 
@@ -226,8 +239,9 @@ init:
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2  
  
-
-  jmp @skip_past_normal_http
+  
+  lda #0
+  sta cxn_closed
   ldax  #80
   jsr tcp_connect
   jsr check_for_error
@@ -238,6 +252,14 @@ init:
   jsr   tcp_send
   jsr check_for_error
 
+@loop_till_end:
+  jsr ip65_process
+  lda cxn_closed
+  cmp #1
+  beq @loop_till_end
+  
+
+
   ldax  #tcp_callback_routine
   stax  tcp_callback
   ldax  tcp_dest_ip
@@ -245,9 +267,6 @@ init:
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2  
  
-
-@skip_past_normal_http:
-  ; connect to port 80 again, and send GET in 2 parts
 
 
   ldax  #80
@@ -265,7 +284,6 @@ init:
   jsr   tcp_send
   jsr check_for_error
 
-;  .byte $92
 
   ldax  #looping
   jsr print
@@ -275,7 +293,50 @@ init:
   rts
 
 tcp_callback_routine:
+
+
+  lda tcp_inbound_data_length
+  cmp #$ff
+  bne @not_end_of_file
+  lda #1
+  sta cxn_closed
   rts
+  
+@not_end_of_file:
+  lda #14
+  jsr print_a ;switch to lower case
+
+ 
+  ldax tcp_inbound_data_ptr
+  stax get_next_byte+1
+    
+  lda #0
+  sta byte_counter
+  sta byte_counter+1
+  
+@print_one_byte:
+  jsr get_next_byte  
+  tax
+  lda ascii_to_petscii_table,x
+  
+  jsr print_a
+  inc get_next_byte+1
+  bne :+
+  inc get_next_byte+2
+:
+
+  inc byte_counter
+  bne :+
+  inc byte_counter+1
+:
+  ldax  byte_counter
+  stax  acc16
+  ldax tcp_inbound_data_length
+  jsr cmp_16_16
+  bne @print_one_byte
+  
+  rts
+  
 
 
 check_for_error:
@@ -511,7 +572,7 @@ number16:
 
 
 tcp_dest_ip:
-;  .byte 10,5,1,1
+ ; .byte 10,5,1,1
   .byte 74,207,242,229
 error_code:  
   .asciiz "ERROR CODE: $"
@@ -519,6 +580,8 @@ looping:
   .asciiz "LOOPING..."
   
 http_get_msg:
-  .byte "GET / HTTP/1.0",13,10,13,10
+  .byte "GET /blogx/ HTTP/1.0",13,10,13,10
 http_get_msg_end:  
  http_get_length=http_get_msg_end-http_get_msg
+ 
+ 

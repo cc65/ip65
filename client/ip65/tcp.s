@@ -19,6 +19,10 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_send_data_len
 .export tcp_send
 
+.export tcp_inbound_data_ptr
+.export tcp_inbound_data_length
+.export tcp_ack_number
+
 .import ip_calc_cksum
 .import ip_send
 .import ip_create_packet
@@ -113,6 +117,10 @@ tcp_send_data_len: .res 2
 tcp_callback: .res 2
 tcp_flags: .res 1
 
+
+tcp_inbound_data_ptr: .res 2
+tcp_inbound_data_length: .res 2
+
 tcp_connect_sequence_number: .res 4   ;the seq number we will next send out
 tcp_connect_expected_ack_number: .res 4 ;what we expect to see in the next inbound ack
 tcp_connect_ack_number: .res 4 ;what we will next ack
@@ -132,6 +140,10 @@ tcp_packet_sent_count: .res 1
 tcp_init:
   
   rts
+
+
+jmp_to_callback:
+  jmp (tcp_callback)
 
 ;make outbound tcp connection
 ;inputs:
@@ -522,6 +534,12 @@ tcp_process:
   sta tcp_state
   lda #NB65_ERROR_CONNECTION_RESET_BY_PEER
   sta ip65_error
+  
+  lda #$ff
+  sta tcp_inbound_data_length
+  sta tcp_inbound_data_length+1
+  jsr jmp_to_callback   ;let the caller see the connection has closed
+  
 @not_current_connection_on_rst:
   ;if we get a reset for a closed or nonexistent connection, then ignore it
   rts
@@ -532,7 +550,11 @@ tcp_process:
   
   ;it's a SYN/ACK
   jsr check_current_connection
-  bcs @not_current_connection_on_syn_ack
+  bcc @current_connection_on_syn_ack
+  ;if we get a SYN/ACK for something that aint the connection we're expecting, 
+  ;terminate with extreme prejudice
+  jmp @send_rst 
+@current_connection_on_syn_ack:  
   lda tcp_state
   cmp #tcp_cxn_state_syn_sent
   bne @not_expecting_syn_ack
@@ -553,22 +575,29 @@ tcp_process:
 
   lda #tcp_cxn_state_established
   sta tcp_state
+  
 @not_expecting_syn_ack:   
+;we get a SYN/ACK for the current connection,
+;but we're not expecting it, it's probably
+;a retransmist - just ACK it
   jmp @send_ack
-@not_current_connection_on_syn_ack:
-  ;just ignore
-  rts
+  
+  
 @not_syn_ack:  
 
 ;is it an ACK - alone or with PSH/URGENT but not a SYN/ACK?
   lda #tcp_flag_ACK
   bit tcp_inp+tcp_flags_field
-  beq @not_ack
-  
+  bne @ack
+  jmp @not_ack
+@ack:  
   ;is this the current connection?
   jsr check_current_connection
-  bcs @not_current_connection_on_ack
-  
+  bcc @current_connection_on_ack
+  ;if we get an ACK for something that is not the current connection
+  ;we should send a RST
+  jmp @send_rst
+@current_connection_on_ack:
   ;if it's an ACK, then record the last ACK (reorder the bytes in the process)
   ldx #3				; copy seq & ack fields (in reverse order)
   ldy #0
@@ -594,33 +623,112 @@ tcp_process:
   sta acc16
   lda ip_inp+ip_len ;payload length (hi byte)
   sta acc16+1
-  lda tcp_inp+tcp_header_length   ;high 4 bites is header length in 32 bit words
+  lda tcp_inp+tcp_header_length   ;high 4 bits is header length in 32 bit words
   lsr ; A=A/2
   lsr ; A=A/2
   clc ; A now equal to tcp header length in bytes
   adc #20 ;add 20 bytes for IP header. this gives length of IP +TCP headers
   ldx #0
+  sta tcp_header_length
   jsr sub_16_16
-      ;acc16 now contains the length of data in this TCP packet
+  
+  ;acc16 now contains the length of data in this TCP packet
+
   lda acc16
-  bne @not_empty_packet
+  beq @empty_packet
   lda acc16+1
   beq @empty_packet
 @not_empty_packet:
-  .byte $92
-  jmp @send_ack
-@empty_packet:
 
-  rts
-;FIXME
-;  - move ack ptr along
-;  - send ack
-;  - do a callback
+  sta tcp_inbound_data_length+1
+  lda acc16
+  sta tcp_inbound_data_length
   
-@not_expected_seq_number:  
-@not_current_connection_on_ack:  
-  rts
+  ;calculate ptr to tcp data
+  clc
+  lda tcp_header_length
+  adc #<ip_inp
+  sta tcp_inbound_data_ptr
+  lda #>ip_inp
+  adc #0
+  sta tcp_inbound_data_ptr+1
+  
+  ;  do a callback
+  jsr jmp_to_callback
+  
+    
+  ; move ack ptr along
+  ldax #tcp_connect_ack_number
+  stax acc32
+  ldax tcp_inbound_data_length
+  jsr add_16_32 
+@not_expected_seq_number: ;send an ACK with the sequence number we expect  
+
+
+  ;send the ACK for any data in this packet, then return to check for FIN flag
+  jsr @send_ack 
+
+@empty_packet:  
 @not_ack:  
+
+;is it a FIN?
+  lda #tcp_flag_FIN
+  bit tcp_inp+tcp_flags_field
+  bne @fin
+  jmp @not_fin
+@fin:  
+
+  ;is this the current connection?
+  jsr check_current_connection
+  bcc :+
+  jmp @send_rst ;reset if not current connection
+:  
+  ldx #3				; copy seq field (in reverse order)
+  ldy #0
+:	lda tcp_inp + tcp_seq,y
+  sta tcp_connect_last_received_seq_number,x
+  iny
+	dex
+	bpl :-
+  
+  ;was this the next sequence number we're waiting for?
+  ldax  #tcp_connect_ack_number
+  stax  acc32
+  ldax  #tcp_connect_last_received_seq_number
+  stax  op32
+  jsr   cmp_32_32
+  
+  beq :+
+  rts ;bail if not expected sequence number
+:  
+
+  ;set the length to $ffff
+  lda #$ff
+  sta tcp_inbound_data_length
+  sta tcp_inbound_data_length+1
+  jsr jmp_to_callback   ;let the caller see the connection has closed   
+    
+  ; move ack ptr along
+  ldax #tcp_connect_ack_number
+  stax acc32
+  ldax #$01
+  jsr add_16_32
+
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+
+  ;send an ACK
+  jsr @send_ack
+
+  ;send a FIN
+  lda #tcp_flag_FIN
+  jmp @send_packet
+
+@not_expected_seq_number_in_fin: ;send an ACK with the sequence number we expect  
+  rts
+  
+@not_fin:
+
   lda tcp_inp+tcp_flags_field
   cmp #tcp_flag_SYN
   bne @not_syn
@@ -672,6 +780,8 @@ tcp_process:
 @send_ack:
 ;create an ACK packet
   lda #tcp_flag_ACK
+  
+@send_packet:  
   sta tcp_flags
   ldax  #0
   stax  tcp_data_len
@@ -690,5 +800,4 @@ tcp_process:
   stax  tcp_remote_port
   
   
-  jsr tcp_send_packet
-  rts
+  jmp tcp_send_packet
