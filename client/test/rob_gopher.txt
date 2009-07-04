@@ -1,0 +1,40 @@
+igopher.		error.host	1
+i ___         _        ___                                		error.host	1
+i| _ \  ___  | |__    / __|  __ _   _  _   ___   _ _   ___		error.host	1
+i|   / / _ \ | '_ \   \__ \ / _` | | || | / -_) | '_| (_-<		error.host	1
+i|_|_\ \___/ |_.__/   |___/ \__,_|  \_, | \___| |_|   /__/		error.host	1
+i                                   |__/                  		error.host	1
+i                                                     .com		error.host	1
+i 		error.host	1
+iServer Info		error.host	1
+0About this server	/serverinfo.txt	robsayers.com	70
+7Search This Server (experiemental)	/localsearch	robsayers.com	70
+0Server Update	/uptime.sh	robsayers.com	70
+0Tail of server log	/log.sh	robsayers.com	70
+i 		error.host	1
+iPersonal		error.host	1
+0About Me	/aboutme.txt	robsayers.com	70
+1Pics	/pics	robsayers.com	70
+0Latest Twitter Updates	/twitter.txt	robsayers.com	70
+0My GPG/PGP Public Key	/pubkey.asc	robsayers.com	70
+i 		error.host	1
+iGopher		error.host	1
+0Why am I running gopher?	/whygopher.txt	robsayers.com	70
+1RedGopher - Ruby Gopher Client	/redgopher	robsayers.com	70
+0Search Engine Design Notes	/searchengine.txt	robsayers.com	70
+gXKCD Comic comic mentioning Gopher	/not_enough_work.png	robsayers.com	70
+1Links to other Gopher Sites	/world	gopher.floodgap.com	70
+i 		error.host	1
+iMisc. Geeky things		error.host	1
+1My Tandy Model 100	/model100	robsayers.com	70
+0My Computers	/computers.txt	robsayers.com	70
+0Why Public Domain	/why_public_domain.txt	robsayers.com	70
+1Programs I have released	/programs	robsayers.com	70
+1Collection of Programming PDFs	/documents	robsayers.com	70
+12009 RetroChallenge	/retrochallenge	robsayers.com	70
+i 		error.host	1
+i 		error.host	1
+i 		error.host	1
+i 		error.host	1
+i 		error.host	1
+.

@@ -1,0 +1,16 @@
+i   WELCOME TO THE RETRONET GOPHER HOLE!  		error.host	1
+i 		error.host	1
+i          _____ _____ _____ _____ _____ 		error.host	1
+i         | __  |   __|_   _| __  |     |		error.host	1
+i   ,,,   |    -|   __| | | |    -|  |  |		error.host	1
+i  o^.^o  |__|__|_____| |_| |__|__|_____|		error.host	1
+i   \"/    _____ _____ _____   _________ 		error.host	1
+i  / ;;   |   | |   __|_   _| /  n___n  \		error.host	1
+i~(  ))   | | | |   __| | |   ==/ (o) \==		error.host	1
+i  `L L   |_|___|_____| |_|    |_______| 		error.host	1
+i                                        		error.host	1
+1luddite	/luddite/	retro-net.org	70
+1wgoodf	/wgoodf/	retro-net.org	70
+1arfink	/arfink/	retro-net.org	70
+1rsayers	/rsayers/	retro-net.org	70
+.

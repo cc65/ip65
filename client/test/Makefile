@@ -21,6 +21,7 @@ INCFILES=\
 all: \
 	ip65test.dsk \
 	testdns.prg \
+	test_gopher.prg \
 	testdns.pg2 \
 	testtftp.prg \
 	testtftp.pg2\
