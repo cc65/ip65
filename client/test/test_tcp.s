@@ -240,12 +240,13 @@ init:
   stax  tcp_connect_ip+2  
  
   
-  lda #0
-  sta cxn_closed
   ldax  #80
   jsr tcp_connect
   jsr check_for_error
-  
+
+  lda #0
+  sta cxn_closed
+
   ldax  #http_get_length
   stax  tcp_send_data_len
   ldax  #http_get_msg
@@ -254,10 +255,12 @@ init:
 
 @loop_till_end:
   jsr ip65_process
-  lda cxn_closed
-  cmp #1
+  lda #1
+  cmp cxn_closed
+
   beq @loop_till_end
   
+  rts
 
 
   ldax  #tcp_callback_routine
@@ -295,6 +298,7 @@ init:
 tcp_callback_routine:
 
 
+  
   lda tcp_inbound_data_length
   cmp #$ff
   bne @not_end_of_file

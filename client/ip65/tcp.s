@@ -677,7 +677,7 @@ tcp_process:
   bne @fin
   jmp @not_fin
 @fin:  
-
+  .byte $92
   ;is this the current connection?
   jsr check_current_connection
   bcc :+
