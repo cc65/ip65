@@ -36,6 +36,7 @@
   .import add_16_32
   .import cmp_32_32
   .import cmp_16_16
+  .import mul_8_16
 
   .import sub_16_16
 
@@ -488,6 +489,30 @@ test_add_16_32:
   jsr  print_hex
   dey
   bpl :-
+  jsr print_cr
+  rts
+
+;assumes acc16& A already set
+test_mul_8_16:
+  sta  temp_ax
+  lda acc16+1
+  jsr print_hex
+  lda acc16
+  jsr print_hex
+  
+  lda #'*'
+  jsr print_a
+  lda temp_ax
+  jsr print_hex
+    
+  lda #'='
+  jsr print_a
+  lda  temp_ax
+  jsr mul_8_16
+  lda acc16+1
+  jsr print_hex
+  lda acc16
+  jsr print_hex
   jsr print_cr
   rts
 

@@ -13,7 +13,11 @@
   .import mul_8_16
   .importzp acc16
 
+  .importzp copy_src
+  .importzp copy_dest
+  .import copymem
 
+  .import cls
 .segment "IP65ZP" : zeropage
 
 ; pointer for moving through buffers
@@ -52,6 +56,9 @@ get_next_byte:
 :  
   rts
 
+
+current_resource_history_entry: .byte 0
+
 .bss 
 
 DISPLAY_LINES=20
@@ -61,7 +68,7 @@ page_pointer_lo: .res MAX_PAGES
 page_pointer_hi: .res MAX_PAGES
 
 resource_counter: .res 1
-MAX_RESOURCES = 25
+MAX_RESOURCES = DISPLAY_LINES
 
 resource_pointer_lo: .res MAX_RESOURCES
 resource_pointer_hi: .res MAX_RESOURCES
@@ -69,11 +76,17 @@ resource_type: .res MAX_RESOURCES
 
 this_is_last_page: .res 1
 
-resource_hostname: .res 128
-resource_port: .res 2
-resource_selector: .res 256
 
 temp_ax: .res 2
+
+current_resource:
+resource_hostname: .res 64
+resource_port: .res 2
+resource_selector: .res 160
+
+RESOURCE_HISTORY_ENTRIES=8
+resource_history:
+.res $100*RESOURCE_HISTORY_ENTRIES
 
 .code
 
@@ -98,26 +111,14 @@ show_buffer:
   sta page_counter
  
 @do_one_page:  
-  lda #147  ; 'CLR/HOME'
-  jsr print_a
+  jsr cls
 
   ldax  #page_header
   jsr print
   lda page_counter
   jsr print_hex
-  ldax #port_no
-  jsr print
-  lda resource_port+1
-  jsr print_hex
-  lda resource_port
-  jsr print_hex  
-  jsr print_cr
-  ldax #resource_hostname
-  jsr print
-  ldax #resource_selector
-  jsr print
   
-  jsr print_cr
+  jsr print_resource_description
   ldx page_counter
   lda get_next_byte+1
   sta page_pointer_lo,x
@@ -210,6 +211,9 @@ show_buffer:
   beq @go_prev_page
   cmp #KEYCODE_UP
   beq @go_prev_page
+  cmp #KEYCODE_F2
+  beq @show_history
+
   cmp #KEYCODE_ABORT
   
   beq @quit
@@ -228,6 +232,8 @@ show_buffer:
 @not_a_resource:  
   jsr print_hex
   jmp @get_keypress  
+@show_history:
+  jmp show_history
 @go_next_page:  
   lda this_is_last_page
   bne @get_keypress
@@ -318,7 +324,20 @@ show_resource:
 :  
   jmp @parse_port  
 @end_of_port:  
-@done:  
+@done:      
+  ;add this to the resource history
+  ldax  #current_resource
+  stax copy_src
+  lda  #<resource_history
+  sta  copy_dest
+  clc
+  lda  #>resource_history
+  adc current_resource_history_entry
+  sta copy_dest+1
+  ldax #$100
+  jsr copymem
+  
+  inc current_resource_history_entry  
   jmp show_buffer
   
 @skip_to_next_tab:  
@@ -330,32 +349,59 @@ show_resource:
 @done_skipping_over_tab:  
   rts
 
-;assumes acc16& A already set
-test_mul_8_16:
-  sta  temp_ax
-  lda acc16+1
-  jsr print_hex
-  lda acc16
-  jsr print_hex
+;show the entries in the history buffer
+show_history:
   
-  lda #'*'
-  jsr print_a
-  lda temp_ax
-  jsr print_hex
-    
-  lda #'='
-  jsr print_a
-  lda  temp_ax
-  jsr mul_8_16
-  lda acc16+1
-  jsr print_hex
-  lda acc16
-  jsr print_hex
-  jsr print_cr
+  jsr cls
+  ldax #history
+  jsr print
+  
+  lda current_resource_history_entry
+@show_one_entry:
+  pha
+  jsr load_resource_from_history
+  jsr print_resource_description
+  pla
+  sec
+  sbc #1
+  bne @show_one_entry
+  
+  
+  jsr get_key
+  jmp show_buffer
+
+
+;retrieve entry specified by A from resource history
+;NB 'A' = 1 means the first entry
+load_resource_from_history:
+  clc
+  adc  #(>resource_history)-1
+  sta copy_src+1
+  lda  #<resource_history
+  sta  copy_src
+
+  ldax  #current_resource
+  stax copy_dest
+  ldax #$100
+  jsr copymem
+
   rts
 
-
-
+print_resource_description:
+ldax #port_no
+  jsr print
+  lda resource_port+1
+  jsr print_hex
+  lda resource_port
+  jsr print_hex  
+  jsr print_cr
+  ldax #resource_hostname
+  jsr print
+  ldax #resource_selector
+  jsr print  
+  jsr print_cr
+  rts
+  
 .rodata
 input_buffer:
 .incbin "rob_gopher.txt"
@@ -365,6 +411,8 @@ page_header:
 .byte "PAGE NO $",0
 port_no:
 .byte "PORT NO ",0
+history:
+.byte "gopher history ",13,0
 
 initial_location:
 .byte "1luddite",$09,"/luddite/",$09,"retro-net.org",$09,"70",$0D,$0A,0
