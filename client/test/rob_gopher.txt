@@ -7,7 +7,7 @@ i                                   |__/                  		error.host	1
 i                                                     .com		error.host	1
 i 		error.host	1
 iServer Info		error.host	1
-0About this server	/serverinfo.txt	robsayers.com	70
+0About this server	/serverinfo.txt	robsayers.com	7070
 7Search This Server (experiemental)	/localsearch	robsayers.com	70
 0Server Update	/uptime.sh	robsayers.com	70
 0Tail of server log	/log.sh	robsayers.com	70

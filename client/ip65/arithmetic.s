@@ -27,6 +27,8 @@ temp_ax: .res 2
 .export cmp_32_32
 .export cmp_16_16
 
+.export mul_8_16
+
 ;compare 2 32bit numbers
 ;on exit, zero flag clear iff acc32==op32
 cmp_32_32:
@@ -116,3 +118,32 @@ add_16_32:
   sta (acc32),y
   rts
   
+;multiply a 16 bit number by an 8 bit number
+;acc16=acc16*a
+mul_8_16:
+  tax
+  beq @operand_is_zero
+  lda  acc16
+  sta  temp_ax
+  lda  acc16+1
+  sta  temp_ax+1
+  
+@addition_loop:
+  dex
+  beq @done
+  clc
+  lda acc16
+  adc temp_ax
+  sta acc16
+  lda acc16+1
+  adc temp_ax+1
+  sta acc16+1
+  jmp @addition_loop  
+  
+@done:
+
+  rts  
+@operand_is_zero:
+  sta acc16
+  sta acc16+1  
+  rts
