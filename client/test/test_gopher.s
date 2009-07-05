@@ -213,7 +213,10 @@ show_buffer:
   beq @go_prev_page
   cmp #KEYCODE_F2
   beq @show_history
-
+  cmp #KEYCODE_LEFT
+  beq @back_in_history
+  cmp #KEYCODE_F3
+  beq @back_in_history
   cmp #KEYCODE_ABORT
   
   beq @quit
@@ -232,6 +235,14 @@ show_buffer:
 @not_a_resource:  
   jsr print_hex
   jmp @get_keypress  
+@back_in_history:
+  ldx current_resource_history_entry
+  dex 
+  beq @get_keypress ;if we were already at start of history, can't go back any further
+  stx current_resource_history_entry
+  txa
+  jsr load_resource_from_history
+  jmp show_buffer
 @show_history:
   jmp show_history
 @go_next_page:  
@@ -326,6 +337,19 @@ show_resource:
 @end_of_port:  
 @done:      
   ;add this to the resource history
+  lda current_resource_history_entry
+  cmp #RESOURCE_HISTORY_ENTRIES
+  bne @dont_shuffle_down  
+  ldax  #resource_history
+  stax  copy_dest
+  inx   ;one page higher up
+  stax  copy_src
+  ldx #(RESOURCE_HISTORY_ENTRIES-1)
+  lda #$00
+  jsr copymem
+  dec current_resource_history_entry
+
+@dont_shuffle_down:  
   ldax  #current_resource
   stax copy_src
   lda  #<resource_history
