@@ -315,9 +315,9 @@ show_resource:
   iny  
   beq @end_of_port
   lda (buffer_ptr),y
-  cmp #$0D
-  beq @end_of_port
-
+  cmp #$1F
+  bcc @end_of_port  ;any control char should be treated as end of port field
+  
   ldax  resource_port
   stax  acc16
   lda #10
