@@ -61,7 +61,7 @@ current_resource_history_entry: .byte 0
 
 .bss 
 
-DISPLAY_LINES=20
+DISPLAY_LINES=24
 page_counter: .res 1
 MAX_PAGES = 50
 page_pointer_lo: .res MAX_PAGES
@@ -113,10 +113,10 @@ show_buffer:
 @do_one_page:  
   jsr cls
 
-  ldax  #page_header
-  jsr print
-  lda page_counter
-  jsr print_hex
+;  ldax  #page_header
+;  jsr print
+;  lda page_counter
+;  jsr print_hex
   
   jsr print_resource_description
   ldx page_counter
@@ -412,13 +412,16 @@ load_resource_from_history:
   rts
 
 print_resource_description:
-ldax #port_no
+;  ldax #port_no
+;  jsr print
+;  lda resource_port+1
+;  jsr print_hex
+;  lda resource_port  
+;  jsr print_hex  
+;  jsr print_cr
+ 
+  ldax #gopher
   jsr print
-  lda resource_port+1
-  jsr print_hex
-  lda resource_port
-  jsr print_hex  
-  jsr print_cr
   ldax #resource_hostname
   jsr print
   ldax #resource_selector
@@ -428,7 +431,7 @@ ldax #port_no
   
 .rodata
 input_buffer:
-.incbin "rob_gopher.txt"
+;.incbin "rob_gopher.txt"
 .incbin "retro_gopher.txt"
 .byte 0
 page_header:
@@ -437,6 +440,9 @@ port_no:
 .byte "PORT NO ",0
 history:
 .byte "gopher history ",13,0
+gopher:
+.byte "gopher://",0
 
 initial_location:
-.byte "1luddite",$09,"/luddite/",$09,"retro-net.org",$09,"70",$0D,$0A,0
+.byte "1luddite",$09,"",$09,"retro-net.org",$09,"70",$0D,$0A,0
+;.byte "1luddite",$09,"/luddite/",$09,"retro-net.org",$09,"70",$0D,$0A,0
