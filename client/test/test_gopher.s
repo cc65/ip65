@@ -17,7 +17,23 @@
   .importzp copy_dest
   .import copymem
 
+
+  .import tcp_connect
+  .import tcp_send
+  .import tcp_send_data_len
+  .import tcp_callback
+  .import tcp_connect_ip
+  .import tcp_inbound_data_length
+  .import tcp_inbound_data_ptr
+  .import dns_ip
+  .import dns_resolve
+  .import dns_set_hostname
+  .import ip65_error
   .import cls
+  .import get_filtered_input
+  .import filter_text
+  .import filter_dns
+
 .segment "IP65ZP" : zeropage
 
 ; pointer for moving through buffers
@@ -74,16 +90,19 @@ resource_pointer_lo: .res MAX_RESOURCES
 resource_pointer_hi: .res MAX_RESOURCES
 resource_type: .res MAX_RESOURCES
 
+download_flag: .res 1
+dl_loop_counter: .res 2
 this_is_last_page: .res 1
 
-
+tcp_buffer_ptr: .res 2
 temp_ax: .res 2
 
+RESOURCE_HOSTNAME_MAX_LENGTH=64
 current_resource:
-resource_hostname: .res 64
+resource_hostname: .res RESOURCE_HOSTNAME_MAX_LENGTH
 resource_port: .res 2
 resource_selector: .res 160
-
+resource_selector_length: .res 1
 RESOURCE_HISTORY_ENTRIES=8
 resource_history:
 .res $100*RESOURCE_HISTORY_ENTRIES
@@ -95,14 +114,22 @@ init:
   lda #14
   jsr print_a ;switch to lower case
 
+  jsr print_cr
+  init_ip_via_dhcp 
+  jsr print_ip_config
+
+  jsr prompt_for_gopher_resource
+  bcs @use_default_start_page 
+  rts
+@use_default_start_page:  
   ldax #initial_location
   sta resource_pointer_lo
   stx resource_pointer_hi
   ldx #0
-  jsr  show_resource
+  jsr  select_resource
   rts
 
-show_buffer:
+display_resource_in_buffer:
 
   ldax #input_buffer
   stax  get_next_byte+1
@@ -200,6 +227,7 @@ show_buffer:
   sta this_is_last_page
 @done:
 @get_keypress:
+  jsr ip65_process  ;keep polling the network, so we respond to pings etc
   jsr get_key
   cmp #' '
   beq @go_next_page  
@@ -231,7 +259,7 @@ show_buffer:
 @valid_resource:  
   tax
   dex
-  jsr show_resource
+  jsr select_resource
 @not_a_resource:  
   jsr print_hex
   jmp @get_keypress  
@@ -242,7 +270,7 @@ show_buffer:
   stx current_resource_history_entry
   txa
   jsr load_resource_from_history
-  jmp show_buffer
+  jmp display_resource_in_buffer
 @show_history:
   jmp show_history
 @go_next_page:  
@@ -272,14 +300,20 @@ show_buffer:
 ;X should be the selected resource number
 ;the resources selected should be loaded into resource_pointer_* 
 
-show_resource:
+select_resource:
   lda resource_pointer_lo,x
   sta buffer_ptr
   lda resource_pointer_hi,x
   sta buffer_ptr+1
   ldy #0  
   ldx #0
-  jsr @skip_to_next_tab
+@skip_to_next_tab:  
+  iny
+  beq @done_skipping_over_tab 
+  lda (buffer_ptr),y
+  cmp #$09
+  bne @skip_to_next_tab
+@done_skipping_over_tab:  
 ;should now be pointing at the tab just before the selector
 @copy_selector:
   iny 
@@ -292,6 +326,7 @@ show_resource:
 @end_of_selector:  
   lda  #$00
   sta resource_selector,x
+  stx resource_selector_length
   tax
 ;should now be pointing at the tab just before the hostname
 @copy_hostname:
@@ -335,7 +370,9 @@ show_resource:
 :  
   jmp @parse_port  
 @end_of_port:  
-@done:      
+@done:
+
+add_resource_to_history_and_display:
   ;add this to the resource history
   lda current_resource_history_entry
   cmp #RESOURCE_HISTORY_ENTRIES
@@ -362,16 +399,19 @@ show_resource:
   jsr copymem
   
   inc current_resource_history_entry  
-  jmp show_buffer
   
-@skip_to_next_tab:  
-  iny
-  beq @done_skipping_over_tab 
-  lda (buffer_ptr),y
-  cmp #$09
-  bne @skip_to_next_tab
-@done_skipping_over_tab:  
+  jsr load_resource_into_buffer
+  bcs @error_in_loading
+  jmp display_resource_in_buffer
+@error_in_loading:
+  ldax  #error
+  jsr print
+  lda ip65_error
+  jsr print_hex
+  jsr print_cr
+  jsr get_key
   rts
+    
 
 ;show the entries in the history buffer
 show_history:
@@ -391,8 +431,109 @@ show_history:
   bne @show_one_entry
   
   
-  jsr get_key
-  jmp show_buffer
+
+;load the 'current_resource' into the buffer
+load_resource_into_buffer:
+  ldax #input_buffer
+  stax tcp_buffer_ptr
+  ldax  #resolving
+  jsr print
+  ldax #resource_hostname
+  jsr print
+  jsr print_cr
+  ldax #resource_hostname
+  jsr dns_set_hostname
+  
+  bcs @error
+  jsr dns_resolve
+  bcs @error
+  
+  ldx #3        ; save IP address just retrieved
+: lda dns_ip,x
+  sta tcp_connect_ip,x
+  dex
+  bpl :-
+  ldax #gopher_download_callback
+  stax tcp_callback
+  ldax  #connecting
+  jsr print
+
+  ldax resource_port
+  jsr tcp_connect
+  bcs @error
+  
+  ;connected, now send the selector
+  jsr print_cr
+  ldax  #retrieving
+  jsr print
+  ldax #resource_selector
+  jsr print
+  ldx #0
+  stx download_flag
+  stx dl_loop_counter
+  stx dl_loop_counter+1
+  lda resource_selector_length
+  stax tcp_send_data_len
+  ldax #resource_selector
+  jsr tcp_send
+  
+  ;send the CR/LF after the connector
+  ldax #2
+  sta tcp_send_data_len
+  ldax #cr_lf
+  jsr tcp_send
+  
+  ;now loop until we're done
+@download_loop:
+  inc dl_loop_counter
+  bne :+
+  inc dl_loop_counter+1
+  bne :+
+
+  lda #'.'
+  jsr print_a
+:  
+  jsr ip65_process
+  lda download_flag
+  beq @download_loop
+  clc
+  
+@error:
+  rts
+  
+gopher_download_callback:
+  lda tcp_inbound_data_length
+  cmp #$ff
+  bne @not_end_of_file
+  lda #1
+  sta download_flag
+  rts
+@not_end_of_file:
+
+;copy this chunk to our input buffer
+  ldax tcp_buffer_ptr  
+  stax copy_dest
+  ldax tcp_inbound_data_ptr
+  stax copy_src
+  ldax tcp_inbound_data_length
+  jsr  copymem  
+;increment the pointer into the input buffer  
+  clc
+  lda tcp_buffer_ptr
+  adc tcp_inbound_data_length
+  sta tcp_buffer_ptr
+  lda tcp_buffer_ptr+1
+  adc tcp_inbound_data_length+1
+  sta tcp_buffer_ptr+1  
+  lda #'*'
+  jsr print_a
+  
+  lda tcp_inbound_data_length+1
+  jsr print_hex
+  lda tcp_inbound_data_length
+  jsr print_hex
+  
+  rts
 
 
 ;retrieve entry specified by A from resource history
@@ -428,12 +569,35 @@ print_resource_description:
   jsr print  
   jsr print_cr
   rts
-  
+
+
+prompt_for_gopher_resource:
+  ldax #gopher_server
+  jsr print
+  ldax #filter_dns
+  jsr get_filtered_input
+  bcs @no_server_entered
+  stax copy_src
+  ldax #resource_hostname
+  stax copy_dest
+  ldax #RESOURCE_HOSTNAME_MAX_LENGTH
+  jsr copymem
+  ldax #70
+  stax resource_port
+  lda  #'/'
+  sta resource_selector
+  lda #0
+  sta resource_selector+1
+  sta resource_selector_length+1
+  lda #1
+  sta resource_selector_length
+  jsr print_cr
+  clc
+  jmp add_resource_to_history_and_display
+@no_server_entered:
+  sec
+  rts
 .rodata
-input_buffer:
-;.incbin "rob_gopher.txt"
-.incbin "retro_gopher.txt"
-.byte 0
 page_header:
 .byte "PAGE NO $",0
 port_no:
@@ -442,7 +606,27 @@ history:
 .byte "gopher history ",13,0
 gopher:
 .byte "gopher://",0
+cr_lf: .byte $0D,$0A
+error:
+.byte "error - code ",0
+resolving:
+.byte "resolving ",0
+connecting:
+.byte "connecting ",0
+retrieving:
+.byte "retrieving ",0
+gopher_server:
+.byte "gopher server:",0
 
 initial_location:
+.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
 .byte "1luddite",$09,"",$09,"retro-net.org",$09,"70",$0D,$0A,0
 ;.byte "1luddite",$09,"/luddite/",$09,"retro-net.org",$09,"70",$0D,$0A,0
+
+
+.bss
+input_buffer:
+  .res 8000
+;.incbin "rob_gopher.txt"
+;.incbin "retro_gopher.txt"
+;.byte 0

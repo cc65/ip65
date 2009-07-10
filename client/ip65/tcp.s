@@ -524,6 +524,7 @@ tcp_process:
 ; none but if connection was found, an outbound message may be created, overwriting eth_outp
 ; also tcp_state and other tcp variables may be modified
 
+  
   lda #tcp_flag_RST
   bit tcp_inp+tcp_flags_field
   beq @not_reset
@@ -541,7 +542,7 @@ tcp_process:
   jsr jmp_to_callback   ;let the caller see the connection has closed
   
 @not_current_connection_on_rst:
-  ;if we get a reset for a closed or nonexistent connection, then ignore it
+  ;if we get a reset for a closed or nonexistent connection, then ignore it  
   rts
 @not_reset:
   lda tcp_inp+tcp_flags_field
@@ -618,6 +619,8 @@ tcp_process:
   
   bne   @not_expected_seq_number
 
+
+  
   ;what is the size of data in this packet?
   lda ip_inp+ip_len+1 ;payload length (lo byte)
   sta acc16
@@ -633,16 +636,17 @@ tcp_process:
   jsr sub_16_16
   
   ;acc16 now contains the length of data in this TCP packet
-
-  lda acc16
-  beq @empty_packet
-  lda acc16+1
-  beq @empty_packet
-@not_empty_packet:
-
-  sta tcp_inbound_data_length+1
+  
   lda acc16
   sta tcp_inbound_data_length
+  lda acc16+1
+  sta tcp_inbound_data_length+1
+  bne @not_empty_packet
+  lda acc16
+  bne @not_empty_packet
+  jmp @empty_packet  
+@not_empty_packet:
+  
   
   ;calculate ptr to tcp data
   clc
@@ -662,22 +666,22 @@ tcp_process:
   stax acc32
   ldax tcp_inbound_data_length
   jsr add_16_32 
+  
+  
 @not_expected_seq_number: ;send an ACK with the sequence number we expect  
-
 
   ;send the ACK for any data in this packet, then return to check for FIN flag
   jsr @send_ack 
 
+@not_ack: 
 @empty_packet:  
-@not_ack:  
 
-;is it a FIN?
+;is it a FIN?  
   lda #tcp_flag_FIN
   bit tcp_inp+tcp_flags_field
   bne @fin
   jmp @not_fin
 @fin:  
-  .byte $92
   ;is this the current connection?
   jsr check_current_connection
   bcc :+
@@ -717,14 +721,14 @@ tcp_process:
   lda #tcp_cxn_state_closed
   sta tcp_state
 
-  ;send an ACK
-  jsr @send_ack
+  ;send a FIN/ACK
+;  jsr @send_ack
 
   ;send a FIN
-  lda #tcp_flag_FIN
-  jmp @send_packet
+  lda #tcp_flag_FIN+tcp_flag_ACK
+  
+  jsr @send_packet
 
-@not_expected_seq_number_in_fin: ;send an ACK with the sequence number we expect  
   rts
   
 @not_fin:

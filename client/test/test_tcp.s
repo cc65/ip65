@@ -80,6 +80,12 @@ init:
   ldax  #$1235
   jsr  test_sub_16_16
 
+  ldax  #$180
+  stax acc16
+  ldax  #$28
+  jsr  test_sub_16_16
+
+  rts
   ldax  #$ff34
   stax acc16
   ldax  #$1235
@@ -200,6 +206,11 @@ init:
   ldax  #number16
   stax acc32
   ldax  #$1234
+  jsr test_add_16_32
+
+  ldax  #number17
+  stax acc32
+  ldax  #$158
   jsr test_add_16_32
 
     
@@ -599,6 +610,8 @@ number15:
 number16:
   .byte $00,$00,$00,$00
 
+number17:
+  .byte $5b,$bc,$08,$a9
 
 tcp_dest_ip:
  ; .byte 10,5,1,1
