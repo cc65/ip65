@@ -5,6 +5,7 @@
   .include "../inc/c64keycodes.i"
 
   .import get_key
+  .import get_key_if_available
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
   .import  __RODATA_SIZE__
@@ -227,8 +228,8 @@ display_resource_in_buffer:
   sta this_is_last_page
 @done:
 @get_keypress:
-  jsr ip65_process  ;keep polling the network, so we respond to pings etc
-  jsr get_key
+  jsr ip65_process  ;keep polling the network, so we respond to arps/pings/late packets etc etc
+  jsr get_key_if_available
   cmp #' '
   beq @go_next_page  
   cmp #KEYCODE_F7
@@ -261,7 +262,6 @@ display_resource_in_buffer:
   dex
   jsr select_resource
 @not_a_resource:  
-  jsr print_hex
   jmp @get_keypress  
 @back_in_history:
   ldx current_resource_history_entry
@@ -528,10 +528,10 @@ gopher_download_callback:
   lda #'*'
   jsr print_a
   
-  lda tcp_inbound_data_length+1
-  jsr print_hex
-  lda tcp_inbound_data_length
-  jsr print_hex
+;  lda tcp_inbound_data_length+1
+;  jsr print_hex
+;  lda tcp_inbound_data_length
+;  jsr print_hex
   
   rts
 

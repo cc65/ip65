@@ -4,7 +4,7 @@
 .export filter_ip
 .export filter_dns
 .export check_for_abort_key
-
+.export get_key_if_available
 .importzp copy_src
 
 .include "../inc/common.i"
@@ -19,6 +19,12 @@ get_key:
   jsr $ffe4
   beq get_key
   rts
+
+;use C64 Kernel ROM function to read a key
+;inputs: none
+;outputs: A contains ASCII value of key just pressed (0 if no key pressed)
+get_key_if_available=$ffe4
+  
 
 ;check whether the RUN/STOP key is being pressed
 ;inputs: none
