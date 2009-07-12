@@ -1,0 +1,33 @@
+C64 gopher browser v0.1
+
+
+REQUIREMENTS
+	1) RR-NET or compatible
+	2) DHCP server on LAN
+
+USAGE
+
+When run, the program will use DHCP to assign itself an IP address, default gateway and DNS server address.
+
+You will then be prompted for the address of a gopher server. you can enter a hostname or an ip address. If 
+you just hit enter at this prompt,  "gopher.floodgap.com" will load. NB - in the current version you can only
+enter a server name, not a specific resource on that server, or a port (the default gopher port 70 is used).
+
+Once a gopher resource is loaded, the following keys are active:
+
+SPACE, F7 or down arrow : scroll down to next page
+F1 or up arror		: scroll up to previous page
+F2 			: show recently visited resource
+F3 or left arrow	: go back to last visited resource
+F5			: prompt to enter a new server (nb server name only - not resource or port)
+RUN/STOP		: quit
+
+If the page currently being displayed has links to further resources in it, each link will be displayed 
+starting with a highlighted letter (e.g. the first link on a page will have an inverse "A" next to it,
+the 2nd link on a page will have an inverse "B" next to it etc). Press the letter assigned to the link
+will load up that resource.
+
+Currently only Text and Directory resources are handled.
+
+jonno @ jamtronix.com 
+2009-07-11

@@ -33,7 +33,7 @@ NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parame
 NB65_UDP_REMOVE_LISTENER       EQU $13 ;inputs: AX contains UDP port number that listener will be removed from
 
 NB65_TCP_CONNECT               EQU $14 ;inputs: AX points to a TCP connect parameter structure, outputs: A = connection #
-NB65_TCP_SEND_PACKET           EQU $15 ;inputs: AX points to a TCP send parameter structure, outputs: none packet is sent
+NB65_SEND_TCP_PACKET           EQU $15 ;inputs: AX points to a TCP send parameter structure, outputs: none packet is sent
 NB65_TCP_CLOSE_CONNECTION      EQU $16 ;inputs: A = connection # to close, outputs: none
 
 NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
@@ -88,9 +88,8 @@ NB65_TCP_PORT           EQU $04                       ;2 byte port number (to li
 NB65_TCP_CALLBACK       EQU $06                       ;2 byte address of routine to be called whenever a new packet arrives
 
 ;offsets in TCP send parameter structure
-NB65_TCP_CONNECTION_NUMBER      EQU $00               ;1 byte connection number for previously set up connection
-NB65_TCP_PAYLOAD_LENGTH         EQU $01               ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
-NB65_TCP_PAYLOAD_POINTER        EQU $03               ;2 byte pointer to payload of packet (after all headers)
+NB65_TCP_PAYLOAD_LENGTH         EQU $00               ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
+NB65_TCP_PAYLOAD_POINTER        EQU $02               ;2 byte pointer to payload of packet (after all headers)
 
 ;offsets in TCP/UDP packet parameter structure
 NB65_REMOTE_IP       EQU $00                          ;4 byte IP address of remote machine (src of inbound packets, dest of outbound packets)
@@ -99,7 +98,6 @@ NB65_LOCAL_PORT      EQU $06                          ;2 byte port number of loc
 NB65_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
                                                       ; in a TCP connection, if the length is $FFFF, this actually means "end of connection"
 NB65_PAYLOAD_POINTER EQU $0A                          ;2 byte pointer to payload of packet (after all headers)
-NB65_CONNECTION_NUMBER EQU $0C                        ;1 byte "connection number" (valid for TCP connections only)
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                    EQU $80

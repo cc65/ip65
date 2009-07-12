@@ -1,4 +1,10 @@
 ;TCP (transmission control protocol) functions
+;NB to use these functions, you must pass "-DTCP" to ca65 when assembling "ip.s"
+;otherwise inbound tcp packets won't get passed in to tcp_process 
+;currently only a single outbound (client) connection is supported
+;to use, first call "tcp_connect" to create a connection. to send data on that connection, call "tcp_send". 
+;whenever data arrives, a call will be made to the routine pointed at by tcp_callback.
+
 
 MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
@@ -12,7 +18,6 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 
 .export tcp_init
 .export tcp_process
-.export tcp_listen
 .export tcp_connect
 .export tcp_callback
 .export tcp_connect_ip
@@ -21,7 +26,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length
-.export tcp_ack_number
+
 
 .import ip_calc_cksum
 .import ip_send
@@ -113,22 +118,22 @@ tcp_ack_number: .res 4
 tcp_data_ptr: .res 2
 tcp_data_len: .res 2
 tcp_send_data_ptr: .res 2
-tcp_send_data_len: .res 2
-tcp_callback: .res 2
+tcp_send_data_len: .res 2 ;length (in bytes) of data to be sent over tcp connection
+tcp_callback: .res 2 ;vector to routine to be called when data is received over tcp connection
 tcp_flags: .res 1
 
 
-tcp_inbound_data_ptr: .res 2
-tcp_inbound_data_length: .res 2
-
+tcp_inbound_data_ptr: .res 2 ;pointer to data just recieved over tcp connection
+tcp_inbound_data_length: .res 2 ;length of data just received over tcp connection
+;(if this is $ffff, that means "end of file", i.e. remote end has closed connection)
 tcp_connect_sequence_number: .res 4   ;the seq number we will next send out
 tcp_connect_expected_ack_number: .res 4 ;what we expect to see in the next inbound ack
 tcp_connect_ack_number: .res 4 ;what we will next ack
 tcp_connect_last_received_seq_number: .res 4 ;the seq field in the last inbound packet for this connection
 tcp_connect_last_ack: .res 4 ;ack field in the last inbound packet for this connection
-tcp_connect_local_port: .res 2
+tcp_connect_local_port: .res 2 ;
 tcp_connect_remote_port: .res 2
-tcp_connect_ip: .res 4
+tcp_connect_ip: .res 4 ;ip address of remote server to connect to
 
 
 tcp_timer:  .res 1
@@ -137,6 +142,10 @@ tcp_packet_sent_count: .res 1
 
 .code
 
+; initialize tcp
+;called automatically by ip_init if "ip.s" was compiled with -DTCP
+; inputs: none
+; outputs: none
 tcp_init:
   
   rts
@@ -473,11 +482,6 @@ tcp_send_packet:
 	jmp ip_send			; send packet, sec on error
 
 
-;listen on the tcp port specified
-; tcp_callback: vector to call when data arrives on specified port
-; AX: set to tcp port to listen on
-tcp_listen:
-  rts
 
 check_current_connection:
 ;see if the ip packet we just got is for a valid (non-closed) tcp connection
@@ -516,14 +520,14 @@ check_current_connection:
   clc
   rts
   
-tcp_process:
 ;process incoming tcp packet
+;called automatically by ip_process if "ip.s" was compiled with -DTCP
 ;inputs:
 ; eth_inp: should contain an ethernet frame encapsulating an inbound tcp packet
 ;outputs:
 ; none but if connection was found, an outbound message may be created, overwriting eth_outp
 ; also tcp_state and other tcp variables may be modified
-
+tcp_process:
   
   lda #tcp_flag_RST
   bit tcp_inp+tcp_flags_field

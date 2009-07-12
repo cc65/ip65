@@ -587,7 +587,9 @@ netboot65_msg:
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13
 .byte "F1: TFTP BOOT"
-.if !(BANKSWITCH_SUPPORT=$03)
+.if (BANKSWITCH_SUPPORT=$03)
+.byte "     F3: GOPHER"
+.else
 .byte "     F3: BASIC"
 .endif
 .byte 13
