@@ -93,7 +93,7 @@ found_nb65_signature
   nb65call #NB65_INPUT_HOSTNAME
   bcc .host_entered
   ;if no host entered, then bail.
-  jmp reset_after_keypress
+  rts  
 .host_entered
   stax nb65_param_buffer
   print_cr
@@ -133,16 +133,30 @@ found_nb65_signature
   beq .petscii_mode
   jmp .char_mode_input
 .ascii_mode
+  lda #14
+  jsr print_a ;switch to lower case
+
   lda #0
   jmp .character_mode_set
 .petscii_mode  
+  lda #142
+  jsr print_a ;switch to upper case
   lda #1
 .character_mode_set  
   sta character_mode
-  
+  lda #147  ; 'CLR/HOME'
+  jsr print_a
   ldaxi #tcp_callback
   stax nb65_param_buffer+NB65_TCP_CALLBACK
   print #connecting
+  lda  character_mode
+  beq .a_mode
+  print #petscii
+  jmp .c_mode
+.a_mode
+  print #ascii
+.c_mode
+  print #mode
   ldaxi  #nb65_param_buffer
   nb65call  #NB65_TCP_CONNECT
   bcc .connect_ok 
@@ -165,25 +179,41 @@ found_nb65_signature
   ;is there anything in the input buffer?
   lda $c6 ;NDX - chars in keyboard buffer
   beq .main_polling_loop
-  tay
-  dey 
-  ldx #0
-  stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
-  ldaxi #output_buffer
-  stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
-.copy_char_from_KEYD  
-  lda $277,y  ;read direct from keyboard buffer
-  tax 
+  lda #0
+  sta nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  sta nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH+1
+.get_next_char  
+  jsr $ffe4 ;getkey - 0 means no input
+  tax  
+  beq .no_more_input
+  cmp #$03 ;RUN/STOP
+  bne .not_runstop
+  lda  #0
+  sta $cb ;overwrite "current key pressed" else it's seen by the tcp stack and the close aborts
+
+  print #closing_connection
+  nb65call  #NB65_TCP_CLOSE_CONNECTION
+  bcs .error_on_disconnect
+  print #disconnected
+  jmp .get_hostname
+.error_on_disconnect  
+  jsr print_errorcode
+  print_cr
+  jmp .get_hostname
+.not_runstop  
   lda character_mode
   bne .no_conversion_required
   lda petscii_to_ascii_table,x
   tax
-.no_conversion_required
+.no_conversion_required  
   txa
+  ldy nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
   sta output_buffer,y
-  dey
-  bne .copy_char_from_KEYD
-  sty $c6 ;set length of keyboard buffer back to 0
+  inc nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  jmp .get_next_char
+.no_more_input
+  ldaxi  #output_buffer
+  stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
   ldaxi  #nb65_param_buffer
   nb65call  #NB65_SEND_TCP_PACKET
   bcs .error_on_send
@@ -209,18 +239,33 @@ tcp_callback
   
   ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
   stax temp_ptr
-  ldx nb65_param_buffer+NB65_PAYLOAD_LENGTH ;assumes length of inbound data  is < 255
+  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH ;assumes length of inbound data  is < 255
+  sta buffer_length
+  dec buffer_length 
   ldy #0
 .next_byte
+;  tya
+;  pha
+;  lda (temp_ptr),y
+;  nb65call #NB65_PRINT_HEX
+;  pla
+;  tay
   lda (temp_ptr),y
+  tax
+  lda character_mode
+  bne .no_conversion_req
+  lda ascii_to_petscii_table,x
+  tax
+.no_conversion_req
+  tya
+  pha
+  txa  
   jsr print_a
+  pla
+  tay
   iny
-  dex
-  bpl .next_byte
-
-  print_cr
-
-  
+  dec buffer_length
+  bpl .next_byte  
   rts
 
 ;look for NB65 signature at location pointed at by AX
@@ -280,11 +325,16 @@ nb65_signature dc.b $4E,$42,$36,$35  ; "NB65"  - API signature
 initializing dc.b "INITIALIZING ",13,0
 error_code dc.b "ERROR CODE: $",0
 resolving dc.b "RESOLVING ",0
-connecting dc.b "CONNECTING ",0
+closing_connection dc.b "CLOSING CONNECTION",13,0
+connecting dc.b "CONNECTING IN ",0
+
+ascii dc.b "ASCII",0
+petscii dc.b "PETSCII",0
+mode dc.b " MODE",13,0
 disconnected dc.b 13,"CONNECTION CLOSED",13,0
 remote_host dc.b "REMOTE HOST - BLANK TO QUIT",13,": ",0
 remote_port dc.b "REMOTE PORT - BLANK FOR TELNET DEFAULT",13,": ",0
-char_mode_prompt dc.b "CHARACTER MODE - A=ASCII, P=PETSCII",13,": ",0
+char_mode_prompt dc.b "CHARACTER MODE - A=ASCII, P=PETSCII",13,0
 press_a_key_to_continue dc.b "PRESS A KEY TO CONTINUE",13,0
 failed dc.b "FAILED ", 0
 ok dc.b "OK ", 0
@@ -329,5 +379,8 @@ petscii_to_ascii_table
 ;variables
 connection_closed ds.b 1
 character_mode ds.b 1
+buffer_offset: ds.b 1
 nb65_param_buffer DS.B $20  
+buffer_length: ds.b 2
+
 output_buffer: DS.B $100

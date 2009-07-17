@@ -23,6 +23,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_connect_ip
 .export tcp_send_data_len
 .export tcp_send
+.export tcp_close
 
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length
@@ -121,7 +122,7 @@ tcp_send_data_ptr: .res 2
 tcp_send_data_len: .res 2 ;length (in bytes) of data to be sent over tcp connection
 tcp_callback: .res 2 ;vector to routine to be called when data is received over tcp connection
 tcp_flags: .res 1
-
+tcp_fin_sent: .res 1
 
 tcp_inbound_data_ptr: .res 2 ;pointer to data just recieved over tcp connection
 tcp_inbound_data_length: .res 2 ;length of data just received over tcp connection
@@ -169,7 +170,8 @@ tcp_connect:
   sta tcp_state
   lda #0  ;reset the "packet sent" counter
   sta tcp_packet_sent_count
-
+  sta tcp_fin_sent
+  
   ;set the low word of seq number to $0000, high word to something random
   sta tcp_connect_sequence_number
   sta tcp_connect_sequence_number+1
@@ -224,7 +226,6 @@ tcp_connect:
   dec tcp_loop_count
   bne @outer_delay_loop  
 
-@break_polling_loop:
   
 	inc tcp_packet_sent_count
   lda tcp_packet_sent_count
@@ -257,6 +258,80 @@ tcp_connect:
   clc
   rts
 
+tcp_close:
+;close the current connection
+;inputs:
+;   none
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+
+  ;increment the expected sequence number for the SYN we are about to send
+  ldax #tcp_connect_expected_ack_number
+  stax acc32
+  ldax #1
+  sta tcp_fin_sent
+  jsr add_16_32
+
+
+@send_fin_loop:
+  lda #tcp_flag_FIN+tcp_flag_ACK
+  sta tcp_flags
+  ldax  #0
+  stax  tcp_data_len
+	ldx #3				; 
+:	lda tcp_connect_ip,x
+	sta tcp_remote_ip,x
+  lda tcp_connect_ack_number,x
+  sta tcp_ack_number,x
+  lda tcp_connect_sequence_number,x
+  sta tcp_sequence_number,x
+	dex
+	bpl :-
+  ldax  tcp_connect_local_port
+  stax  tcp_local_port  
+  ldax  tcp_connect_remote_port
+  stax  tcp_remote_port  
+  
+  jsr tcp_send_packet
+
+  lda tcp_packet_sent_count
+  adc #1
+  sta tcp_loop_count       ;we wait a bit longer between each resend  
+@outer_delay_loop: 
+  jsr timer_read
+  stx tcp_timer            ;we only care about the high byte  
+@inner_delay_loop:  
+  jsr ip65_process
+  lda tcp_state
+  cmp #tcp_cxn_state_established
+  bne @connection_closed
+
+  jsr timer_read
+  cpx tcp_timer            ;this will tick over after about 1/4 of a second
+  beq @inner_delay_loop
+  
+  dec tcp_loop_count
+  bne @outer_delay_loop  
+  
+	inc tcp_packet_sent_count
+  lda tcp_packet_sent_count
+  cmp #MAX_TCP_PACKETS_SENT-1
+  bpl @too_many_messages_sent
+  jmp @send_fin_loop
+@connection_closed:
+  clc
+  rts
+@too_many_messages_sent:
+@failed:
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error  
+  sec             ;signal an error
+  rts
+
+
+tcp_send:
 ;send tcp data
 ;inputs:
 ;   tcp connection should already be opened
@@ -264,8 +339,8 @@ tcp_connect:
 ;   AX: pointer to buffer containing data to be sent
 ;outputs:
 ;   carry flag is set if an error occured, clear otherwise
-tcp_send:
-	stax tcp_send_data_ptr
+
+  stax tcp_send_data_ptr
 	lda tcp_state
   cmp #tcp_cxn_state_established
   beq @connection_established
@@ -273,6 +348,8 @@ tcp_send:
   sta ip65_error
   sec
   rts
+  lda #0  ;reset the "packet sent" counter
+  sta tcp_packet_sent_count
 
 @connection_established:
   ;increment the expected sequence number
@@ -337,7 +414,6 @@ tcp_send:
   dec tcp_loop_count
   bne @outer_delay_loop  
 
-@break_polling_loop:
   
 	inc tcp_packet_sent_count
   lda tcp_packet_sent_count
@@ -716,24 +792,41 @@ tcp_process:
   sta tcp_inbound_data_length+1
   jsr jmp_to_callback   ;let the caller see the connection has closed   
     
-  ; move ack ptr along
-  ldax #tcp_connect_ack_number
-  stax acc32
-  ldax #$01
-  jsr add_16_32
 
   lda #tcp_cxn_state_closed
   sta tcp_state
 
   ;send a FIN/ACK
-;  jsr @send_ack
+  ; move ack ptr along for the inbound FIN
+  ldax #tcp_connect_ack_number
+  stax acc32
+  ldax #$01
+  sta  tcp_fin_sent
+  jsr add_16_32
 
-  ;send a FIN
+  ;if we've already sent a FIN then just send back an ACK 
+  lda tcp_fin_sent
+  beq @send_fin_ack
+;if we get here, we've sent a FIN, and just received an inbound FIN.
+;when we sent the fin, we didn't update the sequence number, since
+;we want to use the old sequence on every resend of that FIN
+;now that our fin has been ACKed, we need to inc the sequence number
+;and then send another ACK.
+
+  ldax #tcp_connect_sequence_number
+  stax acc32
+  ldax  #$0001  ;
+  jsr add_16_32 ;increment the SEQ counter by 1, for the FIN we have been sending
+
+  lda #tcp_flag_ACK  
+  jmp @send_packet
+  
+@send_fin_ack:  
+ 
   lda #tcp_flag_FIN+tcp_flag_ACK
   
-  jsr @send_packet
+  jmp @send_packet
 
-  rts
   
 @not_fin:
 

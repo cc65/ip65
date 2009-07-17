@@ -483,6 +483,14 @@ ip_configured:
 
 :
 
+
+.import tcp_close
+  cpy #NB65_TCP_CLOSE_CONNECTION
+  bne :+
+  jmp tcp_close
+:
+
+
 .import filter_dns
 .import get_filtered_input
 .import filter_number

@@ -27,10 +27,10 @@ all:  nb65_std_cart.bin nb65_tcp_cart.bin
 nb65_c64_ram.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=0 $(AFLAGS) -o $@ $<
 
-nb65_std_cart.o: nb65_c64.s $(INCFILES)
+nb65_std_cart.o: nb65_c64.s $(INCFILES) 
 	$(AS) -DBANKSWITCH_SUPPORT=1 $(AFLAGS) -o $@ $<
 
-nb65_tcp_cart.o: nb65_c64.s $(INCFILES)
+nb65_tcp_cart.o: nb65_c64.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i
 	$(AS) -DBANKSWITCH_SUPPORT=3 $(AFLAGS) -o $@ $<
 
 nb65_rrnet.o: nb65_c64.s $(INCFILES)

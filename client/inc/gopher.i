@@ -32,7 +32,6 @@
   .import ip65_error
   .import cls
   .import get_filtered_input
-  .import filter_text
   .import filter_dns
 
 .segment "IP65ZP" : zeropage
@@ -86,7 +85,7 @@ RESOURCE_HISTORY_ENTRIES=8
 resource_history:
 .res $100*RESOURCE_HISTORY_ENTRIES
 
-input_buffer:
+scratch_buffer:
   .res 16000
   
 .code
@@ -94,7 +93,7 @@ input_buffer:
 ;display whatever is in the buffer either as plain text or gopher text
 
 display_resource_in_buffer:
-  ldax #input_buffer
+  ldax #scratch_buffer
   stax  get_next_byte+1
   
   lda #0
@@ -449,7 +448,7 @@ show_history:
 
 ;load the 'current_resource' into the buffer
 load_resource_into_buffer:
-  ldax #input_buffer
+  ldax #scratch_buffer
   stax tcp_buffer_ptr
   ldax  #resolving
   jsr print
@@ -603,6 +602,7 @@ print_resource_description:
 prompt_for_gopher_resource:
   ldax #gopher_server
   jsr print
+  ldy #40
   ldax #filter_dns
   jsr get_filtered_input
   bcs @no_server_entered

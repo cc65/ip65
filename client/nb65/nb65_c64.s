@@ -47,6 +47,7 @@
 .if (BANKSWITCH_SUPPORT=$03)
   .include "../inc/char_conv.i"
   .include "../inc/gopher.i"
+  .include "../inc/telnet.i"
 .endif
   .import cls
   .import beep
@@ -215,6 +216,7 @@ main_menu:
   jsr print_cr
   
 @get_key:
+  jsr ip65_process
   jsr get_key
   cmp #KEYCODE_F1
   bne @not_tftp
@@ -224,11 +226,7 @@ main_menu:
   cmp #KEYCODE_F3      
   .if (BANKSWITCH_SUPPORT=$03)
   bne @not_f3
-  jsr cls
-  lda #14
-  jsr print_a ;switch to lower case
-  jsr prompt_for_gopher_resource ;only returns if no server was entered.
-  jmp exit_gopher
+  jmp net_apps_menu
   .else
   beq @exit_to_basic    
 .endif  
@@ -257,7 +255,8 @@ main_menu:
   jsr print
   jsr print_ip_config
   jsr print_cr
-@get_key_config_menu:  
+@get_key_config_menu:
+  jsr ip65_process
   jsr get_key
   cmp #KEYCODE_F1
   bne @not_ip
@@ -267,6 +266,7 @@ main_menu:
   jsr print
   jsr print_cr
   ldax #filter_ip
+  ldy #20
   jsr get_filtered_input
   bcs @no_ip_address_entered
   jsr parse_dotted_quad  
@@ -291,6 +291,7 @@ main_menu:
   jsr print
   jsr print_cr
   ldax #filter_ip
+  ldy #20
   jsr get_filtered_input
   bcs @no_netmask_entered
   jsr parse_dotted_quad  
@@ -315,6 +316,7 @@ main_menu:
   jsr print
   jsr print_cr
   ldax #filter_ip
+  ldy #20
   jsr get_filtered_input
   bcs @no_gateway_entered
   jsr parse_dotted_quad  
@@ -341,6 +343,7 @@ main_menu:
   jsr print
   jsr print_cr
   ldax #filter_ip
+  ldy #20
   jsr get_filtered_input
   bcs @no_dns_server_entered
   jsr parse_dotted_quad  
@@ -366,6 +369,7 @@ main_menu:
   jsr print
   jsr print_cr
   ldax #filter_dns
+  ldy #40
   jsr get_filtered_input
   bcs @no_server_entered
   stax nb65_param_buffer 
@@ -533,6 +537,39 @@ exit_cart_via_ax:
   stx call_downloaded_prg+2
   jmp exit_cart
  
+.if (BANKSWITCH_SUPPORT=$03)
+net_apps_menu: 
+  jsr cls  
+  ldax  #netboot65_msg
+  jsr print
+  ldax  #net_apps_menu_msg
+  jsr print
+@get_key:  
+  jsr ip65_process
+  jsr get_key
+  cmp #KEYCODE_F1
+  bne @not_telnet
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case  
+  jmp telnet_main_entry
+@not_telnet:
+  cmp #KEYCODE_F3
+  bne @not_gopher
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+@not_gopher:
+  cmp #KEYCODE_F7
+  bne @not_main
+  jmp main_menu
+@not_main:  
+  jmp @get_key
+  
+.endif
+
 print_errorcode:
   ldax #error_code
   jsr print
@@ -594,6 +631,7 @@ cfg_get_configuration_ptr:
   rts
 
 .if (BANKSWITCH_SUPPORT=$03)
+exit_telnet:
 exit_gopher:
   lda #142
   jsr print_a ;switch to upper case
@@ -602,20 +640,21 @@ exit_gopher:
 	.rodata
 
 netboot65_msg: 
-.byte 13,"  NETBOOT65 - C64 CLIENT VERSION "
+.byte 13," NETBOOT65 - C64 CLIENT VERSION "
 .include "nb65_version.i"
 .byte 13,0
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13
 .byte "F1: TFTP BOOT"
 .if (BANKSWITCH_SUPPORT=$03)
-.byte "     F3: GOPHER"
+.byte "     F3: NET APPS"
 .else
 .byte "     F3: BASIC"
 .endif
 .byte 13
 .byte "F5: ARP TABLE     F7: CONFIG",13,13
 .byte 0
+
 
 config_menu_msg:
 .byte 13,"              CONFIGURATION",13,13
@@ -625,6 +664,14 @@ config_menu_msg:
 .byte "F7: MAIN MENU",13,13
 .byte 0
 
+
+.if (BANKSWITCH_SUPPORT=$03)
+net_apps_menu_msg:
+.byte 13,"              NET APPS",13,13
+.byte "F1: TELNET         F3: GOPHER",13
+.byte "F5:                F7: MAIN MENU",13,13
+.byte 0
+.endif
 downloading_msg:  .asciiz "DOWNLOADING "
 
 getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
