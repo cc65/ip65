@@ -42,7 +42,7 @@ all: \
 test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
-gopher_browser.prg: gopher_browser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
+gopher_browser.prg: gopher_browser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg ../inc/gopher.i
 	$(LD) -m  gopher_browser.map -vm -C ../cfg/c64prg.cfg -o  gopher_browser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
 

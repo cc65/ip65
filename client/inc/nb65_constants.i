@@ -32,9 +32,9 @@ NB65_GET_INPUT_PACKET_INFO     EQU $11 ;inputs: AX points to a UDP/TCP packet pa
 NB65_SEND_UDP_PACKET           EQU $12 ;inputs: AX points to a UDP packet parameter structure, outputs: none packet is sent
 NB65_UDP_REMOVE_LISTENER       EQU $13 ;inputs: AX contains UDP port number that listener will be removed from
 
-NB65_TCP_CONNECT               EQU $14 ;inputs: AX points to a TCP connect parameter structure, outputs: A = connection #
+NB65_TCP_CONNECT               EQU $14 ;inputs: AX points to a TCP connect parameter structure, outputs: none
 NB65_SEND_TCP_PACKET           EQU $15 ;inputs: AX points to a TCP send parameter structure, outputs: none packet is sent
-NB65_TCP_CLOSE_CONNECTION      EQU $16 ;inputs: A = connection # to close, outputs: none
+NB65_TCP_CLOSE_CONNECTION      EQU $16 ;inputs: none outputs: none
 
 NB65_TFTP_SET_SERVER           EQU $20 ;inputs: AX points to a TFTP server parameter structure, outputs: none
 NB65_TFTP_DOWNLOAD             EQU $22 ;inputs: AX points to a TFTP transfer parameter structure, outputs: TFTP param structure updated with 
@@ -52,6 +52,9 @@ NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on 
 NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
 NB65_PRINT_IP_CONFIG           EQU $83 ;no inputs, no outputs, prints to screen current IP configuration
 
+
+NB65_INPUT_HOSTNAME            EQU $90 ;no inputs, outputs: AX = pointer to hostname (which may be IP address).
+NB65_INPUT_PORT_NUMBER         EQU $91 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
 
 NB65_GET_LAST_ERROR            EQU $FF ;no inputs, outputs A  EQU error code (from last function that set the global error value, not necessarily the
                                    ;last function that was called)

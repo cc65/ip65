@@ -43,7 +43,11 @@
   .include "../inc/common.i"
   .include "../inc/c64keycodes.i"
   .include "../inc/menu.i"
-  
+
+.if (BANKSWITCH_SUPPORT=$03)
+  .include "../inc/char_conv.i"
+  .include "../inc/gopher.i"
+.endif
   .import cls
   .import beep
   .import exit_to_basic
@@ -102,14 +106,13 @@ exit_cart:
   sta $0001   ;turns off ordinary cartridge by modifying HIRAM/LORAM (this will also bank out BASIC)
 .endif
 
-get_value_of_axy: ;some more self-modifying code
-	lda $ffff,y
-  rts
-
 call_downloaded_prg: 
    jsr $0000 ;overwritten when we load a file
    jmp init
    
+get_value_of_axy: ;some more self-modifying code
+	lda $ffff,y
+  rts
 
 
 .segment "CARTRIDGE_HEADER"
@@ -117,7 +120,11 @@ call_downloaded_prg:
 .word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature
-.byte $01 ;NB65_API_VERSION
+.if (BANKSWITCH_SUPPORT=$03)
+.byte $02 ;NB65_API_VERSION 2 requires 16KB cart
+.else
+.byte $01 ;NB65_API_VERSION 1 (in an 8KB cart)
+.endif
 .byte BANKSWITCH_SUPPORT ;
 jmp nb65_dispatcher    ; NB65_DISPATCH_VECTOR   : entry point for NB65 functions
 jmp ip65_process          ;NB65_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
@@ -213,10 +220,19 @@ main_menu:
   bne @not_tftp
   jmp @tftp_boot
  @not_tftp:  
-.if !(BANKSWITCH_SUPPORT=$03)
-  cmp #KEYCODE_F3    
-  beq @exit_to_basic
+
+  cmp #KEYCODE_F3      
+  .if (BANKSWITCH_SUPPORT=$03)
+  bne @not_f3
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+  .else
+  beq @exit_to_basic    
 .endif  
+@not_f3:
   cmp #KEYCODE_F5 
   bne @not_util_menu
   jsr print_main_menu
@@ -515,7 +531,6 @@ cmp #KEYCODE_F7
 exit_cart_via_ax:  
   sta call_downloaded_prg+1
   stx call_downloaded_prg+2
-  
   jmp exit_cart
  
 print_errorcode:
@@ -577,7 +592,13 @@ cfg_get_configuration_ptr:
   ldax #nb65_param_buffer  
   nb65call #NB65_GET_IP_CONFIG
   rts
-  
+
+.if (BANKSWITCH_SUPPORT=$03)
+exit_gopher:
+  lda #142
+  jsr print_a ;switch to upper case
+  jmp main_menu
+.endif  
 	.rodata
 
 netboot65_msg: 

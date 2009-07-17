@@ -1,23 +1,23 @@
-  .include "../inc/common.i"
-  .include "../inc/commonprint.i"
-  .include "../inc/net.i"
-  .include "../inc/char_conv.i"
-  .include "../inc/c64keycodes.i"
+; C64 gopher browser
+; july 2009 - jonno @ jamtronix.com
+; this contains the key gopher rendering routines
+; to use:
+; 1) include this file 
+; 2) include these other files:
+;  .include "../inc/common.i"
+;  .include "../inc/commonprint.i"
+;  .include "../inc/net.i"
+;  .include "../inc/char_conv.i"
+;  .include "../inc/c64keycodes.i"
+; 3) define a routine called 'exit_gopher'
 
-  .import get_key
+;  .import get_key
   .import get_key_if_available
-  .import  __CODE_LOAD__
-  .import  __CODE_SIZE__
-  .import  __RODATA_SIZE__
-  .import  __DATA_SIZE__
-
   .import mul_8_16
   .importzp acc16
-
   .importzp copy_src
   .importzp copy_dest
   .import copymem
-
 
   .import tcp_connect
   .import tcp_send
@@ -39,31 +39,7 @@
 
 ; pointer for moving through buffers
 buffer_ptr:	.res 2			; source pointer
-
-
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
-
-	.word basicstub		; load address
-
-
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-.segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
-        .addr           __CODE_LOAD__-$11                ; Start address
-        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
-        jmp init
-
-
+  
 .data
 get_next_byte:
   lda $ffff
@@ -76,9 +52,9 @@ get_next_byte:
 
 current_resource_history_entry: .byte 0
 
-.bss 
+.segment "APP_SCRATCH" 
 
-DISPLAY_LINES=24
+DISPLAY_LINES=22
 page_counter: .res 1
 MAX_PAGES = 50
 page_pointer_lo: .res MAX_PAGES
@@ -104,34 +80,20 @@ resource_hostname: .res RESOURCE_HOSTNAME_MAX_LENGTH
 resource_port: .res 2
 resource_selector: .res 160
 resource_selector_length: .res 1
+displayed_resource_type: .res 1
+
 RESOURCE_HISTORY_ENTRIES=8
 resource_history:
 .res $100*RESOURCE_HISTORY_ENTRIES
 
+input_buffer:
+  .res 16000
+  
 .code
 
-init:
-  
-  lda #14
-  jsr print_a ;switch to lower case
-
-  jsr print_cr
-  init_ip_via_dhcp 
-  jsr print_ip_config
-
-  jsr prompt_for_gopher_resource
-  bcs @use_default_start_page 
-  rts
-@use_default_start_page:  
-  ldax #initial_location
-  sta resource_pointer_lo
-  stx resource_pointer_hi
-  ldx #0
-  jsr  select_resource
-  rts
+;display whatever is in the buffer either as plain text or gopher text
 
 display_resource_in_buffer:
-
   ldax #input_buffer
   stax  get_next_byte+1
   
@@ -146,7 +108,7 @@ display_resource_in_buffer:
 ;  lda page_counter
 ;  jsr print_hex
   
-  jsr print_resource_description
+;  jsr print_resource_description
   ldx page_counter
   lda get_next_byte+1
   sta page_pointer_lo,x
@@ -154,10 +116,33 @@ display_resource_in_buffer:
   sta page_pointer_hi,x
   inc page_counter
   
+  
+  lda displayed_resource_type
+  cmp #'0'
+  bne @displayed_resource_is_directory
+
+;if this is a text file, just convert ascii->petscii and print to screen
+@show_one_char:
+  jsr get_next_byte
+  tax ;this both sets up X as index into ascii_to_petscii_table, and sets Z flag   
+  bne :+
+  lda #1
+  sta this_is_last_page
+  jmp @get_keypress
+:  
+  
+  lda ascii_to_petscii_table,x
+  jsr print_a
+  lda $d6
+  cmp #DISPLAY_LINES
+  bmi @show_one_char
+  jmp @end_of_current_page
+
+@displayed_resource_is_directory:
+
   lda #0
   sta resource_counter
-
-
+  
 @next_line:
   jsr get_next_byte
   cmp #'.'
@@ -176,6 +161,7 @@ display_resource_in_buffer:
   ;if we got here, we know not what it is  
   jmp @skip_to_end_of_line  
 @standard_resource:  
+  pha
   ldx resource_counter
   sta resource_type,x
   sec  
@@ -186,17 +172,27 @@ display_resource_in_buffer:
   sbc #0  ;in case there was an overflow on the low byte
   sta resource_pointer_hi,x
   inc resource_counter
-  lda $d3
+  
+  lda $d3 ;are we at the start of the current line?
   beq :+
   jsr print_cr
 :  
-  lda #18
+  pla ;get back the resource type
+;  cmp #'1'
+;  beq @resource_is_a_dir
+;  lda #'-'
+;  jmp @print_resource_indicator
+;@resource_is_a_dir: 
+;  lda #'+'
+;@print_resource_indicator:
+;  jsr print_a
+  lda #18 ;inverse mode on 
   jsr print_a
   lda resource_counter
   clc
   adc #'a'-1
   jsr print_a
-  lda #146
+  lda #146 ;inverse mode off
   jsr print_a
   lda #' '
   jsr print_a
@@ -216,6 +212,8 @@ display_resource_in_buffer:
   jsr get_next_byte
   cmp #$0A
   bne @skip_to_end_of_line
+
+
   lda $d3
   cmp #0
   beq :+
@@ -223,7 +221,10 @@ display_resource_in_buffer:
 :  
   lda $d6
   cmp #DISPLAY_LINES
-  bmi @next_line
+  bpl @end_of_current_page
+  jmp @next_line
+
+@end_of_current_page:
   lda #0
   sta this_is_last_page
 @done:
@@ -246,8 +247,10 @@ display_resource_in_buffer:
   beq @back_in_history
   cmp #KEYCODE_F3
   beq @back_in_history
-  cmp #KEYCODE_ABORT
-  
+  cmp #KEYCODE_F5
+  beq @prompt_for_new_server
+
+  cmp #KEYCODE_ABORT  
   beq @quit
   ;if fallen through we don't know what the keypress means, go get another one
   and #$7f  ;turn off the high bit 
@@ -260,7 +263,7 @@ display_resource_in_buffer:
 @valid_resource:  
   tax
   dex
-  jsr select_resource
+  jsr select_resource_from_current_directory
 @not_a_resource:  
   jmp @get_keypress  
 @back_in_history:
@@ -270,16 +273,21 @@ display_resource_in_buffer:
   stx current_resource_history_entry
   txa
   jsr load_resource_from_history
-  jmp display_resource_in_buffer
+  jsr load_resource_into_buffer
+  jmp display_resource_in_buffer  
 @show_history:
-  jmp show_history
+  jsr show_history
+  jmp display_resource_in_buffer
 @go_next_page:  
   lda this_is_last_page
   bne @get_keypress
-
   jmp @do_one_page
+@prompt_for_new_server:
+  jsr prompt_for_gopher_resource ;that routine only returns if no server was entered.
+  jmp display_resource_in_buffer  
+
 @quit:
-  rts
+  jmp exit_gopher
 @go_prev_page:  
   ldx page_counter  
   dex  
@@ -299,14 +307,16 @@ display_resource_in_buffer:
 ;get a gopher resource 
 ;X should be the selected resource number
 ;the resources selected should be loaded into resource_pointer_* 
-
-select_resource:
+select_resource_from_current_directory:
   lda resource_pointer_lo,x
   sta buffer_ptr
   lda resource_pointer_hi,x
   sta buffer_ptr+1
   ldy #0  
   ldx #0
+  
+  lda (buffer_ptr),y
+  sta displayed_resource_type
 @skip_to_next_tab:  
   iny
   beq @done_skipping_over_tab 
@@ -314,6 +324,7 @@ select_resource:
   cmp #$09
   bne @skip_to_next_tab
 @done_skipping_over_tab:  
+
 ;should now be pointing at the tab just before the selector
 @copy_selector:
   iny 
@@ -429,7 +440,11 @@ show_history:
   sec
   sbc #1
   bne @show_one_entry
-  
+  jsr print_cr
+  ldax #any_key_to_continue
+  jsr print
+  jsr get_key
+  rts
   
 
 ;load the 'current_resource' into the buffer
@@ -444,8 +459,9 @@ load_resource_into_buffer:
   ldax #resource_hostname
   jsr dns_set_hostname
   
-  bcs @error
+  bcs :+    
   jsr dns_resolve
+:  
   bcs @error
   
   ldx #3        ; save IP address just retrieved
@@ -468,6 +484,7 @@ load_resource_into_buffer:
   jsr print
   ldax #resource_selector
   jsr print
+  jsr print_cr
   ldx #0
   stx download_flag
   stx dl_loop_counter
@@ -507,6 +524,14 @@ gopher_download_callback:
   bne @not_end_of_file
   lda #1
   sta download_flag
+  
+  ;put a zero byte at the end of the file (in case it was a text file)
+  ldax tcp_buffer_ptr  
+  stax copy_dest
+  lda #0  
+  tay
+  sta (copy_dest),y
+  
   rts
 @not_end_of_file:
 
@@ -561,9 +586,13 @@ print_resource_description:
 ;  jsr print_hex  
 ;  jsr print_cr
  
-  ldax #gopher
+  ldax #server
   jsr print
   ldax #resource_hostname
+  
+  jsr print
+  jsr print_cr
+  ldax #selector
   jsr print
   ldax #resource_selector
   jsr print  
@@ -591,8 +620,9 @@ prompt_for_gopher_resource:
   sta resource_selector_length+1
   lda #1
   sta resource_selector_length
+  lda #'1'  
+  sta displayed_resource_type
   jsr print_cr
-  clc
   jmp add_resource_to_history_and_display
 @no_server_entered:
   sec
@@ -603,30 +633,21 @@ page_header:
 port_no:
 .byte "PORT NO ",0
 history:
-.byte "gopher history ",13,0
-gopher:
-.byte "gopher://",0
+.byte "GOPHER HISTORY ",13,0
 cr_lf: .byte $0D,$0A
 error:
-.byte "error - code ",0
-resolving:
-.byte "resolving ",0
+.byte "ERROR - CODE ",0
 connecting:
-.byte "connecting ",0
+.byte "CONNECTING ",0
 retrieving:
-.byte "retrieving ",0
+.byte "RETRIEVING ",0
 gopher_server:
-.byte "gopher server:",0
+.byte "GOPHER "
+server:
+.byte "SERVER :",0
+selector:
+.byte "SELECTOR :",0
+any_key_to_continue:
+.byte "PRESS ANY KEY TO CONTINUE",0
 
-initial_location:
-.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
-.byte "1luddite",$09,"",$09,"retro-net.org",$09,"70",$0D,$0A,0
-;.byte "1luddite",$09,"/luddite/",$09,"retro-net.org",$09,"70",$0D,$0A,0
 
-
-.bss
-input_buffer:
-  .res 8000
-;.incbin "rob_gopher.txt"
-;.incbin "retro_gopher.txt"
-;.byte 0

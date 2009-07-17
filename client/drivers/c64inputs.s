@@ -3,6 +3,7 @@
 .export filter_text
 .export filter_ip
 .export filter_dns
+.export filter_number
 .export check_for_abort_key
 .export get_key_if_available
 .importzp copy_src
@@ -73,6 +74,11 @@ INPUT_GET:
   cmp #$0d               ;Return
   beq INPUT_DONE
 
+  ;End reached?
+  lda INPUT_Y
+  cmp MAXCHARS
+  beq INPUT_GET
+
   ;Check the allowed list of characters.
   ldy #$00
 CHECKALLOWED:
@@ -94,10 +100,6 @@ INPUTOK:
 
   inc INPUT_Y           ;Next character
 
-  ;End reached?
-  lda INPUT_Y
-  cmp MAXCHARS
-  beq INPUT_DONE
 
   ;Not yet.
   jmp INPUT_GET
@@ -145,9 +147,11 @@ DELETE_OK:
 filter_text:
   .byte ",+!#$%&'()* "
 filter_dns:
-.byte " -ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+.byte "-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 filter_ip:
-.byte "1234567890.",0
+.byte "."
+filter_number: 
+.byte "1234567890",0
 
 ;=================================================
 .bss

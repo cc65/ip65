@@ -1,3 +1,5 @@
+	- bugfix - NB65 API not setting "ip initialized" flag correct, hence extra DHCP inits occuring
+
 0.9.8
 	- created stubs for TCP functions
 	- split nb65 cart images into 8k (UDP only - green) & 16k (UDP+TCP - purple) images

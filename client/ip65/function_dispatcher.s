@@ -37,6 +37,7 @@
 .import udp_send_dest
 .import udp_send_dest_port
 .import udp_send_len
+
 .import copymem
 .import cfg_mac
 .import cfg_tftp_server
@@ -45,7 +46,7 @@
 
 ;reuse the copy_src zero page location
 nb65_params = copy_src
-
+buffer_ptr= copy_dest
 .data
 
 
@@ -123,9 +124,9 @@ nb65_dispatcher:
   jsr dhcp_init
   bcc dhcp_ok
   jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
+dhcp_ok:  
   lda #1
   sta ip_configured_flag
-dhcp_ok:  
 irq_handler_installed:  
   clc
 init_failed:  
@@ -135,6 +136,7 @@ ip_configured:
   lda irq_handler_installed_flag
   bne irq_handler_installed
   jsr install_irq_handler
+  clc
   rts
 :
 
@@ -399,6 +401,101 @@ ip_configured:
   rts
 :
 
+;these are the API "version 2" functions
+
+.ifdef API_VERSION
+.if (API_VERSION>1)
+
+  .segment "TCP_VARS"
+    port_number: .res 2
+  .code
+
+  cpy #NB65_TCP_CONNECT
+  bne :+
+  .import tcp_connect
+  .import tcp_callback
+  .import tcp_connect_ip
+  ldy #3
+@copy_dest_ip:  
+  lda (nb65_params),y
+  sta tcp_connect_ip,y
+  dey
+  bpl @copy_dest_ip
+  
+  ldy #NB65_TCP_CALLBACK
+  lda (nb65_params),y
+  sta tcp_callback
+  iny
+  lda (nb65_params),y
+  sta tcp_callback+1
+  
+  ldy #NB65_TCP_PORT+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y
+  jmp tcp_connect
+
+:
+
+
+
+.import filter_dns
+.import get_filtered_input
+.import filter_number
+  cpy #NB65_INPUT_HOSTNAME  
+  bne :+
+  ldy #40 ;max chars
+  ldax #filter_dns
+  jmp get_filtered_input
+:
+
+cpy #NB65_INPUT_PORT_NUMBER
+  bne :+
+  .import mul_8_16
+  .import acc16
+  
+  ldy #5 ;max chars
+  ldax #filter_number
+  jsr get_filtered_input  
+  bcs @no_port_entered
+  
+  ;AX now points a string containing port number
+    
+  stax  buffer_ptr
+  lda #0
+  sta port_number
+  sta port_number+1
+  tay
+@parse_port:
+  lda (buffer_ptr),y
+  cmp #$1F
+  bcc @end_of_port  ;any control char should be treated as end of port field  
+  ldax  port_number
+  stax  acc16
+  lda #10
+  jsr mul_8_16
+  ldax  acc16
+  stax  port_number
+  lda (buffer_ptr),y
+  sec
+  sbc #'0'
+  clc
+  adc port_number
+  sta port_number
+  bcc @no_rollover  
+  inc port_number+1
+@no_rollover:
+  iny
+  bne @parse_port
+@end_of_port:  
+  ldax port_number
+  clc
+@no_port_entered:
+  rts
+:
+.endif
+.endif
 
   cpy #NB65_GET_LAST_ERROR
   bne :+
