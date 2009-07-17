@@ -235,6 +235,32 @@ ip_configured:
   lda #>(udp_inp+8) ;payload ptr (hi byte)
   sta (nb65_params),y
 
+.ifdef API_VERSION
+.if (API_VERSION>1)
+.import tcp_inbound_data_ptr
+.import tcp_inbound_data_length
+
+;for API V2+, we need to check if this is a TCP packet
+  lda ip_inp+9 ;proto number
+  cmp #6  ;TCP
+  bne @not_tcp
+  ldy #NB65_PAYLOAD_LENGTH
+  lda tcp_inbound_data_length
+  sta (nb65_params),y
+  iny
+  lda tcp_inbound_data_length+1
+  sta (nb65_params),y
+  
+  ldy #NB65_PAYLOAD_POINTER
+  lda tcp_inbound_data_ptr
+  sta (nb65_params),y
+  iny
+  lda tcp_inbound_data_ptr+1
+  sta (nb65_params),y
+@not_tcp:
+.endif
+.endif
+
   clc
   rts
 :  
@@ -438,7 +464,24 @@ ip_configured:
 
 :
 
+  .import tcp_send
+  .import tcp_send_data_len
+  cpy #NB65_SEND_TCP_PACKET
+  bne :+
+  ldy #NB65_TCP_PAYLOAD_LENGTH
+  lda (nb65_params),y
+  sta tcp_send_data_len
+  iny
+  lda (nb65_params),y
+  sta tcp_send_data_len+1
+  ldy #NB65_TCP_PAYLOAD_POINTER+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y
+  jmp tcp_send
 
+:
 
 .import filter_dns
 .import get_filtered_input
@@ -453,7 +496,7 @@ ip_configured:
 cpy #NB65_INPUT_PORT_NUMBER
   bne :+
   .import mul_8_16
-  .import acc16
+  .importzp acc16
   
   ldy #5 ;max chars
   ldax #filter_number
