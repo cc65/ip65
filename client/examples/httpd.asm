@@ -120,20 +120,18 @@ listen_on_port_80
 ;http callback - will be executed whenever data arrives on the TCP connection
 http_callback  
   ldaxi #nb65_param_buffer
-  nb65call #NB65_GET_INPUT_PACKET_INFO
-  
+  nb65call #NB65_GET_INPUT_PACKET_INFO  
   lda nb65_param_buffer+NB65_PAYLOAD_LENGTH+1
   cmp #$ff
   bne .not_eof
   lda #1
   sta connection_closed
   rts
-.not_eof
-  
+.not_eof  
   ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
   stax temp_ptr
-  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH 
-  sta buffer_length
+  ldax nb65_param_buffer+NB65_PAYLOAD_LENGTH 
+  stax buffer_length  
   rts
 
 ;look for NB65 signature at location pointed at by AX
