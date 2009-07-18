@@ -434,16 +434,23 @@ ip_configured:
 
   .segment "TCP_VARS"
     port_number: .res 2
+    nonzero_octets: .res 1
   .code
 
   cpy #NB65_TCP_CONNECT
-  bne :+
+  bne :+  
   .import tcp_connect
   .import tcp_callback
   .import tcp_connect_ip
+  .import tcp_listen
   ldy #3
+  lda #0
+  sta nonzero_octets
 @copy_dest_ip:  
   lda (nb65_params),y
+  beq @octet_was_zero
+  inc nonzero_octets
+@octet_was_zero:  
   sta tcp_connect_ip,y
   dey
   bpl @copy_dest_ip
@@ -460,6 +467,11 @@ ip_configured:
   tax
   dey
   lda (nb65_params),y
+  ldy nonzero_octets
+  bne @outbound_tcp_connection
+  jmp tcp_listen
+  
+@outbound_tcp_connection:  
   jmp tcp_connect
 
 :

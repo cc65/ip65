@@ -24,6 +24,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_send_data_len
 .export tcp_send
 .export tcp_close
+.export tcp_listen
 
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length
@@ -67,9 +68,6 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .importzp copy_dest
 
 .import cfg_ip
-
-
-.segment "TCP_VARS"
 
 tcp_cxn_state_closed      = 0 
 tcp_cxn_state_listening   = 1  ;(waiting for an inbound SYN)
@@ -124,6 +122,8 @@ tcp_callback: .res 2 ;vector to routine to be called when data is received over 
 tcp_flags: .res 1
 tcp_fin_sent: .res 1
 
+tcp_listen_port: .res 1
+
 tcp_inbound_data_ptr: .res 2 ;pointer to data just recieved over tcp connection
 tcp_inbound_data_length: .res 2 ;length of data just received over tcp connection
 ;(if this is $ffff, that means "end of file", i.e. remote end has closed connection)
@@ -141,6 +141,7 @@ tcp_timer:  .res 1
 tcp_loop_count: .res 1
 tcp_packet_sent_count: .res 1
 
+
 .code
 
 ; initialize tcp
@@ -154,6 +155,40 @@ tcp_init:
 
 jmp_to_callback:
   jmp (tcp_callback)
+
+;listen for an inbound tcp connection
+;this is a 'blocking' call, i.e. it will not return until a connection has been made
+;inputs:
+; AX: destination port (2 bytes)
+; tcp_callback: vector to call when data arrives on this connection
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_listen:
+  stax  tcp_listen_port
+  lda #tcp_cxn_state_listening
+  sta tcp_state
+  lda #0  ;reset the "packet sent" counter
+  sta tcp_packet_sent_count
+  sta tcp_fin_sent
+  
+  ;set the low word of seq number to $0000, high word to something random
+  sta tcp_connect_sequence_number
+  sta tcp_connect_sequence_number+1
+  jsr ip65_random_word
+  stax  tcp_connect_sequence_number+2
+@listen_loop:
+  jsr ip65_process
+  jsr check_for_abort_key
+  bcc @no_abort
+  lda #NB65_ERROR_ABORTED_BY_USER
+  sta ip65_error
+  rts
+@no_abort:  
+  lda #tcp_cxn_state_listening  
+  cmp tcp_state
+  beq @listen_loop
+  clc
+  rts
 
 ;make outbound tcp connection
 ;inputs:
@@ -832,9 +867,60 @@ tcp_process:
 
   lda tcp_inp+tcp_flags_field
   cmp #tcp_flag_SYN
-  bne @not_syn
-;for the moment, inbound connections not accepted. so send a RST
+  beq @syn 
+  jmp @not_syn
+@syn:  
+  ;for the moment, inbound connections not accepted. so send a RST
+  
+  ;is this the port we are listening on?
+  lda tcp_inp+tcp_dest_port+1
+	cmp tcp_listen_port
+  bne @decline_syn_with_reset
+  lda tcp_inp+tcp_dest_port
+	cmp tcp_listen_port+1
+  bne @decline_syn_with_reset
+  
+  ;it's the right port - are we actually waiting for a connecting?
+  lda #tcp_cxn_state_listening  
+  cmp tcp_state  
+  beq @this_is_connection_we_are_waiting_for
+  
+  rts ;if we've currently got a connection open, then ignore any new requests
+      ;the sender will timeout and resend the SYN, by which time we may be
+      ;ready to accept it again.
+  
+@this_is_connection_we_are_waiting_for:
 
+  ; copy sequence number to ack (in reverse order) and remote IP
+  ldx #3				
+  ldy #0
+:	lda tcp_inp + tcp_seq,y
+	sta tcp_connect_ack_number,x
+  lda ip_inp+ip_src,x
+  sta tcp_connect_ip,x
+  iny
+	dex
+	bpl :-
+
+  ;copy ports
+  ldax tcp_listen_port
+  stax tcp_connect_local_port
+  
+  lda tcp_inp+tcp_src_port+1
+  sta tcp_connect_remote_port
+  lda tcp_inp+tcp_src_port
+  sta tcp_connect_remote_port+1
+
+  lda #tcp_cxn_state_established
+  sta tcp_state
+
+  ldax #tcp_connect_ack_number 
+  stax acc32
+  ldax  #$0001  ;
+  jsr add_16_32 ;increment the ACK counter by 1, for the SYN we just received
+  lda #tcp_flag_SYN+tcp_flag_ACK
+  jmp @send_packet
+  
 @decline_syn_with_reset:
 ;create a RST packet
   ldx #3				; copy sequence number to ack (in reverse order)

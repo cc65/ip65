@@ -33,6 +33,7 @@
   .import cls
   .import get_filtered_input
   .import filter_dns
+  .import filter_text
 
 .segment "IP65ZP" : zeropage
 
@@ -77,9 +78,11 @@ RESOURCE_HOSTNAME_MAX_LENGTH=64
 current_resource:
 resource_hostname: .res RESOURCE_HOSTNAME_MAX_LENGTH
 resource_port: .res 2
-resource_selector: .res 160
+resource_selector: .res 128
 resource_selector_length: .res 1
 displayed_resource_type: .res 1
+query_string: .res 32
+query_string_length: .res 1
 
 RESOURCE_HISTORY_ENTRIES=8
 resource_history:
@@ -144,8 +147,11 @@ display_resource_in_buffer:
   
 @next_line:
   jsr get_next_byte
+  cmp #0
+  beq @last_line
   cmp #'.'
   bne @not_last_line
+@last_line:  
   lda #1
   sta this_is_last_page
   jmp @done
@@ -155,6 +161,8 @@ display_resource_in_buffer:
   cmp #'0'
   beq @standard_resource
   cmp #'1'
+  beq @standard_resource
+  cmp #'7'
   beq @standard_resource
 
   ;if we got here, we know not what it is  
@@ -316,6 +324,7 @@ select_resource_from_current_directory:
   
   lda (buffer_ptr),y
   sta displayed_resource_type
+  
 @skip_to_next_tab:  
   iny
   beq @done_skipping_over_tab 
@@ -380,6 +389,32 @@ select_resource_from_current_directory:
 :  
   jmp @parse_port  
 @end_of_port:  
+
+  lda displayed_resource_type
+  
+  cmp #'7'  ;is it a 'search' resource?
+  bne @done
+  
+  ldax #query  
+  jsr print
+@get_query_string:  
+  ldy #32 ;max chars
+  ldax #filter_text
+  jsr get_filtered_input
+  bcs @get_query_string
+  stax  buffer_ptr
+  jsr print_cr
+  ldy #0
+  sty query_string_length
+  lda  #09
+@copy_one_char:
+  sta query_string,y
+  inc query_string_length
+  lda (buffer_ptr),y
+  beq @done_query_string
+  iny
+  jmp @copy_one_char
+@done_query_string:  
 @done:
 
 add_resource_to_history_and_display:
@@ -461,8 +496,9 @@ load_resource_into_buffer:
   bcs :+    
   jsr dns_resolve
 :  
-  bcs @error
-  
+  bcc @no_error
+  jmp @error
+@no_error:  
   ldx #3        ; save IP address just retrieved
 : lda dns_ip,x
   sta tcp_connect_ip,x
@@ -493,6 +529,17 @@ load_resource_into_buffer:
   ldax #resource_selector
   jsr tcp_send
   
+  
+  ;send the tab and query string (if supplied)
+  lda displayed_resource_type  
+  cmp #'7'  ;is it a 'search' resource?
+  bne @send_cr_lf
+  ldax query_string_length
+  sta tcp_send_data_len
+  ldax #query_string
+  jsr tcp_send
+
+@send_cr_lf:
   ;send the CR/LF after the connector
   ldax #2
   sta tcp_send_data_len
@@ -552,10 +599,6 @@ gopher_download_callback:
   lda #'*'
   jsr print_a
   
-;  lda tcp_inbound_data_length+1
-;  jsr print_hex
-;  lda tcp_inbound_data_length
-;  jsr print_hex
   
   rts
 
@@ -647,6 +690,9 @@ server:
 .byte "SERVER :",0
 selector:
 .byte "SELECTOR :",0
+query:
+.byte "QUERY :",0
+
 any_key_to_continue:
 .byte "PRESS ANY KEY TO CONTINUE",0
 

@@ -95,21 +95,20 @@ telnet_main_entry:
   ldax #mode
   jsr print
   
-  ; tcp_connect_ip:  destination ip address (4 bytes)
-; AX: destination port (2 bytes)
-; tcp_callback: vector to call when data arrives on this connection
-
 telnet_connect:
   ldax #telnet_callback
-  stax tcp_callback
+  stax nb65_param_buffer+NB65_TCP_CALLBACK
   ldx #3
 @copy_dest_ip:
   lda telnet_ip,x
-  sta tcp_connect_ip,x
+  sta nb65_param_buffer+NB65_TCP_REMOTE_IP,x
   dex  
   bpl @copy_dest_ip
   ldax telnet_port
-  jsr tcp_connect  
+  stax nb65_param_buffer+NB65_TCP_PORT
+  ldax #nb65_param_buffer
+  nb65call #NB65_TCP_CONNECT
+
   bcc @connect_ok 
   jsr print_cr
   print_failed
