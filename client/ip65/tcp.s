@@ -187,7 +187,8 @@ tcp_listen:
   lda #tcp_cxn_state_listening  
   cmp tcp_state
   beq @listen_loop
-  clc
+  
+  jmp tcp_connection_established
   rts
 
 ;make outbound tcp connection
@@ -277,6 +278,7 @@ tcp_connect:
   sec             ;signal an error
   rts
 @got_a_response:
+tcp_connection_established:
 ;inc the sequence number to cover the SYN we have sent
   ldax  #tcp_connect_sequence_number
   stax  acc32

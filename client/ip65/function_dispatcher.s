@@ -557,6 +557,45 @@ cpy #NB65_INPUT_PORT_NUMBER
 @no_port_entered:
   rts
 :
+
+cpy #NB65_BLOCK_COPY
+  bne :+
+  ;this is where we pay the price for trying to save a few 'zero page' pointers 
+  ;by reusing the 'copy_src' and 'copy_dest' addresses!
+.segment "TCP_VARS"
+  tmp_copy_src: .res 2
+  tmp_copy_dest: .res 2
+  tmp_copy_length: .res 2
+.code
+  
+  ldy #NB65_BLOCK_SRC
+  lda (nb65_params),y
+  sta tmp_copy_src
+  iny  
+  lda (nb65_params),y
+  sta tmp_copy_src+1
+  
+  ldy #NB65_BLOCK_DEST
+  lda (nb65_params),y
+  sta tmp_copy_dest
+  iny  
+  lda (nb65_params),y
+  sta tmp_copy_dest+1
+
+  ldy #NB65_BLOCK_SIZE
+  lda (nb65_params),y
+  sta tmp_copy_length
+  iny  
+  lda (nb65_params),y
+  sta tmp_copy_length+1
+
+  ldax tmp_copy_src
+  stax  copy_src
+  ldax tmp_copy_dest
+  stax  copy_dest
+  ldax tmp_copy_length
+  jmp copymem
+:
 .endif
 .endif
 

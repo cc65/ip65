@@ -56,6 +56,8 @@ NB65_PRINT_IP_CONFIG           EQU $83 ;no inputs, no outputs, prints to screen 
 NB65_INPUT_HOSTNAME            EQU $90 ;no inputs, outputs: AX = pointer to hostname (which may be IP address).
 NB65_INPUT_PORT_NUMBER         EQU $91 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
 
+NB65_BLOCK_COPY                EQU $A0 ;inputs: AX points to a block copy structure, outputs: none
+
 NB65_GET_LAST_ERROR            EQU $FF ;no inputs, outputs A  EQU error code (from last function that set the global error value, not necessarily the
                                    ;last function that was called)
 
@@ -68,8 +70,8 @@ NB65_CFG_DNS_SERVER  EQU $12     ;4 byte IP address of DNS server (will be overw
 NB65_CFG_DHCP_SERVER EQU $16    ;4 byte IP address of DHCP server (will only be set by DHCP initialisation)
 NB65_DRIVER_NAME     EQU $1A     ;2 byte pointer to name of driver
 
-;offsets in TFTP transfer parameter structure (used by NB65_TFTP_DIRECTORY_LISTING & NB65_TFTP_DOWNLOAD)
-NB65_TFTP_FILENAME   EQU $00                     ;2 byte pointer to asciiz filename (or filemask in case of NB65_TFTP_DIRECTORY_LISTING)
+;offsets in TFTP transfer parameter structure (used by NB65_TFTP_DOWNLOAD, NB65_TFTP_CALLBACK_DOWNLOAD,  NB65_TFTP_UPLOAD, NB65_TFTP_CALLBACK_UPLOAD)
+NB65_TFTP_FILENAME   EQU $00                     ;2 byte pointer to asciiz filename (or filemask)
 NB65_TFTP_POINTER    EQU $02                     ;2 byte pointer to memory location data to be stored in OR address of callback function
 NB65_TFTP_FILESIZE   EQU $04                     ;2 byte file length (filled in by NB65_TFTP_DOWNLOAD, must be passed in to NB65_TFTP_UPLOAD)
 
@@ -83,6 +85,11 @@ NB65_DNS_HOSTNAME_IP EQU $00                         ;4 byte IP address (filled 
 ;offsets in UDP listener parameter structure
 NB65_UDP_LISTENER_PORT      EQU $00                       ;2 byte port number
 NB65_UDP_LISTENER_CALLBACK  EQU $02                       ;2 byte address of routine to call when UDP packet arrives for specified port
+
+;offsets in block copy  parameter structure
+NB65_BLOCK_SRC            EQU $00                   ;2 byte address of start of source block
+NB65_BLOCK_DEST           EQU $02                   ;2 byte address of start of destination block
+NB65_BLOCK_SIZE           EQU $04                   ;2 byte length of block to be copied (in bytes
 
 
 ;offsets in TCP connect parameter structure

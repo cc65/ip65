@@ -21,7 +21,8 @@ INCFILES=\
 all: \
 	ip65test.dsk \
 	testdns.prg \
-	gopher_browser.prg \
+	test_disk_io.prg \
+	test_disk_io.d64 \
 	testdns.pg2 \
 	testtftp.prg \
 	testtftp.pg2\
@@ -54,6 +55,9 @@ ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2
 		ripxplore.rb ip65test.dsk -a testtftp.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary
+	
+test_disk_io.d64:  test_disk_io.prg 
+		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg 
 
 clean:
 	rm -f *.o *.pg2 *.prg

@@ -258,6 +258,10 @@ main_menu:
 @get_key_config_menu:
   jsr ip65_process
   jsr get_key
+  cmp #KEYCODE_ABORT
+  bne @not_abort
+  jmp main_menu
+@not_abort:  
   cmp #KEYCODE_F1
   bne @not_ip
   ldax #new
@@ -547,6 +551,10 @@ net_apps_menu:
 @get_key:  
   jsr ip65_process
   jsr get_key
+cmp #KEYCODE_ABORT
+  bne @not_abort
+  jmp main_menu
+@not_abort:  
   cmp #KEYCODE_F1
   bne @not_telnet
   jsr cls
