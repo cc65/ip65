@@ -121,16 +121,9 @@ listen_on_port_80
   nb65call #NB65_PRINT_HEX
   lda #"!"
   jsr print_a
-  ldaxi #4
+  ldaxi #html_length
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
-  ldaxi #press_a_key_to_continue
-  stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
-  ldaxi  #nb65_param_buffer
-  nb65call  #NB65_SEND_TCP_PACKET
-
-  ldaxi #4
-  stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
-  ldaxi #nb65_signature
+  ldaxi #html
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
   ldaxi  #nb65_param_buffer
   nb65call  #NB65_SEND_TCP_PACKET
@@ -275,6 +268,10 @@ disconnected dc.b 13,"CONNECTION CLOSED",13,0
 failed dc.b "FAILED ", 0
 ok dc.b "OK ", 0
 transmission_error dc.b "ERROR WHILE SENDING ",0
+
+html dc.b "<H1>c64 test page</h1><form method=post>foo:<input type=text name=foo><br>bar:<textarea name=bar></textarea><br><INPUT type=submit value=send>"
+html_end
+html_length equ html_end-html
 
 ;self modifying code
 get_next_byte

@@ -506,6 +506,14 @@ ip_configured:
 .import filter_dns
 .import get_filtered_input
 .import filter_number
+
+  cpy #NB65_INPUT_STRING
+  bne :+
+  ldy #40 ;max chars
+  ldax #$0000
+  jmp get_filtered_input
+:
+
   cpy #NB65_INPUT_HOSTNAME  
   bne :+
   ldy #40 ;max chars

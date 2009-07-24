@@ -6,7 +6,10 @@
 .export filter_number
 .export check_for_abort_key
 .export get_key_if_available
+.export get_key_ip65
 .importzp copy_src
+
+.import ip65_process
 
 .include "../inc/common.i"
 .code
@@ -25,7 +28,17 @@ get_key:
 ;inputs: none
 ;outputs: A contains ASCII value of key just pressed (0 if no key pressed)
 get_key_if_available=$ffe4
-  
+
+
+;process inbound ip packets while waiting for a keypress
+get_key_ip65:
+  jsr ip65_process
+  jsr $ffe4
+  beq get_key_ip65
+  rts
+
+
+
 
 ;check whether the RUN/STOP key is being pressed
 ;inputs: none
@@ -49,7 +62,8 @@ check_for_abort_key:
 ;cribbed from http://codebase64.org/doku.php?id=base:robust_string_input
 ;======================================================================
 ;Input a string and store it in GOTINPUT, terminated with a null byte.
-;x:a is a pointer to the allowed list of characters, null-terminated.
+;AX is a pointer to the allowed list of characters, null-terminated.
+;set AX to $0000 for no filter on input
 ;max # of chars in y returns num of chars entered in y.
 ;======================================================================
 
@@ -64,35 +78,37 @@ get_filtered_input:
   sta INPUT_Y
 
 ;Wait for a character.
-INPUT_GET:
-  jsr get_key
+@input_get:
+  jsr get_key_ip65
   sta LASTCHAR
 
   cmp #$14               ;Delete
-  beq DELETE
+  beq @delete
 
   cmp #$0d               ;Return
-  beq INPUT_DONE
+  beq @input_done
 
   ;End reached?
   lda INPUT_Y
   cmp MAXCHARS
-  beq INPUT_GET
+  beq @input_get
 
   ;Check the allowed list of characters.
   ldy #$00
-CHECKALLOWED:
+  lda allowed_ptr+1     ;was the input filter point nul?
+  beq @input_ok
+@check_allowed:
   lda (allowed_ptr),y           ;Overwritten
-  beq INPUT_GET         ;Reached end of list (0)
+  beq @input_get         ;Reached end of list (0)
 
   cmp LASTCHAR
-  beq INPUTOK           ;Match found
+  beq @input_ok           ;Match found
 
   ;Not end or match, keep checking
   iny
-  jmp CHECKALLOWED
+  jmp @check_allowed
 
-INPUTOK:
+@input_ok:
   lda LASTCHAR          ;Get the char back
   ldy INPUT_Y
   sta GOTINPUT,y        ;Add it to string
@@ -100,30 +116,29 @@ INPUTOK:
 
   inc INPUT_Y           ;Next character
 
-
   ;Not yet.
-  jmp INPUT_GET
+  jmp @input_get
 
-INPUT_DONE:
+@input_done:
    ldy INPUT_Y
-   beq  no_input
+   beq  @no_input
    lda #$00
    sta GOTINPUT,y   ;Zero-terminate
    clc
    ldax #GOTINPUT
    rts
-no_input:
+@no_input:
    sec
    rts
 ; Delete last character.
-DELETE:
+@delete:
   ;First, check if we're at the beginning.  If so, just exit.
   lda INPUT_Y
-  bne DELETE_OK
-  jmp INPUT_GET
+  bne @delete_ok
+  jmp @input_get
 
   ;At least one character entered.
-DELETE_OK:
+@delete_ok:
   ;Move pointer back.
   dec INPUT_Y
 
@@ -137,7 +152,7 @@ DELETE_OK:
   jsr $ffd2
 
   ;Wait for next char
-  jmp INPUT_GET
+  jmp @input_get
 
 
 ;=================================================
@@ -159,4 +174,3 @@ MAXCHARS: .res 1
 LASTCHAR: .res 1
 INPUT_Y: .res 1  
 GOTINPUT: .res 40
-

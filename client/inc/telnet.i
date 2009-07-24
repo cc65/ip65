@@ -9,7 +9,7 @@
 ;  .include "../inc/c64keycodes.i"
 ; 3) define a routine called 'exit_telnet'
 ; 4) define a buffer called 'scratch_buffer'
-; 5) define a zero page var called temp_ptr
+; 5) define a zero page var called buffer_ptr
 .code
 telnet_main_entry:
 ;prompt for a hostname, then resolve to an IP address
@@ -68,22 +68,30 @@ telnet_main_entry:
   beq @petscii_mode
   jmp @char_mode_input
 @ascii_mode:
-;  lda #14
-;  jsr print_a ;switch to lower case
   lda #0
-  jmp @character_mode_set
-@petscii_mode:
-;  lda #142
-;  jsr print_a ;switch to upper case
+  sta character_set
+  sta line_mode
   lda #1
-@character_mode_set:
-  sta character_mode
+  sta local_echo
+  lda #telnet_state_normal
+  sta telnet_state
+  jmp @after_mode_set
+@petscii_mode:
+  lda #1
+  sta character_set
+  lda #0
+  sta local_echo
+  sta line_mode
+
+  
+@after_mode_set:
+  
   lda #147  ; 'CLR/HOME'
   jsr print_a
   
   ldax  #connecting_in
   jsr print
-  lda  character_mode
+  lda  character_set
   beq @a_mode
   ldax #petscii
   jsr print
@@ -127,6 +135,35 @@ telnet_connect:
   jsr print
   jmp telnet_main_entry
 @not_disconnected:
+  lda line_mode  
+  beq @not_line_mode
+  
+  nb65call #NB65_INPUT_STRING
+  stax buffer_ptr
+  ldy #0
+@copy_one_char:
+  lda (buffer_ptr),y
+  tax
+  lda petscii_to_ascii_table,x
+  beq @end_of_input_string
+  sta scratch_buffer,y
+  iny 
+  bne @copy_one_char
+@end_of_input_string:
+  lda #$0d
+  sta scratch_buffer,y
+  iny 
+  lda #$0a
+  sta scratch_buffer,y
+  iny 
+  sty nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  lda #0
+  sta nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH+1
+  
+  jmp @no_more_input
+  
+@not_line_mode:  
+  
   ;is there anything in the input buffer?
   lda $c6 ;NDX - chars in keyboard buffer
   beq @main_polling_loop
@@ -135,6 +172,9 @@ telnet_connect:
   sta nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH+1
 @get_next_char:
   jsr $ffe4 ;getkey - 0 means no input
+;  pha
+;  jsr print_hex
+;  pla
   tax  
   beq @no_more_input
   cmp #$03 ;RUN/STOP
@@ -153,9 +193,20 @@ telnet_connect:
   jsr print_errorcode
   jsr print_cr
   jmp telnet_main_entry
-@not_runstop:
-  lda character_mode
+@not_runstop:  
+  lda character_set
   bne @no_conversion_required
+  txa
+  cmp #$0d
+  bne @not_cr
+  
+  ;if we get a CR in ascii mode, send CR/LF
+  ldy nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  sta scratch_buffer,y
+  inc nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  ldx #$0a
+  jmp @no_conversion_required
+@not_cr:  
   lda petscii_to_ascii_table,x
   tax
 @no_conversion_required:
@@ -202,11 +253,104 @@ telnet_callback:
    dec buffer_length+1
 :  
   ldy #0
+  sty iac_response_buffer_length
 @next_byte:
   lda (buffer_ptr),y
   tax
-  lda character_mode
-  bne @no_conversion_req
+  lda character_set
+  beq :+
+  jmp  @no_conversion_req
+:
+
+  lda telnet_state
+  cmp #telnet_state_got_command
+  beq @waiting_for_option
+  cmp #telnet_state_got_iac
+  beq @waiting_for_command
+; we must be in 'normal' mode
+  txa
+  cmp #255
+  beq :+
+  jmp @not_iac
+:  
+  lda #telnet_state_got_iac
+  sta telnet_state
+  jmp @byte_processed
+@waiting_for_command:
+  txa
+  sta telnet_command
+  cmp #$fb ;WILL 
+  beq @option
+  cmp #$fc ;WONT
+  beq @option
+  cmp #$fd ; DO
+  beq @option
+  cmp #$fe ;DONT
+  beq @option
+;we got a command we don't understand - just ignore it  
+  lda #telnet_state_normal  
+  sta telnet_state
+  jmp @byte_processed
+@option:
+  lda #telnet_state_got_command
+  sta telnet_state
+  jmp @byte_processed
+
+@waiting_for_option:
+;we have now got IAC, <command>, <option>
+  txa 
+  sta telnet_option  
+  lda telnet_command
+  
+  cmp #$fb
+  beq @iac_will
+
+  cmp #$fc
+  beq @iac_wont
+
+  ;if we get here, then it's a "do" or "don't", both of which we should send a "wont" back for
+  ;(since there are no "do" options we actually honour)
+  lda #$fc ;wont
+@add_iac_response:  
+  ldx iac_response_buffer_length
+  sta iac_response_buffer+1,x
+  lda #255
+  sta iac_response_buffer,x
+  lda telnet_option
+  sta iac_response_buffer+2,x
+
+  inc iac_response_buffer_length
+  inc iac_response_buffer_length
+  inc iac_response_buffer_length
+  
+  lda #telnet_state_normal
+  sta telnet_state
+  jmp @byte_processed
+@iac_will:
+  lda telnet_option
+  cmp #$01 ;ECHO
+  beq @will_echo  
+  cmp #$03 ;DO SUPPRESS GA
+  beq @will_suppress_ga
+
+@iac_wont:  
+  lda #$fe ;dont
+  jmp @add_iac_response
+  
+@will_echo:
+  lda #0
+  sta local_echo
+  lda #$fd ;DO
+  jmp @add_iac_response
+  
+@will_suppress_ga:
+  lda #0
+  sta line_mode
+  lda #$fd ;DO
+  jmp @add_iac_response
+
+@not_iac:
+
   lda ascii_to_petscii_table,x
   tax
 @no_conversion_req:
@@ -216,17 +360,30 @@ telnet_callback:
   jsr print_a
   pla
   tay
+@byte_processed:  
   iny
   dec buffer_length
   lda #$ff
   cmp buffer_length
-  bne @next_byte
+  beq :+
+  jmp @next_byte
+:  
   inc buffer_ptr+1
   dec buffer_length+1
   bmi @finished
   ldy #0
   jmp @next_byte
 @finished:  
+  
+  lda iac_response_buffer_length  
+  beq @no_iac_response
+  ldx #0
+  stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
+  ldax  #iac_response_buffer
+  stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
+  ldax  #nb65_param_buffer
+  nb65call  #NB65_SEND_TCP_PACKET
+@no_iac_response:
   rts
   
 ;constants
@@ -248,8 +405,20 @@ telnet_ip:  .res 4
 telnet_port: .res 2
 
 connection_closed: .res 1
-character_mode: .res 1
+character_set: .res 1
 buffer_offset: .res 1
+local_echo: .res 1
+line_mode: .res 1
+telnet_state: .res 1
+telnet_command: .res 1
+telnet_option: .res 1
+
+telnet_state_normal = 0
+telnet_state_got_iac = 1
+telnet_state_got_command = 2
+
 ;nb65_param_buffer DS.B $20  
 buffer_length: .res 2
 
+iac_response_buffer: .res 256
+iac_response_buffer_length: .res 1

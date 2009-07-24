@@ -44,6 +44,10 @@ basicstub:
 	.word 0
 
 init:
+
+;  jsr dump_dir
+  jsr dump_file
+  rts
   
   lda #01
   sta io_track_no
@@ -69,6 +73,9 @@ init:
   bcs  @error
   jsr dump_sector ;DEBUG
 
+
+ rts
+
 @error:
   jsr print_cr
   lda ip65_error
@@ -90,6 +97,154 @@ dump_sector:
 rts
 
 
+dump_dir:
+  LDA #dirname_end-dirname
+  LDX #<dirname
+  LDY #>dirname
+  JSR $FFBD      ; call SETNAM
+  LDA #$02       ; filenumber 2
+  LDX $BA
+  BNE @skip
+  LDX #$08       ; default to device number 8
+@skip:
+  LDY #$00       ; secondary address 0 (required for dir reading!)
+  JSR $FFBA      ; call SETLFS
+
+  JSR $FFC0      ; call OPEN (open the directory)
+  BCS @error     ; quit if OPEN failed
+
+  LDX #$02       ; filenumber 2
+  JSR $FFC6      ; call CHKIN
+
+  LDY #$04       ; skip 4 bytes on the first dir line
+  BNE @skip2
+@next:
+  LDY #$02       ; skip 2 bytes on all other lines
+@skip2:  
+  JSR getbyte    ; get a byte from dir and ignore it
+  DEY
+  BNE @skip2
+
+  JSR getbyte    ; get low byte of basic line number
+  TAY
+  JSR getbyte    ; get high byte of basic line number
+  PHA
+  TYA            ; transfer Y to X without changing Akku
+  TAX
+  PLA
+  JSR $BDCD      ; print basic line number
+  
+  JSR getbyte
+  JSR getbyte
+  LDA #'#'       ; print a space first
+@char:
+  JSR $FFD2      ; call CHROUT (print character)
+  JSR getbyte
+  BNE @char      ; continue until end of line
+
+  LDA #$0D
+  JSR $FFD2      ; print RETURN
+  JSR $FFE1      ; RUN/STOP pressed?
+  BNE @next      ; no RUN/STOP -> continue
+@error:
+  ; Akkumulator contains BASIC error code
+
+  ; most likely error:
+  ; A = $05 (DEVICE NOT PRESENT)
+exit:
+  LDA #$02       ; filenumber 2
+  JSR $FFC3      ; call CLOSE
+
+  LDX #$00
+  JSR $FFC9      ; call CHKIN (keyboard now input device again)
+  RTS
+
+getbyte:
+  JSR $FFB7      ; call READST (read status byte)
+  BNE @end       ; read error or end of file
+  JMP $FFCF      ; call CHRIN (read byte from directory)
+@end:
+  PLA            ; don't return to dir reading loop
+  PLA
+  JMP exit
+
+
+
+dump_file:
+  LDA #fname_end-fname
+  LDX #<fname
+  LDY #>fname
+  JSR $FFBD     ; call SETNAM
+  LDA #$02      ; file number 2
+  LDX $BA       ; last used device number
+  BNE @skip
+  LDX #$08      ; default to device 8
+@skip:
+  LDY #$02      ; secondary address 2
+  JSR $FFBA     ; call SETLFS
+
+  JSR $FFC0     ; call OPEN
+  BCS @error    ; if carry set, the file could not be opened
+
+  ; check drive error channel here to test for
+  ; FILE NOT FOUND error etc.
+
+  LDX #$02      ; filenumber 2
+  JSR $FFC6     ; call CHKIN (file 2 now used as input)
+
+
+@loop:
+  JSR $FFB7     ; call READST (read status byte)
+  BNE @eof      ; either EOF or read error
+  JSR $FFCF     ; call CHRIN (get a byte from file)
+  JSR $FFD2      ; call CHROUT (print character)  
+  JMP @loop     ; next byte
+
+@eof:
+  AND #$40      ; end of file?
+  BEQ @readerror
+@close:
+  LDA #$02      ; filenumber 2
+  JSR $FFC3     ; call CLOSE
+
+  LDX #$00      ; filenumber 0 = keyboard
+  JSR $FFC6     ; call CHKIN (keyboard now input device again)
+  RTS
+@error:
+  ; Akkumulator contains BASIC error code
+  
+  ; most likely errors:
+  ; A = $05 (DEVICE NOT PRESENT)
+  pha
+  ldax #error_code
+  jsr print
+  pla
+  jsr print_hex
+  
+  JMP @close    ; even if OPEN failed, the file has to be closed
+@readerror:
+  ; for further information, the drive error channel has to be read
+  jsr print_error
+  JMP @close
+
+
+print_error:
+  LDX #$0F      ; filenumber 15
+  JSR $FFC6     ; call CHKIN (file 15 now used as input)
+@loop:
+  JSR $FFB7      ; call READST (read status byte)
+  BNE @end       ; read error or end of file
+  JMP $FFCF      ; call CHRIN (read byte from directory)  
+  jsr print_a
+  JMP @loop     ; next byte
+@end:
+  .byte $92
+  rts
+  
+fname:  .byte "tcp.s"
+fname_end:
+
+
 .rodata
 
 error_code:  
@@ -103,38 +258,8 @@ failed:
 ok:
 	.byte "OK ", 0
   
-initializing:  
-  .byte "INITIALIZING ",0
-track_no:
-  .byte "TRACK ",0
-
-
-sector_no:
-  .byte " SECTOR ",0
-  
-signon_message:
-  .byte "D64 UPLOADER V0.1",13,0
-
-enter_filename:
-.byte "SEND AS: ",0
-
-drive_error:
-  .byte "DRIVE ACCESS ERROR - ",0
- nb65_signature_not_found_message:
- .byte "NO NB65 API FOUND",13,"PRESS ANY KEY TO RESET", 0
- error_opening_channel:
-  .byte "ERROR OPENING CHANNEL $",0
- 
-disk_access:
-.byte 13,13,13,13,13,"SENDING TO CHANNEL $",0
-
-nb65_signature:
-  .byte $4E,$42,$36,$35  ; "NB65"  - API signature
-  .byte ' ',0 ; so we can use this as a string
-position_cursor_for_track_display:
-;  .byte $13,13,13,13,13,13,13,13,13,13,13,"      SENDING ",0
-.byte $13,13,13,"SENDING ",0
-position_cursor_for_error_display:
-  .byte $13,13,13,13,"LAST ",0
+dirname:
+  .byte "$"      ; filename used to access directory
+dirname_end:
 
 cname: .byte '#'  

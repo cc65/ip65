@@ -53,8 +53,9 @@ NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will 
 NB65_PRINT_IP_CONFIG           EQU $83 ;no inputs, no outputs, prints to screen current IP configuration
 
 
-NB65_INPUT_HOSTNAME            EQU $90 ;no inputs, outputs: AX = pointer to hostname (which may be IP address).
-NB65_INPUT_PORT_NUMBER         EQU $91 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
+NB65_INPUT_STRING              EQU $90 ;no inputs, outputs: AX = pointer to null terminated string
+NB65_INPUT_HOSTNAME            EQU $91 ;no inputs, outputs: AX = pointer to hostname (which may be IP address).
+NB65_INPUT_PORT_NUMBER         EQU $92 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
 
 NB65_BLOCK_COPY                EQU $A0 ;inputs: AX points to a block copy structure, outputs: none
 

@@ -64,7 +64,8 @@
   .import arp_calculate_gateway_mask
   .import parse_dotted_quad
   .import dotted_quad_value
-
+   
+  .import get_key_ip65   
   .import cfg_ip
 	.import cfg_netmask
 	.import cfg_gateway
@@ -159,11 +160,11 @@ init:
   LDA #$00  ;black 
   STA $D021 ;background
   .if (BANKSWITCH_SUPPORT=$03)
-  lda #$9c  ;petscii for purple text
+  lda #$9c  ;petscii for purple text  
   .else
   lda #$1E  ;petscii for green text
   .endif
-
+  lda #$05  ;petscii for white text
   jsr print_a
 
 ;relocate our r/w data
@@ -216,8 +217,7 @@ main_menu:
   jsr print_cr
   
 @get_key:
-  jsr ip65_process
-  jsr get_key
+  jsr get_key_ip65
   cmp #KEYCODE_F1
   bne @not_tftp
   jmp @tftp_boot
@@ -255,9 +255,8 @@ main_menu:
   jsr print
   jsr print_ip_config
   jsr print_cr
-@get_key_config_menu:
-  jsr ip65_process
-  jsr get_key
+@get_key_config_menu:  
+  jsr get_key_ip65
   cmp #KEYCODE_ABORT
   bne @not_abort
   jmp main_menu
@@ -549,9 +548,8 @@ net_apps_menu:
   ldax  #net_apps_menu_msg
   jsr print
 @get_key:  
-  jsr ip65_process
-  jsr get_key
-cmp #KEYCODE_ABORT
+  jsr get_key_ip65
+  cmp #KEYCODE_ABORT
   bne @not_abort
   jmp main_menu
 @not_abort:  
