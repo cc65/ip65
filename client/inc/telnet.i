@@ -66,6 +66,12 @@ telnet_main_entry:
   beq @petscii_mode
   cmp #'p'
   beq @petscii_mode
+  
+  cmp #'l'
+  beq @line_mode
+  cmp #'L'
+  beq @line_mode
+  
   jmp @char_mode_input
 @ascii_mode:
   lda #0
@@ -82,7 +88,13 @@ telnet_main_entry:
   lda #0
   sta local_echo
   sta line_mode
-
+  jmp @after_mode_set
+@line_mode:
+  lda #0
+  sta character_set
+  lda #1
+  sta local_echo
+  sta line_mode
   
 @after_mode_set:
   
@@ -94,12 +106,16 @@ telnet_main_entry:
   lda  character_set
   beq @a_mode
   ldax #petscii
-  jsr print
   jmp @c_mode
 @a_mode:
-  ldax #ascii
-  jsr print
+  lda line_mode
+  bne @l_mode
+  ldax #ascii  
+  jmp @c_mode
+@l_mode:
+  ldax #line  
 @c_mode:
+  jsr print  
   ldax #mode
   jsr print
   
@@ -159,7 +175,7 @@ telnet_connect:
   sty nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
   lda #0
   sta nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH+1
-  
+  jsr print_cr  
   jmp @no_more_input
   
 @not_line_mode:  
@@ -248,6 +264,8 @@ telnet_callback:
   sta buffer_length
   lda nb65_param_buffer+NB65_PAYLOAD_LENGTH+1
   sta buffer_length+1
+  
+  ;since we don't check the buffer length till the end of the loop, set 'buffer length' to be 1 less than the actual number of bytes
   dec buffer_length 
   bpl :+
    dec buffer_length+1
@@ -262,6 +280,11 @@ telnet_callback:
   jmp  @no_conversion_req
 :
 
+  lda line_mode
+  beq :+ 
+  jmp@convert_to_petscii
+:  
+;if we get here, we are in ASCII 'char at a time' mode,  so look for (and process) Telnet style IAC bytes
   lda telnet_state
   cmp #telnet_state_got_command
   beq @waiting_for_option
@@ -350,6 +373,7 @@ telnet_callback:
   jmp @add_iac_response
 
 @not_iac:
+@convert_to_petscii:
 
   lda ascii_to_petscii_table,x
   tax
@@ -362,16 +386,18 @@ telnet_callback:
   tay
 @byte_processed:  
   iny
+  bne :+
+  inc buffer_ptr+1
+:  
   dec buffer_length
   lda #$ff
   cmp buffer_length
   beq :+
   jmp @next_byte
 :  
-  inc buffer_ptr+1
+  
   dec buffer_length+1
   bmi @finished
-  ldy #0
   jmp @next_byte
 @finished:  
   
@@ -392,11 +418,12 @@ connecting_in: .byte "CONNECTING IN ",0
 
 ascii: .byte "ASCII",0
 petscii: .byte "PETSCII",0
+line: .byte "LINE",0
 mode: .byte " MODE",13,0
 disconnected: .byte 13,"CONNECTION CLOSED",13,0
 remote_host: .byte "HOSTNAME (LEAVE BLANK TO QUIT)",13,": ",0
 remote_port: .byte "PORT # (LEAVE BLANK FOR DEFAULT)",13,": ",0
-char_mode_prompt: .byte "CHARACTER MODE - A=ASCII, P=PETSCII",13,0
+char_mode_prompt: .byte "MODE - A=ASCII, P=PETSCII, L=LINE",13,0
 transmission_error: .byte "ERROR WHILE SENDING ",0
 
 ;variables
