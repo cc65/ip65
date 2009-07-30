@@ -452,17 +452,13 @@ send_dhcprequest:
 
 : lda dhcp_server,x
   sta output_buffer+dhcp_options+11,x
+  lda #$ff ;bugfix by ShadowM - DHCP request should be broadcast
+  sta udp_send_dest,x
   dex
   bpl :-
 
-  ;bugfix by ShadowM - DHCP request should be broadcast
-  lda #$ff 
-  ldx #3
-: sta udp_send_dest,x
-  dex
-  bpl :-
-
-  lda #$FF                           ;option FF = end of options
+  ;A still = option FF = end of options 
+  
   sta output_buffer+dhcp_options+17
 
   ldax #dhcp_options+18

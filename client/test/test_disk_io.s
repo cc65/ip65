@@ -247,8 +247,6 @@ fname_end:
 
 .rodata
 
-error_code:  
-  .byte "ERROR CODE: $",0
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
 

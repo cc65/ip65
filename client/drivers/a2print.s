@@ -11,7 +11,7 @@
 ;outputs: none
 print_a:
   ora  #$80  ;turn ASCII into Apple 2 screen codes
-  jmp $fdf0
+  jmp $fded
 
 
 ;use Apple 2 monitor ROM function to move to new line

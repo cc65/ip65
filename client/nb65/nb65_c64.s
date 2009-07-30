@@ -45,7 +45,6 @@
   .include "../inc/menu.i"
 
 .if (BANKSWITCH_SUPPORT=$03)
-  .include "../inc/char_conv.i"
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
 .endif
@@ -74,6 +73,7 @@
   
   .import print_dotted_quad
   .import print_hex
+  .import print_errorcode
   .import print_ip_config
   .import ok_msg
   .import failed_msg
@@ -576,12 +576,6 @@ net_apps_menu:
   
 .endif
 
-print_errorcode:
-  ldax #error_code
-  jsr print
-  nb65call #NB65_GET_LAST_ERROR
-  jsr print_hex
-  jmp print_cr
   
 bad_boot:
   jsr wait_for_keypress
@@ -691,9 +685,6 @@ tftp_download_fail_msg:
 tftp_download_ok_msg:
 	.byte "DOWNLOAD OK", 13, 0
   
-error_code:  
-  .asciiz "ERROR CODE: "
-
 current:
 .byte "CURRENT ",0
 
@@ -707,7 +698,7 @@ tftp_file:
   .asciiz "BOOTC64.PRG"
 
 no_files_on_server:
-  .byte "TFTP SERVER HAS NO MATCHING FILES",13,0
+  .byte "NO MATCHING FILES",13,0
 
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0

@@ -19,7 +19,9 @@
  .export gateway_msg
  .export dns_server_msg
  .export tftp_server_msg
- 
+ .import ip65_error
+ .export print_errorcode
+
  .import arp_cache
  .importzp ac_size
   
@@ -321,6 +323,13 @@ print_hex:
   pla
   rts
 
+print_errorcode:
+  ldax #error_code
+  jsr print
+  lda ip65_error
+  jsr print_hex
+  jmp print_cr
+
 .rodata
 hexdigits:
 .byte "0123456789ABCDEF"
@@ -366,3 +375,7 @@ ok_msg:
  
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0
+
+error_code:  
+  .asciiz "ERROR CODE: "
+

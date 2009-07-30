@@ -26,8 +26,8 @@ ETHOBJS= \
   dottedquad.o \
   output_buffer.o\
   tftp.o \
+  telnet.o \
   arithmetic.o\
-  
   
 all: ip65.lib ip65_tcp.lib
 

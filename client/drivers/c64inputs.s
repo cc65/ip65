@@ -71,7 +71,7 @@ check_for_abort_key:
 ; Main entry
 get_filtered_input:
   sty MAXCHARS
-  stax allowed_ptr
+  stax temp_allowed
 
   ;Zero characters received.
   lda #$00
@@ -94,6 +94,9 @@ get_filtered_input:
   beq @input_get
 
   ;Check the allowed list of characters.
+  ldax temp_allowed
+  stax allowed_ptr  ;since we are reusing this zero page, it may not stil be the same value since last time!
+
   ldy #$00
   lda allowed_ptr+1     ;was the input filter point nul?
   beq @input_ok
@@ -170,6 +173,7 @@ filter_number:
 
 ;=================================================
 .bss
+temp_allowed: .res 2
 MAXCHARS: .res 1
 LASTCHAR: .res 1
 INPUT_Y: .res 1  

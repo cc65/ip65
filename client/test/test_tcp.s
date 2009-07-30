@@ -1,10 +1,9 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
-  .include "../inc/char_conv.i"
   
   .import exit_to_basic  
-  
+  .import ascii_to_native  
   .import parse_dotted_quad
   .import dotted_quad_value
   
@@ -332,8 +331,7 @@ tcp_callback_routine:
   
 @print_one_byte:
   jsr get_next_byte  
-  tax
-  lda ascii_to_petscii_table,x
+  jsr ascii_to_native
   
   jsr print_a
   inc get_next_byte+1
@@ -616,8 +614,6 @@ number17:
 tcp_dest_ip:
  ; .byte 10,5,1,1
   .byte 74,207,242,229
-error_code:  
-  .asciiz "ERROR CODE: $"
 looping:
   .asciiz "LOOPING..."
   

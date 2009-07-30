@@ -18,7 +18,7 @@
   .importzp copy_src
   .importzp copy_dest
   .import copymem
-
+  .import ascii_to_native
   .import tcp_connect
   .import tcp_send
   .import tcp_send_data_len
@@ -126,14 +126,14 @@ display_resource_in_buffer:
 ;if this is a text file, just convert ascii->petscii and print to screen
 @show_one_char:
   jsr get_next_byte
-  tax ;this both sets up X as index into ascii_to_petscii_table, and sets Z flag   
+  tax ;this sets Z flag   
   bne :+
   lda #1
   sta this_is_last_page
   jmp @get_keypress
 :  
   
-  lda ascii_to_petscii_table,x
+  jsr ascii_to_native
   jsr print_a
   lda $d6
   cmp #DISPLAY_LINES
@@ -210,8 +210,7 @@ display_resource_in_buffer:
   jsr get_next_byte
   cmp #$09
   beq @skip_to_end_of_line
-  tax
-  lda ascii_to_petscii_table,x
+  jsr ascii_to_native
   jsr print_a
   jmp @next_byte
   
@@ -525,11 +524,12 @@ load_resource_into_buffer:
   stx dl_loop_counter
   stx dl_loop_counter+1
   lda resource_selector_length
+  beq @empty_selector
   stax tcp_send_data_len
   ldax #resource_selector
   jsr tcp_send
   
-  
+@empty_selector:  
   ;send the tab and query string (if supplied)
   lda displayed_resource_type  
   cmp #'7'  ;is it a 'search' resource?
