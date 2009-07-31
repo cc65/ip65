@@ -50,6 +50,7 @@ test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.c
 #	$(LD) -m  gopher_browser.map -vm -C ../cfg/c64prg.cfg -o  gopher_browser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
 a2_gopher.pg2: a2_gopher.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg ../inc/gopher.i
+	$(AS) $(AFLAGS) a2_gopher.s
 	$(LD)  -C ../cfg/a2bin.cfg -o  a2_gopher.pg2  $(AFLAGS) $< $(IP65TCPLIB) $(APPLE2PROGLIB)
 
 a2_telnet.pg2: a2_telnet.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg 
@@ -60,7 +61,7 @@ a2_telnet.pg2: a2_telnet.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2b
 
 a2_netapps.dsk:  a2_gopher.pg2 a2_telnet.pg2
 		ripxplore.rb --init BeautifulBoot a2_netapps.dsk -a a2_gopher.pg2 -t AppleBinary
-		ripxplore.rb a2_netapps.dsk -a a2_telnet.pg2 -t AppleBinary
+#		ripxplore.rb a2_netapps.dsk -a a2_telnet.pg2 -t AppleBinary
     
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary

@@ -3,6 +3,14 @@
 .export print_cr
 .export cls
 .export beep
+.export print_a_inverse
+
+.exportzp screen_current_row
+.exportzp screen_current_col
+
+
+screen_current_row=$d6
+screen_current_col=$d3
 
 .data
 ;use C64 Kernel ROM function to print a character to the screen
@@ -31,3 +39,13 @@ cls:
 ;outputs: none
 beep:
   rts
+  
+;print a single char in inverse text:
+print_a_inverse:
+  pha
+  lda #18 ;inverse mode on 
+  jsr print_a
+  pla
+  jsr print_a
+  lda #146 ;inverse mode off
+  jmp print_a

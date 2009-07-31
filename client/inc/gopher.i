@@ -34,7 +34,9 @@
   .import get_filtered_input
   .import filter_dns
   .import filter_text
-
+  .importzp screen_current_row
+  .importzp screen_current_col
+  .import print_a_inverse
 .segment "IP65ZP" : zeropage
 
 ; pointer for moving through buffers
@@ -135,7 +137,7 @@ display_resource_in_buffer:
   
   jsr ascii_to_native
   jsr print_a
-  lda $d6
+  lda screen_current_row
   cmp #DISPLAY_LINES
   bmi @show_one_char
   jmp @end_of_current_page
@@ -180,27 +182,17 @@ display_resource_in_buffer:
   sta resource_pointer_hi,x
   inc resource_counter
   
-  lda $d3 ;are we at the start of the current line?
-  beq :+
+  lda screen_current_col ;are we at the start of the current line?
+  beq :+  
+  
   jsr print_cr
 :  
   pla ;get back the resource type
-;  cmp #'1'
-;  beq @resource_is_a_dir
-;  lda #'-'
-;  jmp @print_resource_indicator
-;@resource_is_a_dir: 
-;  lda #'+'
-;@print_resource_indicator:
-;  jsr print_a
-  lda #18 ;inverse mode on 
-  jsr print_a
+
   lda resource_counter
   clc
   adc #'a'-1
-  jsr print_a
-  lda #146 ;inverse mode off
-  jsr print_a
+  jsr print_a_inverse
   lda #' '
   jsr print_a
 
@@ -218,14 +210,13 @@ display_resource_in_buffer:
   jsr get_next_byte
   cmp #$0A
   bne @skip_to_end_of_line
-
-
-  lda $d3
+  
+  lda screen_current_col
   cmp #0
-  beq :+
+;  beq :+
   jsr print_cr
 :  
-  lda $d6
+  lda screen_current_row
   cmp #DISPLAY_LINES
   bpl @end_of_current_page
   jmp @next_line
@@ -239,21 +230,21 @@ display_resource_in_buffer:
   jsr get_key_if_available
   cmp #' '
   beq @go_next_page  
-  cmp #KEYCODE_F7
+  cmp #KEY_NEXT_PAGE
   beq @go_next_page
   cmp #KEYCODE_DOWN
   beq @go_next_page
-  cmp #KEYCODE_F1
+  cmp #KEY_PREV_PAGE
   beq @go_prev_page
   cmp #KEYCODE_UP
   beq @go_prev_page
-  cmp #KEYCODE_F2
+  cmp #KEY_SHOW_HISTORY
   beq @show_history
   cmp #KEYCODE_LEFT
   beq @back_in_history
-  cmp #KEYCODE_F3
+  cmp #KEY_BACK_IN_HISTORY
   beq @back_in_history
-  cmp #KEYCODE_F5
+  cmp #KEY_NEW_SERVER
   beq @prompt_for_new_server
 
   cmp #KEYCODE_ABORT  
@@ -453,7 +444,7 @@ add_resource_to_history_and_display:
   lda ip65_error
   jsr print_hex
   jsr print_cr
-  jsr get_key
+  ;jsr get_key
   rts
     
 

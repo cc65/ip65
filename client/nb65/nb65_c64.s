@@ -45,6 +45,14 @@
   .include "../inc/menu.i"
 
 .if (BANKSWITCH_SUPPORT=$03)
+
+  KEY_NEXT_PAGE=KEYCODE_F7
+  KEY_PREV_PAGE=KEYCODE_F1
+  KEY_SHOW_HISTORY=KEYCODE_F2
+  KEY_BACK_IN_HISTORY=KEYCODE_F3
+  KEY_NEW_SERVER=KEYCODE_F5
+
+  
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
 .endif
@@ -640,7 +648,7 @@ exit_gopher:
 	.rodata
 
 netboot65_msg: 
-.byte 13," NETBOOT65 - C64 CLIENT VERSION "
+.byte 13," NETBOOT65 FOR C64 - VERSION "
 .include "nb65_version.i"
 .byte 13,0
 main_menu_msg:

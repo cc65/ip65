@@ -22,8 +22,11 @@ allowed_ptr=copy_src ;reuse zero page
 ;inputs: none
 ;outputs: A contains ASCII code of key pressed
 get_key:
-  lda #$a0
-  jmp $fd1b
+  ;lda #$a0
+  ;lda #$20
+  ;ldy #$24 ;KEYIN assumes Y is loaded with column
+  ;jmp $fd1b
+  jmp $fd0c
 
 ;inputs: none
 ;outputs: A contains ASCII value of key just pressed (0 if no key pressed)
@@ -43,6 +46,7 @@ check_for_abort_key:
 lda $c000 ;current key pressed
 cmp #$9B
 bne :+
+bit $c010 ;clear the keyboard strobe
 sec
 rts
 :

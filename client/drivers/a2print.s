@@ -1,9 +1,16 @@
 
 .export print_a
+.export print_a_inverse
 .export print_cr
 .export cls
 .export beep
+.exportzp screen_current_row
+.exportzp screen_current_col
+
 .code
+
+screen_current_col=$24 ; CH - Horizontal cursor-position (0-39)
+screen_current_row=$25 ; CV - Vertical cursor-position (0-23)
 
 ;
 ;use Apple 2 monitor ROM function to display 1 char
@@ -33,3 +40,7 @@ cls:
 ;outputs: none
 beep:
   jmp $fbdd
+  
+print_a_inverse:
+  and  #$7F  ;turn off bit 8 
+  jmp $fded
