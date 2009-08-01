@@ -63,6 +63,7 @@ telnet_main_entry:
   ldax #remote_host
   jsr print
   ldax #filter_dns  
+  ldy #40
   jsr get_filtered_input
   bcc @host_entered
   ;if no host entered, then bail.
@@ -107,6 +108,7 @@ telnet_main_entry:
   jsr print
 @char_mode_input:
   jsr get_key
+  and #$7f ;strip high bit
   cmp #'A'
   beq @ascii_mode
   cmp #'a'

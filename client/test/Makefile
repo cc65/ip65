@@ -61,7 +61,7 @@ a2_telnet.pg2: a2_telnet.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2b
 
 a2_netapps.dsk:  a2_gopher.pg2 a2_telnet.pg2
 		ripxplore.rb --init BeautifulBoot a2_netapps.dsk -a a2_gopher.pg2 -t AppleBinary
-#		ripxplore.rb a2_netapps.dsk -a a2_telnet.pg2 -t AppleBinary
+		ripxplore.rb a2_netapps.dsk -a a2_telnet.pg2 -t AppleBinary
     
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
