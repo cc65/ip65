@@ -30,9 +30,6 @@ all: \
 	testdottedquad.pg2\
 	testdottedquad.prg\
 	test_tcp.prg \
-	a2_gopher.pg2 \
-	a2_telnet.pg2 \
-	a2_netapps.dsk \
   
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
@@ -46,22 +43,10 @@ all: \
 test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
-#gopher_browser.prg: gopher_browser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg ../inc/gopher.i
-#	$(LD) -m  gopher_browser.map -vm -C ../cfg/c64prg.cfg -o  gopher_browser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
-
-a2_gopher.pg2: a2_gopher.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg ../inc/gopher.i
-	$(AS) $(AFLAGS) a2_gopher.s
-	$(LD)  -C ../cfg/a2bin.cfg -o  a2_gopher.pg2  $(AFLAGS) $< $(IP65TCPLIB) $(APPLE2PROGLIB)
-
-a2_telnet.pg2: a2_telnet.o $(IP65TCPLIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg 
-	$(LD)  -C ../cfg/a2bin.cfg -m a2_telnet.map -vm -o  a2_telnet.pg2  $(AFLAGS) $< $(IP65TCPLIB) $(APPLE2PROGLIB)
 
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
-a2_netapps.dsk:  a2_gopher.pg2 a2_telnet.pg2
-		ripxplore.rb --init BeautifulBoot a2_netapps.dsk -a a2_gopher.pg2 -t AppleBinary
-		ripxplore.rb a2_netapps.dsk -a a2_telnet.pg2 -t AppleBinary
     
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
@@ -76,7 +61,6 @@ test_disk_io.d64:  test_disk_io.prg
 clean:
 	rm -f *.o *.pg2 *.prg
 	rm -f ip65test.dsk
-	rm -f a2_netapps.dsk
   
 distclean: clean
 	rm -f *~

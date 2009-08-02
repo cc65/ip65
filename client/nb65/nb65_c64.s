@@ -573,7 +573,14 @@ net_apps_menu:
   jsr cls
   lda #14
   jsr print_a ;switch to lower case
-  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+;  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  
+  ldax #gopher_initial_location
+  sta resource_pointer_lo
+  stx resource_pointer_hi
+  ldx #0
+  jsr  select_resource_from_current_directory
+
   jmp exit_gopher
 @not_gopher:
   cmp #KEYCODE_F7
@@ -679,6 +686,11 @@ net_apps_menu_msg:
 .byte "F1: TELNET         F3: GOPHER",13
 .byte "F5:                F7: MAIN MENU",13,13
 .byte 0
+
+cant_boot_basic: .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
+gopher_initial_location:
+.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
+
 .endif
 downloading_msg:  .asciiz "DOWNLOADING "
 
@@ -714,9 +726,6 @@ press_a_key_to_continue:
 resolving:
   .byte "RESOLVING ",0
 
-.if (BANKSWITCH_SUPPORT=$03)
-cant_boot_basic: .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
-  .endif
 
 nb65_ram_stub: ; this gets copied to $C000 so programs can bank in the cartridge
 .byte $4E,$42,$36,$35  ; "NB65"  - API signature

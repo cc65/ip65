@@ -1,5 +1,12 @@
-;telnet implementation
-;
+;minimal telnet implementation (dumb terminal emulation only)
+;to use:
+;set the following variables - telnet_local_echo, telnet_line_mode,telnet_use_native_charset,telnet_port,telnet_ip
+;then call telnet_connect
+;sensible combinations of telnet_local_echo, telnet_line_mode,telnet_use_native_charset are:
+;for interacting with 'line at time' servers (smtp/pop3/http/gopher): telnet_local_echo=1, telnet_line_mode=1,telnet_use_native_charset=0
+;for logging in to a normal telnet server:  telnet_local_echo=0, telnet_line_mode=0,telnet_use_native_charset=0
+;for logging in to a PETSCII BBS on a C64 : telnet_local_echo=0, telnet_line_mode=0,telnet_use_native_charset=1
+
 
 .include "../inc/common.i"
 
@@ -333,14 +340,14 @@ transmission_error: .byte "ERROR WHILE SENDING ",0
 
 ;variables
 .segment "APP_SCRATCH" 
-telnet_ip:  .res 4
-telnet_port: .res 2
+telnet_ip:  .res 4  ;ip address of remote server
+telnet_port: .res 2 ;port number to connect to
 
 connection_closed: .res 1
-telnet_use_native_charset: .res 1
+telnet_use_native_charset: .res 1 ; 0 means all data is translated to/from NVT ASCII 
 buffer_offset: .res 1
-telnet_local_echo: .res 1
-telnet_line_mode: .res 1
+telnet_local_echo: .res 1   ;0 should mean local echo is disabled - in fact at the moment we never do local echo except in 'line mode'
+telnet_line_mode: .res 1 ;do characters get sent after each keypress, or can a line be created/edited and then sent only when return is pressed?
 telnet_state: .res 1
 telnet_command: .res 1
 telnet_option: .res 1

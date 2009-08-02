@@ -37,6 +37,14 @@
   .importzp screen_current_row
   .importzp screen_current_col
   .import print_a_inverse
+  
+  .import telnet_port
+  .import telnet_ip
+  .import telnet_connect
+  .import telnet_local_echo
+  .import telnet_line_mode
+  .import telnet_use_native_charset
+  
 .segment "IP65ZP" : zeropage
 
 ; pointer for moving through buffers
@@ -166,6 +174,8 @@ display_resource_in_buffer:
   beq @standard_resource
   cmp #'7'
   beq @standard_resource
+  cmp #'8'
+  beq @standard_resource
 
   ;if we got here, we know not what it is  
   jmp @skip_to_end_of_line  
@@ -208,6 +218,9 @@ display_resource_in_buffer:
   
 @skip_to_end_of_line:
   jsr get_next_byte
+  cmp #0
+  beq @last_line
+
   cmp #$0A
   bne @skip_to_end_of_line
   
@@ -464,6 +477,7 @@ show_history:
   sec
   sbc #1
   bne @show_one_entry
+get_keypress_then_rts:  
   jsr print_cr
   ldax #any_key_to_continue
   jsr print
@@ -492,6 +506,7 @@ load_resource_into_buffer:
   ldx #3        ; save IP address just retrieved
 : lda dns_ip,x
   sta tcp_connect_ip,x
+  sta telnet_ip,x
   dex
   bpl :-
   ldax #gopher_download_callback
@@ -499,7 +514,34 @@ load_resource_into_buffer:
   ldax  #connecting
   jsr print
 
+  lda displayed_resource_type  
+  cmp #'8'  ;is it a 'telnet' resource?
+  bne @not_telnet_resource
   ldax resource_port
+  stax  telnet_port
+  lda #0
+  sta telnet_local_echo
+  sta telnet_line_mode
+  sta telnet_use_native_charset
+  
+  ;if the username = '/native', then connect in native mode
+  lda resource_selector_length
+  
+  cmp #7
+  bne @not_native
+  lda resource_selector+1
+  cmp #'n'
+  bne @not_native
+  lda resource_selector+2
+  cmp #'a'
+  bne @not_native
+  inc telnet_use_native_charset
+@not_native:  
+  jsr telnet_connect
+  jmp get_keypress_then_rts
+  
+@not_telnet_resource:  
+  ldax resource_port  
   jsr tcp_connect
   bcs @error
   

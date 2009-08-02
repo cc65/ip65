@@ -1,5 +1,3 @@
-;ASCII/PETSCII conversion tables
-;cribbed from http://www.ffd2.com/fridge/misc/petcom.c
 
 
 .export ascii_to_native

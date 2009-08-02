@@ -1,5 +1,6 @@
-;A2 telnet
-;july 2009 (at Mt Keira Fest!) - jonno @ jamtronix.com
+; Kipper
+;started as a port of c64 telnet to A2 at Mt Keira Fest, July 2009
+; jonno @ jamtronix.com
 
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
@@ -14,6 +15,8 @@
 
   .import get_key
   .import cls
+
+.import print_a_inverse
 
 .import telnet_connect
 .import telnet_local_echo
@@ -30,14 +33,19 @@
 .import filter_dns
 .import filter_number
 
+  KEY_NEXT_PAGE=$8E ; ^N
+  KEY_PREV_PAGE=$90; ^P
+  KEY_SHOW_HISTORY=$93; ^S
+  KEY_BACK_IN_HISTORY=$82 ; ^B
+  KEY_NEW_SERVER=$89 ;TAB key
+  
+.include "../inc/gopher.i"
+
   .segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
         .addr           __CODE_LOAD__-3                ; Start address
         .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
         jmp init
 
- 	.segment "IP65ZP" : zeropage
-
-buffer_ptr: .res 2
 
 .code
 
@@ -51,10 +59,50 @@ init:
   init_ip_via_dhcp 
   jsr print_ip_config
 
+main_loop:
+  ldax #main_menu
+  jsr print
+
+@command_input:
+  jsr get_key
+  and #$7f ;strip high bit
+  cmp #'T'
+  beq @telnet
+  cmp #'t'
+  beq @telnet
+
+  cmp #'G'
+  beq @gopher
+  cmp #'g'
+  beq @gopher
+  
+  cmp #'Q'
+  beq @quit
+  cmp #'q'
+  beq @quit
+  
+  jmp @command_input
+
+@telnet:
   jmp telnet_main_entry
   
-exit_telnet:
+@gopher:
+  ldax #gopher_initial_location
+  sta resource_pointer_lo
+  stx resource_pointer_hi
+;  jsr print
+  ldx #0
+  jsr  select_resource_from_current_directory
+  jmp main_loop
+
+@quit:
   jmp $e000
+exit_telnet:
+exit_gopher:
+  jmp main_loop
+
+
+
  
 
 telnet_main_entry:
@@ -218,8 +266,12 @@ get_port_number:
 .bss
 hostname_ptr: .res 2
 port_number: .res 2
+
 .rodata
-title: .byte "                 TELNET ][",13,"           jonno@jamtronix.com",13,0
+gopher_initial_location:
+.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
+main_menu: .byte "COMMAND - T=TELNET, G=GOPHER, Q=QUIT",13,0
+
 resolving: .byte "RESOLVING ",0
 connecting_in: .byte "CONNECTING IN ",0
 ascii: .byte "ASCII",0
@@ -230,4 +282,4 @@ remote_host: .byte "HOSTNAME (LEAVE BLANK TO QUIT)",13,": ",0
 remote_port: .byte "PORT # (LEAVE BLANK FOR DEFAULT)",13,": ",0
 char_mode_prompt: .byte "MODE - A=ASCII, N=NATIVE, L=LINE",13,0
 
-
+title: .byte "KIPPER ][",13,"jonno@jamtronix.com",13,0

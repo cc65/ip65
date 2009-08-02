@@ -204,7 +204,7 @@ eth_tx:
 	sta cs_tx_len
 	lda eth_outp_len + 1
 	sta cs_tx_len + 1
-	cmp #7
+	cmp #6
   bmi :+
   lda #NB65_ERROR_INPUT_TOO_LARGE
   sta ip65_error

@@ -17,7 +17,16 @@ screen_current_row=$25 ; CV - Vertical cursor-position (0-23)
 ;inputs: A should be set to ASCII char to display
 ;outputs: none
 print_a:
-  ora  #$80  ;turn ASCII into Apple 2 screen codes
+  ora  #$80  ;turn ASCII into Apple 2 screen codes  
+  cmp #$8A   ;is it a line feed?
+  bne @not_line_feed
+;  jmp print_cr
+  pha
+  lda #$0
+  sta screen_current_col
+  pla
+@not_line_feed:
+  
   jmp $fded
 
 
@@ -42,5 +51,5 @@ beep:
   jmp $fbdd
   
 print_a_inverse:
-  and  #$7F  ;turn off bit 8 
-  jmp $fded
+  and  #$7F  ;turn off top bits
+  jsr $fded
