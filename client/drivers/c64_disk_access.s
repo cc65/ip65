@@ -12,6 +12,7 @@
 .export  io_sector_no
 .export  io_track_no
 .export  io_read_sector
+.export  io_read_catalogue
 
 .export io_read_file_with_callback
 .export io_filename
@@ -55,6 +56,16 @@ jmp_to_callback:
 io_callback=jmp_to_callback+1
 
 
+write_byte_to_buffer:
+tmp_buffer_ptr=write_byte_to_buffer+1
+  sta $ffff
+  inc tmp_buffer_ptr
+  bne :+
+  inc tmp_buffer_ptr
+:  
+  rts
+
+
 .code
 
 ;routine to read a file with a callback after each 256 byte sector
@@ -91,8 +102,6 @@ io_read_file_with_callback:
   jsr open_error_channel
 @no_error_opening_error_channel:  
   jsr check_error_channel
-
-
   lda #$30
   cmp error_buffer
   
@@ -120,7 +129,7 @@ io_read_file_with_callback:
   sta (buffer_ptr),y
   inc buffer_counter
   bne @get_next_byte
-  
+
   ldy #$00;= 256 bytes
   jsr jmp_to_callback
   jmp @get_next_sector
@@ -138,7 +147,7 @@ io_read_file_with_callback:
 @close:
   lda #$02      ; filenumber 2
   jsr CLOSE
-  ldx #$00
+  ldx #$00      ;keyboard now used as input
   jsr CHKIN
   clc
   rts
@@ -166,6 +175,82 @@ parse_filename:
   ldx buffer_ptr
   ldy buffer_ptr+1
   rts
+
+;routine to catalogue disk
+; io_device_number set to specify drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
+; AX - address of buffer to read catalogue into
+; outputs:
+; on errror, carry flag is set. 
+io_read_catalogue:
+  stax  tmp_buffer_ptr  
+  
+  ;get the BAM
+  lda #$12
+  sta io_track_no
+  lda #00
+  sta io_sector_no
+  
+  ldax #output_buffer
+  jsr io_read_sector  
+  bcs @end_catalogue
+
+@get_next_catalogue_sector:
+
+  clc
+  lda output_buffer 
+  beq @end_catalogue
+  sta io_track_no
+  lda output_buffer+1
+  sta io_sector_no
+  ldax #output_buffer
+  jsr io_read_sector  
+  bcs @end_catalogue  
+  ldy #0
+
+
+@read_one_file:
+  tya
+  pha
+  
+  lda output_buffer+2,y ;file type
+  and #$7f
+  beq @skip_to_next_file
+  
+;  bpl @skip_to_next_file
+@get_next_char:
+  lda output_buffer+5,y ;file type
+  beq @end_of_filename
+  cmp #$a0
+  beq @end_of_filename
+  jsr write_byte_to_buffer
+  iny
+  jmp @get_next_char
+@end_of_filename:  
+  lda #0
+  jsr write_byte_to_buffer
+  pla
+  pha
+  
+  tay ;get Y back to start of this file entry
+  lda output_buffer+2,y ;file type
+  jsr write_byte_to_buffer  
+  lda output_buffer+30,y ;lo byte of file length in sectors
+  jsr write_byte_to_buffer
+  lda output_buffer+31,y ;hi byte of file length in sectors
+  jsr write_byte_to_buffer
+@skip_to_next_file:
+  pla  
+  clc
+  adc #$20
+  tay
+  bne @read_one_file
+  jmp @get_next_catalogue_sector
+@end_catalogue:  
+  lda #0
+  jsr write_byte_to_buffer
+  jsr write_byte_to_buffer
+  rts
+
 
 ;routine to read a sector 
 ;cribbed from http://codebase64.org/doku.php?id=base:reading_a_sector_from_disk

@@ -20,20 +20,20 @@ allowed_ptr=copy_src ;reuse zero page
 ;inputs: none
 ;outputs: A contains ASCII value of key just pressed
 get_key:
-  jsr $ffe4
+  jsr get_key_if_available
   beq get_key
   rts
 
 ;use C64 Kernel ROM function to read a key
 ;inputs: none
 ;outputs: A contains ASCII value of key just pressed (0 if no key pressed)
-get_key_if_available=$ffe4
+get_key_if_available=$f142 ;not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
 
 
 ;process inbound ip packets while waiting for a keypress
 get_key_ip65:
   jsr ip65_process
-  jsr $ffe4
+  jsr get_key_if_available
   beq get_key_ip65
   rts
 
@@ -48,7 +48,7 @@ check_for_abort_key:
   cmp #$3F
   bne @not_abort
 @flush_loop:
-  jsr $ffe4
+  jsr get_key_if_available
   bne @flush_loop
   lda $cb ;current key pressed
   cmp #$3F
