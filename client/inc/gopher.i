@@ -524,16 +524,16 @@ load_resource_into_buffer:
   sta telnet_line_mode
   sta telnet_use_native_charset
   
-  ;if the username = '/native', then connect in native mode
+  ;if the username = '/n', then connect in native mode
   lda resource_selector_length
   
-  cmp #7
+  cmp #2
+  bne @not_native
+  lda resource_selector
+  cmp #'/'
   bne @not_native
   lda resource_selector+1
   cmp #'n'
-  bne @not_native
-  lda resource_selector+2
-  cmp #'a'
   bne @not_native
   inc telnet_use_native_charset
 @not_native:  

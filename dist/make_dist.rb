@@ -18,18 +18,19 @@ version_string=File.open(VERSION_FILE).read
 end
 
 [
-#["client/nb65/utherboot.dsk","a2/"],
+["client/nb65/utherboot.dsk","a2/"],
 ["client/nb65/set_ip_config.rb","bin/"],
 #["client/nb65/nb65_rrnet.bin","c64/"],
 ["client/nb65/nb65_c64_ram.prg","c64/"],
 ["client/nb65/nb65_std_cart.bin","c64/"],
+\["client/nb65/nb65_tcp_cart.bin","c64/"],
 ["client/nb65/d64_upload.prg","boot/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/lib/file_list.rb","lib"],
 ["server/bin/tftp_only_server.rb","bin/tftp_server.rb"],
-#["server/bin/import_ags_games.rb","bin"],
+["server/bin/import_ags_games.rb","bin"],
 #["server/boot/BOOTA2.PG2","boot"],
-#["doc/README.Apple2.html","a2"],
+["doc/README.Apple2.html","a2"],
 ["doc/README.C64.html","c64"],
 ["doc/netboot65.html","doc/index.html"],
 #["doc/README.Apple2.html","doc"],

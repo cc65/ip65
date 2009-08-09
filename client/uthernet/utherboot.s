@@ -21,6 +21,7 @@
   .import tftp_load_address
   .import tftp_ip
   .import tftp_download
+  .import tftp_clear_callbacks
   
 	.import copymem
 	.importzp copy_src
@@ -171,24 +172,30 @@ init:
   jsr print_ip_config
   
   ldx #3
+  lda #$FF
 : 
-  lda cfg_tftp_server,x
+;  lda cfg_tftp_server,x
   sta tftp_ip,x
   dex
   bpl :-
 
 
+  jsr tftp_clear_callbacks
+  
+
+  
   ldax #tftp_dir_buffer
   stax tftp_load_address
 
   ldax #getting_dir_listing_msg
 	jsr print
 
+
   ldax #tftp_dir_filemask
   stax tftp_filename
   jsr print
   jsr print_cr
-
+  
   jsr tftp_download
 	bcs @dir_failed
  
@@ -309,5 +316,6 @@ tftp_download_ok_msg:
 	.asciiz "DOWNLOAD OK"
 
 startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V"
-.include "nb65_version.i"
+
+.include "..\nb65\nb65_version.i"
 .byte 0

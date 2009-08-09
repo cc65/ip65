@@ -569,11 +569,10 @@ net_apps_menu:
   jmp telnet_main_entry
 @not_telnet:
   cmp #KEYCODE_F3
-  bne @not_gopher
+  bne @not_gopher_floodgap_com
   jsr cls
   lda #14
   jsr print_a ;switch to lower case
-;  jsr prompt_for_gopher_resource ;only returns if no server was entered.
   
   ldax #gopher_initial_location
   sta resource_pointer_lo
@@ -582,6 +581,15 @@ net_apps_menu:
   jsr  select_resource_from_current_directory
 
   jmp exit_gopher
+@not_gopher_floodgap_com:
+  cmp #KEYCODE_F5
+  bne @not_gopher
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+  
 @not_gopher:
   cmp #KEYCODE_F7
   bne @not_main
@@ -650,6 +658,8 @@ exit_telnet:
 exit_gopher:
   lda #142
   jsr print_a ;switch to upper case
+  lda #$05  ;petscii for white text
+  jsr print_a
   jmp main_menu
 .endif  
 	.rodata
@@ -683,11 +693,12 @@ config_menu_msg:
 .if (BANKSWITCH_SUPPORT=$03)
 net_apps_menu_msg:
 .byte 13,"              NET APPS",13,13
-.byte "F1: TELNET         F3: GOPHER",13
-.byte "F5:                F7: MAIN MENU",13,13
+.byte "F1: TELNET    F3: GOPHER.FLOODGAP.COM",13
+.byte "F5: GOPHER    F7: MAIN MENU",13,13
 .byte 0
 
-cant_boot_basic: .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
+cant_boot_basic:
+.byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
 gopher_initial_location:
 .byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
 
