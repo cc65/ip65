@@ -665,7 +665,7 @@ exit_gopher:
 	.rodata
 
 netboot65_msg: 
-.byte 13," NETBOOT65 FOR C64 - VERSION "
+.byte 13,"NB65 - VERSION "
 .include "nb65_version.i"
 .byte 13,0
 main_menu_msg:

@@ -1,3 +1,5 @@
+.ifndef COMMON__I__
+COMMON__I__ = 1
 ; load A/X macro
 	.macro ldax arg
 	.if (.match (.left (1, arg), #))	; immediate mode
@@ -27,3 +29,5 @@
   tax
   pla
 .endmacro
+
+.endif

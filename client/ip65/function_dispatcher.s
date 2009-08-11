@@ -523,45 +523,15 @@ ip_configured:
 
 cpy #NB65_INPUT_PORT_NUMBER
   bne :+
-  .import mul_8_16
-  .importzp acc16
-  
   ldy #5 ;max chars
   ldax #filter_number
   jsr get_filtered_input  
   bcs @no_port_entered
   
-  ;AX now points a string containing port number
-    
-  stax  buffer_ptr
-  lda #0
-  sta port_number
-  sta port_number+1
-  tay
-@parse_port:
-  lda (buffer_ptr),y
-  cmp #$1F
-  bcc @end_of_port  ;any control char should be treated as end of port field  
-  ldax  port_number
-  stax  acc16
-  lda #10
-  jsr mul_8_16
-  ldax  acc16
-  stax  port_number
-  lda (buffer_ptr),y
-  sec
-  sbc #'0'
-  clc
-  adc port_number
-  sta port_number
-  bcc @no_rollover  
-  inc port_number+1
-@no_rollover:
-  iny
-  bne @parse_port
-@end_of_port:  
-  ldax port_number
-  clc
+  ;AX now points a string containing port number    
+  .import parse_integer
+  jmp parse_integer
+  
 @no_port_entered:
   rts
 :

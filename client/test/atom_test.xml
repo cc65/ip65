@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:google="http://base.google.com/ns/1.0" xml:lang="en-US" xmlns:openSearch="http://a9.com/-/spec/opensearch/1.1/" xmlns="http://www.w3.org/2005/Atom" xmlns:twitter="http://api.twitter.com/">
+  <id>tag:search.twitter.com,2005:search/#c64</id>
+  <link type="text/html" rel="alternate" href="http://search.twitter.com/search?q=%23c64"/>
+  <link type="application/atom+xml" rel="self" href="http://search.twitter.com/search.atom?q=%23c64"/>
+  <title>#c64 - Twitter Search</title>
+  <link type="application/opensearchdescription+xml" rel="search" href="http://search.twitter.com/opensearch.xml"/>
+  <link type="application/atom+xml" rel="refresh" href="http://search.twitter.com/search.atom?q=%23c64&amp;since_id=3222849162"/>
+  <twitter:warning>since_id removed for pagination.</twitter:warning>
+  <updated>2009-08-10T10:03:59Z</updated>
+  <openSearch:itemsPerPage>15</openSearch:itemsPerPage>
+  <link type="application/atom+xml" rel="next" href="http://search.twitter.com/search.atom?max_id=3222849162&amp;page=2&amp;q=%23c64"/>
+  <entry>
+    <id>tag:search.twitter.com,2005:3222849162</id>
+    <published>2009-08-10T10:03:59Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/aka_obi/statuses/3222849162"/>
+    <title>Lately I edited a Firebird music compilation. You can play it by using this player here. Please listen. http://bit.ly/DF8zQ #c64 #chiptune</title>
+    <content type="html">Lately I edited a Firebird music compilation. You can play it by using this player here. Please listen. &lt;a href="http://bit.ly/DF8zQ"&gt;http://bit.ly/DF8zQ&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23chiptune"&gt;#chiptune&lt;/a&gt;</content>
+    <updated>2009-08-10T10:03:59Z</updated>
+    <link type="image/png" rel="image" href="http://static.twitter.com/images/default_profile_normal.png"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>aka_obi (akaobi)</name>
+      <uri>http://twitter.com/aka_obi</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3222793961</id>
+    <published>2009-08-10T09:57:28Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/aka_obi/statuses/3222793961"/>
+    <title>Lately I edited a Firebird music compilation. You can play it by using this player here. Have fun. http://bit.ly/DF8zQ #c64 #chiptune</title>
+    <content type="html">Lately I edited a Firebird music compilation. You can play it by using this player here. Have fun. &lt;a href="http://bit.ly/DF8zQ"&gt;http://bit.ly/DF8zQ&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23chiptune"&gt;#chiptune&lt;/a&gt;</content>
+    <updated>2009-08-10T09:57:28Z</updated>
+    <link type="image/png" rel="image" href="http://static.twitter.com/images/default_profile_normal.png"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>aka_obi (akaobi)</name>
+      <uri>http://twitter.com/aka_obi</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3221757110</id>
+    <published>2009-08-10T07:30:45Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/chiptune/statuses/3221757110"/>
+    <title>is listening SID music on the iPhone! http://iphone.vanille.de/sidplayer/ #c64 #sid #iphone #chipmusic #8bit</title>
+    <content type="html">is listening SID music on the iPhone! &lt;a href="http://iphone.vanille.de/sidplayer/"&gt;http://iphone.vanille.de/sidplayer/&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23sid"&gt;#sid&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23iphone"&gt;#iphone&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23chipmusic"&gt;#chipmusic&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%238bit"&gt;#8bit&lt;/a&gt;</content>
+    <updated>2009-08-10T07:30:45Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/86599886/gameboy_normal.jpg"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>chiptune (rez)</name>
+      <uri>http://twitter.com/chiptune</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3205731747</id>
+    <published>2009-08-09T10:16:06Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/wurstgranate/statuses/3205731747"/>
+    <title>Wenn man fr&#252;her auf dem C64 nur mit S-Mon geproggt hat, dann ist das ScienceFiction! http://bit.ly/RuhAh
+ #c64</title>
+    <content type="html">Wenn man fr&#252;her auf dem C64 nur mit S-Mon geproggt hat, dann ist das ScienceFiction! &lt;a href="http://bit.ly/RuhAh"&gt;http://bit.ly/RuhAh&lt;/a&gt;
+ &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt;</content>
+    <updated>2009-08-09T10:16:06Z</updated>
+    <link type="image/png" rel="image" href="http://static.twitter.com/images/default_profile_normal.png"/>
+    <twitter:source>&lt;a href="http://thecosmicmachine.com/eventbox/"&gt;EventBox&lt;/a&gt;</twitter:source>
+    <twitter:lang>de</twitter:lang>
+    <author>
+      <name>wurstgranate (Wurstgranate)</name>
+      <uri>http://twitter.com/wurstgranate</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3205709954</id>
+    <published>2009-08-09T10:13:18Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/wurstgranate/statuses/3205709954"/>
+    <title>http://bit.ly/RuhAh
+ #c64</title>
+    <content type="html">&lt;a href="http://bit.ly/RuhAh"&gt;http://bit.ly/RuhAh&lt;/a&gt;
+ &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt;</content>
+    <updated>2009-08-09T10:13:18Z</updated>
+    <link type="image/png" rel="image" href="http://static.twitter.com/images/default_profile_normal.png"/>
+    <twitter:source>&lt;a href="http://thecosmicmachine.com/eventbox/"&gt;EventBox&lt;/a&gt;</twitter:source>
+    <twitter:lang></twitter:lang>
+    <author>
+      <name>wurstgranate (Wurstgranate)</name>
+      <uri>http://twitter.com/wurstgranate</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3205118149</id>
+    <published>2009-08-09T08:59:41Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/grabule/statuses/3205118149"/>
+    <title>http://www.remix64.com/amigacharts.html remix64 #c64 #amiga #charts ! check hybris 2009 :)</title>
+    <content type="html">&lt;a href="http://www.remix64.com/amigacharts.html"&gt;http://www.remix64.com/amigacharts.html&lt;/a&gt; remix64 &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23amiga"&gt;#amiga&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23charts"&gt;#charts&lt;/a&gt; ! check hybris 2009 :)</content>
+    <updated>2009-08-09T08:59:41Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/290545289/mr2_normal.gif"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>fr</twitter:lang>
+    <author>
+      <name>grabule (grabule)</name>
+      <uri>http://twitter.com/grabule</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3194733775</id>
+    <published>2009-08-08T16:35:20Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/grabule/statuses/3194733775"/>
+    <title>http://www.x-formz.com/music/ ultra great remixes of #c64 #amiga musics</title>
+    <content type="html">&lt;a href="http://www.x-formz.com/music/"&gt;http://www.x-formz.com/music/&lt;/a&gt; ultra great remixes of &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23amiga"&gt;#amiga&lt;/a&gt; musics</content>
+    <updated>2009-08-08T16:35:20Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/290545289/mr2_normal.gif"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>eo</twitter:lang>
+    <author>
+      <name>grabule (grabule)</name>
+      <uri>http://twitter.com/grabule</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3191289093</id>
+    <published>2009-08-08T09:16:19Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/gesus/statuses/3191289093"/>
+    <title>8bit-Prodigy really rocks! Praise the SID chip! ;) e.g. http://bit.ly/29WsHg (more at http://bit.ly/jPkYc) via @sv #wakeup_music #c64 #fb</title>
+    <content type="html">8bit-Prodigy really rocks! Praise the SID chip! ;) e.g. &lt;a href="http://bit.ly/29WsHg"&gt;http://bit.ly/29WsHg&lt;/a&gt; (more at &lt;a href="http://bit.ly/jPkYc"&gt;http://bit.ly/jPkYc&lt;/a&gt;) via &lt;a href="http://twitter.com/sv"&gt;@sv&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23wakeup_music"&gt;#wakeup_music&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23fb"&gt;#fb&lt;/a&gt;</content>
+    <updated>2009-08-08T09:16:19Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/271664616/green_7541_starw_normal.jpg"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>gesus (gesus)</name>
+      <uri>http://twitter.com/gesus</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3183233498</id>
+    <published>2009-08-07T20:50:04Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/sidshuman/statuses/3183233498"/>
+    <title>#StreetFighter II running on a #C64. Holy crap does that look bad! http://bit.ly/YgIdZ</title>
+    <content type="html">&lt;a href="http://search.twitter.com/search?q=%23StreetFighter"&gt;#StreetFighter&lt;/a&gt; II running on a &lt;a href="http://search.twitter.com/search?q=%23C64"&gt;&lt;b&gt;#C64&lt;/b&gt;&lt;/a&gt;. Holy crap does that look bad! &lt;a href="http://bit.ly/YgIdZ"&gt;http://bit.ly/YgIdZ&lt;/a&gt;</content>
+    <updated>2009-08-07T20:50:04Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/131519015/tiny-blue3_normal.jpg"/>
+    <twitter:source>&lt;a href="http://www.tweetdeck.com/"&gt;TweetDeck&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>sidshuman (Sid Shuman)</name>
+      <uri>http://twitter.com/sidshuman</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3183089623</id>
+    <published>2009-08-07T20:39:47Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/sevik/statuses/3183089623"/>
+    <title>@IdleSi Armalyte rocks! My school mate held the high score in CVG magazine way back.  Great loading music too. #retro #c64 #sid</title>
+    <content type="html">&lt;a href="http://twitter.com/IdleSi"&gt;@IdleSi&lt;/a&gt; Armalyte rocks! My school mate held the high score in CVG magazine way back.  Great loading music too. &lt;a href="http://search.twitter.com/search?q=%23retro"&gt;#retro&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23sid"&gt;#sid&lt;/a&gt;</content>
+    <updated>2009-08-07T20:39:47Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/351019145/face_normal.jpg"/>
+    <twitter:source>&lt;a href="http://www.tweetdeck.com/"&gt;TweetDeck&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>sevik (Sean Parker)</name>
+      <uri>http://twitter.com/sevik</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3164495376</id>
+    <published>2009-08-06T10:29:54Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/uberguineapig/statuses/3164495376"/>
+    <title>RT: @3typen der #iPhone #App #c64 #sid player f&#252;r unterwegs http://twitpic.com/cypku wann kommt eigentlich ifrodo?</title>
+    <content type="html">RT: &lt;a href="http://twitter.com/3typen"&gt;@3typen&lt;/a&gt; der &lt;a href="http://search.twitter.com/search?q=%23iPhone"&gt;#iPhone&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23App"&gt;#App&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23sid"&gt;#sid&lt;/a&gt; player f&#252;r unterwegs &lt;a href="http://twitpic.com/cypku"&gt;http://twitpic.com/cypku&lt;/a&gt; wann kommt eigentlich ifrodo?</content>
+    <updated>2009-08-06T10:29:54Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/323940395/guineapig_normal.jpg"/>
+    <twitter:source>&lt;a href="http://apiwiki.twitter.com/"&gt;API&lt;/a&gt;</twitter:source>
+    <twitter:lang>de</twitter:lang>
+    <author>
+      <name>uberguineapig (Guinea Pigz)</name>
+      <uri>http://twitter.com/uberguineapig</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3164476839</id>
+    <published>2009-08-06T10:27:39Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/3typen/statuses/3164476839"/>
+    <title>der #iPhone #App #c64 #sid player f&#252;r unterwegs http://twitpic.com/cypku wann kommt eigentlich ifrodo?</title>
+    <content type="html">der &lt;a href="http://search.twitter.com/search?q=%23iPhone"&gt;#iPhone&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23App"&gt;#App&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23sid"&gt;#sid&lt;/a&gt; player f&#252;r unterwegs &lt;a href="http://twitpic.com/cypku"&gt;http://twitpic.com/cypku&lt;/a&gt; wann kommt eigentlich ifrodo?</content>
+    <updated>2009-08-06T10:27:39Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/17351832/twitter_logo_normal.gif"/>
+    <twitter:source>&lt;a href="http://www.tweetdeck.com/"&gt;TweetDeck&lt;/a&gt;</twitter:source>
+    <twitter:lang>de</twitter:lang>
+    <author>
+      <name>3typen (3typen)</name>
+      <uri>http://twitter.com/3typen</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3152292799</id>
+    <published>2009-08-05T20:30:00Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/kevireilly/statuses/3152292799"/>
+    <title>Shredz64!!! Guitar Hero for Commodore 64.. wait what? people are still making stuff for Commodore?  http://bit.ly/WpM41 #commodore #c64</title>
+    <content type="html">Shredz64!!! Guitar Hero for Commodore 64.. wait what? people are still making stuff for Commodore?  &lt;a href="http://bit.ly/WpM41"&gt;http://bit.ly/WpM41&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23commodore"&gt;#commodore&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt;</content>
+    <updated>2009-08-05T20:30:00Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/82408033/icon_normal.jpg"/>
+    <twitter:source>&lt;a href="http://www.tweetdeck.com/"&gt;TweetDeck&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>kevireilly (Kevin Reilly)</name>
+      <uri>http://twitter.com/kevireilly</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3152230931</id>
+    <published>2009-08-05T20:26:26Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/falingo/statuses/3152230931"/>
+    <title>... Disk2 http://tinyurl.com/kwbxth #smashdesigns #ourdarkness #c64 #demoscene</title>
+    <content type="html">... Disk2 &lt;a href="http://tinyurl.com/kwbxth"&gt;http://tinyurl.com/kwbxth&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23smashdesigns"&gt;#smashdesigns&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23ourdarkness"&gt;#ourdarkness&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23c64"&gt;&lt;b&gt;#c64&lt;/b&gt;&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23demoscene"&gt;#demoscene&lt;/a&gt;</content>
+    <updated>2009-08-05T20:26:26Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/340897397/logo_unten_transparent_80_normal.png"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>en</twitter:lang>
+    <author>
+      <name>falingo (Michael)</name>
+      <uri>http://twitter.com/falingo</uri>
+    </author>
+  </entry>
+  <entry>
+    <id>tag:search.twitter.com,2005:3151332602</id>
+    <published>2009-08-05T19:35:28Z</published>
+    <link type="text/html" rel="alternate" href="http://twitter.com/emju/statuses/3151332602"/>
+    <title>RT @SilwerSurfer: Bauernfeind @3Sat ! #Politik #zensursula #piraten #sch&#228;uble #C64</title>
+    <content type="html">RT &lt;a href="http://twitter.com/SilwerSurfer"&gt;@SilwerSurfer&lt;/a&gt;: Bauernfeind &lt;a href="http://twitter.com/3Sat"&gt;@3Sat&lt;/a&gt; ! &lt;a href="http://search.twitter.com/search?q=%23Politik"&gt;#Politik&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23zensursula"&gt;#zensursula&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23piraten"&gt;#piraten&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23sch%C3%A4uble"&gt;#sch&#228;uble&lt;/a&gt; &lt;a href="http://search.twitter.com/search?q=%23C64"&gt;&lt;b&gt;#C64&lt;/b&gt;&lt;/a&gt;</content>
+    <updated>2009-08-05T19:35:28Z</updated>
+    <link type="image/png" rel="image" href="http://s3.amazonaws.com/twitter_production/profile_images/324556380/twitterProfilePhoto_normal.jpg"/>
+    <twitter:source>&lt;a href="http://twitter.com/"&gt;web&lt;/a&gt;</twitter:source>
+    <twitter:lang>de</twitter:lang>
+    <author>
+      <name>emju (EMJU)</name>
+      <uri>http://twitter.com/emju</uri>
+    </author>
+  </entry>
+</feed>

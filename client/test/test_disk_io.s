@@ -183,7 +183,7 @@ tmp_buffer_ptr=read_byte_from_buffer+1
   lda $ffff
   inc tmp_buffer_ptr
   bne :+
-  inc tmp_buffer_ptr
+  inc tmp_buffer_ptr+1
 :  
   pha
   pla ;reload A so flags are set correctly

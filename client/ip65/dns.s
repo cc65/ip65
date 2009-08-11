@@ -126,8 +126,12 @@ dns_set_hostname:
   
 @next_hostname_byte:  
   lda (dns_hostname),y          ;get next char in hostname
-  cmp #0                          ;are we at the end of the string?
+  beq @end_of_hostname
+  cmp #'/'                           ; allow hostnames to be terminated by "/" or ":" to help with URL parsing
+  beq @end_of_hostname
+  cmp #':'
   bne :+
+@end_of_hostname:  
   inc hostname_copied
   bne @set_length_of_last_label
 :

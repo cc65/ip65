@@ -30,6 +30,7 @@ all: \
 	testdottedquad.pg2\
 	testdottedquad.prg\
 	test_tcp.prg \
+	test_parser.prg \
   
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
