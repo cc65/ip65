@@ -53,14 +53,16 @@ init:
   jsr test_url_parse 
   ldax #url_4
   jsr test_url_parse 
+  jsr wait_key
   ldax #url_5
   jsr test_url_parse 
   ldax #url_6
   jsr test_url_parse 
   ldax #url_7
   jsr test_url_parse 
-  ldax #url_8
+  ldax #url_8  
   jsr test_url_parse 
+  jsr wait_key
   ldax #url_9
   jsr test_url_parse 
   ldax #url_a
@@ -135,12 +137,21 @@ print_parsed_url:
   jsr print_hex
   lda url_port
   jsr print_hex
+  ldax #type
+  jsr print
+  lda url_resource_type
+  jsr print_a
   jsr print_cr
   ldax #selector
   jsr  print
   ldax selector_ptr
   jsr print
   jmp print_cr
+  
+wait_key:
+  ldax #press_a_key
+  jsr print
+  jmp get_key
   
 .data
 
@@ -162,10 +173,10 @@ url_4:
 .byte "gopher://gopher.floodgap.com/",0
 
 url_5: 
-.byte "gopher://gopher.floodgap.com/goober",0
+.byte "gopher://10.5.1.164/0goober",0
 
 url_6: 
-.byte "gopher://gopher.floodgap.com:7070/goober",0
+.byte "gopher://gopher.floodgap.com:7070/7/goober",0
 
 url_7: 
 .byte "www.jamtronix.com",0
@@ -177,7 +188,7 @@ url_9:
 .byte "gopher.floodgap.com",0
 
 url_a: 
-.byte "gopher.floodgap.com:70",0
+.byte "10.5.1.123:70",0
 
 url_b: 
 .byte "gopher.floodgap.com:80",0
@@ -189,7 +200,9 @@ url_c:
 parsing: .asciiz "PARSING "
 ip: .asciiz "IP: "
 port: .asciiz " PORT: $"
+type: .asciiz " TYPE:"
 selector: .asciiz "SELECTOR: "
+press_a_key: .asciiz "PRESS ANY KEY TO CONTINUE"
 
 atom_file:
 ;.incbin "atom_test.xml"

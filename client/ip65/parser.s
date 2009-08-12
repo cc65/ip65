@@ -20,7 +20,7 @@ search_string=copy_dest
 
 .bss
 int_value: .res 2
-
+temp_ptr: .res 2
 .data
 get_next_byte:
 current_string_ptr=get_next_byte+1
@@ -48,8 +48,11 @@ parser_init:
 ;inputs: AX= pointer to (null terminated) string to search for 
 ;outputs: sec if search string not found
 ; if clc, AX = pointer to first byte after string specified 
+; if sec (i.e. no match found), pointer stays in same place
 parser_skip_next:
   stax  search_string
+  ldax  current_string_ptr
+  stax temp_ptr
 @check_string:
   ldy #0
   ldax  current_string_ptr
@@ -75,6 +78,7 @@ parser_skip_next:
  @not_matched:
   jsr get_next_byte
   bne @check_string
-  ldax search_string  
+  ldax  temp_ptr
+  stax current_string_ptr
   sec
   rts

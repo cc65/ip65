@@ -15,11 +15,12 @@
 
 ; convert a string representing a dotted quad (IP address, netmask) into 4 octets
 ; inputs:
-;   AX= pointer to null-terminated string containing dotted quad
+;   AX= pointer to null-terminated (*) string containing dotted quad
 ;         e.g. "192.168.1.0",0
 ; outputs:
 ;   carry flag is set if there was an error, clear otherwise
 ;   dotted_quad_value: will be set to (32 bit) ip address (if no error)
+; (*) NB to assist with url parsing, a ':' or '/' can also terminate the string
 parse_dotted_quad:
     stax  dotted_quad_ptr+1
     
@@ -38,6 +39,10 @@ parse_dotted_quad:
     and #$7F  ;turn off bit 7
     cmp #'.'
     beq @got_dot
+    cmp #':'
+    beq @done
+    cmp #'/'
+    beq @done
     sec
     sbc #'0'
     bcc @error

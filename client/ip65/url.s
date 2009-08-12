@@ -21,7 +21,7 @@
 .export  url_ip
 .export  url_port
 .export  url_selector
-
+.export url_resource_type
 
 target_string=copy_src
 search_string=copy_dest
@@ -33,7 +33,7 @@ selector_buffer=output_buffer
   url_port: .res 2 ;will be set with port number of url
   url_selector: .res 2 ;will be set with address of selector part of URL
   url_type: .res 1
-  
+  url_resource_type: .res 1
   url_type_unknown=0
   url_type_gopher=1
   url_type_http=2
@@ -57,7 +57,7 @@ url_parse:
   sty url_type
   sty url_port
   sty url_port+1
-  
+  sty url_resource_type
 
   jsr skip_to_hostname
   bcc :+
@@ -111,11 +111,6 @@ lda #url_type_gopher
   bpl :-
 
   jsr skip_to_hostname
-  bcc :+
-  ldax url_string
-  jsr parser_init
-:  
-
   
   ;skip over next colon
   ldax #colon
@@ -136,21 +131,28 @@ lda #url_type_gopher
   sta src_ptr
   sta dest_ptr
   lda url_type
-  cmp #url_type_unknown
-  beq @done
+  
+  cmp #url_type_gopher
+  bne @not_gopher  
+  ;first byte after / in a gopher url is the resource type  
+  ldy src_ptr  
+  lda (copy_src),y
+  sta url_resource_type
+  inc src_ptr  
+  jmp @start_of_selector
+@not_gopher:  
   cmp #url_type_http
-  bne @no_get_at_start_of_selector
+  bne @done ; if it's not gopher or http, we don't know how to build a selector
   ldy #3
   sty dest_ptr
 :
   lda get,y
   sta (copy_dest),y
   dey
-  bpl :-
-
-@no_get_at_start_of_selector: 
-  inc dest_ptr
+  bpl :-  
+@start_of_selector: 
   lda #'/'
+  inc dest_ptr  
   jmp @save_first_byte_of_selector
 @copy_one_byte:
   ldy src_ptr  
@@ -159,8 +161,7 @@ lda #url_type_gopher
   inc src_ptr  
 @save_first_byte_of_selector:  
   ldy dest_ptr  
-  sta (copy_dest),y
-  
+  sta (copy_dest),y  
   inc dest_ptr
   bne @copy_one_byte
 @end_of_selector:
