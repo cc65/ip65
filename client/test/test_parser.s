@@ -1,6 +1,5 @@
 .include "../inc/common.i"
 .include "../inc/commonprint.i"
-.include "../ip65/url.s"
 .include "../inc/net.i"
 
 .import print_a
@@ -11,8 +10,11 @@
 .import parser_skip_next
 .importzp copy_src
 .importzp copy_dest
-
-
+.import  url_ip
+.import  url_port
+.import  url_selector
+.import url_resource_type
+.import url_parse
 temp_buff=copy_dest
 
 .bss
@@ -54,6 +56,7 @@ init:
   ldax #url_4
   jsr test_url_parse 
   jsr wait_key
+ 
   ldax #url_5
   jsr test_url_parse 
   ldax #url_6
@@ -63,6 +66,7 @@ init:
   ldax #url_8  
   jsr test_url_parse 
   jsr wait_key
+  
   ldax #url_9
   jsr test_url_parse 
   ldax #url_a
@@ -72,15 +76,15 @@ init:
   ldax #url_c
   jsr test_url_parse 
   
-  rts
+  jsr wait_key
   
 
   ldax #atom_file
   jsr parser_init
   
-  ldax #entry
-  jsr parser_skip_next
-  bcs @done
+;  ldax #entry
+;  jsr parser_skip_next
+;  bcs @done
   
 @next_title:  
   ldax #title
@@ -90,7 +94,7 @@ init:
   jsr print_tag_contents
   jsr print_cr
   
-;  jmp @next_title
+  jmp @next_title
 @done:
   rts
 test_url_parse:
@@ -202,10 +206,10 @@ ip: .asciiz "IP: "
 port: .asciiz " PORT: $"
 type: .asciiz " TYPE:"
 selector: .asciiz "SELECTOR: "
-press_a_key: .asciiz "PRESS ANY KEY TO CONTINUE"
+press_a_key: .byte "PRESS ANY KEY TO CONTINUE",13,0
 
 atom_file:
-;.incbin "atom_test.xml"
+.incbin "atom_test.xml"
 
 
 .byte 0

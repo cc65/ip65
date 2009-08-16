@@ -160,10 +160,10 @@ ip_configured:
   jsr dns_resolve
   bcs @dns_error
 
-  ldy #NB65_DNS_HOSTNAME_IP
-  ldx #4
+  ldy #NB65_DNS_HOSTNAME_IP  
   plax
   stax nb65_params
+  ldx #4
 @copy_dns_ip:
   lda dns_ip,y
   sta (nb65_params),y

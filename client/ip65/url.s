@@ -11,7 +11,7 @@
 .import output_buffer
 .importzp copy_src
 .importzp copy_dest
-
+.import ip65_error
 .import parser_init
 .import parser_skip_next
 .import dns_set_hostname
@@ -22,6 +22,7 @@
 .export  url_port
 .export  url_selector
 .export url_resource_type
+.export url_parse
 
 target_string=copy_src
 search_string=copy_dest

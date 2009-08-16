@@ -29,6 +29,7 @@ ETHOBJS= \
   parser.o \
   string_utils.o \
   telnet.o \
+  url.o \
   arithmetic.o\
   
 all: ip65.lib ip65_tcp.lib

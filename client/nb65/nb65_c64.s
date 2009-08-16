@@ -71,7 +71,7 @@
   .import arp_calculate_gateway_mask
   .import parse_dotted_quad
   .import dotted_quad_value
-   
+  .import parse_integer
   .import get_key_ip65   
   .import cfg_ip
 	.import cfg_netmask
@@ -251,6 +251,7 @@ main_menu:
   jmp @get_key
 
 @exit_to_basic:
+  nb65call #NB65_DEACTIVATE   
   ldax #$fe66 ;do a wam start
   jmp exit_cart_via_ax
 
@@ -521,6 +522,13 @@ cmp #KEYCODE_F7
   bne @not_a_basic_file
 
   .if (BANKSWITCH_SUPPORT=$03)
+  lda $805
+  cmp #$9e  ;opcode for 'SYS'
+  bne @not_a_basic_stub
+  ldax  #$806  ;should point to ascii string containing address that was to be SYSed
+  jsr parse_integer 
+  jmp exit_cart_via_ax ;good luck! 
+@not_a_basic_stub:  
   ldax #cant_boot_basic
   jsr print
   jsr wait_for_keypress
@@ -665,7 +673,7 @@ exit_gopher:
 	.rodata
 
 netboot65_msg: 
-.byte 13,"NB65 - VERSION "
+.byte 13,"NB65 - V"
 .include "nb65_version.i"
 .byte 13,0
 main_menu_msg:
