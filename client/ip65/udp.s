@@ -209,6 +209,7 @@ udp_remove_listener:
 
 	ldy udp_cbcount			; any listeners installed?
 	beq @notfound
+  dey
 @check:
 	lda udp_cbportlo,y		; check if port is handled
 	cmp port
@@ -216,9 +217,8 @@ udp_remove_listener:
 	lda udp_cbporthi,y
 	cmp port + 1
 	beq @remove
-:	iny
-	cpy udp_cbcount
-	bne @check
+:	dey
+	bpl @check
 @notfound:
 	sec
 	rts
