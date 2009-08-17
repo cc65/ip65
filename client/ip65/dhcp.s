@@ -206,6 +206,7 @@ dhcp_init:
 @too_many_messages_sent:
   lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error
+  jsr @bound   ;to remove the listener ( thanks to ShadowM for bug report)
   sec             ;signal an error
   rts
   
