@@ -11,18 +11,34 @@
 .import output_buffer
 .importzp copy_src
 .importzp copy_dest
+.import copymem
+
 .import ip65_error
+.import ip65_process
 .import parser_init
 .import parser_skip_next
 .import dns_set_hostname
 .import dns_resolve
 .import parse_integer
 .import dns_ip
+.import tcp_connect
+.import tcp_send_string
+.import tcp_send_data_len
+.import tcp_callback
+.import tcp_close
+.import tcp_connect_ip
+.import tcp_inbound_data_length
+.import tcp_inbound_data_ptr
+
+
 .export  url_ip
 .export  url_port
 .export  url_selector
 .export url_resource_type
 .export url_parse
+.export url_download
+.export url_download_buffer
+.export url_download_buffer_length
 
 target_string=copy_src
 search_string=copy_dest
@@ -41,6 +57,16 @@ selector_buffer=output_buffer
   
   src_ptr: .res 1
   dest_ptr: .res 1
+  
+  url_download_buffer: .res 2 ; points to a buffer that url will be downloaded into
+  url_download_buffer_length: .res 2  ;length of buffer that url will be downloaded into
+
+  temp_buffer: .res 2  
+  temp_buffer_length: .res 2  
+
+  download_flag: .res 1
+
+
 .code
 
 
@@ -102,7 +128,11 @@ lda #url_type_gopher
   jsr dns_set_hostname
   bcs @exit_with_sec
   jsr dns_resolve
-  bcs @exit_with_sec
+  bcc :+
+  lda #NB65_DNS_LOOKUP_FAILED
+  sta ip65_error
+  jmp @exit_with_sec
+  :
   ;copy IP address
   ldx #3
 :
@@ -138,19 +168,23 @@ lda #url_type_gopher
   ;first byte after / in a gopher url is the resource type  
   ldy src_ptr  
   lda (copy_src),y
+  beq @start_of_selector  
   sta url_resource_type
   inc src_ptr  
   jmp @start_of_selector
 @not_gopher:  
   cmp #url_type_http
-  bne @done ; if it's not gopher or http, we don't know how to build a selector
-  ldy #3
+  beq @build_http_request
+  jmp @done ; if it's not gopher or http, we don't know how to build a selector
+@build_http_request:  
+  ldy #get_length-1
   sty dest_ptr
 :
   lda get,y
   sta (copy_dest),y
   dey
   bpl :-  
+  
 @start_of_selector: 
   lda #'/'
   inc dest_ptr  
@@ -166,6 +200,55 @@ lda #url_type_gopher
   inc dest_ptr
   bne @copy_one_byte
 @end_of_selector:
+
+
+  ldx #1 ;number of CRLF at end of gopher request
+  lda url_type
+  
+  cmp #url_type_http
+  bne @final_crlf
+    
+  ;now the HTTP version number & Host: field
+  ldx #0
+:
+  lda http_version_and_host,x
+  beq :+
+  ldy dest_ptr
+  inc dest_ptr
+  sta (copy_dest),y  
+  inx
+  bne :-  
+:
+
+  
+  ;now copy the host field
+  jsr skip_to_hostname
+  ;AX now pointing at hostname
+  stax copy_src
+  ldax #selector_buffer
+  stax copy_dest
+
+  lda #0
+  sta src_ptr
+  
+@copy_one_byte_of_hostname:
+  ldy src_ptr  
+  lda (copy_src),y
+  beq @end_of_hostname
+  cmp #':'
+  beq @end_of_hostname
+  cmp #'/'
+  beq @end_of_hostname
+  inc src_ptr  
+  ldy dest_ptr  
+  sta (copy_dest),y  
+  inc dest_ptr  
+  bne @copy_one_byte_of_hostname
+@end_of_hostname:
+   
+  ldx #2 ;number of CRLF at end of HTTP request
+  
+@final_crlf:
   ldy dest_ptr
   lda #$0d
   sta (copy_dest),y
@@ -173,11 +256,16 @@ lda #url_type_gopher
   lda #$0a
   sta (copy_dest),y
   iny
+  dex
+  bne @final_crlf
+  
 @done:  
   lda #$00
   sta (copy_dest),y
   ldax #selector_buffer
+  stax url_selector
   clc
+  
   rts
   
 skip_to_hostname:
@@ -186,7 +274,135 @@ skip_to_hostname:
   ldax #colon_slash_slash
   jmp parser_skip_next
   
+  .code
+
+
+;download a resource specified by an URL
+;inputs: 
+;AX = address of URL string
+; url_download_buffer - points to a buffer that url will be downloaded into
+; url_download_buffer_length - length of buffer
+;outputs:
+; sec if an error occured, else buffer pointed at by url_download_buffer is filled with contents 
+; of specified resource (with an extra 2 null bytes at the end),
+; AX = length of resource downloaded.
+url_download:
+  jsr url_parse
+  bcc @url_parsed_ok
+  rts
+@url_parsed_ok:  
+  ldax url_download_buffer
+  stax temp_buffer
+  ldax url_download_buffer_length
+  stax temp_buffer_length
+
+  ldx #3        ; save IP address just retrieved
+: lda url_ip,x
+  sta tcp_connect_ip,x
+  dex
+  bpl :-
+  ldax #url_download_callback
+  stax tcp_callback
+
+  ldax url_port  
+  jsr tcp_connect
+  bcs @error
+
+  ;connected, now send the selector
+  ldx #0
+  stx download_flag
+  ldax url_selector
+  
+  jsr tcp_send_string
+  ;now loop until we're done
+@download_loop:
+  jsr ip65_process
+  lda download_flag
+  beq @download_loop
+  jsr tcp_close
+  clc
+@error:
+  rts
+
+
+  lda #NB65_ERROR_FILE_ACCESS_FAILURE
+  sta ip65_error
+  sec  
+  rts
+  
+  
+  url_download_callback:
+  
+  lda tcp_inbound_data_length+1
+  cmp #$ff
+  bne @not_end_of_file
+@end_of_file:  
+  lda #1
+  sta download_flag
+  
+  ;put a zero byte at the end of the file (in case it was a text file)
+  ldax temp_buffer  
+  stax copy_dest
+  lda #0  
+  tay
+  sta (copy_dest),y  
+  rts
+@not_end_of_file:
+
+;copy this chunk to our input buffer
+  ldax temp_buffer
+  stax copy_dest
+  ldax tcp_inbound_data_ptr
+  stax copy_src
+  sec
+  lda temp_buffer_length
+  sbc tcp_inbound_data_length
+  pha
+  lda temp_buffer_length+1
+  sbc tcp_inbound_data_length+1
+  bcc @would_overflow_buffer
+  sta temp_buffer_length+1
+  pla 
+  sta temp_buffer_length
+  ldax tcp_inbound_data_length
+  jsr  copymem  
+;increment the pointer into the input buffer  
+  clc
+  lda temp_buffer
+  adc tcp_inbound_data_length
+  sta temp_buffer
+  lda temp_buffer+1
+  adc tcp_inbound_data_length+1
+  sta temp_buffer+1  
+;  lda #'*'
+;  jsr print_a
+    
+  rts
+@would_overflow_buffer:
+  pla ;clean up the stack
+  ldax temp_buffer_length
+  jsr  copymem 
+  lda temp_buffer
+  adc temp_buffer_length
+  sta temp_buffer
+  lda temp_buffer+1
+  adc temp_buffer_length+1
+  sta temp_buffer+1  
+  lda #0
+  sta temp_buffer_length
+  sta temp_buffer_length+1
+  rts
+  
+  .rodata
   get: .byte "GET "
+  get_length=4
+  http_version_and_host: .byte " HTTP/1.1",$0d,$0a, "Host: ",0
+;  http_trailer: .byte " HTTP/1.1",$0a,$0a
+;  http_trailer_end:
+;  http_trailer_length=http_trailer_end-http_trailer
+  
   colon_slash_slash: .byte ":/"
   slash: .byte "/",0
   colon: .byte ":",0
+  
+  

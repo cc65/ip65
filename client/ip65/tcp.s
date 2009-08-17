@@ -23,6 +23,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_connect_ip
 .export tcp_send_data_len
 .export tcp_send
+.export tcp_send_string
 .export tcp_close
 .export tcp_listen
 
@@ -368,6 +369,33 @@ tcp_close:
   rts
 
 
+tcp_send_string:
+;send a string over the current tcp connection
+;inputs:
+;   tcp connection should already be opened
+;   AX: pointer to buffer - data up to (but not including)
+; the first nul byte will be sent. max of 255 bytes will be sent.
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+
+  stax tcp_send_data_ptr
+  stax copy_src
+  lda #0
+  tay
+  sta tcp_send_data_len
+  sta tcp_send_data_len+1
+  lda (copy_src),y
+  bne @find_end_of_string
+  rts ; if the string is empty, don't send anything!
+@find_end_of_string:  
+  lda (copy_src),y
+  beq @done  
+  inc tcp_send_data_len
+  iny
+  bne @find_end_of_string
+@done:  
+  ldax tcp_send_data_ptr
+  ;now we can fall through into tcp_send
 tcp_send:
 ;send tcp data
 ;inputs:
@@ -378,6 +406,7 @@ tcp_send:
 ;   carry flag is set if an error occured, clear otherwise
 
   stax tcp_send_data_ptr
+  
 	lda tcp_state
   cmp #tcp_cxn_state_established
   beq @connection_established
@@ -646,8 +675,19 @@ tcp_process:
   bit tcp_inp+tcp_flags_field
   beq @not_reset
   jsr check_current_connection
-  bcs @not_current_connection_on_rst
-  ;connection has been reset so mark it as closed  
+  bcs @not_current_connection_on_rst  
+  ;for some reason, search.twitter.com is sending RSTs with ID=$1234 (i.e. echoing the inbound ID)
+  ;but then keeps the connection open and ends up sending the file.
+  ;so lets ignore a reset with ID=$1234
+  lda ip_inp+ip_id
+  cmp #$34
+  bne @not_invalid_reset
+  lda ip_inp+ip_id+1
+  cmp #$12  
+  bne @not_invalid_reset
+  jmp @send_ack
+@not_invalid_reset:
+  ;connection has been reset so mark it as closed    
   lda #tcp_cxn_state_closed
   sta tcp_state
   lda #NB65_ERROR_CONNECTION_RESET_BY_PEER

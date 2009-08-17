@@ -1,6 +1,4 @@
 ;text file parsing routines
-; first call parser_init
-; then call parser_skip_next
 
 .export parse_integer
 .importzp copy_dest

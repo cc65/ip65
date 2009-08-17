@@ -52,7 +52,8 @@ ip65_error: .res 1  ;last error code
 ;outputs: AX set to a pseudo-random 16 bit number
 ip65_random_word:
   jsr timer_read ;sets AX
-  adc $d018 ;on a c64, this is the raster register
+;  adc $d018 ;on a c64, this is the raster register
+  adc $d41b; on a c64, this is a 'random' number from the SID
   pha
   adc ip65_ctr_arp
   ora #$08    ;make sure we grab at least 8 bytes from eth_inp

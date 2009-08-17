@@ -209,7 +209,7 @@ selector: .asciiz "SELECTOR: "
 press_a_key: .byte "PRESS ANY KEY TO CONTINUE",13,0
 
 atom_file:
-.incbin "atom_test.xml"
+;.incbin "atom_test.xml"
 
 
 .byte 0
