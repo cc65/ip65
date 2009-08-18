@@ -1,7 +1,6 @@
 .include "../inc/common.i"
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
-;.include "../ip65/url_download.s"
 
 .import print_a
 .import get_key
