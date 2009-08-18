@@ -9,7 +9,7 @@ require 'ftools'
 WORKING_DIR=File.expand_path(File.dirname(__FILE__)+"/netboot65")
 SRC_DIR=File.expand_path(File.dirname(__FILE__)+"/../")
 VERSION_FILE=File.expand_path(File.dirname(__FILE__)+"/version_number.txt")
-VERSION_INC_FILE=File.expand_path(File.dirname(__FILE__)+"/../client/nb65/nb65_version.i")
+VERSION_INC_FILE=File.expand_path(File.dirname(__FILE__)+"/../client/inc/version.i")
 version_string=File.open(VERSION_FILE).read
 
 ["","c64","lib","bin","boot","doc","inc","examples"].each do |dir_suffix|
@@ -23,7 +23,7 @@ end
 #["client/nb65/nb65_rrnet.bin","c64/"],
 ["client/nb65/nb65_c64_ram.prg","c64/"],
 ["client/nb65/nb65_std_cart.bin","c64/"],
-\["client/nb65/nb65_tcp_cart.bin","c64/"],
+["client/nb65/nb65_tcp_cart.bin","c64/"],
 ["client/nb65/d64_upload.prg","boot/"],
 ["server/lib/tftp_server.rb","lib"],
 ["server/lib/file_list.rb","lib"],

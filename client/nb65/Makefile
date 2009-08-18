@@ -9,7 +9,7 @@ INCFILES=\
   ../inc/net.i\
   ../inc/menu.i\
   ../inc/nb65_constants.i\
-  nb65_version.i\
+  ../inc/version.i\
 
 IP65LIB=../ip65/ip65.lib
 

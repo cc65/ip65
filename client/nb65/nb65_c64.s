@@ -674,7 +674,7 @@ exit_gopher:
 
 netboot65_msg: 
 .byte 13,"NB65 - V"
-.include "nb65_version.i"
+.include "../inc/version.i"
 .byte 13,0
 main_menu_msg:
 .byte 13,"             MAIN MENU",13,13

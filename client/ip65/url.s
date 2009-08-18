@@ -8,11 +8,13 @@
   .include "../inc/nb65_constants.i"
 .endif
 
+TIMEOUT_SECONDS=15
+
 .import output_buffer
 .importzp copy_src
 .importzp copy_dest
 .import copymem
-
+.import timer_read
 .import ip65_error
 .import ip65_process
 .import parser_init
@@ -57,7 +59,7 @@ selector_buffer=output_buffer
   
   src_ptr: .res 1
   dest_ptr: .res 1
-  
+  timeout_counter: .res 1
   url_download_buffer: .res 2 ; points to a buffer that url will be downloaded into
   url_download_buffer_length: .res 2  ;length of buffer that url will be downloaded into
 
@@ -211,7 +213,7 @@ lda #url_type_gopher
   ;now the HTTP version number & Host: field
   ldx #0
 :
-  lda http_version_and_host,x
+  lda http_preamble,x
   beq :+
   ldy dest_ptr
   inc dest_ptr
@@ -256,9 +258,10 @@ lda #url_type_gopher
   lda #$0a
   sta (copy_dest),y
   iny
+  sty dest_ptr
   dex
   bne @final_crlf
-  
+
 @done:  
   lda #$00
   sta (copy_dest),y
@@ -295,7 +298,8 @@ url_download:
   stax temp_buffer
   ldax url_download_buffer_length
   stax temp_buffer_length
-
+  jsr put_zero_at_end_of_dl_buffer
+  
   ldx #3        ; save IP address just retrieved
 : lda url_ip,x
   sta tcp_connect_ip,x
@@ -314,11 +318,19 @@ url_download:
   ldax url_selector
   
   jsr tcp_send_string
+  jsr timer_read
+  txa
+  adc #TIMEOUT_SECONDS*4 ;what value shoul trigger the timeout?
+  sta timeout_counter
   ;now loop until we're done
 @download_loop:
   jsr ip65_process
+  jsr timer_read
+  cpx timeout_counter
+  beq @timeout
   lda download_flag
   beq @download_loop
+@timeout:  
   jsr tcp_close
   clc
 @error:
@@ -335,20 +347,21 @@ url_download:
   
   lda tcp_inbound_data_length+1
   cmp #$ff
-  bne @not_end_of_file
+  bne not_end_of_file
 @end_of_file:  
   lda #1
   sta download_flag
-  
-  ;put a zero byte at the end of the file (in case it was a text file)
+
+put_zero_at_end_of_dl_buffer:
+  ;put a zero byte at the end of the file 
   ldax temp_buffer  
   stax copy_dest
   lda #0  
   tay
   sta (copy_dest),y  
   rts
-@not_end_of_file:
-
+  
+not_end_of_file:
 ;copy this chunk to our input buffer
   ldax temp_buffer
   stax copy_dest
@@ -374,10 +387,8 @@ url_download:
   lda temp_buffer+1
   adc tcp_inbound_data_length+1
   sta temp_buffer+1  
-;  lda #'*'
-;  jsr print_a
-    
-  rts
+  jmp put_zero_at_end_of_dl_buffer
+
 @would_overflow_buffer:
   pla ;clean up the stack
   ldax temp_buffer_length
@@ -391,15 +402,18 @@ url_download:
   lda #0
   sta temp_buffer_length
   sta temp_buffer_length+1
-  rts
+  jmp put_zero_at_end_of_dl_buffer
   
   .rodata
   get: .byte "GET "
   get_length=4
-  http_version_and_host: .byte " HTTP/1.1",$0d,$0a, "Host: ",0
-;  http_trailer: .byte " HTTP/1.1",$0a,$0a
-;  http_trailer_end:
-;  http_trailer_length=http_trailer_end-http_trailer
+  http_preamble: 
+    .byte " HTTP/1.1",$0d,$0a
+    .byte "User-Agent: IP65/"
+    .include "../inc/version.i"
+    .byte $0d,$0a
+    .byte "Connection: close",$0d,$0a
+    .byte  "Host: ",0
   
   colon_slash_slash: .byte ":/"
   slash: .byte "/",0
