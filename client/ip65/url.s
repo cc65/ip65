@@ -408,7 +408,7 @@ not_end_of_file:
   get: .byte "GET "
   get_length=4
   http_preamble: 
-    .byte " HTTP/1.1",$0d,$0a
+    .byte " HTTP/1.0",$0d,$0a
     .byte "User-Agent: IP65/"
     .include "../inc/version.i"
     .byte $0d,$0a
