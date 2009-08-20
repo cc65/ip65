@@ -437,6 +437,35 @@ ip_configured:
     nonzero_octets: .res 1
   .code
 
+  cpy #NB65_DOWNLOAD_RESOURCE
+  bne :+  
+.import url_download
+.import url_download_buffer
+.import url_download_buffer_length
+
+
+  ldy #NB65_URL_DOWNLOAD_BUFFER
+  lda (nb65_params),y
+  sta url_download_buffer
+  iny
+  lda (nb65_params),y
+  sta url_download_buffer+1
+
+  ldy #NB65_URL_DOWNLOAD_BUFFER_LENGTH
+  lda (nb65_params),y
+  sta url_download_buffer_length
+  iny
+  lda (nb65_params),y
+  sta url_download_buffer_length+1
+  
+  ldy #NB65_URL+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y
+  jmp url_download
+:
+
   cpy #NB65_TCP_CONNECT
   bne :+  
   .import tcp_connect

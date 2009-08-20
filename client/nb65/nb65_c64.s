@@ -79,6 +79,7 @@
 	.import cfg_dns
   .import cfg_tftp_server
   
+
   .import print_dotted_quad
   .import print_hex
   .import print_errorcode
@@ -91,7 +92,8 @@
   .import gateway_msg
   .import dns_server_msg
   .import tftp_server_msg
- 
+  .import press_a_key_to_continue
+  
   .import print_a
   .import print_cr
   .import print
@@ -102,6 +104,10 @@
   .import  __DATA_LOAD__
   .import  __DATA_RUN__
   .import  __DATA_SIZE__
+  .import  __SELF_MODIFIED_CODE_LOAD__
+  .import  __SELF_MODIFIED_CODE_RUN__
+  .import  __SELF_MODIFIED_CODE_SIZE__
+    
   .import cfg_tftp_server
   tftp_dir_buffer = $6020
  nb65_param_buffer = $6000
@@ -182,6 +188,18 @@ init:
   stax copy_dest
   ldax #__DATA_SIZE__
   jsr copymem
+
+
+;relocate the self-modifying code (if necessary)
+.if (BANKSWITCH_SUPPORT=$03)
+  ldax #__SELF_MODIFIED_CODE_LOAD__
+  stax copy_src
+  ldax #__SELF_MODIFIED_CODE_RUN__
+  stax copy_dest
+  ldax #__SELF_MODIFIED_CODE_SIZE__
+  jsr copymem
+.endif
+
 
 ;copy the RAM stub to RAM
   ldax #nb65_ram_stub
@@ -739,8 +757,6 @@ tftp_file:
 no_files_on_server:
   .byte "NO MATCHING FILES",13,0
 
-press_a_key_to_continue:
-  .byte "PRESS A KEY TO CONTINUE",13,0
 
 resolving:
   .byte "RESOLVING ",0

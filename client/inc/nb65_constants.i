@@ -46,6 +46,8 @@ NB65_TFTP_CALLBACK_UPLOAD      EQU $25 ;upload: AX points to a TFTP transfer par
 NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
                                    ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
 
+NB65_DOWNLOAD_RESOURCE         EQU $40 ;inputs: AX points to a URL download structure, outputs: none
+
 
 NB65_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
@@ -58,6 +60,7 @@ NB65_INPUT_HOSTNAME            EQU $91 ;no inputs, outputs: AX = pointer to host
 NB65_INPUT_PORT_NUMBER         EQU $92 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
 
 NB65_BLOCK_COPY                EQU $A0 ;inputs: AX points to a block copy structure, outputs: none
+
 
 NB65_GET_LAST_ERROR            EQU $FF ;no inputs, outputs A  EQU error code (from last function that set the global error value, not necessarily the
                                    ;last function that was called)
@@ -109,6 +112,17 @@ NB65_LOCAL_PORT      EQU $06                          ;2 byte port number of loc
 NB65_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
                                                       ; in a TCP connection, if the length is $FFFF, this actually means "end of connection"
 NB65_PAYLOAD_POINTER EQU $0A                          ;2 byte pointer to payload of packet (after all headers)
+
+
+;offsets in URL download structure
+;inputs: 
+NB65_URL                         EQU $00              ;2 byte pointer to null terminated URL (NB - must be ASCII not "native" string)
+NB65_URL_DOWNLOAD_BUFFER         EQU $02              ;2 byte pointer to buffer that resource specified by URL will be downloaded into
+NB65_URL_DOWNLOAD_BUFFER_LENGTH  EQU $04              ;2 byte length of buffer (download will truncate when buffer is full)
+
+;AX = address of URL string
+; url_download_buffer - points to a buffer that url will be downloaded into
+; url_download_buffer_length - length of buffer
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                    EQU $80

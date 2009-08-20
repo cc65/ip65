@@ -21,7 +21,7 @@
  .export tftp_server_msg
  .import ip65_error
  .export print_errorcode
-
+ .export press_a_key_to_continue
  .import arp_cache
  .importzp ac_size
   
@@ -379,3 +379,5 @@ dns_lookup_failed_msg:
 error_code:  
   .asciiz "ERROR CODE: "
 
+press_a_key_to_continue:
+  .byte "PRESS A KEY TO CONTINUE",13,0

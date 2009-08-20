@@ -19,7 +19,7 @@ INCFILES=\
   ../inc/net.i\
 
 all: \
-	ip65test.dsk \
+#	ip65test.dsk \
 	testdns.prg \
 	test_disk_io.prg \
 	test_disk_io.d64 \

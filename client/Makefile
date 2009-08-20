@@ -1,10 +1,10 @@
 TARGET=c64
 
 
-.PHONY: ip65 drivers test clean distclean nb65 kipper
+.PHONY: ip65 drivers test clean distclean nb65 kipper examples
 
 
-all: ip65 drivers test nb65 kipper
+all: ip65 drivers test nb65 kipper examples
 
 ip65:
 	make -C ip65 all
@@ -14,6 +14,9 @@ drivers:
 
 kipper:
 	make -C kipper all
+
+examples:
+	make -C examples all
 
 test:
 	make -C test TARGET=$(TARGET) all

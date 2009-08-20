@@ -1,26 +1,15 @@
 
 .include "../inc/common.i"
-.include "../inc/commonprint.i"
-.include "../inc/net.i"
+
 .ifndef NB65_API_VERSION_NUMBER
   .define EQU     =
   .include "../inc/nb65_constants.i"
 .endif
 
+print_a = $ffd2
 
-.import get_key
-.import copymem
-.importzp copy_src
-.importzp copy_dest
-
-temp_buff=copy_dest
-
-.import url_download
-.import url_download_buffer
-.import url_download_buffer_length
 .import parser_init
 .import parser_skip_next
-
 
 SCREEN_RAM 	= $0400
 COLOUR_RAM 	= $d800
@@ -33,6 +22,9 @@ VIC_IRQ_FLAG	= $d019
 
 IRQ_VECTOR=$fffe
 
+MUSIC_BASE=$1000 ;where we relocate our music routine to
+PLAYER_INIT=0
+PLAYER_PLAY=3
 
 BORDER_COLOR	= $d020
 BACKGROUND_COLOR_0 = $d021
@@ -86,23 +78,14 @@ LIGHT_GRAY  = 15
 	beq	@loop
 .endmacro
 
-.bss
-current_input_ptr_ptr: .res 2
-param_offset: .res 1
+.macro  nb65call function_number
+  ldy function_number
+  jsr NB65_DISPATCH_VECTOR   
+.endmacro
 
-scroll_state: .res 1
-
-download_buffer:
-download_buffer_length=7600
- .res download_buffer_length
-
-scroll_buffer_0:
-  .res 2000
-
-scroll_buffer_1:
-  .res 2000
-
-string_offset: .res 1
+.zeropage
+temp_buff: .res 2
+pptr: .res 2
 
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
@@ -122,8 +105,42 @@ basicstub:
 
 init:
 
-  jsr ip65_init
-  jsr dhcp_init 
+  ldax #NB65_CART_SIGNATURE  ;where signature should be in cartridge (if cart is banked in)
+  jsr  look_for_signature
+  bcc @found_nb65_signature
+
+  ldax #NB65_RAM_STUB_SIGNATURE  ;where signature should be in a RAM stub
+  jsr  look_for_signature
+  bcs @nb65_signature_not_found
+  jsr NB65_RAM_STUB_ACTIVATE     ;we need to turn on NB65 cartridge
+  jmp @found_nb65_signature
+  
+@nb65_signature_not_found:
+  ldax #nb65_api_not_found_message
+  jsr print
+  rts
+@found_nb65_signature:
+
+  lda NB65_API_VERSION
+  cmp #02
+  bpl @version_ok
+  ldax #incorrect_version
+  jsr print
+  jmp reset_after_keypress    
+@version_ok:
+  ldax #init_msg
+  jsr print
+  nb65call #NB65_INITIALIZE
+	bcc @init_ok
+  jsr print_cr
+  ldax #failed_msg
+  jsr print
+  jsr print_cr
+  jsr print_errorcode
+  jmp reset_after_keypress    
+@init_ok:
+
+;if we got here, we have found the NB65 API and initialised the IP stack
   
   jsr setup_static_scroll_text  
 
@@ -134,8 +151,41 @@ init:
   lda #YELLOW
   sta BACKGROUND_COLOR_0
 
+
+
+  ;copy our music data up to a temp buffer (in case it gets overwritten by 
+  ;one of the other unpacking moves)
+  ldax #musicdata+2 ;skip over the 2 byte address
+  stax nb65_param_buffer+NB65_BLOCK_SRC
+  ldax #download_buffer
+  stax nb65_param_buffer+NB65_BLOCK_DEST
+  ldax #musicdata_size-2 ;don't copy  the 2 byte address
+  stax nb65_param_buffer+NB65_BLOCK_SIZE    
+  ldax #nb65_param_buffer
+  nb65call #NB65_BLOCK_COPY
+
+  ;copy our font data and the sprite data to $2000..$2fff
+  ldax #charset_font
+  stax nb65_param_buffer+NB65_BLOCK_SRC
+  ldax #$2000
+  stax nb65_param_buffer+NB65_BLOCK_DEST
+  ldax #MUSIC_BASE
+  stax nb65_param_buffer+NB65_BLOCK_SIZE    
+  ldax #nb65_param_buffer
+  nb65call #NB65_BLOCK_COPY
   
-  lda #<(charset_font >>10)+$10
+  ;should now be now safe to copy the music data back down 
+  ;copy our music data to $1000..$1fff
+  ldax #download_buffer
+  stax nb65_param_buffer+NB65_BLOCK_SRC
+  ldax #MUSIC_BASE
+  stax nb65_param_buffer+NB65_BLOCK_DEST
+  ldax #musicdata_size-2 ;don't copy  the 2 byte address
+  stax nb65_param_buffer+NB65_BLOCK_SIZE    
+  ldax #nb65_param_buffer
+  nb65call #NB65_BLOCK_COPY
+
+  lda #$18 ; use charset at $2000
   sta VIC_MEMORY_CTRL
 
 
@@ -158,14 +208,22 @@ init:
 
 
   ;copy KERNAL to the RAM underneath, in case any ip65 routines need it
-  
   ldax #$e000
-  stax copy_src
-  stax copy_dest
+  stax nb65_param_buffer+NB65_BLOCK_SRC
+  stax nb65_param_buffer+NB65_BLOCK_DEST
   ldax #$1FFF
-  
-  jsr copymem
+  stax nb65_param_buffer+NB65_BLOCK_SIZE    
+  ldax #nb65_param_buffer
+  nb65call #NB65_BLOCK_COPY
 
+  ;copy NB65 cart to the RAM underneath, so we can swap it out and modify the IRQ vector
+  ldax #$8000
+  stax nb65_param_buffer+NB65_BLOCK_SRC
+  stax nb65_param_buffer+NB65_BLOCK_DEST
+  ldax #$4000
+  stax nb65_param_buffer+NB65_BLOCK_SIZE    
+  ldax #nb65_param_buffer
+  nb65call #NB65_BLOCK_COPY
 
 
 	lda	#$35   	;we turn off the BASIC and KERNAL rom here, so we can overwrite the IRQ vector at $fffe
@@ -173,6 +231,9 @@ init:
               ;SID/VICII/etc are visible
 
   jsr setup_sprites
+  
+  jsr setup_music
+
   
 	jsr	set_next_irq_jump
 	cli		;enable maskable interrupts again
@@ -189,26 +250,28 @@ init:
 ;now download the feed
 @download_feed:
 
-  ldax #download_buffer
-  stax url_download_buffer
-  ldax #download_buffer_length
-  stax url_download_buffer_length
   ldax #feed_url
-  jsr url_download
+  stax nb65_param_buffer+NB65_URL
+  ldax #download_buffer
+  stax nb65_param_buffer+NB65_URL_DOWNLOAD_BUFFER
+  ldax #download_buffer_length
+  stax nb65_param_buffer+NB65_URL_DOWNLOAD_BUFFER_LENGTH
+  ldax #nb65_param_buffer
+  nb65call #NB65_DOWNLOAD_RESOURCE
   
+  bcs @download_feed  ;if at first we don't succeed, try try again
   
   lda #1
   sta scroll_state
 
   ldax #scroll_buffer_1
   stax current_output_ptr
-  jsr emit_titles
-
+;  jsr emit_titles
   ldax #scroll_buffer_1
   stax current_input_ptr_ptr  ;will get picked up once we have finished going through the message once
-
+ 
 @endless_loop:
-  jsr ip65_process
+  jsr NB65_PERIODIC_PROCESSING_VECTOR
 	jmp	@endless_loop
 	
 reset_input_buffer:
@@ -216,8 +279,31 @@ reset_input_buffer:
   stax current_input_ptr
   rts
 
+;look for NB65 signature at location pointed at by AX
+look_for_signature:
+  stax temp_buff
+  ldy #3
+@check_one_byte:
+  lda (temp_buff),y
+  cmp nb65_signature,y
+  bne @bad_match  
+  dey 
+  bpl @check_one_byte  
+  clc
+  rts
+@bad_match:
+  sec
+  rts
+
+
+;set up the  tune
+setup_music:
+  lda #$00                    ;init subtune 0
+  jsr MUSIC_BASE+PLAYER_INIT
+  rts
 
 setup_sprites:
+
   ;turn on all 8 sprites
   lda #$FF
   sta $d015
@@ -242,7 +328,7 @@ setup_sprites:
   lda sprite_text,x
   sbc #'A'
   clc
-  adc #<(sprite_font/64)
+  adc #<($2800/64)  ;sprite font should be relocated to $2000
   sta SCREEN_RAM+$03f8,x
   dex
   bpl @setup_sprite
@@ -467,7 +553,7 @@ setup_static_scroll_text:
 
 @loaded_offset:  
   sta param_offset
-  jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
+  nb65call #NB65_GET_IP_CONFIG
   adc param_offset
   bcc :+
   inx
@@ -557,6 +643,24 @@ emit_decimal:  ;emit byte in A as a decimal number
   
   rts
 
+reset_after_keypress:
+  ldax #press_a_key_to_continue    
+  jsr print
+@wait_key:
+  jsr $f142 ;not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
+  beq @wait_key
+  jmp $fce2   ;do a cold start
+
+print_errorcode:
+  ldax #error_code
+  jsr print
+  nb65call #NB65_GET_LAST_ERROR
+  nb65call #NB65_PRINT_HEX
+  jmp print_cr
+
+
+
+
 top_sprite_color_irq:
   start_irq
   wait_next_raster
@@ -572,12 +676,26 @@ bottom_sprite_color_irq:
   inc $d026 ;sprite multicolor register 1
 	jmp	exit_from_irq
 
+
+update_nb65_counters_irq:
+  start_irq
+  jsr NB65_VBL_VECTOR
+	jmp	exit_from_irq
+
+
+play_music_irq:
+	inc	BORDER_COLOR
+  start_irq
+  jsr MUSIC_BASE+PLAYER_PLAY  
+  dec	BORDER_COLOR
+	jmp	exit_from_irq
+
 emit_titles:
   ldax #download_buffer
   jsr parser_init
 @next_title:  
   ldax #title
-  jsr parser_skip_next
+  jsr parser_skip_next  
   bcs @done
   
   jsr emit_tag_contents
@@ -589,6 +707,8 @@ emit_titles:
   jsr emit_a
   jmp @next_title
 @done:
+  lda #0
+  jsr emit_a
   rts
 
 emit_tag_contents:
@@ -638,7 +758,25 @@ emit_tag_contents:
 @done:
   rts
 
+print:
+	sta pptr
+	stx pptr + 1
+	
+@print_loop:
+  ldy #0
+  lda (pptr),y
+	beq @done_print
+	jsr print_a
+	inc pptr
+	bne @print_loop
+  inc pptr+1
+  bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
+@done_print:
+  rts
 
+print_cr:
+  lda #13
+  jmp print_a
 
 .data
 
@@ -674,14 +812,18 @@ raster_jump_table:
 	;table needs to be sorted by scanlines
 	.byte	$0,$01
   .word scroll_text_irq
-  .byte	$0,$1b
-;  .word top_sprite_color_irq
-; 	.byte	$0,$20
+ 	.byte	$0,$20
   .word pixel_scroll_irq
- 	.byte	$0,$80
-;  .word bottom_sprite_color_irq
-; 	.byte	$0,255
-  .word move_sprites_irq
+
+ 	.byte	$0,$30
+  .word update_nb65_counters_irq
+ 
+  .byte	$0,$80
+  .word play_music_irq
+
+
+ 	.byte	$80,$05
+    .word move_sprites_irq
 
 	.byte	$ff	;end of list
 
@@ -703,7 +845,7 @@ scroll_template:
 sprite_text:
 .byte  "COMATOMX"
 
-.byte " configured via dhcp - ip: %i / gateway: %g / dns server %d / polling %f /"
+.byte " / ip: %i / gateway: %g / dns server %d / polling %f /"
 .byte " ",0
 
 
@@ -714,8 +856,59 @@ feed_url:
 title: 
 .byte "<title>",0
 
-.segment "VIC_DATA"
+nb65_api_not_found_message:
+  .byte "ERROR - NB65 API NOT FOUND.",13,0
+incorrect_version:
+  .byte "ERROR - NB65 API MUST BE AT LEAST VERSION 2.",13,0
+
+failed_msg:
+	.byte "FAILED", 0
+
+ok_msg:
+	.byte "OK", 0
+ 
+
+init_msg:
+  .byte " INITIALIZING ",0
+
+press_a_key_to_continue:
+  .byte "PRESS A KEY TO CONTINUE",13,0
+
+nb65_signature:
+.byte $4E,$42,$36,$35  ; "NB65"  - API signature
+
+error_code:  
+  .asciiz "ERROR CODE: "
+
 charset_font:
 	 .incbin "font16x8.bin"
 sprite_font:
   .incbin "spud_letters.spr"
+musicdata:
+;.incbin "tune.bin"
+.incbin "powertrain.bin"
+musicdata_size=*-musicdata
+
+.segment "SAFE_BSS"
+;we want our variables to start at $3000, out of the way of our music player and the font data
+current_input_ptr_ptr: .res 2
+param_offset: .res 1
+
+temp_bin: .res 1
+temp_bcd: .res 2
+
+scroll_state: .res 1
+
+nb65_param_buffer: .res $20  
+
+download_buffer:
+download_buffer_length=4000
+ .res download_buffer_length
+
+scroll_buffer_0:
+  .res 1000
+
+scroll_buffer_1:
+  .res 2000
+
+string_offset: .res 1

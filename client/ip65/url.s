@@ -1,4 +1,4 @@
-;routine for parsing a URL
+;routines for parsing a URL, and downloading an URL
 
 
 .include "../inc/common.i"
@@ -46,7 +46,8 @@ target_string=copy_src
 search_string=copy_dest
 selector_buffer=output_buffer
 
-.bss
+.segment "TCP_VARS"
+
   url_string: .res 2 
   url_ip: .res 4    ;will be set with ip address of host in url
   url_port: .res 2 ;will be set with port number of url
@@ -277,7 +278,6 @@ skip_to_hostname:
   ldax #colon_slash_slash
   jmp parser_skip_next
   
-  .code
 
 
 ;download a resource specified by an URL
@@ -290,7 +290,7 @@ skip_to_hostname:
 ; of specified resource (with an extra 2 null bytes at the end),
 ; AX = length of resource downloaded.
 url_download:
-  jsr url_parse
+  jsr url_parse  
   bcc @url_parsed_ok
   rts
 @url_parsed_ok:  

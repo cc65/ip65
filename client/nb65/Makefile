@@ -22,7 +22,7 @@ APPLE2PROGLIB=../drivers/apple2prog.lib
 BOOTA2.PG2=../../server/boot/BOOTA2.PG2
   
 #all:  utherboot.dsk $(BOOTA2.PG2)  nb65_rrnet.bin   nb65_std_cart.bin nb65_c64_ram.prg d64_upload.prg c64boot.d64 d64_upload.d64
-all:  nb65_std_cart.bin nb65_tcp_cart.bin
+all:  nb65_std_cart.bin nb65_tcp_cart.bin nb65_tcp_cart_rr.bin
 
 nb65_c64_ram.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=0 $(AFLAGS) -o $@ $<
@@ -61,6 +61,11 @@ nb65_rrnet.bin: nb65_rrnet.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.c
 	$(LD) -m nb65_rrnet.map -Ln nb65_rr.lab -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8193
 
+nb65_tcp_cart_rr.bin: nb65_tcp_cart.bin 
+	cp crt8040.obj rrnet_header.bin	
+	cat rrnet_header.bin nb65_tcp_cart.bin > nb65_tcp_cart_rr.bin
+	ruby fix_cart.rb $@ 32768
+  
 utherboot.pg2: utherboot.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2language_card.cfg
 	$(LD) -m utherboot.map -C ../cfg/a2language_card.cfg -o $@  $< $(IP65LIB) $(APPLE2PROGLIB)  
 

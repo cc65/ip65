@@ -19,9 +19,9 @@ search_string=copy_dest
 .endif
 
 .bss
-int_value: .res 2
 temp_ptr: .res 2
-.data
+
+.segment "SELF_MODIFIED_CODE"
 get_next_byte:
 current_string_ptr=get_next_byte+1
   lda $ffff

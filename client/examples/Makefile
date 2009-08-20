@@ -6,9 +6,8 @@ AFLAGS=
 
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
-
-C64PROGLIB=../drivers/c64prog.lib
-
+#C64PROGLIB=../drivers/c64prog.lib
+#NT2PLAY=nt2play.o
 INCFILES=\
   ../inc/common.i\
   ../inc/commonprint.i\
@@ -17,18 +16,20 @@ INCFILES=\
 all: \
 	comatomx.prg \
 
-%.o: %.s sine_data.i 
+%.o: %.s 
+	$(AS) $(AFLAGS) $<
+
+comatomx.o: comatomx.s sine_data.i 
 	$(AS) $(AFLAGS) $<
 
 sine_data.i: make_sine_data.rb
 	ruby make_sine_data.rb
   
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
-
+comatomx.prg: comatomx.o nt2play.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  comatomx.map -vm -C ../cfg/c64prg.cfg -o  comatomx.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
+	cp comatomx.prg ../../server/boot/
 clean:
-	rm -f *.o *.pg2 *.prg
-	rm -f ip65test.dsk
+	rm -f *.o *.pg2 *.prg *.map
   
 distclean: clean
 	rm -f *~
