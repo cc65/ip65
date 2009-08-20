@@ -41,10 +41,12 @@ end
  
  filebytes=File.open(filename,"rb").read
 
- if !(filebytes[0x09,4]=="NB65") then
+start_of_nb65_cart_image=filebytes.index("80NB65")
+ if start_of_nb65_cart_image.nil? then
    puts "file '#{filename}' does not appear to be a netboot65 cartridge image"
    exit
 end
+
 
 (number_of_options/2).times do |i|
   option=ARGV[i*2+1]
@@ -56,7 +58,7 @@ end
     show_options
     exit
   end
-  option_offset=offsets[0]
+  option_offset=start_of_nb65_cart_image+offsets[0]-7
   option_length=offsets[1]
   
   if option_length==6 then

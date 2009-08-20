@@ -22,7 +22,7 @@ APPLE2PROGLIB=../drivers/apple2prog.lib
 BOOTA2.PG2=../../server/boot/BOOTA2.PG2
   
 #all:  utherboot.dsk $(BOOTA2.PG2)  nb65_rrnet.bin   nb65_std_cart.bin nb65_c64_ram.prg d64_upload.prg c64boot.d64 d64_upload.d64
-all:  nb65_std_cart.bin nb65_tcp_cart.bin nb65_tcp_cart_rr.bin
+all:  nb65_std_cart.bin nb65_tcp_cart.bin nb65_tcp_cart_rr.bin nb65_c64_ram.prg
 
 nb65_c64_ram.o: nb65_c64.s $(INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=0 $(AFLAGS) -o $@ $<

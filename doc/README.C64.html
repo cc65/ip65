@@ -1,20 +1,26 @@
 <h1>NETBOOT65 FOR THE C64</h1>
 
-<h2>STARTING THE SERVER</h2>
-<ol>
-	<li> unzip the archive somewhere on your local hard drive</li>
-	<li>start the bin/tftp_server.rb script (e.g. by double-clicking on it)</li>
-</ol>
+There are 2 major 'flavours'  of the NB65 client, the major difference being whether the cart supports UDP only (but allows access to BASIC), or UDP + TCP (but loses access to BASIC). The 
+reason for this is the UDP only version of the client fits into an 8KB cartridge, whereas the TCP code pushes the cartridge size up to 16KB, and the upper half of a 16KB cartridge sits in the same
+memory location as BASIC.
+<p>
+Within the major flavours, there are also variations in media - the majority of code is identical between the different media but there are different headers etc. The supported media are:
+<p>
+<ul>
+	<li> A prg that can be loaded from disk </li>
+	<li>'ordinary' cartridge images (that can be burned into an eeprom on e.g. a 64NIC+ card)</li>
+  <li>'Retro Replay' cartridge images - these are actually 'ordinary' cartridge images that have been converted into a form suitable for use in a Retro Replay using Doc Bacardi's 
+  <a href=http://freenet-homepage.de/LittleDreamLand/CRT8040.html>CRT8040</a> tool</li>
+</ul>
 
-<h2>TO USE WITH VICE</h2>
-Run <a href=http://www.viceteam.org/>VICE</a> with the nb65_std_cart.bin cartridge image attached (e.g. "x64.exe -cart8 nb65_std_cart.bin")
+<table>
+<tr><th>filename</th><th>flavour</th><th>media</th><th>command to use in VICE</th></tr>
+<tr><td>nb65_c64_ram.prg</td><td>UDP only (+ BASIC)</td><td>RAM</td><td> x64.exe nb65_c64_ram.prg</td></tr>
+<tr><td>nb65_std_cart.bin</td><td>UDP  only (+ BASIC)</td><td>standard 8KB cart</td><td>x64.exe -cart8 nb65_std_cart.bin</td></tr>
+<tr><td>nb65_tcp_cart.bin</td><td>UDP/TCP (no BASIC)</td><td>standard 16KB cart</td><td>x64.exe -cart16 nb65_tcp_cart.bin</td></tr>
+<tr><td>nb65_tcp_cart_rr.bin</td><td>UDP/TCP (no BASIC)</td><td>Retro Replay cart image</td><td>x64.exe -cartrr nb65_tcp_cart_rr.bin</td></tr>
+</table>
 
-<h2>TO USE WITH A REAL C64</h2>
-<h3>Option 1 - Hardcore</h3>
-	burn the nb65_std_cart.bin cartridge to an EPROM and insert in an 8KB cartridge (which should be set up to have EXROM=0, GAME=1)
-
-<h3>Option 2 - Just dabbling</h3>
-You can just run the nb65_c64_ram.prg program (which is essentially the cartridge image plus a loader prg to insert the image into the right place in RAM).
 
 <h2>USING THE CARTRIDGE</h2>
 
@@ -22,23 +28,71 @@ When the cartridge starts, it will attempt to configure the IP stack via DHCP. I
 then the IP stack will fall back to using the IP configuration built into the cartridge. See the section "IP CONFIGURATION" for info on how to modify the
 cartridge defaults prior to burning an image.
 <p>
-Once the IP stack is initialised, the "main menu" screen will be displayed. From the main menu, the following options are available:
+Once the IP stack is initialised, the "main menu" screen will be displayed. There are slight variations between the menus shown on the 2 "flavours".
+<h3>Main Menu - UDP only carts</h3>
 <ul>
-	<li>F1 : TFTP BOOT. THis will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed.</li>
+	<li>F1 : TFTP BOOT. This will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed. Most 'single load' applications should work</li>
 	<li>F3 : BASIC. This will exit to BASIC (with IP stack still configured, so NB65 aware apps can be loaded from disk and run)</li>
 	<li>F5 : ARP TABLE. This will show a table of the current mapping of IP and MAC addresses </li>
 	<li>F7 : CONFIG. This brings up a menu where the IP configuration can be modified. Changes made here will be persistent until the next reboot.</li>
 </ul>
+
+<h3>Main Menu - UDP/TCP carts</h3>
+<ul>
+	<li>F1 : TFTP BOOT. This will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed. This version of TFTP BOOT is restricted to running only 
+  pure machine language programs, since BASIC is not available when this cart is active. (NB - programs that are pure M/L except for a BASIC stub consisting of a single SYS call will be executed). 
+  be loaded </li>
+	<li>F3 : NET APPS. This will bring up another menu of network-orientated applications (see below for more details).
+	<li>F5 : ARP TABLE. This will show a table of the current mapping of IP and MAC addresses </li>
+	<li>F7 : CONFIG. This brings up a menu where the IP configuration can be modified. Changes made here will be persistent until the next reboot.</li>
+</ul>
+
+<h3>Net Apps - UDP/TCP carts</h3>
+<ul>
+	<li>F1 : TELNET. You will be prompted to enter a hostname, a port number, and a connection mode. Connection mode is either 
+  <ul>
+  <li>ASCII - . keypresses are converted to ASCII before  being sent out, and incoming data is converted to PETSCII before being displayed. 
+  There is no terminal emulation, and keystrokes are sent a character at a time.</li>
+  <li>PETSCII - no translation is done on data coming in or out. This mode is suitable for connecting to PETSCII BBSs</li>
+  <li>Line -  Data is converted to/from ASCII, but each line of input can be edited and is not sent until the RETURN key is pressed.</li>
+  </ul>
+  Once a connection is made, it can be terminated by hitting RUN/STOP
+	<li>F3 : GOPHER.FLOODGAP.COM. This will launch the Gopher client, and connect to the gopher portal at gopher://gopher.floodgap.com/</li>
+	<li>F5 : GOPHER. You will be prompted to enter the hostname (only - no port number can be specified) of a gopher server, and the gopher client will be launched connecting to the specified server.
+	<li>F7 : MAIN MENU. This will return to the main menu.</li>
+</ul>
+
+<h3>Gopher Client - UDP/TCP carts</h3>
+Once a gopher resource is loaded, the following keys are active:
+<ul>
+<li>SPACE, F7 or down arrow : scroll down to next page
+<li>F1 or up arror : scroll up to previous page
+<li>F2 : show recently visited resource
+<li>F3 or left arrow : go back to last visited resource
+<li>F5 : prompt to enter a new server (nb server name only - not resource or port)
+<li>RUN/STOP : quit
+</ul>
+If the page currently being displayed has links to further resources in it, each link will be displayed 
+starting with a highlighted letter (e.g. the first link on a page will have an inverse "A" next to it,
+the 2nd link on a page will have an inverse "B" next to it etc). Press the letter assigned to the link
+to load up that resource.
+
+
 <h2>IP CONFIGURATION</h2>
 There is a script in the "bin" folder called "set_ip_config.rb" that can be used to modify the MAC address and IP config details in the cart image before
 it is burned. For example, to set the MAC address and DNS servers, use this command:
 <pre>set_ip_config.rb nb65_std_cart.bin mac ab:cd:ef:12:34:56 dns 10.5.1.1</pre>
 run "set_ip_config.rb" with no parameters to see all the options for what can be configured.
 
+<h2>STARTING THE SERVER</h2>
+<ol>
+	<li> unzip the archive somewhere on your local hard drive</li>
+	<li>start the bin/tftp_server.rb script (e.g. by double-clicking on it)</li>
+</ol>
 
 <h2>ADDING MORE FILES</h2>
 
-Only single-load files can be used (this may change in a future release). The files need to be in "PRG" format, i.e.the first 2 bytes of the file must be
+Only single-load files can be used. The files need to be in "PRG" format, i.e.the first 2 bytes of the file must be
 the load address (little-endian, i.e. low/high). The files also need to have a file extension of ".PRG" (in upper case, if your operating system of choice
 is case sensitive).
 <p>

@@ -7,7 +7,6 @@
 .importzp copy_src
 .importzp copy_dest
 
-  
 
 target_string=copy_src
 search_string=copy_dest

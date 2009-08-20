@@ -8,8 +8,6 @@
 
 print_a = $ffd2
 
-.import parser_init
-.import parser_skip_next
 
 SCREEN_RAM 	= $0400
 COLOUR_RAM 	= $d800
@@ -260,23 +258,34 @@ init:
   nb65call #NB65_DOWNLOAD_RESOURCE
   
   bcs @download_feed  ;if at first we don't succeed, try try again
+
+  inc BORDER_COLOR  ;little marker of success
   
-  lda #1
-  sta scroll_state
 
   ldax #scroll_buffer_1
   stax current_output_ptr
-;  jsr emit_titles
+  jsr emit_titles
   ldax #scroll_buffer_1
   stax current_input_ptr_ptr  ;will get picked up once we have finished going through the message once
- 
+
+  lda #1
+  sta scroll_state
+
 @endless_loop:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
+  lda scroll_state
+  beq @download_feed
 	jmp	@endless_loop
 	
 reset_input_buffer:
   ldax current_input_ptr_ptr
   stax current_input_ptr
+  
+  ldax scroll_buffer_0
+  stax current_input_ptr_ptr
+  lda #0
+  sta scroll_state
+  
   rts
 
 ;look for NB65 signature at location pointed at by AX
@@ -661,22 +670,6 @@ print_errorcode:
 
 
 
-top_sprite_color_irq:
-  start_irq
-  wait_next_raster
-  dec $d025 ;sprite multicolor register 0
-  dec $d026 ;sprite multicolor register 1
-
-	jmp	exit_from_irq
- 
-bottom_sprite_color_irq:
-  start_irq
-  wait_next_raster
-  inc $d025 ;sprite multicolor register 0
-  inc $d026 ;sprite multicolor register 1
-	jmp	exit_from_irq
-
-
 update_nb65_counters_irq:
   start_irq
   jsr NB65_VBL_VECTOR
@@ -684,18 +677,18 @@ update_nb65_counters_irq:
 
 
 play_music_irq:
-	inc	BORDER_COLOR
+;	inc	BORDER_COLOR
   start_irq
   jsr MUSIC_BASE+PLAYER_PLAY  
-  dec	BORDER_COLOR
+;  dec	BORDER_COLOR
 	jmp	exit_from_irq
 
 emit_titles:
   ldax #download_buffer
-  jsr parser_init
+  nb65call #NB65_PARSER_INIT
 @next_title:  
   ldax #title
-  jsr parser_skip_next  
+  nb65call #NB65_PARSER_SKIP_NEXT
   bcs @done
   
   jsr emit_tag_contents
@@ -821,7 +814,6 @@ raster_jump_table:
   .byte	$0,$80
   .word play_music_irq
 
-
  	.byte	$80,$05
     .word move_sprites_irq
 
@@ -831,7 +823,7 @@ jump_counter:	.byte	0
 
 
 sprite_x_pos:
-.byte  $38,$58,$78,$98,$B8,$D8,$F8,$18
+.byte  $34,$54,$78,$90,$Bb,$Db,$Fb,$1b
   
 sprite_x_msb:
 .byte $80
@@ -840,18 +832,20 @@ sprite_y_pos:
 .include "sine_data.i"
 .include "sine_data.i"
 
-scroll_template:
+
 
 sprite_text:
-.byte  "COMATOMX"
 
-.byte " / ip: %i / gateway: %g / dns server %d / polling %f /"
+.byte  "UP\NATOM"   ;options are A-Z, "[\]^_"
+
+scroll_template:
+.byte " ip: %i / gateway: %g / dns server %d / polling %f /"
 .byte " ",0
 
 
 feed_url:
 .byte "http://search.twitter.com/search.atom?q=kipper",0
-.byte "http://static.cricinfo.com/rss/livescores.xml",0
+;.byte "http://static.cricinfo.com/rss/livescores.xml",0
 
 title: 
 .byte "<title>",0
@@ -902,7 +896,7 @@ scroll_state: .res 1
 nb65_param_buffer: .res $20  
 
 download_buffer:
-download_buffer_length=4000
+download_buffer_length=8000
  .res download_buffer_length
 
 scroll_buffer_0:

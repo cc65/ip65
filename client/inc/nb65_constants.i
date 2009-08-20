@@ -60,7 +60,9 @@ NB65_INPUT_HOSTNAME            EQU $91 ;no inputs, outputs: AX = pointer to host
 NB65_INPUT_PORT_NUMBER         EQU $92 ;no inputs, outputs: AX = port number entered ($0000..$FFFF)
 
 NB65_BLOCK_COPY                EQU $A0 ;inputs: AX points to a block copy structure, outputs: none
-
+NB65_PARSER_INIT               EQU $A1 ;inputs: AX points to a null terminated string, outputs: none
+NB65_PARSER_SKIP_NEXT          EQU $A2 ;inputs: AX points to a null terminated substring, outputs: AX points to 
+                                       ;previously loaded string that is just past the next occurance of substring
 
 NB65_GET_LAST_ERROR            EQU $FF ;no inputs, outputs A  EQU error code (from last function that set the global error value, not necessarily the
                                    ;last function that was called)

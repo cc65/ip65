@@ -14,20 +14,20 @@ INCFILES=\
   ../inc/net.i\
 
 all: \
-	comatomx.prg \
+	upnatom.prg \
 
 %.o: %.s 
 	$(AS) $(AFLAGS) $<
 
-comatomx.o: comatomx.s sine_data.i 
+upnatom.o: upnatom.s sine_data.i 
 	$(AS) $(AFLAGS) $<
 
 sine_data.i: make_sine_data.rb
 	ruby make_sine_data.rb
   
-comatomx.prg: comatomx.o nt2play.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  comatomx.map -vm -C ../cfg/c64prg.cfg -o  comatomx.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
-	cp comatomx.prg ../../server/boot/
+upnatom.prg: upnatom.o nt2play.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  upnatom.map -vm -C ../cfg/c64prg.cfg -o  upnatom.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
+	cp upnatom.prg ../../server/boot/
 clean:
 	rm -f *.o *.pg2 *.prg *.map
   

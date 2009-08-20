@@ -603,6 +603,19 @@ cpy #NB65_BLOCK_COPY
   ldax tmp_copy_length
   jmp copymem
 :
+
+  cpy #NB65_PARSER_INIT
+  bne :+
+  .import parser_init
+  jmp parser_init
+:
+
+  cpy #NB65_PARSER_SKIP_NEXT
+  bne :+
+  .import parser_skip_next
+  jmp parser_skip_next
+:
+
 .endif
 .endif
 
