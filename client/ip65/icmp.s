@@ -2,6 +2,10 @@
 ;
 
 .include "../inc/common.i"
+.ifndef NB65_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/nb65_constants.i"
+.endif
 
 	.export icmp_init
 	.export icmp_process
@@ -17,31 +21,50 @@
 	.exportzp icmp_cksum
 	.exportzp icmp_data
 
+.ifdef TCP
+  .export icmp_echo_ip
+  .export icmp_send_echo
+  .export icmp_ping
+.endif
+
+
+
+  .import ip65_process
+  .import ip65_error
 
 	.import ip_calc_cksum
 	.import ip_inp
 	.import ip_outp
 	.import ip_broadcast
+  .import ip_send
+  .import ip_create_packet
+  .importzp ip_proto
+  .importzp ip_proto_icmp
+
 	.importzp ip_cksum_ptr
 	.importzp ip_header_cksum
 	.importzp ip_src
 	.importzp ip_dest
 	.importzp ip_data
-
+  .importzp ip_len
+  
 	.import eth_tx
 	.import eth_inp
 	.import eth_inp_len
 	.import eth_outp
 	.import eth_outp_len
-
+  .import timer_read
+  .import timer_timeout
+  
 
 	.bss
 
 ; argument for icmp_add_listener
 icmp_callback:	.res 2
 
+
 ; icmp callbacks
-icmp_cbmax	= 4
+icmp_cbmax	= 2
 icmp_cbtmp:	.res 3			; temporary vector
 icmp_cbveclo:	.res icmp_cbmax		; table of listener vectors (lsb)
 icmp_cbvechi:	.res icmp_cbmax		; table of listener vectors (msb)
@@ -61,6 +84,31 @@ icmp_echo_id	= 4 ;offset of 'id' field in icmp echo request/echo response
 icmp_echo_seq	= 6 ;offset of 'sequence' field in icmp echo request/echo response
 icmp_echo_data	= 8 ;offset of 'data' field in icmp echo request/echo response
 
+;icmp type codes
+icmp_msg_type_echo_reply=0
+icmp_msg_type_destination_unreachable=3
+icmp_msg_type_source_quench=4
+icmp_msg_type_redirect=5
+icmp_msg_type_echo_request=8
+icmp_msg_type_time_exceeded=11
+icmp_msg_type_paramater_problem=12
+icmp_msg_type_timestamp=13
+icmp_msg_type_timestamp_reply=14
+icmp_msg_type_information_request=15
+icmp_msg_type_information_reply=16
+
+;ping states
+ping_state_request_sent=0
+ping_state_response_received=1
+
+
+.ifdef TCP
+.segment "TCP_VARS"
+icmp_echo_ip: .res 4 ; destination IP address for echo request ("ping")
+icmp_echo_cnt: .res 1  ;ping sequence counter
+ping_state: .res 1  
+ ping_timer: .res 2 ;
+.endif
 
 	.code
 
@@ -84,7 +132,7 @@ icmp_init:
 ;   generated and sent out (overwriting the eth_outp buffer)
 icmp_process:
 	lda icmp_inp + icmp_type
-	cmp #8				; ping
+	cmp #icmp_msg_type_echo_request				; ping
 	beq @echo
 
 	lda icmp_cbcount		; any installed icmp listeners?
@@ -203,7 +251,7 @@ icmp_add_listener:
 	rts
 
 
-;add an icmp listener
+;remove an icmp listener
 ;inputs:
 ; A = icmp type
 ;outputs:
@@ -212,11 +260,11 @@ icmp_add_listener:
 icmp_remove_listener:
 	ldx icmp_cbcount		; any listeners installed?
 	beq @notfound
+  dex
 :	cmp icmp_cbtype,x		; check if type is listened
 	beq @remove
-	inx
-	cpx icmp_cbcount
-	bne :-
+	dex
+	bpl :-
 @notfound:
 	sec
 	rts
@@ -241,3 +289,158 @@ icmp_remove_listener:
 	dec icmp_cbcount		; decrement counter
 	clc
 	rts
+
+.ifdef TCP
+
+; icmp_send_echo was contributed by Glen Holmer (ShadowM)
+
+;send an ICMP echo ("ping") request
+;inputs:
+; icmp_echo_ip: destination IP address
+;outputs:
+; carry flag - set if error, clear if no error
+icmp_send_echo:
+  ldy #3
+: 
+  lda icmp_echo_ip,y
+  sta ip_outp + ip_dest,y
+  dey
+  bpl :-
+  
+
+  lda #icmp_msg_type_echo_request
+  sta icmp_outp + icmp_type
+  lda #0  ;not used for echo packets
+  sta icmp_outp + icmp_code
+  sta icmp_outp + icmp_cksum        ;clear checksum
+  sta icmp_outp + icmp_cksum + 1
+  sta icmp_outp + icmp_echo_id      ;set id to 0
+  sta icmp_outp + icmp_echo_id + 1
+  inc icmp_echo_cnt + 1  ;big-endian
+  bne :+
+  inc icmp_echo_cnt
+: 
+  ldax icmp_echo_cnt
+  stax icmp_outp + icmp_echo_seq
+
+  ldy #0
+: 
+  lda ip65_msg,y
+  beq @set_ip_len
+  sta icmp_outp + icmp_echo_data,y
+  iny
+  bne :-
+@set_ip_len:
+  tya
+  clc
+  adc #28  ;IP header + ICMP type, code, cksum, id, seq
+  sta ip_outp + ip_len + 1  ;high byte first
+  lda #0  ;will never be >256
+  sta ip_outp + ip_len
+
+  ldax #icmp_outp  ;start of ICMP packet
+  stax ip_cksum_ptr
+  tya
+  clc
+  adc #8  ;ICMP type, code, cksum, id, seq
+  ldx #0  ;AX = length of ICMP data
+  jsr ip_calc_cksum
+  stax icmp_outp + icmp_cksum
+  lda #ip_proto_icmp
+  sta ip_outp + ip_proto
+  jsr ip_create_packet
+  jmp ip_send
+
+;send a ping (ICMP echo request) to a remote host, and wait for a response
+;inputs:
+; icmp_echo_ip: destination IP address
+;outputs:
+; carry flag - set if no response, otherwise AX is time (in miliseconds) for host to respond
+icmp_ping:
+
+  lda #0  ;reset the "packet sent" counter
+  sta icmp_echo_cnt
+@send_one_message:
+  jsr icmp_send_echo
+  bcc @message_sent_ok
+  ;we couldn't send the message - most likely we needed to do an ARP lookup.
+  ;so wait a bit, and retry
+
+	jsr timer_read		; read current timer value
+	stax ping_timer
+@loop_during_arp_lookup:
+  jsr ip65_process
+  ldax ping_timer
+  adc #50		; set timeout to now + 50 ms
+  bcc :+
+  inx
+:  
+
+  jsr timer_timeout
+	bcs @loop_during_arp_lookup
+  jsr icmp_send_echo  
+  bcc @message_sent_ok
+  ;still can't send? then give up
+  lda #NB65_ERROR_TRANSMIT_FAILED
+  sta ip65_error
+  rts 
+@message_sent_ok:
+	jsr timer_read		; read current timer value
+	stax ping_timer
+  ldax #icmp_ping_callback  
+  stax icmp_callback
+  lda #icmp_msg_type_echo_reply
+  jsr icmp_add_listener
+  lda #ping_state_request_sent
+  sta ping_state
+@loop_till_get_ping_response:
+  jsr ip65_process
+  
+  lda ping_state
+  cmp #ping_state_response_received
+  beq @got_reply
+  ldax ping_timer
+  inx   ;x rolls over about 4 times per second
+  inx   ;so we will timeout after about 2 seconds
+  inx
+  inx
+  inx
+  inx
+  inx
+  inx
+    
+  
+  jsr timer_timeout
+	bcs @loop_till_get_ping_response
+  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  sta ip65_error
+  lda #icmp_msg_type_echo_reply
+  jsr icmp_remove_listener
+  sec
+  rts
+@got_reply:
+  lda #icmp_msg_type_echo_reply
+  jsr icmp_remove_listener
+  jsr timer_read
+  sec
+  sbc ping_timer
+  pha
+  txa
+  sbc ping_timer+1  
+  tax
+  pla
+  clc
+  rts
+
+icmp_ping_callback:
+  lda icmp_inp + icmp_echo_seq
+  cmp icmp_echo_cnt
+  bne @not_what_we_were_waiting_for
+  lda #ping_state_response_received
+  sta ping_state
+@not_what_we_were_waiting_for:
+  rts
+  
+ip65_msg:
+  .byte "ip65 - the 6502 IP stack",0
+.endif

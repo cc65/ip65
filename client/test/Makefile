@@ -19,7 +19,6 @@ INCFILES=\
   ../inc/net.i\
 
 all: \
-#	ip65test.dsk \
 	testdns.prg \
 	test_disk_io.prg \
 	test_disk_io.d64 \
@@ -31,8 +30,10 @@ all: \
 	testdottedquad.prg\
 	test_tcp.prg \
 	test_parser.prg \
+	test_ping.prg \
 	test_get_url.prg \
-  
+#	ip65test.dsk \
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
 
@@ -50,6 +51,9 @@ test_parser.prg: test_parser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c6
 
 test_get_url.prg: test_get_url.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_get_url.map -vm -C ../cfg/c64prg.cfg -o  test_get_url.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+
+test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_ping.map -vm -C ../cfg/c64prg.cfg -o  test_ping.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)

@@ -55,6 +55,7 @@
   
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
+  .include "../inc/ping.i"
 .endif
   .import cls
   .import beep
@@ -72,6 +73,7 @@
   .import parse_dotted_quad
   .import dotted_quad_value
   .import parse_integer
+  .import print_integer
   .import get_key_ip65   
   .import cfg_ip
 	.import cfg_netmask
@@ -592,8 +594,21 @@ net_apps_menu:
   jsr cls
   lda #14
   jsr print_a ;switch to lower case  
+  ldax #telnet_header
+  jsr print
   jmp telnet_main_entry
 @not_telnet:
+  cmp #KEYCODE_F2
+  bne @not_gopher
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case
+  ldax #gopher_header
+  jsr print
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+@not_gopher:
+
   cmp #KEYCODE_F3
   bne @not_gopher_floodgap_com
   jsr cls
@@ -605,18 +620,20 @@ net_apps_menu:
   stx resource_pointer_hi
   ldx #0
   jsr  select_resource_from_current_directory
-
-  jmp exit_gopher
+  jmp exit_gopher  
 @not_gopher_floodgap_com:
+
   cmp #KEYCODE_F5
-  bne @not_gopher
+  bne @not_ping
   jsr cls
   lda #14
   jsr print_a ;switch to lower case
-  jsr prompt_for_gopher_resource ;only returns if no server was entered.
-  jmp exit_gopher
-  
-@not_gopher:
+  ldax #ping_header
+  jsr print
+  jsr ping_loop
+  jmp exit_ping
+@not_ping:
+
   cmp #KEYCODE_F7
   bne @not_main
   jmp main_menu
@@ -680,13 +697,14 @@ cfg_get_configuration_ptr:
   rts
 
 .if (BANKSWITCH_SUPPORT=$03)
+exit_ping:
 exit_telnet:
 exit_gopher:
   lda #142
   jsr print_a ;switch to upper case
   lda #$05  ;petscii for white text
   jsr print_a
-  jmp main_menu
+  jmp net_apps_menu
 .endif  
 	.rodata
 
@@ -695,38 +713,43 @@ netboot65_msg:
 .include "../inc/version.i"
 .byte 13,0
 main_menu_msg:
-.byte 13,"             MAIN MENU",13,13
+.byte 13,"MAIN MENU",13,13
 .byte "F1: TFTP BOOT"
 .if (BANKSWITCH_SUPPORT=$03)
-.byte "     F3: NET APPS"
+.byte "   F3: NET APPS"
 .else
-.byte "     F3: BASIC"
+.byte "   F3: BASIC"
 .endif
 .byte 13
-.byte "F5: ARP TABLE     F7: CONFIG",13,13
+.byte "F5: ARP TABLE   F7: CONFIG",13,13
 .byte 0
 
 
 config_menu_msg:
-.byte 13,"              CONFIGURATION",13,13
-.byte "F1: IP ADDRESS     F2: NETMASK",13
-.byte "F3: GATEWAY        F4: DNS SERVER",13
-.byte "F5: TFTP SERVER    F6: RESET TO DEFAULT",13
+.byte 13,"CONFIGURATION",13,13
+.byte "F1: IP ADDRESS  F2: NETMASK",13
+.byte "F3: GATEWAY     F4: DNS SERVER",13
+.byte "F5: TFTP SERVER F6: RESET TO DEFAULT",13
 .byte "F7: MAIN MENU",13,13
 .byte 0
 
 
 .if (BANKSWITCH_SUPPORT=$03)
 net_apps_menu_msg:
-.byte 13,"              NET APPS",13,13
-.byte "F1: TELNET    F3: GOPHER.FLOODGAP.COM",13
-.byte "F5: GOPHER    F7: MAIN MENU",13,13
+.byte 13,"NET APPS",13,13
+.byte "F1: TELNET      F2: GOPHER ",13
+.byte "F3: GOPHER (FLOODGAP.COM)",13
+.byte "F5: PING        F7: MAIN MENU",13,13
 .byte 0
 
 cant_boot_basic:
 .byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
 gopher_initial_location:
 .byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
+
+ping_header: .byte "ping",13,0
+gopher_header: .byte "gopher",13,0
+telnet_header: .byte "telnet",13,0
 
 .endif
 downloading_msg:  .asciiz "DOWNLOADING "

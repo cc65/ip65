@@ -10,7 +10,7 @@
  .export failed_msg
  .export init_msg
  .export print
- .export print_decimal
+ .export print_integer
  .export print_dotted_quad
  .export print_arp_cache
  .export mac_address_msg
@@ -32,8 +32,8 @@
 pptr = copy_src
 
 .bss
-temp_bin: .res 1
-temp_bcd: .res 2
+temp_bin: .res 2
+temp_bcd: .res 3
 temp_ptr: .res 2
 .code
 .macro print_driver_init
@@ -150,7 +150,7 @@ print:
 @print_loop:
   ldy #0
   lda (pptr),y
-	beq @done_print
+	beq @done_print  
 	jsr print_a
 	inc pptr
 	bne @print_loop
@@ -209,27 +209,24 @@ print_arp_cache:
 print_dotted_quad:
   sta pptr
 	stx pptr + 1
-  ldy #0
+  lda #0
+@print_one_byte:
+  pha
+  tay  
   lda (pptr),y
-  jsr print_decimal 
+  ldx #0
+  jsr print_integer 
+  pla
+  cmp #3
+  beq @done
+  clc
+  adc #1
+  pha
   lda #'.'
   jsr print_a
-
-  ldy #1
-  lda (pptr),y
-  jsr print_decimal 
-  lda #'.'
-  jsr print_a
-
-  ldy #2
-  lda (pptr),y
-  jsr print_decimal 
-  lda #'.'
-  jsr print_a
-
-  ldy #3
-  lda (pptr),y
-  jsr print_decimal
+  pla
+  bne @print_one_byte
+@done:
   
   rts
   
@@ -252,58 +249,70 @@ print_mac:
   cpy #06
   bne @one_mac_digit
   rts
-print_decimal:  ;print byte in A as a decimal number
-  pha
-  sta temp_bin   ;save 
+
+print_integer:  ;print 16 bit number in AX as a decimal number
+
+;hex to bcd routine taken from Andrew Jacob's code at http://www.6502.org/source/integers/hex2dec-more.htm
+  stax temp_bin   
   sed       ; Switch to decimal mode
   lda #0		; Ensure the result is clear
   sta temp_bcd
   sta temp_bcd+1
-  ldx #8  ; The number of source bits		
+  sta temp_bcd+2
+  ldx #16  ; The number of source bits		
   :
   asl temp_bin+0		; Shift out one bit
+  rol temp_bin+1
 	lda temp_bcd+0	; And add into result
   adc temp_bcd+0
   sta temp_bcd+0
   lda temp_bcd+1	; propagating any carry
   adc temp_bcd+1
   sta temp_bcd+1
+  lda temp_bcd+2	; ... thru whole result
+  adc temp_bcd+2
+  sta temp_bcd+2
+
   dex		; And repeat for next bit
 	bne :-
   
+  stx temp_bin+1 ;x is now zero - reuse temp_bin as a count of non-zero digits  
   cld   ;back to binary
-      
-  pla       ;get back the original passed in number
-  bmi @print_hundreds ; if N is set, the number is >=128 so print all 3 digits
-  cmp #10
-  bmi @print_units
-  cmp #100
-  bmi @print_tens
-@print_hundreds:
-  lda temp_bcd+1   ;get the most significant digit
+  ldx #2
+  stx temp_bin+1 ;reuse temp_bin+1 as loop counter
+@print_one_byte:
+  ldx temp_bin+1
+  lda temp_bcd,x
+  pha
+  lsr
+  lsr
+  lsr
+  lsr
+  jsr @print_one_digit
+  pla
   and #$0f
-  clc
-  adc #'0'
-  jsr print_a
-
-@print_tens:
-  lda temp_bcd
-  lsr
-  lsr
-  lsr
-  lsr
-  clc
-  adc #'0'
-  jsr print_a
-@print_units:
-  lda temp_bcd
-  and #$0f
-  clc
-  adc #'0'
-  jsr print_a
-  
+  jsr @print_one_digit
+  dec temp_bin+1
+  bpl @print_one_byte
   rts
-
+@print_one_digit:
+  cmp #0
+  beq @this_digit_is_zero
+  inc temp_bin  ;increment count of non-zero digits  
+@ok_to_print:  
+  clc
+  adc #'0'
+  jsr print_a
+  rts
+@this_digit_is_zero:
+  ldx temp_bin  ;how many non-zero digits have we printed?
+  bne @ok_to_print
+  ldx temp_bin+1 ;how many digits are left to print?
+  bne @this_is_not_last_digit
+  inc temp_bin    ;to get to this point, this must be the high nibble of the last byte.
+                  ;by making 'count of non-zero digits' to be >0, we force printing of the last digit
+@this_is_not_last_digit:  
+  rts 
 
 print_hex:
   pha  

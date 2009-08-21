@@ -11,6 +11,7 @@ INCFILES=\
   ../inc/nb65_constants.i\
   ../inc/version.i\
 
+TCP_INCFILES=../inc/gopher.i ../inc/telnet.i ../inc/ping.i
 IP65LIB=../ip65/ip65.lib
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
@@ -30,7 +31,7 @@ nb65_c64_ram.o: nb65_c64.s $(INCFILES)
 nb65_std_cart.o: nb65_c64.s $(INCFILES) 
 	$(AS) -DBANKSWITCH_SUPPORT=1 $(AFLAGS) -o $@ $<
 
-nb65_tcp_cart.o: nb65_c64.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i
+nb65_tcp_cart.o: nb65_c64.s $(INCFILES) $(TCP_INCFILES)
 	$(AS) -DBANKSWITCH_SUPPORT=3 $(AFLAGS) -o $@ $<
 
 nb65_rrnet.o: nb65_c64.s $(INCFILES)

@@ -237,12 +237,10 @@ init:
 	cli		;enable maskable interrupts again
 
 
-  lda #0
+  lda #3
   sta scroll_state  
 ;position for the first text
 
-  ldax #scroll_buffer_0
-  stax current_input_ptr_ptr
   jsr reset_input_buffer
 
 ;now download the feed
@@ -262,14 +260,13 @@ init:
   inc BORDER_COLOR  ;little marker of success
   
 
+  lda #2
+  sta scroll_state
+
   ldax #scroll_buffer_1
   stax current_output_ptr
   jsr emit_titles
-  ldax #scroll_buffer_1
-  stax current_input_ptr_ptr  ;will get picked up once we have finished going through the message once
 
-  lda #1
-  sta scroll_state
 
 @endless_loop:
   jsr NB65_PERIODIC_PROCESSING_VECTOR
@@ -278,16 +275,28 @@ init:
 	jmp	@endless_loop
 	
 reset_input_buffer:
-  ldax current_input_ptr_ptr
+  
+  lda scroll_state
+  beq @config_scroller
+  dec scroll_state
+  cmp #1
+  beq @feed_scroller
+  cmp #3
+  beq @title_scroller
+@config_scroller:
+  ldax #scroll_buffer_0
   stax current_input_ptr
-  
-  ldax scroll_buffer_0
-  stax current_input_ptr_ptr
-  lda #0
-  sta scroll_state
-  
   rts
-
+  
+@feed_scroller:  
+  ldax #scroll_buffer_1
+  stax current_input_ptr
+  rts
+@title_scroller:  
+  ldax #static_title
+  stax current_input_ptr
+  rts
+  
 ;look for NB65 signature at location pointed at by AX
 look_for_signature:
   stax temp_buff
@@ -348,6 +357,8 @@ setup_sprites:
   ;turn on multicolor mode for all 8 sprites
   lda #$FF
   sta $d01c
+  
+  sta sprite_ticker
   
   lda #DARK_GRAY
   sta $d025 ;sprite multicolor register 0
@@ -830,10 +841,14 @@ sprite_x_msb:
 
 sprite_y_pos:
 .include "sine_data.i"
-.include "sine_data.i"
+.repeat 128
+  .byte 0
+.endrep
+;.include "sine_data.i"
 
 
 
+static_title: .byte "up 'n atom - the old skool feed reader!",$20,0
 sprite_text:
 
 .byte  "UP\NATOM"   ;options are A-Z, "[\]^_"
@@ -844,8 +859,8 @@ scroll_template:
 
 
 feed_url:
-.byte "http://search.twitter.com/search.atom?q=kipper",0
-;.byte "http://static.cricinfo.com/rss/livescores.xml",0
+;.byte "http://search.twitter.com/search.atom?q=kipper",0
+.byte "http://static.cricinfo.com/rss/livescores.xml",0
 
 title: 
 .byte "<title>",0
@@ -885,7 +900,7 @@ musicdata_size=*-musicdata
 
 .segment "SAFE_BSS"
 ;we want our variables to start at $3000, out of the way of our music player and the font data
-current_input_ptr_ptr: .res 2
+
 param_offset: .res 1
 
 temp_bin: .res 1
@@ -899,6 +914,7 @@ download_buffer:
 download_buffer_length=8000
  .res download_buffer_length
 
+.res 10 ;filler
 scroll_buffer_0:
   .res 1000
 

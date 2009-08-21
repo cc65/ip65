@@ -289,9 +289,6 @@ fname:
 loading: .byte "LOADING ",0
 .rodata
 
-press_a_key_to_continue:
-  .byte "PRESS A KEY TO CONTINUE",13,0
-
 filetype:
   .byte "TYPE: $",0
 

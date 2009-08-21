@@ -57,8 +57,9 @@ Once the IP stack is initialised, the "main menu" screen will be displayed. Ther
   <li>Line -  Data is converted to/from ASCII, but each line of input can be edited and is not sent until the RETURN key is pressed.</li>
   </ul>
   Once a connection is made, it can be terminated by hitting RUN/STOP
+  <li>F2 : GOPHER. You will be prompted to enter the hostname (only - no port number can be specified) of a gopher server, and the gopher client will be launched connecting to the specified server.
 	<li>F3 : GOPHER.FLOODGAP.COM. This will launch the Gopher client, and connect to the gopher portal at gopher://gopher.floodgap.com/</li>
-	<li>F5 : GOPHER. You will be prompted to enter the hostname (only - no port number can be specified) of a gopher server, and the gopher client will be launched connecting to the specified server.
+  <li>F5 : PING. You will be prompted for a hostname which will be pinged 3 times, and a response time (in milliseconds) is printed for each ping.</li>
 	<li>F7 : MAIN MENU. This will return to the main menu.</li>
 </ul>
 
@@ -100,7 +101,26 @@ Files need to be placed in the 'boot/' folder.
 <p>
 Due to a limitation in the menu selection code, only the first 128 PRG files in the boot/ folder can be selected.
 
-	
+<h2>ERROR CODES</h2>
+Most network functions will return an 8 bit error code if things go wrong.
+<table><tr><th>ERROR CODE</th><th>DESCRIPTION</th></tr>
+<tr><td>$80</td><td>PORT IN USE</td></tr>
+<tr><td>$81</td><td>TIMEOUT ON RECEIVE</td></tr>
+<tr><td>$82</td><td>TRANSMIT FAILED</td></tr>
+<tr><td>$83</td><td>TRANSMISSION REJECTED BY PEER</td></tr>
+<tr><td>$84</td><td>INPUT TOO LARGE</td></tr>
+<tr><td>$85</td><td>DEVICE FAILURE</td></tr>
+<tr><td>$86</td><td>ABORTED BY USER</td></tr>
+<tr><td>$87</td><td>LISTENER NOT AVAILABLE</td></tr>
+<tr><td>$88</td><td>NO SUCH LISTENER</td></tr>
+<tr><td>$89</td><td>CONNECTION RESET BY PEER</td></tr>
+<tr><td>$8A</td><td>CONNECTION CLOSED</td></tr>
+<tr><td>$90</td><td>FILE ACCESS FAILURE</td></tr>
+<tr><td>$A0</td><td>MALFORMED URL</td></tr>
+<tr><td>$A1</td><td>DNS LOOKUP FAILED</td></tr>
+<tr><td>$FE</td><td>OPTION NOT SUPPORTED</td></tr>
+<tr><td>$FF</td><td>FUNCTION NOT SUPPORTED</td></tr>
+</table>
 <h2>REQUIREMENTS</h2>
 <ol>
 	<li>RR-NET or compatible adaptor (to use under VICE, you will need pcap or winpcap installed)</li>

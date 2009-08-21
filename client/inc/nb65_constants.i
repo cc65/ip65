@@ -44,16 +44,15 @@ NB65_TFTP_UPLOAD               EQU $24 ;upload: AX points to a TFTP transfer par
 NB65_TFTP_CALLBACK_UPLOAD      EQU $25 ;upload: AX points to a TFTP transfer parameter structure, outputs: none
 
 NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter structure, outputs: DNS param structure updated with 
-                                   ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
-
-NB65_DOWNLOAD_RESOURCE         EQU $40 ;inputs: AX points to a URL download structure, outputs: none
-
+                                       ;NB65_DNS_HOSTNAME_IP updated with IP address corresponding to hostname.
+NB65_DOWNLOAD_RESOURCE         EQU $31 ;inputs: AX points to a URL download structure, outputs: none
+NB65_PING_HOST                 EQU $32 ;inputs: AX points to destination IP address for ping, outputs: AX=time (in milliseconds) to get response
 
 NB65_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
 NB65_PRINT_IP_CONFIG           EQU $83 ;no inputs, no outputs, prints to screen current IP configuration
-
+NB65_PRINT_INTEGER             EQU $84 ;inputs: AX=16 byte number that will be printed as an unsigned decimal
 
 NB65_INPUT_STRING              EQU $90 ;no inputs, outputs: AX = pointer to null terminated string
 NB65_INPUT_HOSTNAME            EQU $91 ;no inputs, outputs: AX = pointer to hostname (which may be IP address).
@@ -115,16 +114,16 @@ NB65_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload 
                                                       ; in a TCP connection, if the length is $FFFF, this actually means "end of connection"
 NB65_PAYLOAD_POINTER EQU $0A                          ;2 byte pointer to payload of packet (after all headers)
 
+;offsets in ICMP listener parameter structure
+NB65_ICMP_LISTENER_TYPE     EQU $00                 ;ICMP type
+NB65_ICMP_LISTENER_CALLBACK EQU $01                 ;2 byte address of routine to call when ICMP packet of specified type arrives
+
 
 ;offsets in URL download structure
 ;inputs: 
 NB65_URL                         EQU $00              ;2 byte pointer to null terminated URL (NB - must be ASCII not "native" string)
 NB65_URL_DOWNLOAD_BUFFER         EQU $02              ;2 byte pointer to buffer that resource specified by URL will be downloaded into
 NB65_URL_DOWNLOAD_BUFFER_LENGTH  EQU $04              ;2 byte length of buffer (download will truncate when buffer is full)
-
-;AX = address of URL string
-; url_download_buffer - points to a buffer that url will be downloaded into
-; url_download_buffer_length - length of buffer
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                    EQU $80
@@ -139,7 +138,7 @@ NB65_ERROR_NO_SUCH_LISTENER               EQU $88
 NB65_ERROR_CONNECTION_RESET_BY_PEER       EQU $89
 NB65_ERROR_CONNECTION_CLOSED              EQU $8A
 NB65_ERROR_FILE_ACCESS_FAILURE            EQU $90
-NB65_MALFORMED_URL                        EQU $A0
-NB65_DNS_LOOKUP_FAILED                    EQU $A1
+NB65_ERROR_MALFORMED_URL                  EQU $A0
+NB65_ERROR_DNS_LOOKUP_FAILED              EQU $A1
 NB65_ERROR_OPTION_NOT_SUPPORTED           EQU $FE
 NB65_ERROR_FUNCTION_NOT_SUPPORTED         EQU $FF

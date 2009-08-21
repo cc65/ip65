@@ -427,6 +427,13 @@ ip_configured:
   rts
 :
 
+  cpy #NB65_PRINT_INTEGER
+  bne :+
+  jsr print_integer
+  clc
+  rts
+:
+
 ;these are the API "version 2" functions
 
 .ifdef API_VERSION
@@ -466,6 +473,20 @@ ip_configured:
   jmp url_download
 :
 
+    
+  cpy #NB65_PING_HOST
+  .import icmp_echo_ip
+  .import icmp_ping
+  bne :+  
+  ldy #3
+@copy_ping_ip_loop:
+  lda (nb65_params),y
+  sta icmp_echo_ip,y
+  dey
+  bpl @copy_ping_ip_loop
+  jmp icmp_ping  
+  
+:  
   cpy #NB65_TCP_CONNECT
   bne :+  
   .import tcp_connect
