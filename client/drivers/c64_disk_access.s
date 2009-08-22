@@ -13,6 +13,7 @@
 .export  io_track_no
 .export  io_read_sector
 .export  io_read_catalogue
+.export  io_read_catalogue_ex
 
 .export io_read_file_with_callback
 .export io_filename
@@ -38,17 +39,19 @@ READST = $ffb7
 SETNAM = $ffbd
 SETLFS = $ffba
 
-.bss
+.segment "SELF_MODIFIED_CODE"
 
  io_track_no:  .res 2
  io_sector_no: .res 1
- io_device_no: .res 1
+ io_device_no: .byte 0
  io_filename:  .res 2
  error_buffer = output_buffer + 256
  command_buffer = error_buffer+128
  sector_buffer_address: .res 2
  buffer_counter: .res 1
-.data
+ extended_catalogue_flag: .res 1
+
+
  drive_id: .byte 08  ;default to drive 8
 
 jmp_to_callback:
@@ -61,7 +64,7 @@ tmp_buffer_ptr=write_byte_to_buffer+1
   sta $ffff
   inc tmp_buffer_ptr
   bne :+
-  inc tmp_buffer_ptr
+  inc tmp_buffer_ptr+1
 :  
   rts
 
@@ -176,14 +179,29 @@ parse_filename:
   ldy buffer_ptr+1
   rts
 
-;routine to catalogue disk
+;routine to catalogue disk (with filename, filetype, filesize)
 ; io_device_number set to specify drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
 ; AX - address of buffer to read catalogue into
 ; outputs:
 ; on errror, carry flag is set. 
+; otherwise, buffer will be filled with asciiz filenames,followed by 1 byte filetype, followed by 2 byte file length (in 256 byte sectors)
+; there is an extra zero at the end of the last file.
+io_read_catalogue_ex:
+  stax  tmp_buffer_ptr  
+  lda #1
+  bne extended_catalogue_flag_set
+
+;routine to catalogue disk (filenames only)
+; io_device_number set to specify drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
+; AX - address of buffer to read catalogue into
+; outputs:
+; on errror, carry flag is set. 
+; otherwise, buffer will be filled with asciiz filenames (and an extra zero at the end of the last filename)
 io_read_catalogue:
   stax  tmp_buffer_ptr  
-  
+  lda #0
+extended_catalogue_flag_set:
+  sta extended_catalogue_flag
   ;get the BAM
   lda #$12
   sta io_track_no
@@ -191,7 +209,7 @@ io_read_catalogue:
   sta io_sector_no
   
   ldax #output_buffer
-  jsr io_read_sector  
+  jsr io_read_sector
   bcs @end_catalogue
 
 @get_next_catalogue_sector:
@@ -216,9 +234,8 @@ io_read_catalogue:
   and #$7f
   beq @skip_to_next_file
   
-;  bpl @skip_to_next_file
 @get_next_char:
-  lda output_buffer+5,y ;file type
+  lda output_buffer+5,y ;file name
   beq @end_of_filename
   cmp #$a0
   beq @end_of_filename
@@ -232,6 +249,9 @@ io_read_catalogue:
   pha
   
   tay ;get Y back to start of this file entry
+  
+  lda extended_catalogue_flag ;do we need to include the 'extended' data?
+  beq @skip_to_next_file
   lda output_buffer+2,y ;file type
   jsr write_byte_to_buffer  
   lda output_buffer+30,y ;lo byte of file length in sectors
@@ -272,6 +292,7 @@ io_read_sector:
   sta drive_id
 @drive_id_set:  
   jsr make_read_sector_command
+  ldax command_buffer
   lda #1
   ldx #<cname
   ldy #>cname
@@ -296,12 +317,8 @@ io_read_sector:
   jsr check_error_channel
   lda #$30
   cmp error_buffer
-  beq @was_not_an_error  
-  lda #NB65_ERROR_DEVICE_FAILURE
-  sta ip65_error
-  sec
-  rts
- @was_not_an_error:
+  bne @error  
+  
   ldx #$02      ; filenumber 2
   jsr CHKIN ;(file 2 now used as input)
 
@@ -327,8 +344,9 @@ io_read_sector:
 @error:
   lda #NB65_ERROR_DEVICE_FAILURE
   sta ip65_error
-  jmp @close
-
+  jsr @close
+  sec
+  rts
 
 open_error_channel:
   lda #$00    ; no filename

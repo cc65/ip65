@@ -17,7 +17,7 @@
 .import io_callback
 .import get_key
 .import ip65_error
-.import io_read_catalogue
+.import io_read_catalogue_ex
 
 .macro cout arg
   lda arg
@@ -67,7 +67,7 @@ init:
   sta io_device_no
 
   ldax #directory_buffer
-  jsr io_read_catalogue
+  jsr io_read_catalogue_ex
   
   bcc @no_error_on_catalogue
   jsr print_error_code
