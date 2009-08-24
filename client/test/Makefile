@@ -67,8 +67,10 @@ ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2
 		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary
 	
 test_disk_io.d64:  test_disk_io.prg 
-		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg 
-
+		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg
+		cp screen_prg.bin screen.prg
+		ripxplore.rb test_disk_io.d64 -a screen.prg 
+    
 clean:
 	rm -f *.o *.pg2 *.prg
 	rm -f ip65test.dsk

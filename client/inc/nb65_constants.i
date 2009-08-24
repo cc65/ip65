@@ -48,6 +48,8 @@ NB65_DNS_RESOLVE               EQU $30 ;inputs: AX points to a DNS parameter str
 NB65_DOWNLOAD_RESOURCE         EQU $31 ;inputs: AX points to a URL download structure, outputs: none
 NB65_PING_HOST                 EQU $32 ;inputs: AX points to destination IP address for ping, outputs: AX=time (in milliseconds) to get response
 
+NB65_FILE_LOAD                 EQU $40 ;inputs: AX points to a file access parameter structure, outputs: none
+
 NB65_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 NB65_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 NB65_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)
@@ -83,6 +85,7 @@ NB65_TFTP_FILESIZE   EQU $04                     ;2 byte file length (filled in 
 ;offsets in TFTP Server parameter structure (used by NB65_TFTP_SET_SERVER)
 NB65_TFTP_SERVER_IP  EQU $00                     ;4 byte IP address of TFTP server
 
+
 ;offsets in DNS parameter structure (used by NB65_DNS_RESOLVE)
 NB65_DNS_HOSTNAME    EQU $00                         ;2 byte pointer to asciiz hostname to resolve (can also be a dotted quad string)
 NB65_DNS_HOSTNAME_IP EQU $00                         ;4 byte IP address (filled in on succesful resolution of hostname)
@@ -106,6 +109,8 @@ NB65_TCP_CALLBACK       EQU $06                       ;2 byte address of routine
 NB65_TCP_PAYLOAD_LENGTH         EQU $00               ;2 byte length of payload of packet (after all ethernet,IP,UDP/TCP headers)
 NB65_TCP_PAYLOAD_POINTER        EQU $02               ;2 byte pointer to payload of packet (after all headers)
 
+
+
 ;offsets in TCP/UDP packet parameter structure
 NB65_REMOTE_IP       EQU $00                          ;4 byte IP address of remote machine (src of inbound packets, dest of outbound packets)
 NB65_REMOTE_PORT     EQU $04                          ;2 byte port number of remote machine (src of inbound packets, dest of outbound packets)
@@ -124,6 +129,13 @@ NB65_ICMP_LISTENER_CALLBACK EQU $01                 ;2 byte address of routine t
 NB65_URL                         EQU $00              ;2 byte pointer to null terminated URL (NB - must be ASCII not "native" string)
 NB65_URL_DOWNLOAD_BUFFER         EQU $02              ;2 byte pointer to buffer that resource specified by URL will be downloaded into
 NB65_URL_DOWNLOAD_BUFFER_LENGTH  EQU $04              ;2 byte length of buffer (download will truncate when buffer is full)
+
+
+;offsets in file access  parameter structure (used by NB65_FILE_LOAD)
+NB65_FILE_ACCESS_FILENAME   EQU $00              ;2 byte pointer to asciiz filename (or filemask)
+NB65_FILE_ACCESS_POINTER    EQU $02              ;2 byte pointer to memory location data to be stored in OR address of callback function
+NB65_FILE_ACCESS_FILESIZE   EQU $04              ;2 byte file length (filled in by NB65_FILE_ACCESS)
+NB65_FILE_ACCESS_DEVICE     EQU $06              ;1 byte device number (set to $00 to use last accessed device)
 
 ;error codes (as returned by NB65_GET_LAST_ERROR)
 NB65_ERROR_PORT_IN_USE                    EQU $80

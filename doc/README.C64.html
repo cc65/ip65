@@ -28,7 +28,8 @@ When the cartridge starts, it will attempt to configure the IP stack via DHCP. I
 then the IP stack will fall back to using the IP configuration built into the cartridge. See the section "IP CONFIGURATION" for info on how to modify the
 cartridge defaults prior to burning an image.
 <p>
-Once the IP stack is initialised, the "main menu" screen will be displayed. There are slight variations between the menus shown on the 2 "flavours".
+Once the IP stack is initialised, an attempt to boot from disk will take place (on the 16KB image only - see <a href="#autoexec">autoexec</a> section for more). If this fails, or the 8KB cartridge is being used, 
+the "main menu" screen will be displayed. There are slight variations between the menus shown on the 2 "flavours".
 <h3>Main Menu - UDP only carts</h3>
 <ul>
 	<li>F1 : TFTP BOOT. This will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed. Most 'single load' applications should work</li>
@@ -41,7 +42,11 @@ Once the IP stack is initialised, the "main menu" screen will be displayed. Ther
 <ul>
 	<li>F1 : TFTP BOOT. This will query a TFTP server for a list of PRG files, and allow the selection of a file to be downloaded and executed. This version of TFTP BOOT is restricted to running only 
   pure machine language programs, since BASIC is not available when this cart is active. (NB - programs that are pure M/L except for a BASIC stub consisting of a single SYS call will be executed). 
-  be loaded </li>
+  </li>
+  	<li>F2 : DISK BOOT. This will display a catalogue of files in drive #8 and allow the selection of a file to be executed. This version of DISK BOOT is restricted to running only 
+  pure machine language programs, since BASIC is not available when this cart is active. (NB - programs that are pure M/L except for a BASIC stub consisting of a single SYS call will be executed). 
+</li>
+
 	<li>F3 : NET APPS. This will bring up another menu of network-orientated applications (see below for more details).
 	<li>F5 : ARP TABLE. This will show a table of the current mapping of IP and MAC addresses </li>
 	<li>F7 : CONFIG. This brings up a menu where the IP configuration can be modified. Changes made here will be persistent until the next reboot.</li>
@@ -78,6 +83,10 @@ starting with a highlighted letter (e.g. the first link on a page will have an i
 the 2nd link on a page will have an inverse "B" next to it etc). Press the letter assigned to the link
 to load up that resource.
 
+<a name="autoexec"><h2>AUTOEXEC</h2></a>
+Once the 16KB cartridge image has initialised the IP stack, it will look for a file called "autoexec.prg" on the default drive. If this file is found it will be loaded (using the load address specified by the first 2
+bytes of the file) and executed. NB - since BASIC is not available only 100% Machine Language programs can be executed, although if there is a BASIC stub consisting of a single line that does a SYS 
+call, the target of the SYS call will be used as the address to start execution from.
 
 <h2>IP CONFIGURATION</h2>
 There is a script in the "bin" folder called "set_ip_config.rb" that can be used to modify the MAC address and IP config details in the cart image before

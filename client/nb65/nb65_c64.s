@@ -111,8 +111,8 @@
   .import  __SELF_MODIFIED_CODE_SIZE__
     
   .import cfg_tftp_server
-  tftp_dir_buffer = $6020
  nb65_param_buffer = $6000
+  directory_buffer = $6020
 
   .data
 exit_cart:
@@ -219,12 +219,14 @@ init:
   ldax #$2000
   jsr copymem
 .endif  
-  
-ldax #init_msg
+
+  ldax #netboot65_msg
+  jsr print
+  ldax #init_msg+1
 	jsr print
   
   nb65call #NB65_INITIALIZE
-  bcc main_menu
+  bcc init_ok
   print_failed
   jsr print_errorcode
   jsr wait_for_keypress  
@@ -239,6 +241,26 @@ print_main_menu:
   ldax  #main_menu_msg
   jmp print
 
+init_ok:
+.if (BANKSWITCH_SUPPORT=$03)
+;look for an 'autoexec' file
+  jsr print_cr
+  ldax #loading_msg
+  jsr print
+  ldax #autoexec_filename  
+  stax io_filename
+  jsr print
+  jsr print_cr
+  ldax #$0000
+  jsr io_read_file
+  bcs main_menu
+@file_read_ok:
+  ldax #load_ok_msg
+  jsr print
+  ldax io_load_address
+  jmp boot_into_file  
+.endif
+
 main_menu:
   jsr print_main_menu
   jsr print_ip_config
@@ -250,6 +272,12 @@ main_menu:
   bne @not_tftp
   jmp @tftp_boot
  @not_tftp:  
+.if (BANKSWITCH_SUPPORT=$03)
+  cmp #KEYCODE_F2
+  bne @not_disk
+  jmp disk_boot
+ @not_disk:  
+.endif
 
   cmp #KEYCODE_F3      
   .if (BANKSWITCH_SUPPORT=$03)
@@ -441,17 +469,15 @@ cmp #KEYCODE_F7
   jsr wait_for_keypress
   jsr @change_config
   
-  
 @tftp_boot:  
 
-  
   ldax #tftp_dir_filemask
   
 @get_tftp_directory_listing:  
   stax nb65_param_buffer+NB65_TFTP_FILENAME
 
   
-  ldax #tftp_dir_buffer
+  ldax #directory_buffer
   stax nb65_param_buffer+NB65_TFTP_POINTER
 
   ldax #getting_dir_listing_msg
@@ -462,7 +488,7 @@ cmp #KEYCODE_F7
 
 	bcs @dir_failed
 
-  lda tftp_dir_buffer ;get the first byte that was downloaded
+  lda directory_buffer ;get the first byte that was downloaded
   bne :+
   jmp @no_files_on_server
 :  
@@ -472,7 +498,7 @@ cmp #KEYCODE_F7
   sta $d018
 
 
-  ldax  #tftp_dir_buffer
+  ldax  #directory_buffer
   
   jsr select_option_from_menu  
   bcc @tftp_filename_set
@@ -513,7 +539,7 @@ cmp #KEYCODE_F7
   
   
 @dir_failed:  
-  ldax  #tftp_dir_listing_fail_msg
+  ldax  #dir_listing_fail_msg
   jsr print
   jsr print_errorcode
   jsr print_cr
@@ -522,22 +548,27 @@ cmp #KEYCODE_F7
   jmp @tftp_filename_set
   
 @no_files_on_server:
-  ldax #no_files_on_server
+  ldax #no_files
 	jsr print
 
   jmp @tftp_boot_failed
   
-@file_downloaded_ok:  
+@file_downloaded_ok:    
+ldax nb65_param_buffer+NB65_TFTP_POINTER
   
+boot_into_file:
+  stax  nb65_param_buffer ;use the param buffer as a temp holding place for the load address
   ;get ready to bank out
   nb65call #NB65_DEACTIVATE   
+
+  jsr $ffe7 ; make sure all files have been closed.
   
   ;check whether the file we just downloaded was a BASIC prg
-  lda nb65_param_buffer+NB65_TFTP_POINTER
+  lda nb65_param_buffer
   cmp #01
   bne @not_a_basic_file
   
-  lda nb65_param_buffer+NB65_TFTP_POINTER+1
+  lda nb65_param_buffer+1
   cmp #$08
   bne @not_a_basic_file
 
@@ -545,6 +576,7 @@ cmp #KEYCODE_F7
   lda $805
   cmp #$9e  ;opcode for 'SYS'
   bne @not_a_basic_stub
+ 
   ldax  #$806  ;should point to ascii string containing address that was to be SYSed
   jsr parse_integer 
   jmp exit_cart_via_ax ;good luck! 
@@ -569,14 +601,75 @@ cmp #KEYCODE_F7
   jmp exit_cart_via_ax
  .endif  
  
-@not_a_basic_file:  
-  ldax  nb65_param_buffer+NB65_TFTP_POINTER
+@not_a_basic_file:
+  ldax  nb65_param_buffer
 exit_cart_via_ax:  
   sta call_downloaded_prg+1
   stx call_downloaded_prg+2
   jmp exit_cart
  
 .if (BANKSWITCH_SUPPORT=$03)
+disk_boot:
+  .import io_read_catalogue
+  .import io_device_no
+  .import io_filename
+  .import io_read_file
+  .import io_load_address
+  lda #00 ;use default drive
+  sta io_device_no
+
+  ldax #directory_buffer
+  jsr io_read_catalogue
+  
+  lda directory_buffer ;get the first byte that was downloaded
+  bne :+
+  jmp @no_files_on_disk
+:  
+
+  ;switch to lower case charset
+;  lda #23
+;  sta $d018
+
+
+  ldax  #directory_buffer
+  
+  jsr select_option_from_menu  
+  bcc @disk_filename_set
+  jmp main_menu
+  
+@dir_failed:  
+  ldax  #dir_listing_fail_msg
+@print_error:  
+  jsr print
+  jsr print_errorcode
+  jsr print_cr
+  jmp @wait_keypress_then_return_to_main
+  
+@no_files_on_disk:
+  ldax #no_files
+	jsr print
+@wait_keypress_then_return_to_main:  
+  jsr wait_for_keypress
+  jmp main_menu
+
+@disk_filename_set:
+  stax io_filename
+  ldax #loading_msg
+	jsr print
+  ldax io_filename
+  jsr print  
+  jsr print_cr
+  ldax #$0000
+  jsr io_read_file
+  bcc @file_read_ok
+  ldax #file_read_error
+  jmp @print_error
+@file_read_ok:
+  ldax #load_ok_msg
+  jsr print
+  ldax io_load_address
+  jmp boot_into_file
+  
 net_apps_menu: 
   jsr cls  
   ldax  #netboot65_msg
@@ -706,24 +799,29 @@ exit_gopher:
   jsr print_a
   jmp net_apps_menu
 .endif  
-	.rodata
+
+
+.rodata
 
 netboot65_msg: 
 .byte 13,"NB65 - V"
 .include "../inc/version.i"
+.if (BANKSWITCH_SUPPORT=$03)
+.byte " (TCP)"
+.endif
 .byte 13,0
 main_menu_msg:
 .byte 13,"MAIN MENU",13,13
-.byte "F1: TFTP BOOT"
 .if (BANKSWITCH_SUPPORT=$03)
-.byte "   F3: NET APPS"
-.else
-.byte "   F3: BASIC"
-.endif
-.byte 13
+.byte "F1: TFTP BOOT   F2: DISK BOOT",13
+.byte "F3: NET APPS    F4: TBA",13
 .byte "F5: ARP TABLE   F7: CONFIG",13,13
-.byte 0
 
+.else
+.byte "F1: TFTP BOOT   F3: BASIC",13
+.byte "F5: ARP TABLE   F7: CONFIG",13,13
+.endif
+.byte 0
 
 config_menu_msg:
 .byte 13,"CONFIGURATION",13,13
@@ -751,20 +849,26 @@ ping_header: .byte "ping",13,0
 gopher_header: .byte "gopher",13,0
 telnet_header: .byte "telnet",13,0
 
+file_read_error: .asciiz "ERROR READING FILE"
+autoexec_filename: .byte "AUTOEXEC.PRG",0
+
 .endif
-downloading_msg:  .asciiz "DOWNLOADING "
+downloading_msg:  .byte "DOWN"
+loading_msg:  .asciiz "LOADING "
 
 getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
 
-tftp_dir_listing_fail_msg:
-	.byte "DIR LISTING FAILED",13,0
+dir_listing_fail_msg:
+	.byte "DIR FAILED",13,0
 
 tftp_download_fail_msg:
 	.byte "DOWNLOAD FAILED", 13, 0
 
 tftp_download_ok_msg:
-	.byte "DOWNLOAD OK", 13, 0
-  
+	.byte "DOWN"
+load_ok_msg:
+	.byte "LOAD OK", 13, 0
+
 current:
 .byte "CURRENT ",0
 
@@ -777,9 +881,8 @@ tftp_dir_filemask:
 tftp_file:  
   .asciiz "BOOTC64.PRG"
 
-no_files_on_server:
-  .byte "NO MATCHING FILES",13,0
-
+no_files:
+  .byte "NO FILES",13,0
 
 resolving:
   .byte "RESOLVING ",0

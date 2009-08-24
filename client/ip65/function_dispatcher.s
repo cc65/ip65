@@ -62,7 +62,7 @@ ip_configured_flag:
 .code
 
 irq_handler:
-  jsr NB65_VBL_VECTOR
+  jsr NB65_VBL_VECTOR  
   jmp jmp_old_irq
 
 
@@ -473,7 +473,54 @@ ip_configured:
   jmp url_download
 :
 
-    
+  cpy #NB65_FILE_LOAD
+bne :+  
+.import  io_device_no
+.import io_read_file
+.import io_filename
+.import io_filesize
+.import io_load_address
+  phax
+  ldy #NB65_FILE_ACCESS_FILENAME
+  lda (nb65_params),y
+  sta io_filename
+  iny
+  lda (nb65_params),y
+  sta io_filename+1
+
+  ldy #NB65_FILE_ACCESS_DEVICE
+  lda (nb65_params),y
+  sta io_device_no
+
+  ldy #NB65_FILE_ACCESS_POINTER+1
+  lda (nb65_params),y
+  tax
+  dey
+  lda (nb65_params),y
+  jsr io_read_file
+  plax
+  bcc @read_file_ok
+  rts
+  
+@read_file_ok:  
+  stax nb65_params
+
+  ldy #NB65_FILE_ACCESS_POINTER
+  lda io_load_address
+  sta (nb65_params),y
+  iny
+  lda io_load_address+1
+  sta (nb65_params),y
+
+  ldy #NB65_FILE_ACCESS_FILESIZE
+  lda io_filesize
+  sta (nb65_params),y
+  iny
+  lda io_filesize+1
+  sta (nb65_params),y
+  rts
+:
+
   cpy #NB65_PING_HOST
   .import icmp_echo_ip
   .import icmp_ping

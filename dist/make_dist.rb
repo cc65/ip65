@@ -41,7 +41,7 @@ end
 ["client/inc/common.i","inc"],
 ["client/inc/nb65_constants.i","inc"],
 ["client/examples/dasm_example.asm","examples/"],
-
+["client/examples/upnatom.d64","c64/"],
 #["client/nb65/d64_upload.s","examples/"],
 #["client/nb65/nb65_skeleton.s","examples/"],
 ].each do |args|

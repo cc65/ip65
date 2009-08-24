@@ -14,15 +14,17 @@
 .export  io_read_sector
 .export  io_read_catalogue
 .export  io_read_catalogue_ex
-
+.export io_read_file
 .export io_read_file_with_callback
 .export io_filename
+.export io_filesize
+.export io_load_address
 .export io_callback
 
 .importzp copy_src
 .import ip65_error  
 .import output_buffer
-;.importzp copy_dest
+.importzp copy_dest
 
 ;reuse the copy_src zero page location
 buffer_ptr = copy_src
@@ -45,6 +47,8 @@ SETLFS = $ffba
  io_sector_no: .res 1
  io_device_no: .byte 0
  io_filename:  .res 2
+ io_filesize:  .res 2 ;although a file on disk can be >64K, io_filesize is only used when loading into RAM hence file must be <64K
+ io_load_address:  .res 2
  error_buffer = output_buffer + 256
  command_buffer = error_buffer+128
  sector_buffer_address: .res 2
@@ -70,6 +74,63 @@ tmp_buffer_ptr=write_byte_to_buffer+1
 
 
 .code
+
+;routine to read a file 
+; inputs:
+; io_device_number  - specifies drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
+; io_filename - specifies filename to open
+; AX - address of buffer to read file into (set to $0000 to treat first 2 bytes as load address)
+; outputs:
+; on errror, carry flag is set
+; otherwise, io_filesize will be set to size of file and io_load_address will be set to actual load address used.
+;
+io_read_file:
+  stax io_load_address
+  sta sector_buffer_address
+  stx sector_buffer_address+1 ;this also sets the Z flag
+  bne @sector_buffer_address_set
+  ;if we get here, X was $00 so we need to use first 2 bytes of file as load address
+  ldax #output_buffer
+  stax sector_buffer_address
+
+@sector_buffer_address_set:
+  ldax #read_file_callback
+  stax io_callback
+  lda #0
+  sta io_filesize
+  sta io_filesize+1 
+  ldax sector_buffer_address  
+  jsr io_read_file_with_callback
+  rts
+
+read_file_callback:
+  sty io_filesize             ;only 1 (the last) sector can ever be !=$100 bytes
+  bne @not_full_sector
+  inc io_filesize+1
+  inc sector_buffer_address +1
+@not_full_sector:
+  lda io_load_address+1       ;is the high byte of the address $00?
+  bne @done		
+  ldax output_buffer          ;if we get here we must have used downloaded into the static output buffer, so the 
+                              ;first 2 bytes there are the real load address
+  stax copy_dest             ;now copy the rest of the sector  
+  stax sector_buffer_address
+  stax io_load_address
+  dey
+  dey
+@copy_one_byte:  
+  dey 
+  lda output_buffer+2,y
+  sta (copy_dest),y
+  inc sector_buffer_address
+  bne :+
+  inc sector_buffer_address+1
+:  
+  tya
+  bne @copy_one_byte
+    
+@done:  
+  rts
 
 ;routine to read a file with a callback after each 256 byte sector
 ; inputs:
@@ -132,8 +193,8 @@ io_read_file_with_callback:
   sta (buffer_ptr),y
   inc buffer_counter
   bne @get_next_byte
-
   ldy #$00;= 256 bytes
+
   jsr jmp_to_callback
   jmp @get_next_sector
   

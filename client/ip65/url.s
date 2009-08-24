@@ -76,6 +76,7 @@ selector_buffer=output_buffer
 ;parses a URL into a form that makes it easy to retrieve the specified resource
 ;inputs: 
 ;AX = address of URL string
+;any control character (i.e. <$20) is treated as 'end of string', e.g. a CR or LF, as well as $00
 ;outputs:
 ; sec if a malformed url, otherwise:
 ; url_ip = ip address of host in url
@@ -107,7 +108,7 @@ url_parse:
   cmp  #'H'
   beq @http
 @exit_with_error:  
-  lda #NB65_ERROR_MALFORMED_URL
+  lda #NB65_ERROR_MALFORMED_URL 
   sta ip65_error
 @exit_with_sec:  
   sec
@@ -195,7 +196,8 @@ lda #url_type_gopher
 @copy_one_byte:
   ldy src_ptr  
   lda (copy_src),y
-  beq @end_of_selector
+  cmp #$20
+  bcc @end_of_selector  ;any control char (including CR,LF, and $00) should be treated as end of URL
   inc src_ptr  
 @save_first_byte_of_selector:  
   ldy dest_ptr  

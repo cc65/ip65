@@ -49,6 +49,9 @@ init:
 
   ldax #url_1
   jsr test_url_parse 
+  jsr wait_key
+ 
+
   ldax #url_2
   jsr test_url_parse 
   ldax #url_3
@@ -137,10 +140,8 @@ print_parsed_url:
   jsr print_dotted_quad
   ldax #port
   jsr print
-  lda url_port+1
-  jsr print_hex
-  lda url_port
-  jsr print_hex
+  ldax url_port
+  jsr print_integer
   ldax #type
   jsr print
   lda url_resource_type
@@ -165,7 +166,7 @@ title:
 .byte "<title>",0
 
 url_1: 
-.byte "http://www.jamtronix.com/",0
+.byte "http://www.jamtronix.com/",13,"not part of URL!",0
 
 url_2: 
 .byte "http://www.jamtronix.com/goober",0
@@ -203,7 +204,7 @@ url_c:
 
 parsing: .asciiz "PARSING "
 ip: .asciiz "IP: "
-port: .asciiz " PORT: $"
+port: .asciiz " PORT: "
 type: .asciiz " TYPE:"
 selector: .asciiz "SELECTOR: "
 press_a_key: .byte "PRESS ANY KEY TO CONTINUE",13,0

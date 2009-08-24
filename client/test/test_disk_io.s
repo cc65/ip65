@@ -13,7 +13,10 @@
 .import  io_track_no
 .import  io_read_sector
 .import io_read_file_with_callback
+.import io_read_file
 .import io_filename
+.import io_filesize
+.import io_load_address
 .import io_callback
 .import get_key
 .import ip65_error
@@ -54,14 +57,14 @@ basicstub:
 
 init:
 
+  ;switch to lower case charset
+  lda #23
+  sta $d018
 
 
+  ;test we can read the catalogue
   ldax #read_catalogue
   jsr print  
-
-;  ldax #dummy_catalogue
-;  jsr print_catalogue
-;  rts
 
   lda #01
   sta io_device_no
@@ -75,8 +78,73 @@ init:
 @no_error_on_catalogue:  
   ldax #directory_buffer
   jsr print_catalogue
+
+  ;test we can read without callbacks to fixed buffer
+   ldax #loading
+  jsr print
+  ldax #fname
+  stax io_filename
+  jsr print
+
+
+  jsr print_cr
+  lda #01
+  sta io_device_no
+
+  ldax #readfile_callback
+  stax  io_callback
+  ldax  #$3000
+  jsr io_read_file
+  bcc :+
+  jsr print_error_code
   rts
+:  
+
+  ldax io_filesize
+  jsr print_integer
+  ldax #bytes_to
+  jsr print
+  lda io_load_address+1
+  jsr print_hex
+  lda io_load_address
+  jsr print_hex
+  jsr print_cr
+
+
+;test we can read without callbacks to address in file
+   ldax #loading
+  jsr print
+  ldax #fname2
+  stax io_filename
+  jsr print
+
+
+  jsr print_cr
+  lda #01
+  sta io_device_no
+
+  ldax #readfile_callback
+  stax  io_callback
+  ldax  #$0000
+  jsr io_read_file
+  bcc :+
+  jsr print_error_code
+  rts
+:  
+
+  ldax io_filesize
+  jsr print_integer
+  ldax #bytes_to
+  jsr print
+  lda io_load_address+1
+  jsr print_hex
+  lda io_load_address
+  jsr print_hex
+  jsr print_cr
+
+  jsr wait_for_keypress
   
+  ;test we can read via callbacks
 
   ldax #loading
   jsr print
@@ -93,53 +161,15 @@ init:
   ldax  #sector_buffer
     
   jsr io_read_file_with_callback
-  bcc @no_error_on_file_read
+  bcc :+
   jsr print_error_code
-@no_error_on_file_read:  
+:  
 
+
+  
   rts
   
-  
-  lda #01
-  sta io_track_no
-  lda #01
-  sta io_sector_no
-  lda #01
-  sta io_device_no
-  ldax #sector_buffer
-  jsr io_read_sector
-  bcs  @error
-  
- ; jsr dump_sector ;DEBUG
-
-  lda #$12
-  sta io_track_no
-  lda #01
-  sta io_sector_no
-  lda #01
-  sta io_device_no
-  ldax #sector_buffer
-  jsr io_read_sector
-  
-  bcs  @error
-;  jsr dump_sector ;DEBUG
-
-
-
-  lda #$12
-  sta io_track_no
-  lda #01
-  sta io_sector_no
-  lda #01
-  sta io_device_no
-  ldax #sector_buffer
-  jsr io_read_sector
-  
-  bcs  @error
-  jsr dump_sector ;DEBUG
-
- rts
-
+ 
 @error:
   jsr print_cr
   lda ip65_error
@@ -160,7 +190,7 @@ print_catalogue:
   beq @end_of_filename
   jmp @print_one_char
 @end_of_filename:
-  jsr print_cr
+    jsr print_cr
   ldax #filetype
   jsr print
   jsr read_byte_from_buffer
@@ -286,6 +316,9 @@ read_catalogue:
 fname:  
   .byte "TEST_DISK_IO.PRG",0
 
+fname2:
+  .byte "SCREEN.PRG",0
+
 loading: .byte "LOADING ",0
 .rodata
 
@@ -304,9 +337,8 @@ ok:
 	.byte "OK ", 0
 
 bytes:
-	.byte "BYTES.",13, 0
+	.byte " BYTES.", 0
 
-dummy_catalogue:
-.byte"FILE 1",0,$81,$34,$12
-.byte "FILE 2",0,$82,$f0,$0d
-.byte 0
+bytes_to:
+	.byte " BYTES TO $", 0
+

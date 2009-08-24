@@ -13,8 +13,7 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
 
-all: \
-	upnatom.prg \
+all: 	upnatom.prg upnatom.d64
 
 %.o: %.s 
 	$(AS) $(AFLAGS) $<
@@ -28,8 +27,14 @@ sine_data.i: make_sine_data.rb
 upnatom.prg: upnatom.o nt2play.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  upnatom.map -vm -C ../cfg/c64prg.cfg -o  upnatom.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
 	cp upnatom.prg ../../server/boot/
+  
+upnatom.d64:  upnatom.prg url.cfg
+	cp upnatom.prg autoexec.prg
+	ripxplore.rb --init CbmDos upnatom.d64 -a autoexec.prg
+	ripxplore.rb  upnatom.d64 -a url.cfg -t C64Seq
+
 clean:
-	rm -f *.o *.pg2 *.prg *.map
+	rm -f *.o *.pg2 *.prg *.map upnatom.d64
   
 distclean: clean
 	rm -f *~

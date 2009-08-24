@@ -139,9 +139,19 @@ init:
 @init_ok:
 
 ;if we got here, we have found the NB65 API and initialised the IP stack
-  
-  jsr setup_static_scroll_text  
 
+;try and load the config file
+  ldax #read_url_file_param_buffer
+  nb65call #NB65_FILE_LOAD
+  bcs @use_default_url
+  clc
+  lda #0
+  ldy read_url_file_param_buffer+NB65_FILE_ACCESS_FILESIZE
+  sta feed_url,y  ;put a zero at the end of the URL
+  
+@use_default_url:  
+  jsr setup_static_scroll_text  
+  
 	lda 	#0
 	jsr	clear_screen
 	lda	#DARK_GRAY
@@ -243,9 +253,12 @@ init:
 
   jsr reset_input_buffer
 
+  lda #0  
+  sta scroll_buffer_1    ;set this buffer to be an empty string, in case we try to scroll it
+
 ;now download the feed
 @download_feed:
-
+  
   ldax #feed_url
   stax nb65_param_buffer+NB65_URL
   ldax #download_buffer
@@ -334,7 +347,7 @@ setup_sprites:
   tay
   lda  sprite_x_pos,x
   sta $d000,y   ;sprite 0 X pos (LSB)
-  lda  0
+  lda  #0
   sta $d001,y   ;sprite 0 Y pos 
   
   ;colour sprite 0
@@ -534,6 +547,7 @@ setup_static_scroll_text:
   stax current_input_ptr
 @next_byte:
   jsr get_a
+  beq @next_byte  
   cmp #'%'
   beq @operator
   pha
@@ -564,7 +578,8 @@ setup_static_scroll_text:
   ldy #0
 @copy_feed_url_loop:  
   lda feed_url,y
-  beq @next_byte
+  cmp #$20
+  bcc @next_byte  ;any control char (including CR,LF, and $00) should be treated as end of URL
   jsr emit_a
   iny
   bne @copy_feed_url_loop  
@@ -840,10 +855,11 @@ sprite_x_msb:
 .byte $80
 
 sprite_y_pos:
-.include "sine_data.i"
 .repeat 128
   .byte 0
 .endrep
+.include "sine_data.i"
+
 ;.include "sine_data.i"
 
 
@@ -859,8 +875,22 @@ scroll_template:
 
 
 feed_url:
-;.byte "http://search.twitter.com/search.atom?q=kipper",0
-.byte "http://static.cricinfo.com/rss/livescores.xml",0
+.byte "http://search.twitter.com/search.atom?q=kipper",0
+;leave space for whatever we read in from disk
+.repeat 128
+.byte 0
+.endrep
+
+url_config_file:
+
+.byte "URL.CFG",0
+
+read_url_file_param_buffer:
+  .word url_config_file ;NB65_FILE_ACCESS_FILENAME
+  .word feed_url        ;B65_FILE_ACCESS_POINTER
+  .word $0000           ;NB65_FILE_ACCESS_FILESIZE   - should be filled in
+  .byte $00             ;NB65_FILE_ACCESS_DEVICE
+
 
 title: 
 .byte "<title>",0
