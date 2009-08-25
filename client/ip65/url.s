@@ -41,6 +41,7 @@ TIMEOUT_SECONDS=15
 .export url_download
 .export url_download_buffer
 .export url_download_buffer_length
+.export resource_download
 
 target_string=copy_src
 search_string=copy_dest
@@ -293,9 +294,22 @@ skip_to_hostname:
 ; AX = length of resource downloaded.
 url_download:
   jsr url_parse  
-  bcc @url_parsed_ok
+  bcc resource_download
   rts
-@url_parsed_ok:  
+
+;download a resource specified by ip,port & selector
+;inputs: 
+; url_ip = ip address of host to connect to
+; url_port = port number of to connect to
+; url_selector= address of selector to send to host after connecting
+; url_download_buffer - points to a buffer that url will be downloaded into
+; url_download_buffer_length - length of buffer
+;outputs:
+; sec if an error occured, else buffer pointed at by url_download_buffer is filled with contents 
+; of specified resource (with an extra 2 null bytes at the end),
+; AX = length of resource downloaded.
+resource_download:
+ 
   ldax url_download_buffer
   stax temp_buffer
   ldax url_download_buffer_length
@@ -322,7 +336,7 @@ url_download:
   jsr tcp_send_string
   jsr timer_read
   txa
-  adc #TIMEOUT_SECONDS*4 ;what value shoul trigger the timeout?
+  adc #TIMEOUT_SECONDS*4 ;what value should trigger the timeout?
   sta timeout_counter
   ;now loop until we're done
 @download_loop:

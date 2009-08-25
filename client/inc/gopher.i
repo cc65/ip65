@@ -19,13 +19,6 @@
   .importzp copy_dest
   .import copymem
   .import ascii_to_native
-  .import tcp_connect
-  .import tcp_send
-  .import tcp_send_data_len
-  .import tcp_callback
-  .import tcp_connect_ip
-  .import tcp_inbound_data_length
-  .import tcp_inbound_data_ptr
   .import dns_ip
   .import dns_resolve
   .import dns_set_hostname
@@ -44,7 +37,17 @@
   .import telnet_local_echo
   .import telnet_line_mode
   .import telnet_use_native_charset
-  
+
+  .import  url_ip
+  .import  url_port
+  .import  url_selector
+  .import url_resource_type
+  .import url_parse
+  .import url_download
+  .import url_download_buffer
+  .import url_download_buffer_length
+  .import resource_download
+
 .segment "IP65ZP" : zeropage
 
 ; pointer for moving through buffers
@@ -81,7 +84,7 @@ download_flag: .res 1
 dl_loop_counter: .res 2
 this_is_last_page: .res 1
 
-tcp_buffer_ptr: .res 2
+
 temp_ax: .res 2
 
 RESOURCE_HOSTNAME_MAX_LENGTH=64
@@ -91,15 +94,15 @@ resource_port: .res 2
 resource_selector: .res 128
 resource_selector_length: .res 1
 displayed_resource_type: .res 1
-query_string: .res 32
-query_string_length: .res 1
+
 
 RESOURCE_HISTORY_ENTRIES=8
 resource_history:
 .res $100*RESOURCE_HISTORY_ENTRIES
 
+scratch_buffer_length=16000
 scratch_buffer:
-  .res 16000
+  .res scratch_buffer_length
   
 .code
 
@@ -226,7 +229,7 @@ display_resource_in_buffer:
   
   lda screen_current_col
   cmp #0
-;  beq :+
+  beq :+
   jsr print_cr
 :  
   lda screen_current_row
@@ -346,9 +349,16 @@ select_resource_from_current_directory:
   inx
   jmp @copy_selector
 @end_of_selector:  
-  lda  #$00
-  sta resource_selector,x
   stx resource_selector_length
+  ;terminate with a CR,LF,$00
+  lda  #$0D
+  sta resource_selector,x
+  lda  #$0A
+  sta resource_selector+1,x
+  lda  #$00
+  sta resource_selector+2,x
+  
+    
   tax
 ;should now be pointing at the tab just before the hostname
 @copy_hostname:
@@ -408,16 +418,23 @@ select_resource_from_current_directory:
   stax  buffer_ptr
   jsr print_cr
   ldy #0
-  sty query_string_length
+  ldx resource_selector_length
   lda  #09
 @copy_one_char:
-  sta query_string,y
-  inc query_string_length
+  sta resource_selector,x
+  inx
   lda (buffer_ptr),y
   beq @done_query_string
   iny
-  jmp @copy_one_char
+  bne @copy_one_char
 @done_query_string:  
+  ;terminate with a CR,LF,$00
+  lda  #$0D
+  sta resource_selector,x
+  lda  #$0A
+  sta resource_selector+1,x
+  lda  #$00
+  sta resource_selector+2,x
 @done:
 
 add_resource_to_history_and_display:
@@ -452,13 +469,7 @@ add_resource_to_history_and_display:
   bcs @error_in_loading
   jmp display_resource_in_buffer
 @error_in_loading:
-  ldax  #error
-  jsr print
-  lda ip65_error
-  jsr print_hex
-  jsr print_cr
-  ;jsr get_key
-  rts
+  jmp print_errorcode
     
 
 ;show the entries in the history buffer
@@ -479,7 +490,7 @@ show_history:
   bne @show_one_entry
 get_keypress_then_rts:  
   jsr print_cr
-  ldax #any_key_to_continue
+  ldax #press_a_key_to_continue
   jsr print
   jsr get_key
   rts
@@ -487,8 +498,6 @@ get_keypress_then_rts:
 
 ;load the 'current_resource' into the buffer
 load_resource_into_buffer:
-  ldax #scratch_buffer
-  stax tcp_buffer_ptr
   ldax  #resolving
   jsr print
   ldax #resource_hostname
@@ -501,22 +510,21 @@ load_resource_into_buffer:
   jsr dns_resolve
 :  
   bcc @no_error
-  jmp @error
+  rts
 @no_error:  
   ldx #3        ; save IP address just retrieved
 : lda dns_ip,x
-  sta tcp_connect_ip,x
+  sta url_ip,x
   sta telnet_ip,x
   dex
   bpl :-
-  ldax #gopher_download_callback
-  stax tcp_callback
-  ldax  #connecting
-  jsr print
-
+  
+  
   lda displayed_resource_type  
   cmp #'8'  ;is it a 'telnet' resource?
   bne @not_telnet_resource
+  ldax  #connecting
+  jsr print
   ldax resource_port
   stax  telnet_port
   lda #0
@@ -542,98 +550,16 @@ load_resource_into_buffer:
   
 @not_telnet_resource:  
   ldax resource_port  
-  jsr tcp_connect
-  bcs @error
-  
-  ;connected, now send the selector
-  jsr print_cr
-  ldax  #retrieving
-  jsr print
+  stax url_port
   ldax #resource_selector
-  jsr print
-  jsr print_cr
-  ldx #0
-  stx download_flag
-  stx dl_loop_counter
-  stx dl_loop_counter+1
-  lda resource_selector_length
-  beq @empty_selector
-  stax tcp_send_data_len
-  ldax #resource_selector
-  jsr tcp_send
+  stax url_selector
+ ldax #scratch_buffer 
+  stax url_download_buffer
+  ldax #scratch_buffer_length
+  stax url_download_buffer_length
   
-@empty_selector:  
-  ;send the tab and query string (if supplied)
-  lda displayed_resource_type  
-  cmp #'7'  ;is it a 'search' resource?
-  bne @send_cr_lf
-  ldax query_string_length
-  sta tcp_send_data_len
-  ldax #query_string
-  jsr tcp_send
-
-@send_cr_lf:
-  ;send the CR/LF after the connector
-  ldax #2
-  sta tcp_send_data_len
-  ldax #cr_lf
-  jsr tcp_send
+  jmp resource_download
   
-  ;now loop until we're done
-@download_loop:
-  inc dl_loop_counter
-  bne :+
-  inc dl_loop_counter+1
-  bne :+
-
-  lda #'.'
-  jsr print_a
-:  
-  jsr ip65_process
-  lda download_flag
-  beq @download_loop
-  clc
-  
-@error:
-  rts
-  
-gopher_download_callback:
-  lda tcp_inbound_data_length
-  cmp #$ff
-  bne @not_end_of_file
-  lda #1
-  sta download_flag
-  
-  ;put a zero byte at the end of the file (in case it was a text file)
-  ldax tcp_buffer_ptr  
-  stax copy_dest
-  lda #0  
-  tay
-  sta (copy_dest),y
-  
-  rts
-@not_end_of_file:
-
-;copy this chunk to our input buffer
-  ldax tcp_buffer_ptr  
-  stax copy_dest
-  ldax tcp_inbound_data_ptr
-  stax copy_src
-  ldax tcp_inbound_data_length
-  jsr  copymem  
-;increment the pointer into the input buffer  
-  clc
-  lda tcp_buffer_ptr
-  adc tcp_inbound_data_length
-  sta tcp_buffer_ptr
-  lda tcp_buffer_ptr+1
-  adc tcp_inbound_data_length+1
-  sta tcp_buffer_ptr+1  
-  lda #'*'
-  jsr print_a
-  
-  
-  rts
 
 
 ;retrieve entry specified by A from resource history
@@ -711,8 +637,6 @@ port_no:
 history:
 .byte "GOPHER HISTORY ",13,0
 cr_lf: .byte $0D,$0A
-error:
-.byte "ERROR - CODE ",0
 connecting:
 .byte "CONNECTING ",0
 retrieving:
@@ -725,8 +649,5 @@ selector:
 .byte "SELECTOR :",0
 query:
 .byte "QUERY :",0
-
-any_key_to_continue:
-.byte "PRESS ANY KEY TO CONTINUE",0
 
 
