@@ -55,7 +55,10 @@
 	.import eth_outp_len
   .import timer_read
   .import timer_timeout
-  
+
+.data
+  icmp_cbtmp:	jmp $0000			; temporary vector - address filled in later
+
 
 	.bss
 
@@ -65,7 +68,6 @@ icmp_callback:	.res 2
 
 ; icmp callbacks
 icmp_cbmax	= 2
-icmp_cbtmp:	.res 3			; temporary vector
 icmp_cbveclo:	.res icmp_cbmax		; table of listener vectors (lsb)
 icmp_cbvechi:	.res icmp_cbmax		; table of listener vectors (msb)
 icmp_cbtype:	.res icmp_cbmax		; table of listener types
@@ -118,8 +120,6 @@ ping_state: .res 1
 icmp_init:
 	lda #0
 	sta icmp_cbcount
-	lda #$4c			; jmp addr
-	sta icmp_cbtmp
 	rts
 
 ;process incoming icmp packet

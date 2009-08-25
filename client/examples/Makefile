@@ -1,5 +1,6 @@
 CC=cl65
 AS=ca65
+DA=dasm
 LD=ld65
 CFLAGS=-Oirs -t $(TARGET)
 AFLAGS=
@@ -13,7 +14,7 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
 
-all: 	upnatom.prg upnatom.d64
+all: 	upnatom.prg upnatom.d64 httpd.d64
 
 %.o: %.s 
 	$(AS) $(AFLAGS) $<
@@ -32,6 +33,13 @@ upnatom.d64:  upnatom.prg url.cfg
 	cp upnatom.prg autoexec.prg
 	ripxplore.rb --init CbmDos upnatom.d64 -a autoexec.prg
 	ripxplore.rb  upnatom.d64 -a url.cfg -t C64Seq
+
+httpd.prg: httpd.asm
+	$(DA) httpd.asm -ohttpd.prg
+
+httpd.d64:  httpd.prg url.cfg
+	cp httpd.prg autoexec.prg
+	ripxplore.rb --init CbmDos httpd.d64 -a autoexec.prg
 
 clean:
 	rm -f *.o *.pg2 *.prg *.map upnatom.d64

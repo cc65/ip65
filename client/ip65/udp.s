@@ -53,6 +53,9 @@
 	.importzp copy_dest
 
 	.import cfg_ip
+  
+  .data
+  udp_cbtmp:	jmp $ffff			; temporary vector - gets filled in later
 
 
 	.bss
@@ -68,7 +71,6 @@ udp_send_len:		.res 2 ;set to length of data to be sent in udp packet (excluding
 
 ; udp listener callbacks
 udp_cbmax	= 4
-udp_cbtmp:	.res 3			; temporary vector
 udp_cbveclo:	.res udp_cbmax		; table of listener vectors (lsb)
 udp_cbvechi:	.res udp_cbmax		; table of listener vectors (msb)
 udp_cbportlo:	.res udp_cbmax		; table of ports (lsb)
@@ -105,8 +107,6 @@ port:   	.res 2
 udp_init:
 	lda #0
 	sta udp_cbcount
-	lda #$4c			; jmp addr
-	sta udp_cbtmp
 	rts
 
 

@@ -42,6 +42,10 @@
   endm
 
 
+
+protocol_http equ $00
+protocol_gopher equ $01
+
 ;some routines & zero page variables
 print_a   equ $ffd2
 temp_ptr  equ $FB ; scratch space in page zero
@@ -50,7 +54,9 @@ temp_ptr  equ $FB ; scratch space in page zero
 ;start of code
 ;NO BASIC stub! needs to be direct booted via TFTP
   org $1000
-    
+  
+  jsr init_tod  
+  
   ldaxi #NB65_CART_SIGNATURE  ;where signature should be in cartridge (if cart is banked in)
   jsr  look_for_signature
   bcc found_nb65_signature
@@ -88,6 +94,7 @@ found_nb65_signature
 ;print out the current configuration
   nb65call #NB65_PRINT_IP_CONFIG
 
+  
 
 listen_on_port_80
 
@@ -113,27 +120,92 @@ listen_on_port_80
   lda #0
   sta connection_closed
   sta found_eol
+  clc
+  lda $dc09  ;time of day clock: seconds (in BCD)
+  sed
+  adc #$30
+  cmp #$60
+  bcc .timeout_set
+  sec
+  sbc #$60
+.timeout_set:  
+  cld
+  sta connection_timeout_seconds
   
 .main_polling_loop
   jsr NB65_PERIODIC_PROCESSING_VECTOR
+  
   lda found_eol
-  beq .no_eol_yet
-  nb65call #NB65_PRINT_HEX
-  lda #"!"
-  jsr print_a
-  ldaxi #html_length
+  bne .got_eol
+
+  lda $dc09  ;time of day clock: seconds
+  
+  cmp connection_timeout_seconds  
+  beq .connection_timed_out
+;  nb65call #NB65_PRINT_HEX
+  lda connection_closed
+  beq  .main_polling_loop  
+  jmp listen_on_port_80
+  
+.connection_timed_out:
+  print #timeout
+  jmp listen_on_port_80
+.got_eol:
+  ;if we have a CR, we have got enough of a request to know if it's a HTTP or gopher request
+  lda #"G"
+  cmp scratch_buffer
+  bne .gopher
+  lda #"E"
+  cmp scratch_buffer+1
+  bne .gopher
+  lda #"T"
+  cmp scratch_buffer+2
+  bne .gopher
+  lda #" "
+  cmp scratch_buffer+3
+  bne .gopher
+  lda #protocol_http
+  sta protocol
+  print #http
+  ldx #4
+  jmp .copy_selector
+.gopher
+  jsr  print_a
+  lda #protocol_gopher
+  sta protocol
+  print #gopher
+  ldx #0
+.copy_selector:
+  lda scratch_buffer,x
+  cmp #"/"
+  bne .copy_one_char
+  inx
+.copy_one_char
+  lda scratch_buffer,x
+  cmp #$20  
+  bcc .last_char_in_selector  
+  sta selector,y
+  inx
+  iny
+  bne .copy_one_char
+
+.last_char_in_selector  
+  lda #0
+  sta selector,y
+
+  print #selector
+  
+;  ldaxi #html_length
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
-  ldaxi #html
+;  ldaxi #html
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
   ldaxi  #nb65_param_buffer
   nb65call  #NB65_SEND_TCP_PACKET
 
   nb65call #NB65_TCP_CLOSE_CONNECTION  
+.start_new_connection   
   jmp listen_on_port_80
-.no_eol_yet  
-  lda connection_closed
-  beq .main_polling_loop  
-  jmp listen_on_port_80
+  
 
 
 
@@ -178,6 +250,58 @@ reset_after_keypress
   jmp $fce2   ;do a cold start
 
 
+;init the Time-Of-Day clock - cribbed from http://codebase64.org/doku.php?id=base:initialize_tod_clock_on_all_platforms
+init_tod:
+	sei
+	lda	#0
+	sta	$d011		;Turn off display to disable badlines
+	sta	$dc0e		;Set TOD Clock Frequency to 60Hz
+	sta	$dc0f		;Enable Set-TOD-Clock
+	sta	$dc0b		;Set TOD-Clock to 0 (hours)
+	sta	$dc0a		;- (minutes)
+	sta	$dc09		;- (seconds)
+	sta	$dc08		;- (deciseconds)
+
+	lda	$dc08		;
+.wait_raster	
+  cmp	$dc08		;Sync raster to TOD Clock Frequency
+	beq	.wait_raster
+	
+	ldx	#0		;Prep X and Y for 16 bit
+	ldy	#0		; counter operation
+	lda	$dc08		;Read deciseconds
+.loop1
+  inx			;2   -+
+	bne	.loop2		;2/3  | Do 16 bit count up on
+	iny			;2    | X(lo) and Y(hi) regs in a 
+	jmp	.loop3		;3    | fixed cycle manner
+.loop2
+  nop			;2    |
+	nop			;2   -+
+.loop3
+  cmp	$dc08		;4 - Did 1 decisecond pass?
+	beq	.loop1		;3 - If not, loop-di-doop
+				;Each loop = 16 cycles
+				;If less than 118230 cycles passed, TOD is 
+				;clocked at 60Hz. If 118230 or more cycles
+				;passed, TOD is clocked at 50Hz.
+				;It might be a good idea to account for a bit
+				;of slack and since every loop is 16 cycles,
+				;28*256 loops = 114688 cycles, which seems to be
+				;acceptable. That means we need to check for
+				;a Y value of 28.
+
+	cpy	#28		;Did 114688 cycles or less go by?
+	bcc	.hertz_correct		;- Then we already have correct 60Hz $dc0e value
+	lda	#$80		;Otherwise, we need to set it to 50Hz
+	sta	$dc0e
+.hertz_correct
+	lda	#$1b		;Enable the display again
+	sta	$d011
+  cli
+	rts		
+
+
 print_errorcode
   print #error_code
   nb65call #NB65_GET_LAST_ERROR
@@ -200,7 +324,6 @@ http_callback
 
   lda #"*"
   jsr print_a
-
   ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
   stax tcp_inbound_data_ptr
   ldax nb65_param_buffer+NB65_PAYLOAD_LENGTH 
@@ -233,7 +356,7 @@ http_callback
   tay
   sta (temp_ptr),y
     
-;look for EOL ($0D) in input
+;look for CR or LF in input
   sta found_eol
   ldaxi #scratch_buffer
   stax get_next_byte+1
@@ -241,7 +364,7 @@ http_callback
 .look_for_eol
   jsr get_next_byte
   cmp #$0a
-  bne .found_eol    
+  beq .found_eol    
   cmp #$0d
   bne .not_eol
 .found_eol  
@@ -267,12 +390,11 @@ mode dc.b " MODE",13,0
 disconnected dc.b 13,"CONNECTION CLOSED",13,0
 failed dc.b "FAILED ", 0
 ok dc.b "OK ", 0
+timeout dc.b 13,"CONNECTION TIMEOUT ",13, 0
+
 transmission_error dc.b "ERROR WHILE SENDING ",0
-
-html dc.b "<H1>c64 test page</h1><form method=post>foo:<input type=text name=foo><br>bar:<textarea name=bar></textarea><br><INPUT type=submit value=send>"
-html_end
-html_length equ html_end-html
-
+http: dc.b "HTTP: ",0
+gopher: dc.b "GOPHER: ",0
 ;self modifying code
 get_next_byte
   lda $ffff
@@ -284,12 +406,16 @@ get_next_byte
 
 
 ;variables
+protocol ds.b 1
 connection_closed ds.b 1
+connection_timeout_seconds ds.b 1 
 found_eol ds.b 1
 nb65_param_buffer DS.B $20  
 tcp_buffer_ptr  ds.b 2
 scan_ptr  ds.b 2
 tcp_inbound_data_ptr ds.b 2
 tcp_inbound_data_length ds.b 2
-scratch_buffer: DS.B $1000
-
+selector: ds.b $100
+scratch_buffer: ds.b $1000
+index_html_buffer: ds.b $1000
+gopher_map_buffer: ds.b $1000
