@@ -40,7 +40,13 @@ timer_read:
 ; outputs: none (all registers preserved, by carry flag can be modified)
 timer_vbl_handler:
   pha
-  lda #$11
+  lda $02A6   ;PAL/NTSC flag (0 = NTSC, 1 = PAL), 
+  beq @was_ntsc  
+  lda #$14  ;PAL = 50 HZ =~ 20 ms per 'tick'
+  bne :+
+@was_ntsc:  
+  lda #$11  ;NTSC = 60 HZ =~ 17 ms per 'tick' 
+: 
   adc current_time_value
   sta current_time_value
   bcc :+
