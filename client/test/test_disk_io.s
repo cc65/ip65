@@ -1,7 +1,7 @@
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KIPPER_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .include "../inc/common.i"

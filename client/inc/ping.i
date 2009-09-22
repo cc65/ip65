@@ -9,20 +9,20 @@ ping_retries: .res 1
 ping_loop:
   ldax #remote_host
   jsr print
-  nb65call #NB65_INPUT_HOSTNAME
+  kippercall #KPR_INPUT_HOSTNAME
   bcc @host_entered
   ;if no host entered, then bail.
   rts
 @host_entered:
-  stax nb65_param_buffer
+  stax kipper_param_buffer
   jsr print_cr
   ldax #resolving
   jsr print
-  ldax nb65_param_buffer
-  nb65call #NB65_PRINT_ASCIIZ
+  ldax kipper_param_buffer
+  kippercall #KPR_PRINT_ASCIIZ
   jsr print_cr
-  ldax #nb65_param_buffer
-  nb65call #NB65_DNS_RESOLVE
+  ldax #kipper_param_buffer
+  kippercall #KPR_DNS_RESOLVE
   bcc @resolved_ok
 @failed:  
   print_failed
@@ -36,7 +36,7 @@ ping_loop:
 @ping_once:
   ldax #pinging
   jsr print
-  ldax #nb65_param_buffer
+  ldax #kipper_param_buffer
   jsr print_dotted_quad
   lda #' '
   jsr print_a
@@ -45,8 +45,8 @@ ping_loop:
   lda #' '
   jsr print_a
 
-  ldax #nb65_param_buffer
-  nb65call #NB65_PING_HOST
+  ldax #kipper_param_buffer
+  kippercall #KPR_PING_HOST
 
 bcs @ping_error
   jsr print_integer

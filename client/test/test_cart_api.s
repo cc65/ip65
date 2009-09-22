@@ -1,7 +1,7 @@
-;test the "NETBOOT65 Cartridge API"
-.ifndef NB65_API_VERSION_NUMBER
+;test the "Kipper Kartridge API"
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .include "../ip65/copymem.s"
@@ -34,7 +34,7 @@ print_a = $ffd2
   temp_ptr:		.res 2
   
   .bss
-  nb65_param_buffer: .res $20  
+  kipper_param_buffer: .res $20  
   block_number: .res $0
   
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
@@ -43,8 +43,8 @@ print_a = $ffd2
 
 .macro print arg
   ldax arg
-	ldy #NB65_PRINT_ASCIIZ
-  jsr NB65_DISPATCH_VECTOR 
+	ldy #KPR_PRINT_ASCIIZ
+  jsr KPR_DISPATCH_VECTOR 
 .endmacro 
 
 .macro print_cr
@@ -54,7 +54,7 @@ print_a = $ffd2
 
 .macro call arg
 	ldy arg
-  jsr NB65_DISPATCH_VECTOR   
+  jsr KPR_DISPATCH_VECTOR   
 .endmacro
 
 basicstub:
@@ -70,13 +70,13 @@ basicstub:
 	.word 0
 
 
-;look for NB65 signature at location pointed at by AX
+;look for KIPPER signature at location pointed at by AX
 look_for_signature: 
   stax temp_ptr
-  ldy #3
+  ldy #5
 @check_one_byte:
   lda (temp_ptr),y
-  cmp nb65_signature,y
+  cmp kipper_signature,y
   bne @bad_match  
   dey 
   bpl@check_one_byte  
@@ -89,23 +89,17 @@ look_for_signature:
 init:
   
 
-  ldax #NB65_CART_SIGNATURE  ;where signature should be in cartridge
+  ldax #KPR_CART_SIGNATURE  ;where signature should be in cartridge
   jsr  look_for_signature
-  bcc @found_nb65_signature
-
-  ldax #NB65_RAM_STUB_SIGNATURE  ;where signature should be in RAM
-  jsr  look_for_signature
-  bcc :+
-  jmp nb65_signature_not_found
-:  
-  jsr NB65_RAM_STUB_ACTIVATE     ;we need to turn on NB65 cartridge
+  bcc @found_kipper_signature
+  jmp kipper_signature_not_found
   
-@found_nb65_signature:
+@found_kipper_signature:
 
   print #initializing
 
-  ldy #NB65_INITIALIZE
-  jsr NB65_DISPATCH_VECTOR 
+  ldy #KPR_INITIALIZE
+  jsr KPR_DISPATCH_VECTOR 
 	bcc :+  
   print #failed
   jsr print_errorcode
@@ -115,32 +109,32 @@ init:
   print #ok
   print_cr
   
-  call #NB65_PRINT_IP_CONFIG
+  call #KPR_PRINT_IP_CONFIG
   
 ;DNS resolution test 
   
   ldax #test_hostname
-  stax nb65_param_buffer+NB65_DNS_HOSTNAME
+  stax kipper_param_buffer+KPR_DNS_HOSTNAME
 
-  call #NB65_PRINT_ASCIIZ  
+  call #KPR_PRINT_ASCIIZ  
 
   cout #' '
   cout #':'
   cout #' '
   
-  ldax  #nb65_param_buffer
-  call #NB65_DNS_RESOLVE
+  ldax  #kipper_param_buffer
+  call #KPR_DNS_RESOLVE
   bcc :+
   print #dns_lookup_failed_msg
   print_cr
   jmp print_errorcode
 :  
-  ldax #nb65_param_buffer+NB65_DNS_HOSTNAME_IP
-  call #NB65_PRINT_DOTTED_QUAD
+  ldax #kipper_param_buffer+KPR_DNS_HOSTNAME_IP
+  call #KPR_PRINT_DOTTED_QUAD
   print_cr
  
  ldax #64
- call #NB65_UDP_REMOVE_LISTENER  ;should generate an error since there is no listener on  port 64
+ call #KPR_UDP_REMOVE_LISTENER  ;should generate an error since there is no listener on  port 64
   jsr print_errorcode
 
   
@@ -148,11 +142,11 @@ init:
   lda #0
   sta block_number
   ldax #test_file
-  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  stax kipper_param_buffer+KPR_TFTP_FILENAME
   ldax #tftp_upload_callback
-  stax nb65_param_buffer+NB65_TFTP_POINTER
-  ldax #nb65_param_buffer
-  call #NB65_TFTP_CALLBACK_UPLOAD
+  stax kipper_param_buffer+KPR_TFTP_POINTER
+  ldax #kipper_param_buffer
+  call #KPR_TFTP_CALLBACK_UPLOAD
   bcc :+
   jmp print_errorcode
 :
@@ -163,19 +157,19 @@ init:
   lda #0
   sta block_number
   ldax #test_file
-  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  stax kipper_param_buffer+KPR_TFTP_FILENAME
   ldax #tftp_download_callback
-  stax nb65_param_buffer+NB65_TFTP_POINTER
-  ldax #nb65_param_buffer
-  call #NB65_TFTP_CALLBACK_DOWNLOAD
+  stax kipper_param_buffer+KPR_TFTP_POINTER
+  ldax #kipper_param_buffer
+  call #KPR_TFTP_CALLBACK_DOWNLOAD
     bcc :+
   jmp print_errorcode
 :
   lda #'$'
   jsr print_a
-  lda  nb65_param_buffer+NB65_TFTP_FILESIZE+1
+  lda  kipper_param_buffer+KPR_TFTP_FILESIZE+1
   jsr print_hex
-  lda  nb65_param_buffer+NB65_TFTP_FILESIZE
+  lda  kipper_param_buffer+KPR_TFTP_FILESIZE
   jsr print_hex
   print #bytes_download
   print_cr
@@ -183,11 +177,11 @@ init:
 ;udp callback test
   
   ldax  #64     ;listen on port 64
-  stax nb65_param_buffer+NB65_UDP_LISTENER_PORT
+  stax kipper_param_buffer+KPR_UDP_LISTENER_PORT
   ldax  #udp_callback
-  stax nb65_param_buffer+NB65_UDP_LISTENER_CALLBACK
-  ldax  #nb65_param_buffer
-  call   #NB65_UDP_ADD_LISTENER
+  stax kipper_param_buffer+KPR_UDP_LISTENER_CALLBACK
+  ldax  #kipper_param_buffer
+  call   #KPR_UDP_ADD_LISTENER
 	bcc :+  
   print #failed
   jsr print_errorcode
@@ -198,7 +192,7 @@ init:
   
 
 @loop_forever:
-  jsr NB65_PERIODIC_PROCESSING_VECTOR
+  jsr KPR_PERIODIC_PROCESSING_VECTOR
   jmp @loop_forever
   
   
@@ -239,49 +233,49 @@ tftp_download_callback:
 
 udp_callback:
 
-  ldax #nb65_param_buffer
-  call #NB65_GET_INPUT_PACKET_INFO
+  ldax #kipper_param_buffer
+  call #KPR_GET_INPUT_PACKET_INFO
 
   print #port
 
-  lda nb65_param_buffer+NB65_LOCAL_PORT+1
-  call #NB65_PRINT_HEX
+  lda kipper_param_buffer+KPR_LOCAL_PORT+1
+  call #KPR_PRINT_HEX
 
-  lda nb65_param_buffer+NB65_LOCAL_PORT
-  call #NB65_PRINT_HEX
+  lda kipper_param_buffer+KPR_LOCAL_PORT
+  call #KPR_PRINT_HEX
 
   print_cr
 
   print #received
   print #from
 
-  ldax #nb65_param_buffer+NB65_REMOTE_IP
-  call #NB65_PRINT_DOTTED_QUAD
+  ldax #kipper_param_buffer+KPR_REMOTE_IP
+  call #KPR_PRINT_DOTTED_QUAD
   
   cout #' '
   
   print #port
   
-  lda nb65_param_buffer+NB65_REMOTE_PORT+1
-  call #NB65_PRINT_HEX  
-  lda nb65_param_buffer+NB65_REMOTE_PORT
-  call #NB65_PRINT_HEX
+  lda kipper_param_buffer+KPR_REMOTE_PORT+1
+  call #KPR_PRINT_HEX  
+  lda kipper_param_buffer+KPR_REMOTE_PORT
+  call #KPR_PRINT_HEX
   
   print_cr
   
   print #length
 
-  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH+1
-  call #NB65_PRINT_HEX
-  lda nb65_param_buffer+NB65_PAYLOAD_LENGTH
-  call #NB65_PRINT_HEX
+  lda kipper_param_buffer+KPR_PAYLOAD_LENGTH+1
+  call #KPR_PRINT_HEX
+  lda kipper_param_buffer+KPR_PAYLOAD_LENGTH
+  call #KPR_PRINT_HEX
   print_cr  
   print #data
 
-  ldax nb65_param_buffer+NB65_PAYLOAD_POINTER
+  ldax kipper_param_buffer+KPR_PAYLOAD_POINTER
   
   stax temp_ptr
-  ldx nb65_param_buffer+NB65_PAYLOAD_LENGTH ;assumes length is < 255
+  ldx kipper_param_buffer+KPR_PAYLOAD_LENGTH ;assumes length is < 255
   ldy #0
 :
   lda (temp_ptr),y
@@ -294,13 +288,13 @@ udp_callback:
 
 ;make and send reply
   ldax #reply_message
-  stax nb65_param_buffer+NB65_PAYLOAD_POINTER
+  stax kipper_param_buffer+KPR_PAYLOAD_POINTER
 
   ldax #reply_message_length
-  stax nb65_param_buffer+NB65_PAYLOAD_LENGTH
+  stax kipper_param_buffer+KPR_PAYLOAD_LENGTH
  
-  ldax #nb65_param_buffer
-  call #NB65_SEND_UDP_PACKET  
+  ldax #kipper_param_buffer
+  call #KPR_SEND_UDP_PACKET  
   bcc :+
   jmp print_errorcode
 :
@@ -316,16 +310,16 @@ restart:
 
 print_errorcode:
   print #error_code
-  call #NB65_GET_LAST_ERROR
-  call #NB65_PRINT_HEX
+  call #KPR_GET_LAST_ERROR
+  call #KPR_PRINT_HEX
   print_cr
   rts
 
-nb65_signature_not_found:
+kipper_signature_not_found:
 
   ldy #0
 :
-  lda nb65_signature_not_found_message,y
+  lda kipper_signature_not_found_message,y
   beq restart
   jsr print_a
   iny
@@ -407,8 +401,8 @@ failed:
 ok:
 	.byte "OK ", 0
  
- nb65_signature_not_found_message:
- .byte "NO NB65 API FOUND",13,"PRESS ANY KEY TO RESET", 0
+ kipper_signature_not_found_message:
+ .byte "NO KIPPER API FOUND",13,"PRESS ANY KEY TO RESET", 0
  
 dns_lookup_failed_msg:
  .byte "DNS LOOKUP FAILED", 0
@@ -423,5 +417,5 @@ reply_message_length=reply_message_end-reply_message
 test_file:
 .byte "TESTFILE.BIN",0
 
-nb65_signature:
-  .byte $4E,$42,$36,$35  ; "NB65"  - API signature
+kipper_signature:
+  .byte "KIPPER" ; API signature

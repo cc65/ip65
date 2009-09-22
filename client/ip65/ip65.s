@@ -2,9 +2,9 @@
 
 .include "../inc/common.i"
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 	.export ip65_init
@@ -81,7 +81,7 @@ ip65_init:
 	jsr eth_init		; initialize ethernet driver
   
 	bcc @ok
-  lda #NB65_ERROR_DEVICE_FAILURE
+  lda #KPR_ERROR_DEVICE_FAILURE
   sta ip65_error
   rts
 @ok:  

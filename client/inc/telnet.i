@@ -21,20 +21,20 @@ telnet_main_entry:
   
   ldax #remote_host
   jsr print
-  nb65call #NB65_INPUT_HOSTNAME
+  kippercall #KPR_INPUT_HOSTNAME
   bcc @host_entered
   ;if no host entered, then bail.
   jmp exit_telnet
 @host_entered:
-  stax nb65_param_buffer
+  stax kipper_param_buffer
   jsr print_cr
   ldax #resolving
   jsr print
-  ldax nb65_param_buffer
-  nb65call #NB65_PRINT_ASCIIZ
+  ldax kipper_param_buffer
+  kippercall #KPR_PRINT_ASCIIZ
   jsr print_cr
-  ldax #nb65_param_buffer
-  nb65call #NB65_DNS_RESOLVE
+  ldax #kipper_param_buffer
+  kippercall #KPR_DNS_RESOLVE
   bcc @resolved_ok
   print_failed
   jsr print_cr
@@ -43,14 +43,14 @@ telnet_main_entry:
 @resolved_ok:
   ldx #3
 @copy_telnet_ip_loop:
-  lda nb65_param_buffer,x
+  lda kipper_param_buffer,x
   sta telnet_ip,x
   dex
   bpl @copy_telnet_ip_loop
 @get_port:
   ldax #remote_port
   jsr print
-  nb65call #NB65_INPUT_PORT_NUMBER
+  kippercall #KPR_INPUT_PORT_NUMBER
   bcc @port_entered
   ;if no port entered, then assume port 23
   ldax #23

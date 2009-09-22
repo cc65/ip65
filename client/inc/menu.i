@@ -1,7 +1,6 @@
 
 ;REQUIRES KEYCODES TO BE DEFINED
 
-
 OPTIONS_PER_PAGE = $10
 .bss
 
@@ -140,7 +139,7 @@ select_option_from_menu:
   lda get_current_byte+1
   ldx get_current_byte+2
  
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   jsr @skip_past_next_null_byte
   inc current_option

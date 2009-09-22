@@ -10,9 +10,9 @@
 MAX_DHCP_MESSAGES_SENT=12     ;timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
   .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
   
   .export dhcp_init
@@ -159,7 +159,7 @@ dhcp_init:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:  
@@ -204,7 +204,7 @@ dhcp_init:
   rts
 
 @too_many_messages_sent:
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error
   jsr @bound   ;to remove the listener ( thanks to ShadowM for bug report)
   sec             ;signal an error

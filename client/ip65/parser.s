@@ -12,9 +12,9 @@ target_string=copy_src
 search_string=copy_dest
 
 .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .bss

@@ -3,13 +3,14 @@
 ;this whole file could (and should) be greatly optimised by making it all table driven, but since this file is probably only going to be used in a bankswitched ROM where
 ;space is not at such a premium, I'll go with the gross hack for now.
 
-.ifndef NB65_API_VERSION_NUMBER
+
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 .include "../inc/common.i"
 .include "../inc/commonprint.i"
-.export nb65_dispatcher
+.export kipper_dispatcher
 
 .import ip65_init
 .import dhcp_init
@@ -45,7 +46,7 @@
 .importzp copy_dest
 
 ;reuse the copy_src zero page location
-nb65_params = copy_src
+kipper_params = copy_src
 buffer_ptr= copy_dest
 .data
 
@@ -62,7 +63,7 @@ ip_configured_flag:
 .code
 
 irq_handler:
-  jsr NB65_VBL_VECTOR  
+  jsr KPR_VBL_VECTOR  
   jmp jmp_old_irq
 
 
@@ -84,18 +85,18 @@ set_tftp_params:
   dex
   bpl :-
 
-  ldy #NB65_TFTP_FILENAME
-  lda (nb65_params),y
+  ldy #KPR_TFTP_FILENAME
+  lda (kipper_params),y
   sta tftp_filename
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tftp_filename+1
 
-  ldy #NB65_TFTP_POINTER
-  lda (nb65_params),y
+  ldy #KPR_TFTP_POINTER
+  lda (kipper_params),y
   sta tftp_load_address
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tftp_load_address+1
   
   jsr tftp_clear_callbacks
@@ -103,18 +104,18 @@ set_tftp_params:
   rts
 
 set_tftp_callback_vector:
-  ldy #NB65_TFTP_POINTER+1
-  lda (nb65_params),y
+  ldy #KPR_TFTP_POINTER+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y  
+  lda (kipper_params),y  
   jmp tftp_set_callback_vector
   
-nb65_dispatcher:
-  stax nb65_params
+kipper_dispatcher:
+  stax kipper_params
   
 
-  cpy #NB65_INITIALIZE
+  cpy #KPR_INITIALIZE
   bne :+
   lda ip_configured_flag
   bne ip_configured
@@ -140,33 +141,33 @@ ip_configured:
   rts
 :
 
-  cpy #NB65_GET_IP_CONFIG
+  cpy #KPR_GET_IP_CONFIG
   bne :+
   ldax  #cfg_mac
   clc
   rts
 :
 
-  cpy #NB65_DNS_RESOLVE
+  cpy #KPR_DNS_RESOLVE
   bne :+  
   phax
-  ldy #NB65_DNS_HOSTNAME+1
-  lda (nb65_params),y
+  ldy #KPR_DNS_HOSTNAME+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   jsr dns_set_hostname 
   bcs @dns_error
   jsr dns_resolve
   bcs @dns_error
 
-  ldy #NB65_DNS_HOSTNAME_IP  
+  ldy #KPR_DNS_HOSTNAME_IP  
   plax
-  stax nb65_params
+  stax kipper_params
   ldx #4
 @copy_dns_ip:
   lda dns_ip,y
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   dex  
   bne @copy_dns_ip
@@ -177,143 +178,138 @@ ip_configured:
     
 :
 
-  cpy #NB65_UDP_ADD_LISTENER
+  cpy #KPR_UDP_ADD_LISTENER
   bne :+  
-  ldy #NB65_UDP_LISTENER_CALLBACK
-  lda (nb65_params),y
+  ldy #KPR_UDP_LISTENER_CALLBACK
+  lda (kipper_params),y
   sta udp_callback
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_callback+1
-  ldy #NB65_UDP_LISTENER_PORT+1
-  lda (nb65_params),y
+  ldy #KPR_UDP_LISTENER_PORT+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   
   jmp udp_add_listener
 :
 
-  cpy #NB65_GET_INPUT_PACKET_INFO
+  cpy #KPR_GET_INPUT_PACKET_INFO
   bne :+
   ldy #3
 @copy_src_ip:  
   lda ip_inp+12,y  ;src IP 
-  sta (nb65_params),y
+  sta (kipper_params),y
   dey
   bpl @copy_src_ip
   
-  ldy #NB65_REMOTE_PORT
+  ldy #KPR_REMOTE_PORT
   lda udp_inp+1 ;src port (lo byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda udp_inp+0 ;src port (high byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda udp_inp+3 ;dest port (lo byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda udp_inp+2 ;dest port (high byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
 
   iny
   sec
   lda udp_inp+5 ;payload length (lo byte)
   sbc #8  ;to remove length of header
-  sta (nb65_params),y
+  sta (kipper_params),y
 
   iny
   lda udp_inp+4 ;payload length (hi byte)
   sbc #0  ;in case there was a carry from the lo byte
-  sta (nb65_params),y
+  sta (kipper_params),y
   
   iny
   lda #<(udp_inp+8) ;payload ptr (lo byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
 
   iny
   lda #>(udp_inp+8) ;payload ptr (hi byte)
-  sta (nb65_params),y
+  sta (kipper_params),y
 
-.ifdef API_VERSION
-.if (API_VERSION>1)
 .import tcp_inbound_data_ptr
 .import tcp_inbound_data_length
 
-;for API V2+, we need to check if this is a TCP packet
   lda ip_inp+9 ;proto number
   cmp #6  ;TCP
   bne @not_tcp
-  ldy #NB65_PAYLOAD_LENGTH
+  ldy #KPR_PAYLOAD_LENGTH
   lda tcp_inbound_data_length
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda tcp_inbound_data_length+1
-  sta (nb65_params),y
+  sta (kipper_params),y
   
-  ldy #NB65_PAYLOAD_POINTER
+  ldy #KPR_PAYLOAD_POINTER
   lda tcp_inbound_data_ptr
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda tcp_inbound_data_ptr+1
-  sta (nb65_params),y
+  sta (kipper_params),y
 @not_tcp:
-.endif
-.endif
 
   clc
   rts
 :  
 
-  cpy #NB65_SEND_UDP_PACKET
+  cpy #KPR_SEND_UDP_PACKET
   bne :+
   ldy #3
 @copy_dest_ip:  
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_dest,y
   dey
   bpl @copy_dest_ip
   
-  ldy #NB65_REMOTE_PORT  
-  lda (nb65_params),y
+  ldy #KPR_REMOTE_PORT  
+  lda (kipper_params),y
   sta udp_send_dest_port
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_dest_port+1
   iny
 
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_src_port
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_src_port+1
   iny
 
 
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_len
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta udp_send_len+1
   iny
 
   ;AX should point at data to send
-  lda (nb65_params),y
+  lda (kipper_params),y
   pha
   iny
-  lda (nb65_params),y  
+  lda (kipper_params),y  
   tax
   pla
   jmp udp_send
 :
 
-  cpy #NB65_UDP_REMOVE_LISTENER
+  cpy #KPR_UDP_REMOVE_LISTENER
   bne :+
   jmp udp_remove_listener
 :  
 
 
-  cpy #NB65_DEACTIVATE
+  cpy #KPR_DEACTIVATE
   bne :+
   ldax  jmp_old_irq+1
   sei ;don't want any interrupts while we fiddle with the vector
@@ -325,11 +321,11 @@ ip_configured:
   rts
 :  
 
-  cpy #NB65_TFTP_SET_SERVER
+  cpy #KPR_TFTP_SET_SERVER
   bne :+
   ldy #3
 @copy_tftp_server_ip:  
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta cfg_tftp_server,y
   dey
   bpl @copy_tftp_server_ip
@@ -337,7 +333,7 @@ ip_configured:
   rts
   
 :
-  cpy #NB65_TFTP_DOWNLOAD
+  cpy #KPR_TFTP_DOWNLOAD
   bne :+
   phax
   jsr set_tftp_params
@@ -346,21 +342,21 @@ ip_configured:
 @after_tftp_call:  ;write the current load address back to the param buffer (so if $0000 was passed in, the caller can find out the actual value used)
   plax
   bcs @tftp_error
-  stax nb65_params
+  stax kipper_params
 
-  ldy #NB65_TFTP_POINTER
+  ldy #KPR_TFTP_POINTER
   lda tftp_load_address
-  sta (nb65_params),y  
+  sta (kipper_params),y  
   iny
   lda tftp_load_address+1
-  sta (nb65_params),y
+  sta (kipper_params),y
 
-  ldy #NB65_TFTP_FILESIZE
+  ldy #KPR_TFTP_FILESIZE
   lda tftp_filesize
-  sta (nb65_params),y  
+  sta (kipper_params),y  
   iny
   lda tftp_filesize+1
-  sta (nb65_params),y
+  sta (kipper_params),y
   clc
 @tftp_error:   
   rts
@@ -368,7 +364,7 @@ ip_configured:
 
 
 
-  cpy #NB65_TFTP_CALLBACK_DOWNLOAD
+  cpy #KPR_TFTP_CALLBACK_DOWNLOAD
   bne :+
   phax
   jsr set_tftp_params
@@ -377,103 +373,99 @@ ip_configured:
   jmp @after_tftp_call
 :
 
-  cpy #NB65_TFTP_UPLOAD
+  cpy #KPR_TFTP_UPLOAD
   bne :+
   phax
   jsr set_tftp_params
-  ldy #NB65_TFTP_POINTER
-  lda (nb65_params),y
+  ldy #KPR_TFTP_POINTER
+  lda (kipper_params),y
   sta tftp_filesize
   iny
-  lda (nb65_params),y  
+  lda (kipper_params),y  
   sta tftp_filesize+1
   
   jsr tftp_download
   jmp @after_tftp_call
 :
 
-  cpy #NB65_TFTP_CALLBACK_UPLOAD
+  cpy #KPR_TFTP_CALLBACK_UPLOAD
   bne :+
   jsr set_tftp_params
   jsr set_tftp_callback_vector
   jmp tftp_upload
 :
 
-  cpy #NB65_PRINT_ASCIIZ
+  cpy #KPR_PRINT_ASCIIZ
   bne :+
   jsr print
   clc
   rts
 :  
 
-  cpy #NB65_PRINT_HEX
+  cpy #KPR_PRINT_HEX
   bne :+
   jsr print_hex
   clc
   rts
 :  
 
-  cpy #NB65_PRINT_DOTTED_QUAD
+  cpy #KPR_PRINT_DOTTED_QUAD
   bne :+
   jsr print_dotted_quad
   clc
   rts
 :  
 
-  cpy #NB65_PRINT_IP_CONFIG
+  cpy #KPR_PRINT_IP_CONFIG
   bne :+
   jsr print_ip_config
   clc
   rts
 :
 
-  cpy #NB65_PRINT_INTEGER
+  cpy #KPR_PRINT_INTEGER
   bne :+
   jsr print_integer
   clc
   rts
 :
 
-;these are the API "version 2" functions
-
-.ifdef API_VERSION
-.if (API_VERSION>1)
 
   .segment "TCP_VARS"
     port_number: .res 2
     nonzero_octets: .res 1
   .code
 
-  cpy #NB65_DOWNLOAD_RESOURCE
+  cpy #KPR_DOWNLOAD_RESOURCE
   bne :+  
 .import url_download
 .import url_download_buffer
 .import url_download_buffer_length
 
 
-  ldy #NB65_URL_DOWNLOAD_BUFFER
-  lda (nb65_params),y
+  ldy #KPR_URL_DOWNLOAD_BUFFER
+  lda (kipper_params),y
   sta url_download_buffer
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta url_download_buffer+1
 
-  ldy #NB65_URL_DOWNLOAD_BUFFER_LENGTH
-  lda (nb65_params),y
+  ldy #KPR_URL_DOWNLOAD_BUFFER_LENGTH
+  lda (kipper_params),y
   sta url_download_buffer_length
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta url_download_buffer_length+1
   
-  ldy #NB65_URL+1
-  lda (nb65_params),y
+  ldy #KPR_URL+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   jmp url_download
 :
 
-  cpy #NB65_FILE_LOAD
+  cpy #KPR_FILE_LOAD
 bne :+  
 .import  io_device_no
 .import io_read_file
@@ -481,60 +473,60 @@ bne :+
 .import io_filesize
 .import io_load_address
   phax
-  ldy #NB65_FILE_ACCESS_FILENAME
-  lda (nb65_params),y
+  ldy #KPR_FILE_ACCESS_FILENAME
+  lda (kipper_params),y
   sta io_filename
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta io_filename+1
 
-  ldy #NB65_FILE_ACCESS_DEVICE
-  lda (nb65_params),y
+  ldy #KPR_FILE_ACCESS_DEVICE
+  lda (kipper_params),y
   sta io_device_no
 
-  ldy #NB65_FILE_ACCESS_POINTER+1
-  lda (nb65_params),y
+  ldy #KPR_FILE_ACCESS_POINTER+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   jsr io_read_file
   plax
   bcc @read_file_ok
   rts
   
 @read_file_ok:  
-  stax nb65_params
+  stax kipper_params
 
-  ldy #NB65_FILE_ACCESS_POINTER
+  ldy #KPR_FILE_ACCESS_POINTER
   lda io_load_address
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda io_load_address+1
-  sta (nb65_params),y
+  sta (kipper_params),y
 
-  ldy #NB65_FILE_ACCESS_FILESIZE
+  ldy #KPR_FILE_ACCESS_FILESIZE
   lda io_filesize
-  sta (nb65_params),y
+  sta (kipper_params),y
   iny
   lda io_filesize+1
-  sta (nb65_params),y
+  sta (kipper_params),y
   rts
 :
 
-  cpy #NB65_PING_HOST
+  cpy #KPR_PING_HOST
   .import icmp_echo_ip
   .import icmp_ping
   bne :+  
   ldy #3
 @copy_ping_ip_loop:
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta icmp_echo_ip,y
   dey
   bpl @copy_ping_ip_loop
   jmp icmp_ping  
   
 :  
-  cpy #NB65_TCP_CONNECT
+  cpy #KPR_TCP_CONNECT
   bne :+  
   .import tcp_connect
   .import tcp_callback
@@ -544,7 +536,7 @@ bne :+
   lda #0
   sta nonzero_octets
 @copy_dest_ip:  
-  lda (nb65_params),y
+  lda (kipper_params),y
   beq @octet_was_zero
   inc nonzero_octets
 @octet_was_zero:  
@@ -552,18 +544,18 @@ bne :+
   dey
   bpl @copy_dest_ip
   
-  ldy #NB65_TCP_CALLBACK
-  lda (nb65_params),y
+  ldy #KPR_TCP_CALLBACK
+  lda (kipper_params),y
   sta tcp_callback
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tcp_callback+1
   
-  ldy #NB65_TCP_PORT+1
-  lda (nb65_params),y
+  ldy #KPR_TCP_PORT+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   ldy nonzero_octets
   bne @outbound_tcp_connection
   jmp tcp_listen
@@ -575,26 +567,26 @@ bne :+
 
   .import tcp_send
   .import tcp_send_data_len
-  cpy #NB65_SEND_TCP_PACKET
+  cpy #KPR_SEND_TCP_PACKET
   bne :+
-  ldy #NB65_TCP_PAYLOAD_LENGTH
-  lda (nb65_params),y
+  ldy #KPR_TCP_PAYLOAD_LENGTH
+  lda (kipper_params),y
   sta tcp_send_data_len
   iny
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tcp_send_data_len+1
-  ldy #NB65_TCP_PAYLOAD_POINTER+1
-  lda (nb65_params),y
+  ldy #KPR_TCP_PAYLOAD_POINTER+1
+  lda (kipper_params),y
   tax
   dey
-  lda (nb65_params),y
+  lda (kipper_params),y
   jmp tcp_send
 
 :
 
 
 .import tcp_close
-  cpy #NB65_TCP_CLOSE_CONNECTION
+  cpy #KPR_TCP_CLOSE_CONNECTION
   bne :+
   jmp tcp_close
 :
@@ -604,21 +596,21 @@ bne :+
 .import get_filtered_input
 .import filter_number
 
-  cpy #NB65_INPUT_STRING
+  cpy #KPR_INPUT_STRING
   bne :+
   ldy #40 ;max chars
   ldax #$0000
   jmp get_filtered_input
 :
 
-  cpy #NB65_INPUT_HOSTNAME  
+  cpy #KPR_INPUT_HOSTNAME  
   bne :+
   ldy #40 ;max chars
   ldax #filter_dns
   jmp get_filtered_input
 :
 
-cpy #NB65_INPUT_PORT_NUMBER
+cpy #KPR_INPUT_PORT_NUMBER
   bne :+
   ldy #5 ;max chars
   ldax #filter_number
@@ -633,7 +625,7 @@ cpy #NB65_INPUT_PORT_NUMBER
   rts
 :
 
-cpy #NB65_BLOCK_COPY
+cpy #KPR_BLOCK_COPY
   bne :+
   ;this is where we pay the price for trying to save a few 'zero page' pointers 
   ;by reusing the 'copy_src' and 'copy_dest' addresses!
@@ -643,25 +635,25 @@ cpy #NB65_BLOCK_COPY
   tmp_copy_length: .res 2
 .code
   
-  ldy #NB65_BLOCK_SRC
-  lda (nb65_params),y
+  ldy #KPR_BLOCK_SRC
+  lda (kipper_params),y
   sta tmp_copy_src
   iny  
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tmp_copy_src+1
   
-  ldy #NB65_BLOCK_DEST
-  lda (nb65_params),y
+  ldy #KPR_BLOCK_DEST
+  lda (kipper_params),y
   sta tmp_copy_dest
   iny  
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tmp_copy_dest+1
 
-  ldy #NB65_BLOCK_SIZE
-  lda (nb65_params),y
+  ldy #KPR_BLOCK_SIZE
+  lda (kipper_params),y
   sta tmp_copy_length
   iny  
-  lda (nb65_params),y
+  lda (kipper_params),y
   sta tmp_copy_length+1
 
   ldax tmp_copy_src
@@ -672,22 +664,21 @@ cpy #NB65_BLOCK_COPY
   jmp copymem
 :
 
-  cpy #NB65_PARSER_INIT
+  cpy #KPR_PARSER_INIT
   bne :+
   .import parser_init
   jmp parser_init
 :
 
-  cpy #NB65_PARSER_SKIP_NEXT
+  cpy #KPR_PARSER_SKIP_NEXT
   bne :+
   .import parser_skip_next
   jmp parser_skip_next
 :
 
-.endif
-.endif
 
-  cpy #NB65_GET_LAST_ERROR
+
+  cpy #KPR_GET_LAST_ERROR
   bne :+
   lda ip65_error
   clc
@@ -696,7 +687,7 @@ cpy #NB65_BLOCK_COPY
 
 
 ;default function handler
-  lda #NB65_ERROR_FUNCTION_NOT_SUPPORTED
+  lda #KPR_ERROR_FUNCTION_NOT_SUPPORTED
   sta ip65_error
   sec        ;carry flag set = error
   rts

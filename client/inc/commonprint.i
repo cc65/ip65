@@ -1,6 +1,6 @@
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
  .export print_hex
@@ -10,6 +10,7 @@
  .export failed_msg
  .export init_msg
  .export print
+ .export print_ascii_as_native
  .export print_integer
  .export print_dotted_quad
  .export print_arp_cache
@@ -24,7 +25,10 @@
  .export press_a_key_to_continue
  .import arp_cache
  .importzp ac_size
-  
+
+.import ascii_to_native
+
+
 .import cs_driver_name
 .importzp copy_src
 .import cfg_tftp_server
@@ -88,7 +92,7 @@ print_ip_config:
   ldax #ip_address_msg
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_IP
+  adc #KPR_CFG_IP
   bcc :+
   inx
 :  
@@ -98,7 +102,7 @@ print_ip_config:
   ldax #netmask_msg
   jsr print
    jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_NETMASK
+  adc #KPR_CFG_NETMASK
   bcc :+
   inx
 : 
@@ -108,7 +112,7 @@ print_ip_config:
   ldax #gateway_msg
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_GATEWAY
+  adc #KPR_CFG_GATEWAY
   bcc :+
   inx
 :
@@ -118,7 +122,7 @@ print_ip_config:
   ldax #dns_server_msg
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_DNS_SERVER
+  adc #KPR_CFG_DNS_SERVER
   bcc :+
   inx
 :  jsr print_dotted_quad
@@ -133,7 +137,7 @@ print_ip_config:
   ldax #dhcp_server_msg
   jsr print
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
-  adc #NB65_CFG_DHCP_SERVER
+  adc #KPR_CFG_DHCP_SERVER
   bcc :+
   inx
 :
@@ -158,6 +162,24 @@ print:
   bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
 @done_print:
   rts
+
+print_ascii_as_native:
+	sta pptr
+	stx pptr + 1
+	
+@print_loop:
+  ldy #0
+  lda (pptr),y
+	beq @done_print  
+  jsr ascii_to_native
+	jsr print_a
+	inc pptr
+	bne @print_loop
+  inc pptr+1
+  bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
+@done_print:
+  rts
+
 
 print_arp_cache:
   ldax #arp_cache_header

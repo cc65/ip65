@@ -3,9 +3,9 @@
   MAX_DNS_MESSAGES_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
 .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
   .export dns_set_hostname
@@ -175,7 +175,7 @@ dns_set_hostname:
   rts
 
 @hostname_too_long:
-  lda #NB65_ERROR_INPUT_TOO_LARGE
+  lda #KPR_ERROR_INPUT_TOO_LARGE
   sta ip65_error
   sec
   rts
@@ -225,7 +225,7 @@ dns_resolve:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:  
@@ -266,7 +266,7 @@ dns_resolve:
   lda #53
   ldx dns_client_port_low_byte    
 	jsr udp_remove_listener
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error  
   sec             ;signal an error
   rts
@@ -293,7 +293,7 @@ send_dns_query:
   sta output_buffer+dns_qname,x
   inx
   bpl  @hostname_still_ok
-  lda #NB65_ERROR_INPUT_TOO_LARGE
+  lda #KPR_ERROR_INPUT_TOO_LARGE
   sta ip65_error
   jmp @error_on_send                ;if we got past 128 bytes, there's a problem
 @hostname_still_ok:  

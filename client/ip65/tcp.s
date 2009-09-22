@@ -9,9 +9,9 @@
 MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
 .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .import ip65_error
@@ -181,7 +181,7 @@ tcp_listen:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:  
@@ -248,7 +248,7 @@ tcp_connect:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:  
@@ -274,7 +274,7 @@ tcp_connect:
 @failed:
   lda #tcp_cxn_state_closed
   sta tcp_state
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error  
   sec             ;signal an error
   rts
@@ -363,7 +363,7 @@ tcp_close:
 @failed:
   lda #tcp_cxn_state_closed
   sta tcp_state
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error  
   sec             ;signal an error
   rts
@@ -410,7 +410,7 @@ tcp_send:
 	lda tcp_state
   cmp #tcp_cxn_state_established
   beq @connection_established
-  lda #NB65_ERROR_CONNECTION_CLOSED
+  lda #KPR_ERROR_CONNECTION_CLOSED
   sta ip65_error
   sec
   rts
@@ -462,7 +462,7 @@ tcp_send:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:  
@@ -491,7 +491,7 @@ tcp_send:
 @failed:
   lda #tcp_cxn_state_closed
   sta tcp_state
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error  
   sec             ;signal an error
   rts
@@ -690,7 +690,7 @@ tcp_process:
   ;connection has been reset so mark it as closed    
   lda #tcp_cxn_state_closed
   sta tcp_state
-  lda #NB65_ERROR_CONNECTION_RESET_BY_PEER
+  lda #KPR_ERROR_CONNECTION_RESET_BY_PEER
   sta ip65_error
   
   lda #$ff

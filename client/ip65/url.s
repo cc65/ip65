@@ -3,9 +3,9 @@
 
 .include "../inc/common.i"
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 TIMEOUT_SECONDS=15
@@ -109,7 +109,7 @@ url_parse:
   cmp  #'H'
   beq @http
 @exit_with_error:  
-  lda #NB65_ERROR_MALFORMED_URL 
+  lda #KPR_ERROR_MALFORMED_URL 
   sta ip65_error
 @exit_with_sec:  
   sec
@@ -134,7 +134,7 @@ lda #url_type_gopher
   bcs @exit_with_sec
   jsr dns_resolve
   bcc :+
-  lda #NB65_ERROR_DNS_LOOKUP_FAILED
+  lda #KPR_ERROR_DNS_LOOKUP_FAILED
   sta ip65_error
   jmp @exit_with_sec
   :
@@ -353,7 +353,7 @@ resource_download:
   rts
 
 
-  lda #NB65_ERROR_FILE_ACCESS_FAILURE
+  lda #KPR_ERROR_FILE_ACCESS_FAILURE
   sta ip65_error
   sec  
   rts

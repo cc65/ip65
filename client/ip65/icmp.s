@@ -2,9 +2,9 @@
 ;
 
 .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 	.export icmp_init
@@ -381,7 +381,7 @@ icmp_ping:
   jsr icmp_send_echo  
   bcc @message_sent_ok
   ;still can't send? then give up
-  lda #NB65_ERROR_TRANSMIT_FAILED
+  lda #KPR_ERROR_TRANSMIT_FAILED
   sta ip65_error
   rts 
 @message_sent_ok:
@@ -412,7 +412,7 @@ icmp_ping:
   
   jsr timer_timeout
 	bcs @loop_till_get_ping_response
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error
   lda #icmp_msg_type_echo_reply
   jsr icmp_remove_listener

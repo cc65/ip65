@@ -2,9 +2,9 @@
 ;
 
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .include "../inc/common.i"
@@ -171,7 +171,7 @@ io_read_file_with_callback:
   
   beq @was_not_an_error  
 @readerror:
-  lda #NB65_ERROR_FILE_ACCESS_FAILURE
+  lda #KPR_ERROR_FILE_ACCESS_FAILURE
   sta ip65_error
   sec  
   rts
@@ -216,7 +216,7 @@ io_read_file_with_callback:
   clc
   rts
 @device_error:
-  lda #NB65_ERROR_DEVICE_FAILURE
+  lda #KPR_ERROR_DEVICE_FAILURE
   sta ip65_error
   ldx #$00
   jsr CHKIN
@@ -403,7 +403,7 @@ io_read_sector:
   clc
   rts
 @error:
-  lda #NB65_ERROR_DEVICE_FAILURE
+  lda #KPR_ERROR_DEVICE_FAILURE
   sta ip65_error
   jsr @close
   sec

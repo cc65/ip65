@@ -1,10 +1,10 @@
 TARGET=c64
 
 
-.PHONY: ip65 drivers test clean distclean nb65 examples
+.PHONY: ip65 drivers test clean distclean carts examples
 
 
-all: ip65 drivers test nb65  examples
+all: ip65 drivers test carts  examples
 
 ip65:
 	make -C ip65 all
@@ -18,21 +18,18 @@ examples:
 test:
 	make -C test TARGET=$(TARGET) all
 
-nb65:
-	make -C nb65 all
+carts:
+	make -C carts all
 
 clean:
 	make -C ip65 clean
 	make -C drivers clean
 	make -C test clean
-	make -C nb65 clean
-	make -C kipper clean
-
+	make -C carts clean
 
 distclean:
 	make -C ip65 distclean
 	make -C drivers clean
 	make -C test distclean
-	make -C nb65 distclean
-	make -C kipper distclean
+	make -C carts distclean
 	rm -f *~

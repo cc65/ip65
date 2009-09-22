@@ -6,9 +6,9 @@
   TFTP_TIMER_MASK=$F8 ;mask lower two bits, means we wait for 8 x1/4 seconds
 
   .include "../inc/common.i"
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
   .exportzp tftp_filename
@@ -169,7 +169,7 @@ set_tftp_opcode:
 	jsr udp_add_listener
   
 	bcc :+      ;bail if we couldn't listen on the port we want
-  lda #NB65_ERROR_PORT_IN_USE
+  lda #KPR_ERROR_PORT_IN_USE
   sta ip65_error
 	rts
 :
@@ -222,7 +222,7 @@ set_tftp_opcode:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #NB65_ERROR_ABORTED_BY_USER
+  lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
   jmp @exit_with_error
 @no_abort:    
@@ -236,7 +236,7 @@ set_tftp_opcode:
   
   dec tftp_resend_counter
   bne @outer_delay_loop
-  lda #NB65_ERROR_TIMEOUT_ON_RECEIVE
+  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error
   jmp @exit_with_error  
 
@@ -288,7 +288,7 @@ send_request_packet:
   sta tftp_state
   rts
 @error_in_send:  
-  lda #NB65_ERROR_TRANSMIT_FAILED
+  lda #KPR_ERROR_TRANSMIT_FAILED
   sta ip65_error
   sec
   rts
@@ -355,7 +355,7 @@ tftp_in:
 @recv_error:
   lda #tftp_error
   sta tftp_state
-  lda #NB65_ERROR_TRANSMISSION_REJECTED_BY_PEER
+  lda #KPR_ERROR_TRANSMISSION_REJECTED_BY_PEER
   sta ip65_error  
   rts
 @not_an_error:

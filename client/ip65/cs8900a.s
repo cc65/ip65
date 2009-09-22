@@ -3,9 +3,9 @@
 ; Based on Doc Bacardi's tftp source
 
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 .include "../inc/common.i"
@@ -206,7 +206,7 @@ eth_tx:
 	sta cs_tx_len + 1
 	cmp #6
   bmi :+
-  lda #NB65_ERROR_INPUT_TOO_LARGE
+  lda #KPR_ERROR_INPUT_TOO_LARGE
   sta ip65_error
 	sec				; oversized packet
 	rts
