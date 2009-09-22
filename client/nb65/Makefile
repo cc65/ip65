@@ -53,11 +53,13 @@ nb65_c64_ram.prg: nb65_c64_ram_header.bin nb65_c64_ram.o $(IP65LIB) $(C64NB65LIB
 nb65_std_cart.bin: nb65_std_cart.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m nb65_std_cart.map -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8192
+	
 
 nb65_tcp_cart.bin: nb65_tcp_cart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_16kcart.cfg
 	$(LD) -m nb65_tcp_cart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 16384
-
+	ruby dupe_cart.rb nb65_tcp_cart.bin nb65_29c040.bin 32
+  
 nb65_rrnet.bin: nb65_rrnet.o $(IP65LIB) $(C64NB65LIB) $(INCFILES) ../cfg/rrbin.cfg
 	$(LD) -m nb65_rrnet.map -Ln nb65_rr.lab -vm -C ../cfg/rrbin.cfg -o $@  $< $(IP65LIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 8193

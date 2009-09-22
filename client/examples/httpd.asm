@@ -94,6 +94,7 @@ found_nb65_signature
 ;print out the current configuration
   nb65call #NB65_PRINT_IP_CONFIG
 
+
   
 
 listen_on_port_80
@@ -116,6 +117,7 @@ listen_on_port_80
  jsr  print_errorcode
  jmp reset_after_keypress    
 .connected_ok
+
   print #ok
   lda #0
   sta connection_closed
@@ -132,11 +134,12 @@ listen_on_port_80
   cld
   sta connection_timeout_seconds
   
+  
 .main_polling_loop
   jsr NB65_PERIODIC_PROCESSING_VECTOR
   
   lda found_eol
-  bne .got_eol
+  bne .got_eol  
 
   lda $dc09  ;time of day clock: seconds
   
@@ -151,6 +154,7 @@ listen_on_port_80
   print #timeout
   jmp listen_on_port_80
 .got_eol:
+  
   ;if we have a CR, we have got enough of a request to know if it's a HTTP or gopher request
   lda #"G"
   cmp scratch_buffer
@@ -175,7 +179,8 @@ listen_on_port_80
   sta protocol
   print #gopher
   ldx #0
-.copy_selector:
+  
+.copy_selector:  
   lda scratch_buffer,x
   cmp #"/"
   bne .copy_one_char
@@ -189,15 +194,17 @@ listen_on_port_80
   iny
   bne .copy_one_char
 
-.last_char_in_selector  
+.last_char_in_selector    
   lda #0
   sta selector,y
 
   print #selector
   
-;  ldaxi #html_length
+  ;ldaxi #html_length
+  ldaxi #index_html_buffer_length
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_LENGTH
 ;  ldaxi #html
+  ldaxi #index_html_buffer
   stax nb65_param_buffer+NB65_TCP_PAYLOAD_POINTER
   ldaxi  #nb65_param_buffer
   nb65call  #NB65_SEND_TCP_PACKET
@@ -376,6 +383,7 @@ http_callback
   rts
 
 
+
 ;constants
 nb65_api_not_found_message dc.b "ERROR - NB65 API NOT FOUND.",13,0
 incorrect_version dc.b "ERROR - NB65 API MUST BE AT LEAST VERSION 2.",13,0
@@ -404,6 +412,25 @@ get_next_byte
 .skip
   rts
 
+reset_output_buffer
+  sta emit_a+1
+  stx emit_a+2
+  lda #0
+  sta output_buffer_length
+  sta output_buffer_length+1
+  rts
+  
+emit_a
+  sta $ffff
+  inc emit_a+1
+  bne .1
+  inc emit_a+2
+.1
+  inc output_buffer_length
+  bne .2
+  inc output_buffer_length+1
+.2
+  rts
 
 ;variables
 protocol ds.b 1
@@ -415,7 +442,9 @@ tcp_buffer_ptr  ds.b 2
 scan_ptr  ds.b 2
 tcp_inbound_data_ptr ds.b 2
 tcp_inbound_data_length ds.b 2
+output_buffer_length: ds.b 2
 selector: ds.b $100
 scratch_buffer: ds.b $1000
 index_html_buffer: ds.b $1000
+index_html_buffer_length: ds.b 2
 gopher_map_buffer: ds.b $1000

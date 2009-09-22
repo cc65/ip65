@@ -435,6 +435,7 @@ select_resource_from_current_directory:
   sta resource_selector+1,x
   lda  #$00
   sta resource_selector+2,x
+
 @done:
 
 add_resource_to_history_and_display:

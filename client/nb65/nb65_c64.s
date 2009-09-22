@@ -15,8 +15,7 @@
 ;$02 = 8KB image with advanced bankswitching (via custom registers, e.g. $de00 on the Retro Replay cart)
 ;$03 = 16KB image with standard bankswitching (via HIRAM/LORAM) - BASIC is NOT avialable
 .ifndef BANKSWITCH_SUPPORT
-  .error "must define BANKSWITCH_SUPPORT"
-  
+  .error "must define BANKSWITCH_SUPPORT"  
 .endif 
 
   .macro print_failed
@@ -154,6 +153,7 @@ jmp timer_vbl_handler     ;NB65_VBL_VECTOR : routine to be called during each ve
   
 init:
   
+  
   ;first let the kernal do a normal startup
   sei
   jsr $fda3   ;initialize CIA I/O
@@ -161,9 +161,12 @@ init:
   jsr $fd15   ;set vectors for KERNAL
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
+  
+;on an 8KB image (only) we need to set up BASIC as well  
+.if !(BANKSWITCH_SUPPORT=$03)
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
-
+.endif  
 
   ;set some funky colours
 .if (BANKSWITCH_SUPPORT=$03)
@@ -283,10 +286,16 @@ main_menu:
   .if (BANKSWITCH_SUPPORT=$03)
   bne @not_f3
   jmp net_apps_menu
+@not_f3:  
+  cmp #KEYCODE_F4
+  bne @not_download_d64
+  jmp d64_download
+@not_download_d64:  
   .else
   beq @exit_to_basic    
-.endif  
-@not_f3:
+  @not_f3:  
+  .endif  
+
   cmp #KEYCODE_F5 
   bne @not_util_menu
   jsr print_main_menu
@@ -472,88 +481,19 @@ cmp #KEYCODE_F7
 @tftp_boot:  
 
   ldax #tftp_dir_filemask
+  jsr get_tftp_directory_listing
+  bcs return_to_main
   
-@get_tftp_directory_listing:  
-  stax nb65_param_buffer+NB65_TFTP_FILENAME
-
-  
-  ldax #directory_buffer
-  stax nb65_param_buffer+NB65_TFTP_POINTER
-
-  ldax #getting_dir_listing_msg
-	jsr print
-
-  ldax  #nb65_param_buffer
-  nb65call #NB65_TFTP_DOWNLOAD
-
-	bcs @dir_failed
-
-  lda directory_buffer ;get the first byte that was downloaded
-  bne :+
-  jmp @no_files_on_server
-:  
-
-  ;switch to lower case charset
-  lda #23
-  sta $d018
-
-
-  ldax  #directory_buffer
-  
-  jsr select_option_from_menu  
-  bcc @tftp_filename_set
-  jmp main_menu
-@tftp_filename_set:
-  stax  copy_dest
-  stax  get_value_of_axy+1
-  ldy #0
-  jsr get_value_of_axy ;A now == first char in string we just downloaded
-  cmp #'$'
-  bne @not_directory_name
-  ;it's a directory name, so we need to append the file mask to end of it
-  ;this will fail if the file path is more than 255 characters long
-@look_for_trailing_zero:
-   iny
-    inc copy_dest
-    bne :+
-    inc copy_dest+1
-: 
-   jsr get_value_of_axy ;A now == next char in string we just downloaded
-   bne  @look_for_trailing_zero
-   
-; got trailing zero
-  ldax  #tftp_dir_filemask+1 ;skip the leading '$'
-  stax  copy_src
-  ldax  #$07
-  jsr copymem   
-  ldax get_value_of_axy+1
-  jmp @get_tftp_directory_listing
-
-@not_directory_name:
-  ldax  get_value_of_axy+1
+@boot_filename_set:
+  ;AX now points to filename
   jsr download
-  bcc @file_downloaded_ok
-@tftp_boot_failed:  
+  bcc file_downloaded_ok
+tftp_boot_failed:  
   jsr wait_for_keypress
+return_to_main:  
   jmp main_menu
-  
-  
-@dir_failed:  
-  ldax  #dir_listing_fail_msg
-  jsr print
-  jsr print_errorcode
-  jsr print_cr
-  
-  ldax #tftp_file
-  jmp @tftp_filename_set
-  
-@no_files_on_server:
-  ldax #no_files
-	jsr print
 
-  jmp @tftp_boot_failed
-  
-@file_downloaded_ok:    
+file_downloaded_ok:    
 ldax nb65_param_buffer+NB65_TFTP_POINTER
   
 boot_into_file:
@@ -607,6 +547,83 @@ exit_cart_via_ax:
   sta call_downloaded_prg+1
   stx call_downloaded_prg+2
   jmp exit_cart
+
+get_tftp_directory_listing:  
+  stax nb65_param_buffer+NB65_TFTP_FILENAME
+  
+  ldax #directory_buffer
+  stax nb65_param_buffer+NB65_TFTP_POINTER
+
+  ldax #getting_dir_listing_msg
+	jsr print
+
+  ldax  #nb65_param_buffer
+  nb65call #NB65_TFTP_DOWNLOAD
+
+	bcs @dir_failed
+
+  lda directory_buffer ;get the first byte that was downloaded
+  bne :+
+  jmp @no_files_on_server
+:  
+
+  ;switch to lower case charset
+  lda #23
+  sta $d018
+
+
+  ldax  #directory_buffer
+  
+  jsr select_option_from_menu  
+  bcc @tftp_filename_set
+  rts
+@tftp_filename_set:
+  stax  copy_dest
+  stax  get_value_of_axy+1
+  ldy #0
+  jsr get_value_of_axy ;A now == first char in string we just downloaded
+  cmp #'$'
+  bne @not_directory_name
+  ;it's a directory name, so we need to append the file mask to end of it
+  ;this will fail if the file path is more than 255 characters long
+@look_for_trailing_zero:
+   iny
+    inc copy_dest
+    bne :+
+    inc copy_dest+1
+: 
+   jsr get_value_of_axy ;A now == next char in string we just downloaded
+   bne  @look_for_trailing_zero
+   
+; got trailing zero
+  ldax  #tftp_dir_filemask+1 ;skip the leading '$'
+  stax  copy_src
+  ldax  #$07
+  jsr copymem   
+  ldax get_value_of_axy+1
+  jmp get_tftp_directory_listing
+
+@not_directory_name:
+  ldax  get_value_of_axy+1
+  clc
+  rts
+    
+  
+@dir_failed:  
+  ldax  #dir_listing_fail_msg
+  jsr print
+  jsr print_errorcode
+  jsr print_cr
+  
+  ldax #tftp_file
+  jmp @tftp_filename_set
+  
+@no_files_on_server:
+  ldax #no_files
+	jsr print
+
+  jmp tftp_boot_failed
+  
  
 .if (BANKSWITCH_SUPPORT=$03)
 disk_boot:
@@ -669,6 +686,18 @@ disk_boot:
   jsr print
   ldax io_load_address
   jmp boot_into_file
+  
+d64_download:
+  
+  ldax #d64_filemask
+  jsr get_tftp_directory_listing
+  bcc @d64_filename_set
+  jmp main_menu
+@d64_filename_set:
+  ;AX now points to filename
+  .byte $92
+  jmp main_menu
+
   
 net_apps_menu: 
   jsr cls  
@@ -814,7 +843,7 @@ main_menu_msg:
 .byte 13,"MAIN MENU",13,13
 .if (BANKSWITCH_SUPPORT=$03)
 .byte "F1: TFTP BOOT   F2: DISK BOOT",13
-.byte "F3: NET APPS    F4: TBA",13
+.byte "F3: NET APPS    F4: DOWNLOAD D64",13
 .byte "F5: ARP TABLE   F7: CONFIG",13,13
 
 .else
@@ -877,6 +906,11 @@ new:
   
 tftp_dir_filemask:  
   .asciiz "$/*.prg"
+
+.if (BANKSWITCH_SUPPORT=$03)
+d64_filemask:  
+  .asciiz "$/*.d64"
+.endif
 
 tftp_file:  
   .asciiz "BOOTC64.PRG"

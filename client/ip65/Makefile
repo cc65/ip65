@@ -25,6 +25,7 @@ ETHOBJS= \
   dottedquad.o \
   output_buffer.o\
   tftp.o \
+  sntp.o \
   parser.o \
   string_utils.o \
   telnet.o \

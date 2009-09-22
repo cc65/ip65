@@ -3,6 +3,7 @@
 .export filter_text
 .export filter_ip
 .export filter_dns
+.export filter_url
 .export filter_number
 .export check_for_abort_key
 .export get_key_if_available
@@ -163,7 +164,9 @@ get_filtered_input:
 ;=================================================
 
 filter_text:
-  .byte ",+!#$%&'()* "
+  .byte ",!#'()* "
+filter_url: 
+.byte ":/%&?+$"
 filter_dns:
 .byte "-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 filter_ip:

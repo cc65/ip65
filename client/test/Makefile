@@ -31,6 +31,7 @@ all: \
 	test_tcp.prg \
 	test_parser.prg \
 	test_ping.prg \
+	test_sntp.prg \
 	test_get_url.prg \
 #	ip65test.dsk \
 
