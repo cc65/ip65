@@ -214,7 +214,7 @@ get_tftp_directory_listing:
   lda #23
   sta $d018
 
-@loop_till_filename_entered:  
+@loop_till_filename_entered:
   ldax  #directory_buffer
   jsr select_option_from_menu  
   bcs @loop_till_filename_entered
