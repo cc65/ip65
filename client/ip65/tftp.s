@@ -205,6 +205,7 @@ set_tftp_opcode:
   cmp #tftp_complete
   bne @not_complete
   jsr send_ack    ;send the ack for the last block
+  bcs @not_complete ;if we couldn't send the ACK (e.g. coz we need to do an ARP request) then keep looping
   ldx #$69
 	lda tftp_client_port_low_byte    
 	jsr udp_remove_listener
