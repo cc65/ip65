@@ -1,6 +1,6 @@
 class FileList 
   
-  FILE_EXTENSIONS=[".prg",".pg2"]
+  FILE_EXTENSIONS=[".prg",".pg2",".d64",".sid"]
 
   def initialize(dir)
     log_msg("building file list for #{dir}")    
