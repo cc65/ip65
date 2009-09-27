@@ -12,6 +12,8 @@
 .import  io_sector_no
 .import  io_track_no
 .import  io_read_sector
+.import  io_write_sector
+
 .import io_read_file_with_callback
 .import io_read_file
 .import io_filename
@@ -62,6 +64,82 @@ init:
   sta $d018
 
 
+
+  ;test we can write sector to default desk
+  
+  ldx #$00
+@fill_sector_loop:  
+  txa
+  sta sector_buffer,x
+  inx  
+  bne @fill_sector_loop
+  
+  lda #$01
+  sta io_track_no
+  lda #$01
+  sta io_sector_no
+  ldax #write_sector
+  jsr print
+  lda io_sector_no
+  jsr print_hex
+  jsr print_cr
+  ldax #sector_buffer  
+  jsr io_write_sector
+  
+  bcc :+
+  jsr print_error_code
+  rts
+:
+
+
+
+  inc io_sector_no
+  ldax #write_sector
+  jsr print
+  lda io_sector_no
+  jsr print_hex
+  jsr print_cr
+  ldax #sector_buffer
+  jsr io_write_sector
+  
+  bcc :+
+  jsr print_error_code
+  rts
+:
+
+  inc io_sector_no
+  ldax #write_sector
+  jsr print
+  lda io_sector_no
+  jsr print_hex
+  jsr print_cr
+  ldax #sector_buffer
+  jsr io_write_sector
+  
+  bcc :+
+  jsr print_error_code
+  rts
+:
+
+
+
+  ;test we can read a sector from default desk
+  ldax #read_sector
+  jsr print
+
+  lda #$01
+  sta io_track_no
+  lda #$03
+  sta io_sector_no
+  ldax #sector_buffer
+  jsr io_read_sector
+  bcc :+
+  jsr print_error_code
+  rts
+:
+  
+  jsr dump_sector
+  
   ;test we can read the catalogue
   ldax #read_catalogue
   jsr print  
@@ -309,6 +387,12 @@ dump_sector:
   rts
 
 
+
+write_sector:
+  .byte "WRITING SECTOR",0
+
+read_sector:
+  .byte "READING SECTOR",13,0
 
 
 read_catalogue:

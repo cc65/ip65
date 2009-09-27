@@ -13,7 +13,6 @@
  .export print_ascii_as_native
  .export print_integer
  .export print_dotted_quad
- .export print_arp_cache
  .export mac_address_msg
  .export ip_address_msg
  .export netmask_msg
@@ -179,52 +178,6 @@ print_ascii_as_native:
   bne @print_loop ;if we ever get to $ffff, we've probably gone far enough ;-)
 @done_print:
   rts
-
-
-print_arp_cache:
-  ldax #arp_cache_header
-  jsr print
-	ldax #arp_cache
-	stax temp_ptr  
-	lda #ac_size    
-@print_one_arp_entry:
-  pha
-  lda #'$'
-  jsr print_a
-  lda temp_ptr+1
-  jsr print_hex
-  lda temp_ptr
-  jsr print_hex
-  lda #' '
-  jsr print_a
-  
-	ldax temp_ptr  
-  jsr print_mac
-  lda #' '
-  jsr print_a
-  ldax temp_ptr
-	clc
-  adc #6
-	bcc :+
-	inx
-:  
-  stax temp_ptr
-  jsr print_dotted_quad
-  ldax temp_ptr
-	clc
-  adc #4
-	bcc :+
-	inx
-: 
-  stax temp_ptr
-  jsr print_cr
-  pla
-  sec
-  sbc #1
-  
-	bne @print_one_arp_entry
-  clc
-	rts
 
 
 ;print the 4 bytes pointed at by AX as dotted decimals

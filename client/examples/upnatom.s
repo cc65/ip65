@@ -1,9 +1,9 @@
 
 .include "../inc/common.i"
 
-.ifndef NB65_API_VERSION_NUMBER
+.ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
-  .include "../inc/nb65_constants.i"
+  .include "../inc/kipper_constants.i"
 .endif
 
 print_a = $ffd2
@@ -76,9 +76,9 @@ LIGHT_GRAY  = 15
 	beq	@loop
 .endmacro
 
-.macro  nb65call function_number
+.macro  kippercall function_number
   ldy function_number
-  jsr NB65_DISPATCH_VECTOR   
+  jsr KPR_DISPATCH_VECTOR   
 .endmacro
 
 .zeropage
@@ -103,32 +103,29 @@ basicstub:
 
 init:
 
-  ldax #NB65_CART_SIGNATURE  ;where signature should be in cartridge (if cart is banked in)
-  jsr  look_for_signature
-  bcc @found_nb65_signature
-
-  ldax #NB65_RAM_STUB_SIGNATURE  ;where signature should be in a RAM stub
-  jsr  look_for_signature
-  bcs @nb65_signature_not_found
-  jsr NB65_RAM_STUB_ACTIVATE     ;we need to turn on NB65 cartridge
-  jmp @found_nb65_signature
+  ldax #KPR_CART_SIGNATURE  ;where signature should be in cartridge (if cart is banked in)
+look_for_signature:
+  stax temp_buff
+  ldy #5
+@check_one_byte:
+  lda (temp_buff),y
+  cmp kipper_signature,y
+  bne @bad_match  
+  dey 
+  bpl @check_one_byte  
+  jmp @found_kipper_signature
   
-@nb65_signature_not_found:
-  ldax #nb65_api_not_found_message
+@bad_match:
+  ldax #kipper_api_not_found_message
   jsr print
+@loop:
+  jmp @loop
   rts
-@found_nb65_signature:
+@found_kipper_signature:
 
-  lda NB65_API_VERSION
-  cmp #02
-  bpl @version_ok
-  ldax #incorrect_version
-  jsr print
-  jmp reset_after_keypress    
-@version_ok:
   ldax #init_msg
   jsr print
-  nb65call #NB65_INITIALIZE
+  kippercall #KPR_INITIALIZE
 	bcc @init_ok
   jsr print_cr
   ldax #failed_msg
@@ -138,15 +135,15 @@ init:
   jmp reset_after_keypress    
 @init_ok:
 
-;if we got here, we have found the NB65 API and initialised the IP stack
+;if we got here, we have found the KIPPER API and initialised the IP stack
 
 ;try and load the config file
   ldax #read_url_file_param_buffer
-  nb65call #NB65_FILE_LOAD
+  kippercall #KPR_FILE_LOAD
   bcs @use_default_url
   clc
   lda #0
-  ldy read_url_file_param_buffer+NB65_FILE_ACCESS_FILESIZE
+  ldy read_url_file_param_buffer+KPR_FILE_ACCESS_FILESIZE
   sta feed_url,y  ;put a zero at the end of the URL
   
 @use_default_url:  
@@ -164,34 +161,34 @@ init:
   ;copy our music data up to a temp buffer (in case it gets overwritten by 
   ;one of the other unpacking moves)
   ldax #musicdata+2 ;skip over the 2 byte address
-  stax nb65_param_buffer+NB65_BLOCK_SRC
+  stax param_buffer+KPR_BLOCK_SRC
   ldax #download_buffer
-  stax nb65_param_buffer+NB65_BLOCK_DEST
+  stax param_buffer+KPR_BLOCK_DEST
   ldax #musicdata_size-2 ;don't copy  the 2 byte address
-  stax nb65_param_buffer+NB65_BLOCK_SIZE    
-  ldax #nb65_param_buffer
-  nb65call #NB65_BLOCK_COPY
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
 
   ;copy our font data and the sprite data to $2000..$2fff
   ldax #charset_font
-  stax nb65_param_buffer+NB65_BLOCK_SRC
+  stax param_buffer+KPR_BLOCK_SRC
   ldax #$2000
-  stax nb65_param_buffer+NB65_BLOCK_DEST
+  stax param_buffer+KPR_BLOCK_DEST
   ldax #MUSIC_BASE
-  stax nb65_param_buffer+NB65_BLOCK_SIZE    
-  ldax #nb65_param_buffer
-  nb65call #NB65_BLOCK_COPY
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
   
   ;should now be now safe to copy the music data back down 
   ;copy our music data to $1000..$1fff
   ldax #download_buffer
-  stax nb65_param_buffer+NB65_BLOCK_SRC
+  stax param_buffer+KPR_BLOCK_SRC
   ldax #MUSIC_BASE
-  stax nb65_param_buffer+NB65_BLOCK_DEST
+  stax param_buffer+KPR_BLOCK_DEST
   ldax #musicdata_size-2 ;don't copy  the 2 byte address
-  stax nb65_param_buffer+NB65_BLOCK_SIZE    
-  ldax #nb65_param_buffer
-  nb65call #NB65_BLOCK_COPY
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
 
   lda #$18 ; use charset at $2000
   sta VIC_MEMORY_CTRL
@@ -217,21 +214,21 @@ init:
 
   ;copy KERNAL to the RAM underneath, in case any ip65 routines need it
   ldax #$e000
-  stax nb65_param_buffer+NB65_BLOCK_SRC
-  stax nb65_param_buffer+NB65_BLOCK_DEST
+  stax param_buffer+KPR_BLOCK_SRC
+  stax param_buffer+KPR_BLOCK_DEST
   ldax #$1FFF
-  stax nb65_param_buffer+NB65_BLOCK_SIZE    
-  ldax #nb65_param_buffer
-  nb65call #NB65_BLOCK_COPY
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
 
-  ;copy NB65 cart to the RAM underneath, so we can swap it out and modify the IRQ vector
+  ;copy KIPPER cart to the RAM underneath, so we can swap it out and modify the IRQ vector
   ldax #$8000
-  stax nb65_param_buffer+NB65_BLOCK_SRC
-  stax nb65_param_buffer+NB65_BLOCK_DEST
+  stax param_buffer+KPR_BLOCK_SRC
+  stax param_buffer+KPR_BLOCK_DEST
   ldax #$4000
-  stax nb65_param_buffer+NB65_BLOCK_SIZE    
-  ldax #nb65_param_buffer
-  nb65call #NB65_BLOCK_COPY
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
 
 
 	lda	#$35   	;we turn off the BASIC and KERNAL rom here, so we can overwrite the IRQ vector at $fffe
@@ -260,13 +257,13 @@ init:
 @download_feed:
   
   ldax #feed_url
-  stax nb65_param_buffer+NB65_URL
+  stax param_buffer+KPR_URL
   ldax #download_buffer
-  stax nb65_param_buffer+NB65_URL_DOWNLOAD_BUFFER
+  stax param_buffer+KPR_URL_DOWNLOAD_BUFFER
   ldax #download_buffer_length
-  stax nb65_param_buffer+NB65_URL_DOWNLOAD_BUFFER_LENGTH
-  ldax #nb65_param_buffer
-  nb65call #NB65_DOWNLOAD_RESOURCE
+  stax param_buffer+KPR_URL_DOWNLOAD_BUFFER_LENGTH
+  ldax #param_buffer
+  kippercall #KPR_DOWNLOAD_RESOURCE
   
   bcs @download_feed  ;if at first we don't succeed, try try again
 
@@ -282,7 +279,7 @@ init:
 
 
 @endless_loop:
-  jsr NB65_PERIODIC_PROCESSING_VECTOR
+  jsr KPR_PERIODIC_PROCESSING_VECTOR
   lda scroll_state
   beq @download_feed
 	jmp	@endless_loop
@@ -310,21 +307,6 @@ reset_input_buffer:
   stax current_input_ptr
   rts
   
-;look for NB65 signature at location pointed at by AX
-look_for_signature:
-  stax temp_buff
-  ldy #3
-@check_one_byte:
-  lda (temp_buff),y
-  cmp nb65_signature,y
-  bne @bad_match  
-  dey 
-  bpl @check_one_byte  
-  clc
-  rts
-@bad_match:
-  sec
-  rts
 
 
 ;set up the  tune
@@ -560,17 +542,17 @@ setup_static_scroll_text:
   jsr get_a
   cmp #'i'
   bne @not_ip
-  lda #NB65_CFG_IP
+  lda #KPR_CFG_IP
   jmp @loaded_offset
 @not_ip:
   cmp #'g'
   bne @not_gateway
-  lda #NB65_CFG_GATEWAY
+  lda #KPR_CFG_GATEWAY
   jmp @loaded_offset
 @not_gateway:
   cmp #'d'
   bne @not_dns
-  lda #NB65_CFG_DNS_SERVER
+  lda #KPR_CFG_DNS_SERVER
   jmp @loaded_offset
 @not_dns:
   cmp #'f'
@@ -588,7 +570,7 @@ setup_static_scroll_text:
 
 @loaded_offset:  
   sta param_offset
-  nb65call #NB65_GET_IP_CONFIG
+  kippercall #KPR_GET_IP_CONFIG
   adc param_offset
   bcc :+
   inx
@@ -689,16 +671,16 @@ reset_after_keypress:
 print_errorcode:
   ldax #error_code
   jsr print
-  nb65call #NB65_GET_LAST_ERROR
-  nb65call #NB65_PRINT_HEX
+  kippercall #KPR_GET_LAST_ERROR
+  kippercall #KPR_PRINT_HEX
   jmp print_cr
 
 
 
 
-update_nb65_counters_irq:
+update_KPR_counters_irq:
   start_irq
-  jsr NB65_VBL_VECTOR
+  jsr KPR_VBL_VECTOR
 	jmp	exit_from_irq
 
 
@@ -711,10 +693,10 @@ play_music_irq:
 
 emit_titles:
   ldax #download_buffer
-  nb65call #NB65_PARSER_INIT
+  kippercall #KPR_PARSER_INIT
 @next_title:  
   ldax #title
-  nb65call #NB65_PARSER_SKIP_NEXT
+  kippercall #KPR_PARSER_SKIP_NEXT
   bcs @done
   
   jsr emit_tag_contents
@@ -835,7 +817,7 @@ raster_jump_table:
   .word pixel_scroll_irq
 
  	.byte	$0,$30
-  .word update_nb65_counters_irq
+  .word update_KPR_counters_irq
  
   .byte	$0,$80
   .word play_music_irq
@@ -886,19 +868,17 @@ url_config_file:
 .byte "URL.CFG",0
 
 read_url_file_param_buffer:
-  .word url_config_file ;NB65_FILE_ACCESS_FILENAME
+  .word url_config_file ;KPR_FILE_ACCESS_FILENAME
   .word feed_url        ;B65_FILE_ACCESS_POINTER
-  .word $0000           ;NB65_FILE_ACCESS_FILESIZE   - should be filled in
-  .byte $00             ;NB65_FILE_ACCESS_DEVICE
+  .word $0000           ;KPR_FILE_ACCESS_FILESIZE   - should be filled in
+  .byte $00             ;KPR_FILE_ACCESS_DEVICE
 
 
 title: 
 .byte "<title>",0
 
-nb65_api_not_found_message:
-  .byte "ERROR - NB65 API NOT FOUND.",13,0
-incorrect_version:
-  .byte "ERROR - NB65 API MUST BE AT LEAST VERSION 2.",13,0
+kipper_api_not_found_message:
+  .byte "ERROR - KIPPER API NOT FOUND.",13,0
 
 failed_msg:
 	.byte "FAILED", 0
@@ -913,8 +893,8 @@ init_msg:
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
 
-nb65_signature:
-.byte $4E,$42,$36,$35  ; "NB65"  - API signature
+kipper_signature:
+.byte $4B,$49,$50,$50,$45,$52 ; "KIPPER"
 
 error_code:  
   .asciiz "ERROR CODE: "
@@ -938,10 +918,10 @@ temp_bcd: .res 2
 
 scroll_state: .res 1
 
-nb65_param_buffer: .res $20  
+param_buffer: .res $20  
 
 download_buffer:
-download_buffer_length=8000
+download_buffer_length=12000
  .res download_buffer_length
 
 .res 10 ;filler

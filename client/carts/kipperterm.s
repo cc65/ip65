@@ -1,5 +1,5 @@
 ; #############
-; KIPPER KART - A C64 TCP/IP stack as a 16KB cartridge
+; KIPPER TERM - Telnet/Gopher client for C64
 ; jonno@jamtronix.com 
 
   .macro print_failed
@@ -33,11 +33,10 @@
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
 
-  .include "../inc/ping.i"
-  .include "../inc/sidplay.i"
-
-  .include "../inc/disk_transfer.i"
-
+  
+  .include "../inc/gopher.i"
+  .include "../inc/telnet.i"
+  
   .import cls
   .import beep
   .import exit_to_basic
@@ -98,14 +97,6 @@
 .bss
 temp_ptr: .res 2
 .segment "SELF_MODIFIED_CODE"
-
-call_downloaded_prg: 
-   jsr $0000 ;overwritten when we load a file
-   jmp init
-   
-get_value_of_axy: ;some more self-modifying code
-	lda $ffff,y
-  rts
 
 
 .segment "CARTRIDGE_HEADER"
@@ -181,23 +172,6 @@ print_main_menu:
 
 init_ok:
 
-;look for an 'autoexec' file
-  jsr print_cr
-  ldax #loading_msg
-  jsr print
-  ldax #autoexec_filename  
-  stax io_filename
-  jsr print
-  jsr print_cr
-  ldax #$0000
-  jsr io_read_file
-  bcs main_menu
-@file_read_ok:
-  ldax #load_ok_msg
-  jsr print
-  ldax io_load_address
-  jmp boot_into_file  
-
 main_menu:
   jsr print_main_menu
   jsr print_ip_config
@@ -207,48 +181,43 @@ main_menu:
   jsr get_key_ip65
   cmp #KEYCODE_F1
   bne @not_f1
-  jmp @tftp_boot
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case  
+  ldax #telnet_header
+  jsr print
+  jmp telnet_main_entry
+
  @not_f1:  
-  cmp #KEYCODE_F2
-  bne @not_f2
-  jmp disk_boot
- @not_f2:  
-
-  cmp #KEYCODE_F3      
+  cmp #KEYCODE_F3
   bne @not_f3
-  .byte $92 ; fixme
-@not_f3:  
-  cmp #KEYCODE_F4
-  bne @not_f4
-  jmp d64_download
-@not_f4:  
-
-  cmp #KEYCODE_F5 
-  bne @not_f5
-  jmp netplay_sid
-@not_f5:
-
-  cmp #KEYCODE_F6
-  bne @not_f6
   jsr cls
   lda #14
   jsr print_a ;switch to lower case
-  ldax #ping_header
+  ldax #gopher_header
   jsr print
-  jsr ping_loop
-  jmp exit_ping
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+ @not_f3:  
 
-@not_f6:
+  cmp #KEYCODE_F5
+  bne @not_f5
+  jsr cls
+  lda #14
+  jsr print_a ;switch to lower case
+  
+  ldax #gopher_initial_location
+  sta resource_pointer_lo
+  stx resource_pointer_hi
+  ldx #0
+  jsr  select_resource_from_current_directory
+  jmp exit_gopher  
+@not_f5:  
 
   cmp #KEYCODE_F7
   beq @change_config
   
   jmp @get_key
-
-@exit_to_prog:
-  ldax #$fe66 ;do a wam start
-  jmp call_downloaded_prg
-
 
 @change_config:
   jsr cls  
@@ -415,279 +384,9 @@ cmp #KEYCODE_F7
   jsr wait_for_keypress
   jsr @change_config
   
-@tftp_boot:  
-
-  ldax #tftp_dir_filemask
-  jsr get_tftp_directory_listing
-  bcs return_to_main
-  
-@boot_filename_set:
-  ;AX now points to filename
-  jsr download
-  bcc file_downloaded_ok
-tftp_boot_failed:  
-  jsr wait_for_keypress
-return_to_main:  
-  jmp error_handler
-
-file_downloaded_ok:    
-ldax kipper_param_buffer+KPR_TFTP_POINTER
-  
-boot_into_file:
-  stax  kipper_param_buffer ;use the param buffer as a temp holding place for the load address
-  ;get ready to bank out
-  kippercall #KPR_DEACTIVATE   
-
-  jsr $ffe7 ; make sure all files have been closed.
-  
-  ;check whether the file we just downloaded was a BASIC prg
-  lda kipper_param_buffer
-  cmp #01
-  bne @not_a_basic_file
-  
-  lda kipper_param_buffer+1
-  cmp #$08
-  bne @not_a_basic_file
-
-  lda $805
-  cmp #$9e  ;opcode for 'SYS'
-  bne @not_a_basic_stub
- 
-  ldax  #$806  ;should point to ascii string containing address that was to be SYSed
-  jsr parse_integer 
-  jmp exit_cart_via_ax ;good luck! 
-@not_a_basic_stub:  
-  ldax #cant_boot_basic
-  jsr print
-  jsr wait_for_keypress
-  jmp init
-   
-@not_a_basic_file:
-  ldax  kipper_param_buffer
-exit_cart_via_ax:  
-  sta call_downloaded_prg+1
-  stx call_downloaded_prg+2
-  jmp call_downloaded_prg
-
-get_tftp_directory_listing:  
-  stax  temp_ptr
-@get_listing:  
-  stax kipper_param_buffer+KPR_TFTP_FILENAME
-  
-  ldax #directory_buffer
-  stax kipper_param_buffer+KPR_TFTP_POINTER
-
-  ldax #getting_dir_listing_msg
-	jsr print
-
-  ldax  #kipper_param_buffer
-  kippercall #KPR_TFTP_DOWNLOAD
-
-	bcs @dir_failed
-
-  lda directory_buffer ;get the first byte that was downloaded
-  bne :+
-  jmp @no_files_on_server
-:  
-
-  ;switch to lower case charset
-  lda #23
-  sta $d018
-
-
-  ldax  #directory_buffer
-  
-  jsr select_option_from_menu  
-  bcc @tftp_filename_set
-  rts
-@tftp_filename_set:
-  stax  copy_dest
-  stax  get_value_of_axy+1
-  ldy #0
-  jsr get_value_of_axy ;A now == first char in string we just downloaded
-  cmp #'$'
-  bne @not_directory_name
-  ;it's a directory name, so we need to append the file mask to end of it
-  ;this will fail if the file path is more than 255 characters long
-@look_for_trailing_zero:
-   iny
-    inc copy_dest
-    bne :+
-    inc copy_dest+1
-: 
-   jsr get_value_of_axy ;A now == next char in string we just downloaded
-   bne  @look_for_trailing_zero
-   
-; got trailing zero
-  ldax  temp_ptr
-  clc
-  adc #1   ;skip the leading '$'
-  bcc :+
-  inx
-:  
-  stax  copy_src
-  ldax  #$07
-  jsr copymem   
-  ldax get_value_of_axy+1
-  jmp @get_listing
-
-@not_directory_name:
-  ldax  get_value_of_axy+1
-  clc
-  rts
-  
-@dir_failed:  
-  ldax  #dir_listing_fail_msg
-  jsr print
-  sec
-  rts
-    
-@no_files_on_server:
-  ldax #no_files
-	jsr print
-  sec
-  rts
-   
-disk_boot:
-  .import io_read_catalogue
-  .import io_device_no
-  .import io_filename
-  .import io_read_file
-  .import io_load_address
-  lda #00 ;use default drive
-  sta io_device_no
-
-  ldax #directory_buffer
-  jsr io_read_catalogue
-  
-  lda directory_buffer ;get the first byte that was downloaded
-  bne :+
-  jmp @no_files_on_disk
-:  
-
-  ;switch to lower case charset
-
-
-  ldax  #directory_buffer
-  
-  jsr select_option_from_menu  
-  bcc @disk_filename_set
-  jmp main_menu
-  
-@dir_failed:  
-  ldax  #dir_listing_fail_msg
-@print_error:  
-  jsr print
-  jsr print_errorcode
-  jsr print_cr
-  jmp @wait_keypress_then_return_to_main
-  
-@no_files_on_disk:
-  ldax #no_files
-	jsr print
-@wait_keypress_then_return_to_main:  
-  jsr wait_for_keypress
-  jmp main_menu
-
-@disk_filename_set:
-  stax io_filename
-  ldax #loading_msg
-	jsr print
-  ldax io_filename
-  jsr print  
-  jsr print_cr
-  ldax #$0000
-  jsr io_read_file
-  bcc @file_read_ok
-  ldax #file_read_error
-  jmp @print_error
-@file_read_ok:
-  ldax #load_ok_msg
-  jsr print
-  ldax io_load_address
-  jmp boot_into_file
-  
-error_handler:  
-  jsr print_errorcode
-  jsr print_cr
-  jsr wait_for_keypress
-  jmp main_menu
-  
-netplay_sid:
-  
-  ldax #sid_filemask
-  jsr get_tftp_directory_listing
-  bcc @sid_filename_set
-  jmp error_handler
-@sid_filename_set:
-  ;AX now points to filename
-  stax kipper_param_buffer+KPR_TFTP_FILENAME
-  ldax #$1000   ;load address 
-  stax kipper_param_buffer+KPR_TFTP_POINTER
-  jsr download2
-  
-	
-  bcc :+
-  jmp error_handler
-:  
-
-  jsr cls
-  ldax kipper_param_buffer+KPR_TFTP_FILESIZE
-  stax sidfile_length
-  ldax kipper_param_buffer+KPR_TFTP_POINTER
-  jsr load_sid
-  jsr play_sid
-  
-
-  jmp main_menu
-
-
-d64_download:
-  
-  ldax #d64_filemask
-  jsr get_tftp_directory_listing
-  bcc @d64_filename_set
-  jmp main_menu
-@d64_filename_set:
-  ;AX now points to filename
-  jsr download_d64
-  jmp main_menu
-
   
 
   
-bad_boot:
-  jsr wait_for_keypress
-  jmp $fe66   ;do a wam start
-
-download: ;AX should point at filename to download
-  stax kipper_param_buffer+KPR_TFTP_FILENAME
-  ldax #$0000   ;load address will be first 2 bytes of file we download (LO/HI order)
-  stax kipper_param_buffer+KPR_TFTP_POINTER
-
-download2:
-  ldax #downloading_msg
-	jsr print
-  ldax kipper_param_buffer+KPR_TFTP_FILENAME
-  jsr print_ascii_as_native
-  jsr print_cr
-  
-  ldax #kipper_param_buffer
-  kippercall #KPR_TFTP_DOWNLOAD
-  
-	bcc :+
-  
-	ldax #tftp_download_fail_msg  
-	jsr print
-  jsr print_errorcode
-  sec
-  rts
-  
-:
-  ldax #tftp_download_ok_msg
-	jsr print
-  clc
-  rts
 
 wait_for_keypress:
   ldax  #press_a_key_to_continue
@@ -710,7 +409,8 @@ cfg_get_configuration_ptr:
   kippercall #KPR_GET_IP_CONFIG
   rts
 
-exit_ping:
+exit_telnet:
+exit_gopher:
   lda #142
   jsr print_a ;switch to upper case
   lda #$05  ;petscii for white text
@@ -719,15 +419,14 @@ exit_ping:
 .rodata
 
 netboot65_msg: 
-.byte 13,"KIPPERKART V"
+.byte 13,"KIPPERTERM V"
 .include "../inc/version.i"
 .byte 13,0
 main_menu_msg:
 .byte 13,"MAIN MENU",13,13
-.byte "F1: TFTP BOOT   F2: DISK BOOT",13
-.byte "F3: UPLOAD D64  F4: DOWNLOAD D64",13
-.byte "F5: SID NETPLAY F6: PING",13
-.byte "F7: CONFIG",13,13
+.byte "F1: TELNET      F3: GOPHER ",13
+.byte "F5: GOPHER (FLOODGAP.COM)",13
+.byte "                F7: CONFIG",13,13
 
 .byte 0
 
@@ -739,29 +438,11 @@ config_menu_msg:
 .byte "F7: MAIN MENU",13,13
 .byte 0
 
-cant_boot_basic:
-.byte "BASIC FILE EXECUTION NOT SUPPORTED",13,0
+gopher_initial_location:
+.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
 
-ping_header: .byte "ping",13,0
-
-file_read_error: .asciiz "ERROR READING FILE"
-autoexec_filename: .byte "AUTOEXEC.PRG",0
-
-downloading_msg:  .byte "DOWN"
-loading_msg:  .asciiz "LOADING "
-
-getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
-
-dir_listing_fail_msg:
-	.byte "DIR FAILED",13,0
-
-tftp_download_fail_msg:
-	.byte "DOWNLOAD FAILED", 13, 0
-
-tftp_download_ok_msg:
-	.byte "DOWN"
-load_ok_msg:
-	.byte "LOAD OK", 13, 0
+gopher_header: .byte "gopher",13,0
+telnet_header: .byte "telnet",13,0
 
 current:
 .byte "CURRENT ",0
@@ -769,19 +450,6 @@ current:
 new:
 .byte"NEW ",0
   
-tftp_dir_filemask:  
-  .asciiz "$/*.prg"
-
-d64_filemask:  
-  .asciiz "$/*.d64"
-
-sid_filemask:
-  .asciiz "$/*.sid"
-
-no_files:
-  .byte "NO FILES",13,0
-
 resolving:
   .byte "RESOLVING ",0
 
-remote_host: .byte "HOSTNAME (LEAVE BLANK TO QUIT)",13,": ",0

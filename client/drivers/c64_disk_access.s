@@ -12,6 +12,7 @@
 .export  io_sector_no
 .export  io_track_no
 .export  io_read_sector
+.export io_write_sector
 .export  io_read_catalogue
 .export  io_read_catalogue_ex
 .export io_read_file
@@ -34,6 +35,7 @@ CHKIN   = $ffc6
 CHKOUT  = $ffc9
 CHRIN = $ffcf
 CHROUT  = $ffd2
+CLRCHN = $ffcc
 CLALL = $FFE7
 CLOSE = $ffc3
 OPEN = $ffc0
@@ -144,16 +146,11 @@ read_file_callback:
 io_read_file_with_callback:
 
   stax sector_buffer_address
+  jsr CLALL
   jsr parse_filename
   jsr SETNAM
 
-  lda io_device_no
-  beq @drive_id_set
-  clc
-  adc #07   ;so 01->08, 02->09 etc
-  sta drive_id
-@drive_id_set:  
-
+  jsr set_drive_id
   lda #$02      ; file number 2
   ldx drive_id
   ldy #02       ; secondary address 2
@@ -209,12 +206,7 @@ io_read_file_with_callback:
 @empty_sector:  
 
 @close:
-  lda #$02      ; filenumber 2
-  jsr CLOSE
-  ldx #$00      ;keyboard now used as input
-  jsr CHKIN
-  clc
-  rts
+  jmp close_filenumber_2
 @device_error:
   lda #KPR_ERROR_DEVICE_FAILURE
   sta ip65_error
@@ -332,8 +324,113 @@ extended_catalogue_flag_set:
   jsr write_byte_to_buffer
   rts
 
+set_drive_id:
+  lda io_device_no
+  beq @drive_id_set
+  clc
+  adc #07   ;so 01->08, 02->09 etc
+  sta drive_id
+@drive_id_set:  
+  rts
 
-;routine to read a sector 
+;routine to write a sector 
+;cribbed from http://codebase64.org/doku.php?id=base:writing_a_sector_to_disk (credited to "Graham")
+;inputs:
+; io_device_number set to specify drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
+; io_sector_no - set to sector number to be written
+; io_track_no - set to track number to be written (only lo byte is used)
+; AX - address of buffer to to write to sector
+; outputs:; on errror, carry flag is set. 
+io_write_sector:
+  stax sector_buffer_address
+  jsr set_drive_id
+  jsr CLALL
+  lda #$32 ;"2"
+  jsr make_user_command
+  lda #1
+  ldx #<cname
+  ldy #>cname
+  jsr SETNAM
+  lda #02
+  ldx drive_id
+  ldy #02
+  jsr SETLFS
+  jsr OPEN
+  bcs @error
+  
+  lda #7
+  ldx #<bpname
+  ldy #>bpname
+  jsr SETNAM
+  lda #15
+  ldx drive_id
+  ldy #15
+  jsr SETLFS
+  jsr OPEN
+  bcs @error
+
+  jsr check_error_channel
+  lda #$30
+  cmp error_buffer
+  bne @error  
+
+  ldx #$02      ; filenumber 2
+  jsr CHKOUT    ; file 2 now used as output
+
+  ldax sector_buffer_address
+  stax buffer_ptr
+  ldy #0
+:
+  lda (buffer_ptr),y  ;get next byte in sector
+  jsr CHROUT          ;write it out
+  iny
+  bne :-
+
+  ldx #$0F      ; filenumber 15
+  jsr CHKOUT    ; file 15 now used as output
+
+  ldy #$00
+:
+  lda command_buffer,y
+  beq :+
+  jsr CHROUT   ;write byte to command channel
+  iny
+  bne :-
+:  
+
+  lda #$0d    ; carriage return, required to start command
+  jsr CHROUT  ;write it out
+  jsr check_error_channel
+  lda #$30
+  cmp error_buffer
+  bne @error  
+
+@close:
+  jsr close_filenumbers_2_and_15
+  jsr CLRCHN
+  clc
+  rts
+  
+@error:
+  lda #KPR_ERROR_DEVICE_FAILURE
+  sta ip65_error
+  jsr @close
+  sec
+  rts
+
+
+close_filenumbers_2_and_15:
+  lda #15      ; filenumber 15
+  jsr CLOSE
+close_filenumber_2:  
+  lda #$02      ; filenumber 2
+  jsr CLOSE
+  ldx #$00      ; filenumber 0 = keyboard
+  jsr CHKIN ;(keyboard now input device again)
+  clc
+  rts
+  
+;routine to read a sector (credited to "Graham")
 ;cribbed from http://codebase64.org/doku.php?id=base:reading_a_sector_from_disk
 ;inputs:
 ; io_device_number set to specify drive to use ($00 = same as last time, $01 = first disk (i.e. #8), $02 = 2nd disk (drive #9))
@@ -346,14 +443,10 @@ extended_catalogue_flag_set:
 io_read_sector:
 
   stax sector_buffer_address
-  lda io_device_no
-  beq @drive_id_set
-  clc
-  adc #07   ;so 01->08, 02->09 etc
-  sta drive_id
-@drive_id_set:  
-  jsr make_read_sector_command
-  ldax command_buffer
+  jsr set_drive_id
+  jsr CLALL
+  lda #$31  ;"1"
+  jsr make_user_command
   lda #1
   ldx #<cname
   ldy #>cname
@@ -394,14 +487,7 @@ io_read_sector:
   iny
   bne @loop     ; next byte, end when 256 bytes are read
 @close:
-  lda #15      ; filenumber 15
-  jsr CLOSE
-  lda #$02      ; filenumber 2
-  jsr CLOSE
-  ldx #$00      ; filenumber 0 = keyboard
-  jsr CHKIN ;(keyboard now input device again)
-  clc
-  rts
+  jmp close_filenumbers_2_and_15
 @error:
   lda #KPR_ERROR_DEVICE_FAILURE
   sta ip65_error
@@ -443,15 +529,18 @@ check_error_channel:
   JSR CHKIN ;(keyboard now input device again)
   rts
 
-make_read_sector_command:
-;fill command buffer with command to read in track & sector 
+make_user_command:
+;fill command buffer with "U <x>" command, where "x" is passed in via A
+;i.e. A=1 makes command to read in track & sector 
+;A=2 makes command to write track & sector 
 ;returns length of command in Y
 
+  pha
   ldy #0
   lda #85 ;"U"
   sta command_buffer,y
   iny
-  lda #$31 ;"1" 
+  pla 
   sta command_buffer,y
   iny
   lda #$20 ;" "
@@ -525,3 +614,4 @@ byte_to_ascii:
 
 .rodata
 cname: .byte '#'  
+bpname: .byte "B-P 2 0"

@@ -14,7 +14,7 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
 
-all: 	upnatom.prg upnatom.d64 httpd.d64 raster.prg sidplay.prg sidplay_zigzag.prg
+all: 	upnatom.prg upnatom.d64 httpd.d64 raster.prg sidplay.prg sidplay_zigzag.prg irc.d64
 
 %.o: %.s 
 	$(AS) $(AFLAGS) $<
@@ -41,9 +41,9 @@ upnatom.d64:  upnatom.prg url.cfg
 httpd.prg: httpd.asm
 	$(DA) httpd.asm -ohttpd.prg
 
-httpd.d64:  httpd.prg url.cfg
-	cp httpd.prg autoexec.prg
-	ripxplore.rb --init CbmDos httpd.d64 -a autoexec.prg
+%.d64:  %.prg 
+	cp $*.prg autoexec.prg
+	ripxplore.rb --init CbmDos $*.d64 -a autoexec.prg
 
 clean:
 	rm -f *.o *.pg2 *.prg *.map upnatom.d64

@@ -44,9 +44,7 @@ init:
     
   jsr print_cr
   jsr print_ip_config
-  jsr print_arp_cache
   init_ip_via_dhcp 
-  jsr print_arp_cache
 ;  jsr overwrite_with_hardcoded_dns_server
   jsr print_ip_config
   

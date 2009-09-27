@@ -11,7 +11,6 @@ INCFILES=\
   ../inc/kipper_constants.i\
   ../inc/version.i\
 
-TCP_INCFILES=../inc/gopher.i ../inc/telnet.i ../inc/ping.i
 IP65LIB=../ip65/ip65.lib
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
@@ -19,9 +18,12 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 C64PROGLIB=../drivers/c64prog.lib
 C64NB65LIB=../drivers/c64nb65.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin
+all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin
 
-kipperkart.o: kipperkart.s $(INCFILES) $(TCP_INCFILES)
+kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i 
+	$(AS) $(AFLAGS) -o $@ $<
+
+kipperterm.o: kipperterm.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i 
 	$(AS) $(AFLAGS) -o $@ $<
 
 %.o: %.s $(INCFILES) 
@@ -38,7 +40,12 @@ kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_
 	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kipperkart.bin kipperkart_29c040.bin 32
-  
+
+kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
+	ruby fix_cart.rb $@ 16384
+	ruby dupe_cart.rb kipperterm.bin kipperterm_29c040.bin 32
+
 kipperkart_rr.bin: kipperkart.bin 
 	cp crt8040.obj rrnet_header.bin	
 	cat rrnet_header.bin kipperkart.bin > kipperkart_rr.bin

@@ -60,7 +60,6 @@ init:
   jsr print_integer
   ldax #ms
   jsr print
-  jsr print_arp_cache  
   rts
 @error:
   jmp print_errorcode

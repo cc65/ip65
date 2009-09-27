@@ -115,11 +115,6 @@ KPR_PAYLOAD_LENGTH  EQU $08                          ;2 byte length of payload o
                                                       ; in a TCP connection, if the length is $FFFF, this actually means "end of connection"
 KPR_PAYLOAD_POINTER EQU $0A                          ;2 byte pointer to payload of packet (after all headers)
 
-;offsets in ICMP listener parameter structure
-KPR_ICMP_LISTENER_TYPE     EQU $00                 ;ICMP type
-KPR_ICMP_LISTENER_CALLBACK EQU $01                 ;2 byte address of routine to call when ICMP packet of specified type arrives
-
-
 ;offsets in URL download structure
 ;inputs: 
 KPR_URL                         EQU $00              ;2 byte pointer to null terminated URL (NB - must be ASCII not "native" string)
