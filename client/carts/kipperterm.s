@@ -106,7 +106,7 @@ temp_ptr: .res 2
 .byte "KIPPER"         ; API signature
 jmp kipper_dispatcher    ; KPR_DISPATCH_VECTOR   : entry point for KIPPER functions
 jmp ip65_process          ;KPR_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
-jmp timer_vbl_handler     ;KPR_VBL_VECTOR : routine to be called during each vertical blank interrupt
+.byte $0,$0,$0             ;reserved for future use
 
 .code
 

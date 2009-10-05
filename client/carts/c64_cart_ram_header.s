@@ -23,13 +23,22 @@ basicstub:
 	.word 0
 
 init:
+
+  ;turn off BASIC
+  lda $01
+  and #$FE  ;mask out bit 0
+  sta $01
+  
+  ;now relocate the cart
+  
   ldax #cart_data
   stax copy_src
   ldax #$8000
   stax copy_dest
-  ldax #$2000
+  ldax #$4000
   jsr copymem
-  jmp ($8000) ;cold start vector
+  
+  jmp ($8002) ;warm start vector
  
 ;copy memory
 ;inputs:
@@ -69,5 +78,3 @@ copymem:
 ;this is where the cart data will be appended to: 
  cart_data:
   
-
- 

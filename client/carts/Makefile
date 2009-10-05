@@ -16,9 +16,9 @@ IP65LIB=../ip65/ip65.lib
 IP65TCPLIB=../ip65/ip65_tcp.lib
 
 C64PROGLIB=../drivers/c64prog.lib
-C64NB65LIB=../drivers/c64nb65.lib
+#C64NB65LIB=../drivers/c64nb65.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin
+all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i 
 	$(AS) $(AFLAGS) -o $@ $<
@@ -29,6 +29,9 @@ kipperterm.o: kipperterm.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 
+kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
+	cat c64_cart_ram_header.prg kipperkart.bin > kipperkart.prg
+
 %.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
 
@@ -36,13 +39,13 @@ netboot.bin: netboot.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_8kcart.cf
 	$(LD) -m netboot.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65LIB) $(C64PROGLIB)  
 	ruby fix_cart.rb $@ 8192
 
-kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_16kcart.cfg
-	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
+kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kipperkart.bin kipperkart_29c040.bin 32
 
-kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64NB65LIB) $(INCFILES) ../cfg/c64_16kcart.cfg
-	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64NB65LIB)  
+kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kipperterm.bin kipperterm_29c040.bin 32
 

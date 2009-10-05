@@ -92,7 +92,7 @@
     
   .import cfg_tftp_server
   kipper_param_buffer = $6000
-  directory_buffer = $6020
+  directory_buffer = $4020
 
 
 .bss
@@ -101,7 +101,7 @@ temp_ptr: .res 2
 
 call_downloaded_prg: 
    jsr $0000 ;overwritten when we load a file
-   jmp init
+   jmp cold_init
    
 get_value_of_axy: ;some more self-modifying code
 	lda $ffff,y
@@ -109,19 +109,18 @@ get_value_of_axy: ;some more self-modifying code
 
 
 .segment "CARTRIDGE_HEADER"
-.word init  ;cold start vector
-.word $FE47  ;warm start vector
+.word cold_init  ;cold start vector
+.word warm_init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte "KIPPER"         ; API signature
 jmp kipper_dispatcher    ; KPR_DISPATCH_VECTOR   : entry point for KIPPER functions
 jmp ip65_process          ;KPR_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
-jmp timer_vbl_handler     ;KPR_VBL_VECTOR : routine to be called during each vertical blank interrupt
-
+.byte $0,$0,$0             ;reserved for future use
 .code
 
   
   
-init:
+cold_init:
 
   ;first let the kernal do a normal startup
   sei
@@ -130,7 +129,8 @@ init:
   jsr $fd15   ;set vectors for KERNAL
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
-  
+
+warm_init:
   ;set some funky colours
 
   LDA #$04  ;purple
@@ -215,12 +215,14 @@ main_menu:
  @not_f2:  
 
   cmp #KEYCODE_F3      
-  bne @not_f3
-  .byte $92 ; fixme
+  bne @not_f3  
+  jsr upload_d64
+  jmp main_menu
 @not_f3:  
   cmp #KEYCODE_F4
   bne @not_f4
-  jmp d64_download
+  jsr d64_download
+  jmp main_menu
 @not_f4:  
 
   cmp #KEYCODE_F5 
@@ -460,7 +462,7 @@ boot_into_file:
   ldax #cant_boot_basic
   jsr print
   jsr wait_for_keypress
-  jmp init
+  jmp warm_init
    
 @not_a_basic_file:
   ldax  kipper_param_buffer
@@ -749,6 +751,8 @@ autoexec_filename: .byte "AUTOEXEC.PRG",0
 
 downloading_msg:  .byte "DOWN"
 loading_msg:  .asciiz "LOADING "
+
+uploading_msg:  .byte "UPLOADING ",0
 
 getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
 

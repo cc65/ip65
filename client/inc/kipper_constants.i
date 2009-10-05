@@ -8,7 +8,6 @@ KPR_API_VERSION_NUMBER  EQU $01
 KPR_CART_SIGNATURE              EQU $8009
 KPR_DISPATCH_VECTOR             EQU $800f 
 KPR_PERIODIC_PROCESSING_VECTOR  EQU $8012
-KPR_VBL_VECTOR                  EQU $8015
 
 ;function numbers
 ;to make a function call:

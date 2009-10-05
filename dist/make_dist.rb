@@ -12,19 +12,20 @@ VERSION_FILE=File.expand_path(File.dirname(__FILE__)+"/version_number.txt")
 VERSION_INC_FILE=File.expand_path(File.dirname(__FILE__)+"/../client/inc/version.i")
 version_string=File.open(VERSION_FILE).read
 
-["","c64","lib","bin","boot","doc","inc","examples"].each do |dir_suffix|
+["","c64","lib","bin","boot","doc","inc"].each do |dir_suffix|
   dir_path="#{WORKING_DIR}/#{dir_suffix}"
   Dir.mkdir(dir_path) unless File.exist?(dir_path)
 end
 
 [
 #["client/nb65/utherboot.dsk","a2/"],
-["client/nb65/set_ip_config.rb","bin/"],
+["client/carts/set_ip_config.rb","bin/"],
 #["client/nb65/nb65_rrnet.bin","c64/"],
-["client/nb65/nb65_c64_ram.prg","c64/"],
-["client/nb65/nb65_std_cart.bin","c64/"],
-["client/nb65/nb65_tcp_cart.bin","c64/"],
-["client/nb65/nb65_tcp_cart_rr.bin","c64/"],
+["client/carts/kipperkart.prg","c64/"],
+["client/carts/kipperkart.bin","c64/"],
+["client/carts/kipperkart_rr.bin","c64/"],
+["client/carts/kipperterm.bin","c64/"],
+["client/carts/netboot.bin","c64/"],
 ["client/nb65/d64_upload.prg","boot/"],
 ["client/examples/upnatom.prg","boot/"],
 ["server/lib/tftp_server.rb","lib"],
@@ -37,10 +38,9 @@ end
 ["doc/netboot65.html","doc/index.html"],
 #["doc/README.Apple2.html","doc"],
 ["doc/README.C64.html","doc"],
-["doc/nb65_api_technical_reference.doc","doc"],
+["doc/kipper_api_technical_reference.doc","doc"],
 ["client/inc/common.i","inc"],
-["client/inc/nb65_constants.i","inc"],
-["client/examples/dasm_example.asm","examples/"],
+["client/inc/kipper_constants.i","inc"],
 ["client/examples/upnatom.d64","c64/"],
 #["client/nb65/d64_upload.s","examples/"],
 #["client/nb65/nb65_skeleton.s","examples/"],

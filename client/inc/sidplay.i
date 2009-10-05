@@ -160,7 +160,6 @@ play_sid:
   
 @reset_song:  
   jsr print_current_song
-  lda current_song
   jsr init_song
   jmp @keypress_loop  
 
@@ -198,7 +197,8 @@ install_irq_handler:
 
 irq_handler:
   
-  
+  lda play_song_handler+2
+  beq :+
   lda $d012
   cmp #100
   bne irq_handler
@@ -207,7 +207,7 @@ irq_handler:
   inc $d020
   jsr play_song
   dec $d020
-  
+:  
   jmp jmp_old_irq
   
 
@@ -273,6 +273,7 @@ play_song_handler:
   pla
   sta $01
   rts
+
 jmp_old_irq:
   jmp $ffff
 

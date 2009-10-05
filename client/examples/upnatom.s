@@ -678,11 +678,6 @@ print_errorcode:
 
 
 
-update_KPR_counters_irq:
-  start_irq
-  jsr KPR_VBL_VECTOR
-	jmp	exit_from_irq
-
 
 play_music_irq:
 ;	inc	BORDER_COLOR
@@ -816,8 +811,6 @@ raster_jump_table:
  	.byte	$0,$20
   .word pixel_scroll_irq
 
- 	.byte	$0,$30
-  .word update_KPR_counters_irq
  
   .byte	$0,$80
   .word play_music_irq
@@ -857,6 +850,7 @@ scroll_template:
 
 
 feed_url:
+.byte "http://static.cricinfo.com/rss/livescores.xml",0
 .byte "http://search.twitter.com/search.atom?q=kipper",0
 ;leave space for whatever we read in from disk
 .repeat 128

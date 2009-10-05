@@ -51,32 +51,13 @@ buffer_ptr= copy_dest
 .data
 
 
-jmp_old_irq:
-  jmp $0000
-
-irq_handler_installed_flag:
-  .byte 0
 
 ip_configured_flag:
   .byte 0
 
 .code
 
-irq_handler:
-  jsr KPR_VBL_VECTOR  
-  jmp jmp_old_irq
 
-
-install_irq_handler:
-  ldax  $314    ;previous IRQ handler
-  stax  jmp_old_irq+1
-  sei ;don't want any interrupts while we fiddle with the vector
-  ldax #irq_handler
-  stax  $314    ;previous IRQ handler
-  sta irq_handler_installed_flag
-  cli
-  rts
-  
 set_tftp_params:
     ldx #$03
 :
@@ -121,22 +102,17 @@ kipper_dispatcher:
   bne ip_configured
   jsr ip65_init
   bcs init_failed
-  jsr install_irq_handler
   jsr dhcp_init
   bcc dhcp_ok
   jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
 dhcp_ok:  
   lda #1
   sta ip_configured_flag
-irq_handler_installed:  
   clc
 init_failed:  
   rts
   
 ip_configured:
-  lda irq_handler_installed_flag
-  bne irq_handler_installed
-  jsr install_irq_handler
   clc
   rts
 :
@@ -310,13 +286,8 @@ ip_configured:
 
 
   cpy #KPR_DEACTIVATE
+  ;nothing to do now we don't use IRQ
   bne :+
-  ldax  jmp_old_irq+1
-  sei ;don't want any interrupts while we fiddle with the vector
-  stax  $314    ;previous IRQ handler
-  lda #0
-  sta irq_handler_installed_flag 
-  cli
   clc
   rts
 :  
