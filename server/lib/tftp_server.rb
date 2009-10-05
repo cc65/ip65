@@ -34,6 +34,7 @@ class Netboot65TFTPServer
   
   attr_reader :bootfile_dir,:port,:server_thread
   def initialize(bootfile_dir,port=69)
+    @bootfile_dir=bootfile_dir
     @file_list=FileList.new(bootfile_dir)
     @port=port
     @server_thread=nil
@@ -189,7 +190,7 @@ class Netboot65TFTPServer
               file_handle=File.open(full_filename,"wb")
               Thread.new {recv_data(client_ip,client_port,full_filename,file_handle)}
              rescue Exception=>e
-              send_error(client_ip,client_port,2,"error writing to '#{filename}':#{e.to_s}") 
+              send_error(client_ip,client_port,2,"error writing to '#{full_filename}': #{e.to_s}") 
             end
           end          
           when 0x65 : #DIR REQUEST

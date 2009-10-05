@@ -11,7 +11,7 @@
  errors: .res 1
  sectors_in_track: .res 1
  sector_buffer_address: .res 2  
-
+ output_buffer_address: .res 2
 ;the io_* and tftp_* routines both use the 'output_buffer' so we lose the data in the second sector
 ;therefore we need to copy the data to here before we use it
  sector_buffer: .res 512 
@@ -67,23 +67,34 @@ upload_d64:
   kippercall #KPR_TFTP_CALLBACK_UPLOAD
   jmp after_tftp_transfer
 
+copy_sector_buffer_to_output_buffer:
+  ldax  #sector_buffer
+  stax  copy_src
+  ldax  output_buffer_address
+  stax  copy_dest
+  ldax #$200
+  jmp   copymem
+  
 read_next_block:
 ;tftp upload callback routine
 ;AX will point to address to fill
-  stax  sector_buffer_address
+  stax output_buffer_address
+  ldax #sector_buffer
+  stax sector_buffer_address  
+    
   lda track
   cmp #36
   beq @past_last_track
   jsr read_sector  
-  jsr move_to_next_sector
   bcc @not_last_sector
+  jsr copy_sector_buffer_to_output_buffer
   ldax  #$100
   rts
-@not_last_sector:  
+@not_last_sector:
   inc sector_buffer_address+1
   ldax sector_buffer_address
   jsr read_sector  
-  jsr move_to_next_sector
+  jsr copy_sector_buffer_to_output_buffer
   ldax  #$200    
   rts
 @past_last_track:
