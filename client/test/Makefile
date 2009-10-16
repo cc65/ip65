@@ -29,10 +29,13 @@ all: \
 	testdottedquad.pg2\
 	testdottedquad.prg\
 	test_tcp.prg \
+	test_httpd.prg \
 	test_parser.prg \
 	test_ping.prg \
 	test_sntp.prg \
 	test_get_url.prg \
+	test_parse_querystring.prg \
+	httpd_test.d64 \
 #	ip65test.dsk \
 
 %.o: %.c
@@ -59,7 +62,11 @@ test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
-    
+
+httpd_test.d64:  test_httpd.prg 
+	cp test_httpd.prg autoexec.prg
+	ripxplore.rb --init CbmDos httpd_test.d64 -a autoexec.prg
+
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    

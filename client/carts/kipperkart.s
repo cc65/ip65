@@ -89,6 +89,9 @@
   .import  __SELF_MODIFIED_CODE_LOAD__
   .import  __SELF_MODIFIED_CODE_RUN__
   .import  __SELF_MODIFIED_CODE_SIZE__
+  .import  __HTTP_VARS_LOAD__
+  .import  __HTTP_VARS_RUN__
+  .import  __HTTP_VARS_SIZE__
     
   .import cfg_tftp_server
   kipper_param_buffer = $6000
@@ -130,6 +133,8 @@ cold_init:
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
 
+  jsr init_tod
+  
 warm_init:
   ;set some funky colours
 
@@ -158,6 +163,14 @@ warm_init:
   ldax #__SELF_MODIFIED_CODE_SIZE__
   jsr copymem
 
+;relocate the self-modifying code (if necessary)
+  ldax #__HTTP_VARS_LOAD__
+  stax copy_src
+  ldax #__HTTP_VARS_RUN__
+  stax copy_dest
+  ldax #__HTTP_VARS_SIZE__
+  jsr copymem
+  
   ldax #netboot65_msg
   jsr print
   ldax #init_msg+1
@@ -718,6 +731,59 @@ exit_ping:
   lda #$05  ;petscii for white text
   jsr print_a
   jmp main_menu
+  
+  
+;init the Time-Of-Day clock - cribbed from http://codebase64.org/doku.php?id=base:initialize_tod_clock_on_all_platforms
+init_tod:
+	sei
+	lda	#0
+	sta	$d011		;Turn off display to disable badlines
+	sta	$dc0e		;Set TOD Clock Frequency to 60Hz
+	sta	$dc0f		;Enable Set-TOD-Clock
+	sta	$dc0b		;Set TOD-Clock to 0 (hours)
+	sta	$dc0a		;- (minutes)
+	sta	$dc09		;- (seconds)
+	sta	$dc08		;- (deciseconds)
+
+	lda	$dc08		;
+@wait_raster:	
+  cmp	$dc08		;Sync raster to TOD Clock Frequency
+	beq	@wait_raster
+	
+	ldx	#0		;Prep X and Y for 16 bit
+	ldy	#0		; counter operation
+	lda	$dc08		;Read deciseconds
+@loop1:
+  inx			;2   -+
+	bne	@loop2		;2/3  | Do 16 bit count up on
+	iny			;2    | X(lo) and Y(hi) regs in a 
+	jmp	@loop3		;3    | fixed cycle manner
+@loop2:
+  nop			;2    |
+	nop			;2   -+
+@loop3:
+  cmp	$dc08		;4 - Did 1 decisecond pass?
+	beq	@loop1		;3 - If not, loop-di-doop
+				;Each loop = 16 cycles
+				;If less than 118230 cycles passed, TOD is 
+				;clocked at 60Hz. If 118230 or more cycles
+				;passed, TOD is clocked at 50Hz.
+				;It might be a good idea to account for a bit
+				;of slack and since every loop is 16 cycles,
+				;28*256 loops = 114688 cycles, which seems to be
+				;acceptable. That means we need to check for
+				;a Y value of 28.
+
+	cpy	#28		;Did 114688 cycles or less go by?
+	bcc	@hertz_correct		;- Then we already have correct 60Hz $dc0e value
+	lda	#$80		;Otherwise, we need to set it to 50Hz
+	sta	$dc0e
+@hertz_correct:
+	lda	#$1b		;Enable the display again
+	sta	$d011
+  cli
+	rts		
+  
 .rodata
 
 netboot65_msg: 

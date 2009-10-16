@@ -45,6 +45,9 @@ KPR_PING_HOST                 EQU $32 ;inputs: AX points to destination IP addre
 
 KPR_FILE_LOAD                 EQU $40 ;inputs: AX points to a file access parameter structure, outputs: none
 
+KPR_HTTPD_START               EQU $50 ;inputs: AX points to a routine to call for each inbound request, outputs: none
+KPR_HTTPD_GET_VAR_VALUE       EQU $52 ;inputs: A=variable to get value for ($01 to get method, $02 to get path)
+
 KPR_PRINT_ASCIIZ              EQU $80 ;inputs: AX=pointer to null terminated string to be printed to screen, outputs: none
 KPR_PRINT_HEX                 EQU $81 ;inputs: A=byte digit to be displayed on screen as (zero padded) hex digit, outputs: none
 KPR_PRINT_DOTTED_QUAD         EQU $82 ;inputs: AX=pointer to 4 bytes that will be displayed as a decimal dotted quad (e.g. 192.168.1.1)

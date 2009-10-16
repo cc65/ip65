@@ -41,9 +41,9 @@ end
  
  filebytes=File.open(filename,"rb").read
 
-start_of_nb65_cart_image=filebytes.index("80NB65")
- if start_of_nb65_cart_image.nil? then
-   puts "file '#{filename}' does not appear to be a netboot65 cartridge image"
+start_of_kipper_cart_image=filebytes.index("80KIPPER")
+ if start_of_kipper_cart_image.nil? then
+   puts "file '#{filename}' does not appear to be a kipper cartridge image"
    exit
 end
 
@@ -58,7 +58,7 @@ end
     show_options
     exit
   end
-  option_offset=start_of_nb65_cart_image+offsets[0]-7
+  option_offset=start_of_kipper_cart_image+offsets[0]-7
   option_length=offsets[1]
   
   if option_length==6 then

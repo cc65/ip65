@@ -20,6 +20,8 @@ ETHOBJS= \
 	ip65.o \
 	printf.o \
 	debug.o \
+	http.o \
+	httpd.o \
   dhcp.o \
   dns.o \
   dottedquad.o \

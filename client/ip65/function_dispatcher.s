@@ -484,6 +484,21 @@ bne :+
   rts
 :
 
+  
+  cpy #KPR_HTTPD_START
+  bne :+  
+  .import httpd_start
+  jmp httpd_start
+:
+
+cpy #KPR_HTTPD_GET_VAR_VALUE
+  bne :+  
+  .import http_get_value
+  jmp http_get_value
+:
+
+
+
   cpy #KPR_PING_HOST
   .import icmp_echo_ip
   .import icmp_ping
