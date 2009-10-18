@@ -13,6 +13,7 @@
 
 .export http_parse_request
 .export http_get_value
+.export http_variables_buffer
 
 .importzp copy_src
 .importzp copy_dest
@@ -21,11 +22,14 @@
 string_ptr = copy_src
 table_ptr=copy_dest
 
-var_table=output_buffer
 
 .bss
 var_name: .res 1
 hex_digit: .res 1
+
+.data
+http_variables_buffer: .word $2800  ;work area for storing variables extracted from query string
+
 
 .code
 
@@ -47,7 +51,7 @@ hex_digit: .res 1
 http_parse_request:
   stax string_ptr
   
-  ldax #var_table
+  ldax http_variables_buffer
   
   stax  table_ptr
 
@@ -200,7 +204,7 @@ put_byte:
 ; if variable did not exist, carry flag will be set.
 http_get_value:
   sta var_name
-  ldax #var_table
+  ldax http_variables_buffer
   stax string_ptr
   ldy #0
 

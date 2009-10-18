@@ -89,9 +89,6 @@
   .import  __SELF_MODIFIED_CODE_LOAD__
   .import  __SELF_MODIFIED_CODE_RUN__
   .import  __SELF_MODIFIED_CODE_SIZE__
-  .import  __HTTP_VARS_LOAD__
-  .import  __HTTP_VARS_RUN__
-  .import  __HTTP_VARS_SIZE__
     
   .import cfg_tftp_server
   kipper_param_buffer = $6000
@@ -161,14 +158,6 @@ warm_init:
   ldax #__SELF_MODIFIED_CODE_RUN__
   stax copy_dest
   ldax #__SELF_MODIFIED_CODE_SIZE__
-  jsr copymem
-
-;relocate the self-modifying code (if necessary)
-  ldax #__HTTP_VARS_LOAD__
-  stax copy_src
-  ldax #__HTTP_VARS_RUN__
-  stax copy_dest
-  ldax #__HTTP_VARS_SIZE__
   jsr copymem
   
   ldax #netboot65_msg

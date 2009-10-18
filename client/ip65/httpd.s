@@ -29,17 +29,32 @@ HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for
 .import tcp_send_data_len
 .import tcp_send
 .import tcp_close
+.import io_read_catalogue
+.import native_to_ascii
+.import io_read_file_with_callback
+.import io_filename
+.import io_callback
+.import  __HTTP_VARS_LOAD__
+.import  __HTTP_VARS_RUN__
+.import  __HTTP_VARS_SIZE__
 
 temp_ptr =copy_src
 
-.segment "HTTP_VARS"
-tcp_buffer_ptr: .res 2
-httpd_buffer: .word $2000 ;by default, use a buffer at $2000 for storing inbound requests.
-httpd_port_number: .word 80
-connection_timeout_seconds: .byte 0
+.bss
 found_eol: .byte 0
 connection_closed: .byte 0
 output_buffer_length: .res 2
+sent_header: .res 1
+connection_timeout_seconds: .byte 0
+tcp_buffer_ptr: .res 2
+buffer_size: .res 1
+
+.segment "HTTP_VARS"
+
+httpd_io_buffer: .word $2000 ;by default, use a 2k buffer at $2000 for storing inbound requests.
+httpd_scratch_buffer: .word $2B00 ;by default, use a 1k buffer at $2b00 as a scratchpad
+httpd_port_number: .word 80
+
 
 jump_to_callback:
   jmp $ffff
@@ -80,16 +95,33 @@ emit_a:
 ;outputs:
 ; none
 httpd_start:
+  pha ;save AX while we relocate self modifying code
+  txa
+  pha
+  
+  ;relocate the self-modifying code 
+  ldax #__HTTP_VARS_LOAD__
+  stax copy_src
+  ldax #__HTTP_VARS_RUN__
+  stax copy_dest
+  ldax #__HTTP_VARS_SIZE__
+  jsr copymem
+  pla
+  tax
+  pla
+  
   stx jump_to_callback+2
   bne @not_default_handler
   ldax #default_httpd_handler
   jmp httpd_start
 @not_default_handler:
   sta jump_to_callback+1
-  
+
+
+
 @listen:
   jsr tcp_close
-  ldax httpd_buffer
+  ldax httpd_io_buffer
   stax tcp_buffer_ptr 
   ldax #http_callback
   stax tcp_callback
@@ -135,7 +167,7 @@ httpd_start:
   jmp @listen
   
 @got_eol:
-  ldax httpd_buffer  
+  ldax httpd_io_buffer  
   jsr http_parse_request
   jsr jump_to_callback  ;call the handler to generate the response for this request.
   ;AX should now point at data to be sent
@@ -181,7 +213,7 @@ http_callback:
     
 ;look for CR or LF in input
   sta found_eol
-  ldax httpd_buffer
+  ldax httpd_io_buffer
   stax get_next_byte+1
 
 @look_for_eol:
@@ -216,10 +248,117 @@ default_httpd_handler:
   clc
   rts
 @not_index:
+  ;assume that 'path' is a filename  
+  inc temp_ptr
+  bne :+
+  inc temp_ptr
+:
+  lda #0
+  sta sent_header
+  ldax temp_ptr
+  stax io_filename
+  ldax #send_file_callback
+  stax io_callback
+  ldax httpd_scratch_buffer
+  jsr io_read_file_with_callback
+  bcc @sent_ok
   ldy #4
-  clc
+  clc  
+  rts
+@sent_ok:
+  sec
   rts
 
+send_file_callback:
+  sty buffer_size             ;only 1 (the last) sector can ever be !=$100 bytes
+  lda  sent_header
+  bne @sent_header
+  ldy #3  ;"application/octet-stream"
+  jsr send_header
+  inc sent_header
+@sent_header:
+  ldax  httpd_scratch_buffer
+  stax  temp_ptr
+  ldy #0
+@loop:
+  tya
+  pha
+  lda (temp_ptr),y
+  jsr emit_a
+  pla
+  tay
+  iny
+  cpy buffer_size
+  bne @loop
+  rts
+
+reset_output_buffer:
+  ldax httpd_io_buffer  
+  sta emit_a+1
+  stx emit_a+2
+  lda #0
+  sta output_buffer_length
+  sta output_buffer_length+1
+  rts
+
+
+emit_disk_catalogue:
+
+  ldax httpd_scratch_buffer
+  jsr	io_read_catalogue
+  lda get_next_byte+1
+  pha
+  lda get_next_byte+2
+  pha
+	ldax	httpd_scratch_buffer
+	stax	get_next_byte+1
+
+@next_filename:
+
+	jsr get_next_byte
+  cmp #0
+	beq	@done
+  pha
+  
+  
+	ldax #file_li_preamble
+	jsr	emit_string
+  pla
+  pha
+  jsr	emit_a  
+  ldax get_next_byte+1  
+  jsr	emit_string
+
+  ldax #file_li_middle
+  jsr	emit_string
+  pla
+  bne @convert_byte
+@next_byte:
+	jsr get_next_byte
+  cmp #0
+	beq	@done_this_filename
+@convert_byte:  
+  jsr native_to_ascii
+	jsr	emit_a
+  jmp @next_byte
+@done_this_filename:
+
+
+  
+
+	ldax #file_li_postamble
+	jsr	emit_string
+
+
+	jmp	@next_filename
+@done:	
+  
+  pla
+  sta get_next_byte+2
+  pla
+  sta get_next_byte+1
+  rts
+  
 send_response:
   stax get_next_byte+1
   jsr reset_output_buffer
@@ -229,23 +368,30 @@ send_response:
   jsr get_next_byte
   cmp #0
   beq send_buffer
+  cmp #'%'
+  beq @escape
+@back_from_escape:
   jsr emit_a
   jmp @response_loop
-  
-  
-reset_output_buffer:
-  ldax httpd_buffer  
-  sta emit_a+1
-  stx emit_a+2
-  lda #0
-  sta output_buffer_length
-  sta output_buffer_length+1
-  rts
+
+@escape:
+  jsr get_next_byte
+  cmp #0
+  beq send_buffer
+  cmp #'%'
+  beq @back_from_escape
+  cmp #'C'
+  bne :+
+  jsr emit_disk_catalogue
+  jmp @response_loop
+  :
+;if we got here, it's an invalid escape code  
+  jmp @response_loop
   
 send_buffer:    
   ldax output_buffer_length
   stax tcp_send_data_len
-  ldax httpd_buffer  
+  ldax httpd_io_buffer  
   jsr tcp_send
   jmp reset_output_buffer
  
@@ -334,7 +480,7 @@ emit_string:
  
 .rodata
 default_html:
-.byte "<h1>w00t!</h1><br>yadda yadda yadd!"
+.byte "<h1>Index of /</h1><br><ul>%C</ul><p><i>kipper - the 100%% 6502 m/l web server </i>"
 .byte 0
 
 
@@ -368,3 +514,10 @@ end_of_header:
 	.byte "Connection: Close",CR,LF
 	.byte "Server: Kipper_httpd/0.c64",CR,LF
 	.byte CR,LF,0
+
+file_li_preamble: 
+  .byte "<li><a href=",'"',0
+file_li_middle:
+  .byte '"',">",0
+file_li_postamble:
+  .byte "</a></li>",0

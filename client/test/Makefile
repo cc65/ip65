@@ -63,9 +63,11 @@ test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
 
-httpd_test.d64:  test_httpd.prg 
+httpd_test.d64:  test_httpd.prg index.html file1.html
 	cp test_httpd.prg autoexec.prg
 	ripxplore.rb --init CbmDos httpd_test.d64 -a autoexec.prg
+	ripxplore.rb httpd_test.d64 -a index.html -t C64Seq
+	ripxplore.rb httpd_test.d64 -a file1.html -t C64Seq
 
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
