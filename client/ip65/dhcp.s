@@ -281,14 +281,13 @@ send_dhcpdiscover:
   lda #$80                           ;broadcast flag =1, all other bits 0
   sta output_buffer+dhcp_flags
   
-  lda #53                           ;option 53 - DHCP message type
-  sta output_buffer+dhcp_options+0
-  lda #1                            ;option length is 1  
-  sta output_buffer+dhcp_options+1
-  lda #DHCPDISCOVER           
-  sta output_buffer+dhcp_options+2
-  lda #$FF                           ;option FF = end of options
-  sta output_buffer+dhcp_options+3
+
+  ldx #dhcp_discover_options_length				; set destination address  
+:
+  lda dhcp_discover_options,x
+  sta output_buffer+dhcp_options,x
+	dex
+	bpl :-
 
   ldx #3				; set destination address
   lda #$FF      ; des = 255.255.255.255 (broadcast)
@@ -296,7 +295,7 @@ send_dhcpdiscover:
 	dex
 	bpl :-
 
-  ldax #dhcp_options+4
+  ldax #dhcp_options+dhcp_discover_options_length
   stax udp_send_len
   ldax #output_buffer
 	jsr udp_send
@@ -306,6 +305,19 @@ send_dhcpdiscover:
 : lda #dhcp_selecting
 	sta dhcp_state
   rts
+
+dhcp_discover_options:
+.byte 53 ;option 53 - DHCP message type
+.byte  1 ;option length =1 
+.byte DHCPDISCOVER ; message type
+.byte 55 ; option 55 - Parameter Request List
+.byte 3  ;option length
+.byte 1 ; subnet mask
+.byte 3 ; router (gateway)
+.byte 6 ; DNS server
+.byte $FF ; end of options
+
+dhcp_discover_options_length=*-dhcp_discover_options
 
 ;got a message on port 68
 dhcp_in:
@@ -374,7 +386,7 @@ dhcp_in:
   
 @not_gateway:
 
-  cmp #6               ;option 3 6 is dns server
+  cmp #6               ;option 6 is dns server
   bne @not_dns_server
   lda dhcp_inp+dhcp_options+2,x
   sta cfg_dns
@@ -460,9 +472,9 @@ send_dhcprequest:
 
   ;A still = option FF = end of options 
   
-  sta output_buffer+dhcp_options+17
+  sta output_buffer+dhcp_options+15
 
-  ldax #dhcp_options+18
+  ldax #dhcp_options+16
   stax udp_send_len
 
   ldax #output_buffer
