@@ -216,6 +216,7 @@ get_tftp_directory_listing:
 
 @loop_till_filename_entered:
   ldax  #directory_buffer
+  ldy #1 ;filenames will be ASCII
   jsr select_option_from_menu  
   bcs @loop_till_filename_entered
 @tftp_filename_set:  

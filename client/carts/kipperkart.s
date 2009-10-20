@@ -122,6 +122,8 @@ jmp ip65_process          ;KPR_PERIODIC_PROCESSING_VECTOR : routine to be period
   
 cold_init:
 
+  jsr init_tod
+
   ;first let the kernal do a normal startup
   sei
   jsr $fda3   ;initialize CIA I/O
@@ -130,7 +132,6 @@ cold_init:
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
 
-  jsr init_tod
   
 warm_init:
   ;set some funky colours
@@ -207,6 +208,11 @@ main_menu:
   
 @get_key:
   jsr get_key_ip65
+  
+  pha
+  jsr print_hex
+  pla
+  
   cmp #KEYCODE_F1
   bne @not_f1
   jmp @tftp_boot
@@ -246,7 +252,7 @@ main_menu:
 
   cmp #KEYCODE_F7
   beq @change_config
-  
+   
   jmp @get_key
 
 @exit_to_prog:
@@ -500,7 +506,7 @@ get_tftp_directory_listing:
 
 
   ldax  #directory_buffer
-  
+  ldy #1 ;filenames will be ASCII
   jsr select_option_from_menu  
   bcc @tftp_filename_set
   rts
@@ -573,7 +579,7 @@ disk_boot:
 
 
   ldax  #directory_buffer
-  
+  ldy #0 ;filenames will NOT be ASCII
   jsr select_option_from_menu  
   bcc @disk_filename_set
   jmp main_menu

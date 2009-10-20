@@ -15,16 +15,19 @@ jump_to_prefix: .res 1
 last_page_flag: .res 1
 
 get_current_byte: .res 4
-  
+
+convert_to_native: .res 1
+
 
 .code
 
 
 ;on entry, AX should point to the list of null terminated option strings to be selected from
+;Y should be 1 if menu items are in ASCII, 0 if they are in native char format
 ;on exit, AX points to the selected string
 ;carry is set of QUIT was selected, clear otherwise
 select_option_from_menu:
-
+  sty convert_to_native
   stax options_table_pointer
   stax get_current_byte+1
 ;set the 'LDA' and RTS' opcodes for the 'get current byte' subroutine, which is self-modified-code, hence must be located in RAM not ROM
@@ -138,8 +141,14 @@ select_option_from_menu:
  
   lda get_current_byte+1
   ldx get_current_byte+2
- 
+  ldy convert_to_native
+  beq :+
   jsr print_ascii_as_native
+  jmp @printed
+:
+  jsr print
+@printed:
+
   jsr print_cr
   jsr @skip_past_next_null_byte
   inc current_option
