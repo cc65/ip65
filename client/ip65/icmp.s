@@ -292,7 +292,7 @@ icmp_remove_listener:
 
 .ifdef TCP
 
-; icmp_send_echo was contributed by Glen Holmer (ShadowM)
+; icmp_send_echo was contributed by Glenn Holmer (ShadowM)
 
 ;send an ICMP echo ("ping") request
 ;inputs:
@@ -463,4 +463,6 @@ ip65_msg:
 ; MagerValp@gmail.com.
 ; Portions created by the Initial Developer are Copyright (C) 2009
 ; Per Olofsson. All Rights Reserved.  
+;
+;Contributor(s): Jonno Downes, Glenn Holmer
 ; -- LICENSE END --
