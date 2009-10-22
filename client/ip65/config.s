@@ -64,3 +64,24 @@ cfg_dns:	.res 4; ip address of dns server to use (will be overwritten if dhcp_in
 dhcp_server: .res 4   ;will be set address of dhcp server that configuration was obtained from
 cfg_tftp_server: .res 4 ; ip address of server to send tftp requests to (can be a broadcast address)
 
+
+
+
+;-- LICENSE FOR config.s --
+; The contents of this file are subject to the Mozilla Public License
+; Version 1.1 (the "License"); you may not use this file except in
+; compliance with the License. You may obtain a copy of the License at
+; http://www.mozilla.org/MPL/
+; 
+; Software distributed under the License is distributed on an "AS IS"
+; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+; License for the specific language governing rights and limitations
+; under the License.
+; 
+; The Original Code is ip65.
+; 
+; The Initial Developer of the Original Code is Per Olofsson,
+; MagerValp@gmail.com.
+; Portions created by the Initial Developer are Copyright (C) 2009
+; Per Olofsson. All Rights Reserved.  
+; -- LICENSE END --

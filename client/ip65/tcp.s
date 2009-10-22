@@ -303,6 +303,16 @@ tcp_close:
 ;outputs:
 ;   carry flag is set if an error occured, clear otherwise
 
+
+	lda tcp_state
+  cmp #tcp_cxn_state_established
+  beq :+
+@connection_closed:  
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  clc
+  rts
+:  
   ;increment the expected sequence number for the SYN we are about to send
   ldax #tcp_connect_expected_ack_number
   stax acc32
@@ -356,9 +366,6 @@ tcp_close:
   cmp #MAX_TCP_PACKETS_SENT-1
   bpl @too_many_messages_sent
   jmp @send_fin_loop
-@connection_closed:
-  clc
-  rts
 @too_many_messages_sent:
 @failed:
   lda #tcp_cxn_state_closed
@@ -1030,3 +1037,24 @@ tcp_process:
   
   
   jmp tcp_send_packet
+
+
+
+;-- LICENSE FOR tcp.s --
+; The contents of this file are subject to the Mozilla Public License
+; Version 1.1 (the "License"); you may not use this file except in
+; compliance with the License. You may obtain a copy of the License at
+; http://www.mozilla.org/MPL/
+; 
+; Software distributed under the License is distributed on an "AS IS"
+; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+; License for the specific language governing rights and limitations
+; under the License.
+; 
+; The Original Code is ip65.
+; 
+; The Initial Developer of the Original Code is Jonno Downes,
+; jonno@jamtronix.com.
+; Portions created by the Initial Developer are Copyright (C) 2009
+; Jonno Downes. All Rights Reserved.  
+; -- LICENSE END --

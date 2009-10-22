@@ -20,6 +20,7 @@ HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for
 .import ip65_process
 .import check_for_abort_key
 .import ip65_error
+.import parse_hex_digits
 .import print
 .import copymem
 .importzp copy_src
@@ -57,6 +58,9 @@ httpd_port_number: .word 80
 
 
 jump_to_callback:
+  jmp $ffff
+
+jump_to_embedded_routine:
   jmp $ffff
 
 get_next_byte:
@@ -184,8 +188,11 @@ http_callback:
   cmp #$ff
   bne @not_eof
   inc connection_closed
+@done:  
   rts
 @not_eof:
+  lda found_eol
+  bne @done
   
 ;copy this chunk to our input buffer
   ldax tcp_buffer_ptr  
@@ -382,12 +389,29 @@ send_response:
   beq @back_from_escape
   cmp #'C'
   bne :+
-  jsr emit_disk_catalogue
+  jsr emit_disk_catalogue  
+  jmp @response_loop
+  :
+  cmp #':'
+  bne :+
+  jsr @get_next_hex_value
+  sta jump_to_embedded_routine+2  
+  
+  jsr @get_next_hex_value
+  sta jump_to_embedded_routine+1
+  ldax #emit_a
+  jsr jump_to_embedded_routine
   jmp @response_loop
   :
 ;if we got here, it's an invalid escape code  
   jmp @response_loop
   
+@get_next_hex_value:
+  jsr get_next_byte
+  tax
+  jsr get_next_byte
+  jmp parse_hex_digits
+    
 send_buffer:    
   ldax output_buffer_length
   stax tcp_send_data_len
@@ -480,7 +504,7 @@ emit_string:
  
 .rodata
 default_html:
-.byte "<h1>Index of /</h1><br><ul>%C</ul><p><i>kipper - the 100%% 6502 m/l web server </i>"
+.byte "<h1>Index of /</h1><br><ul>%C</ul><p><i>kipper - the 100%% 6502 m/l web server </i> %:ab12"
 .byte 0
 
 
@@ -521,3 +545,24 @@ file_li_middle:
   .byte '"',">",0
 file_li_postamble:
   .byte "</a></li>",0
+
+
+
+;-- LICENSE FOR httpd.s --
+; The contents of this file are subject to the Mozilla Public License
+; Version 1.1 (the "License"); you may not use this file except in
+; compliance with the License. You may obtain a copy of the License at
+; http://www.mozilla.org/MPL/
+; 
+; Software distributed under the License is distributed on an "AS IS"
+; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+; License for the specific language governing rights and limitations
+; under the License.
+; 
+; The Original Code is ip65.
+; 
+; The Initial Developer of the Original Code is Jonno Downes,
+; jonno@jamtronix.com.
+; Portions created by the Initial Developer are Copyright (C) 2009
+; Jonno Downes. All Rights Reserved.  
+; -- LICENSE END --
