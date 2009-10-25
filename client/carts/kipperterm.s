@@ -100,8 +100,8 @@ temp_ptr: .res 2
 
 
 .segment "CARTRIDGE_HEADER"
-.word init  ;cold start vector
-.word $FE47  ;warm start vector
+.word cold_init  ;cold start vector
+.word warm_init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
 .byte "KIPPER"         ; API signature
 jmp kipper_dispatcher    ; KPR_DISPATCH_VECTOR   : entry point for KIPPER functions
@@ -112,7 +112,7 @@ jmp ip65_process          ;KPR_PERIODIC_PROCESSING_VECTOR : routine to be period
 
   
   
-init:
+cold_init:
 
   ;first let the kernal do a normal startup
   sei
@@ -121,7 +121,8 @@ init:
   jsr $fd15   ;set vectors for KERNAL
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
-  
+
+warm_init:
   ;set some funky colours
 
   LDA #$04  ;purple

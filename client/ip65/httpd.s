@@ -11,6 +11,8 @@
 
 HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for?
 
+DEBUG=1
+
 .export httpd_start
 
 .import http_parse_request
@@ -49,6 +51,8 @@ sent_header: .res 1
 connection_timeout_seconds: .byte 0
 tcp_buffer_ptr: .res 2
 buffer_size: .res 1
+skip_mode: .res 1
+temp_x: .res 1
 
 .segment "HTTP_VARS"
 
@@ -73,10 +77,14 @@ get_next_byte:
 
   
 emit_a:
+  stx temp_x
+  ldx skip_mode
+  bne skip_emit_a
+emit_a_ptr:
   sta $ffff
-  inc emit_a+1
+  inc emit_a_ptr+1
   bne :+
-  inc emit_a+2
+  inc emit_a_ptr+2
 :
   inc output_buffer_length
   bne :+
@@ -84,8 +92,10 @@ emit_a:
   lda output_buffer_length+1
   cmp #2
   bne :+
-  jmp send_buffer  
+  jsr send_buffer    
 :  
+skip_emit_a:
+  ldx temp_x
   rts
 
 .code
@@ -135,6 +145,9 @@ httpd_start:
   bcc @connect_ok
   rts 
 @connect_ok: 
+.ifdef DEBUG
+  inc $d020
+.endif
   lda #0
   sta connection_closed
   sta found_eol
@@ -179,7 +192,11 @@ httpd_start:
   bcs :+    ;carry is set if the callback routine already sent the response
   jsr send_response
   :
-  
+
+.ifdef DEBUG
+  dec $d020
+.endif
+
   jmp @listen ;go listen for the next request
   
 
@@ -301,11 +318,12 @@ send_file_callback:
 
 reset_output_buffer:
   ldax httpd_io_buffer  
-  sta emit_a+1
-  stx emit_a+2
+  sta emit_a_ptr+1
+  stx emit_a_ptr+2
   lda #0
   sta output_buffer_length
   sta output_buffer_length+1
+  sta skip_mode
   rts
 
 
@@ -374,7 +392,10 @@ send_response:
 @response_loop:
   jsr get_next_byte
   cmp #0
-  beq send_buffer
+  bne @not_last_byte
+@send_buffer:  
+  jmp send_buffer
+@not_last_byte:  
   cmp #'%'
   beq @escape
 @back_from_escape:
@@ -384,23 +405,64 @@ send_response:
 @escape:
   jsr get_next_byte
   cmp #0
-  beq send_buffer
+  beq @send_buffer
   cmp #'%'
   beq @back_from_escape
-  cmp #'C'
+  cmp #'$'
   bne :+
-  jsr emit_disk_catalogue  
+  jsr get_next_byte
+  jsr http_get_value
+  bcs @response_loop
+  jsr emit_string
   jmp @response_loop
+:  
+  cmp #'.'
+  bne :+
+  lda #0
+  sta skip_mode
+  jmp @response_loop
+:
+  cmp #'?'
+  bne :+
+  lda #0
+  sta skip_mode
+  jsr get_next_byte
+  jsr http_get_value
+  bcc @response_loop
+  inc skip_mode
+  jmp @response_loop
+:  
+  cmp #'!'
+  bne :+
+  lda #0
+  sta skip_mode
+  jsr get_next_byte
+  jsr http_get_value
+  bcs @response_loop
+  inc skip_mode
+  jmp @response_loop
+:  
+ 
+  cmp #';'
+  bne :+
+  jsr get_next_byte
+  sta jump_to_embedded_routine+1
+  jsr get_next_byte
+  sta jump_to_embedded_routine+2
+  jmp @call_embedded_routine
   :
   cmp #':'
   bne :+
   jsr @get_next_hex_value
-  sta jump_to_embedded_routine+2  
-  
+  sta jump_to_embedded_routine+2    
   jsr @get_next_hex_value
   sta jump_to_embedded_routine+1
+@call_embedded_routine:  
+  lda skip_mode
+  bne @dont_call_embedded_routine
   ldax #emit_a
   jsr jump_to_embedded_routine
+@dont_call_embedded_routine:  
   jmp @response_loop
   :
 ;if we got here, it's an invalid escape code  
@@ -504,7 +566,9 @@ emit_string:
  
 .rodata
 default_html:
-.byte "<h1>Index of /</h1><br><ul>%C</ul><p><i>kipper - the 100%% 6502 m/l web server </i> %:ab12"
+.byte "<h1>Index of /</h1><br><ul>%;" 
+.word emit_disk_catalogue 
+.byte "</ul><i>kipper - the 100%% 6502 m/l web server </i> "
 .byte 0
 
 

@@ -209,9 +209,9 @@ main_menu:
 @get_key:
   jsr get_key_ip65
   
-  pha
-  jsr print_hex
-  pla
+;  pha
+;  jsr print_hex
+;  pla
   
   cmp #KEYCODE_F1
   bne @not_f1

@@ -18,7 +18,7 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 C64PROGLIB=../drivers/c64prog.lib
 #C64NB65LIB=../drivers/c64nb65.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg
+all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i 
 	$(AS) $(AFLAGS) -o $@ $<
@@ -31,6 +31,9 @@ kipperterm.o: kipperterm.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i
 
 kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kipperkart.bin > kipperkart.prg
+
+kipperterm.prg: kipperterm.bin c64_cart_ram_header.prg
+	cat c64_cart_ram_header.prg kipperterm.bin > kipperterm.prg
 
 %.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  

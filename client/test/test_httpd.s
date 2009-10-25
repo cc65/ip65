@@ -96,8 +96,17 @@ init:
   
 @found_kipper_signature:
 
+  lda #14
+  jsr print_a ;switch to lower case
+
   print #initializing
 
+  lda #$4c
+  sta $4000
+  ldax #print_vars
+  stax $4001
+  
+  
   ldy #KPR_INITIALIZE
   jsr KPR_DISPATCH_VECTOR 
 	bcc :+  
@@ -110,11 +119,28 @@ init:
   print_cr
   
   call #KPR_PRINT_IP_CONFIG
-  ldax #$0000
+  print #listening
+  ldax #httpd_callback
+;  ldax #$0000
   call #KPR_HTTPD_START
   jsr print_errorcode
   rts
  
+ 
+print_vars:
+  
+  lda #'h'
+  call #KPR_HTTPD_GET_VAR_VALUE
+  bcs :+
+  call #KPR_PRINT_ASCIIZ
+  print #said
+  lda #'m'
+  call #KPR_HTTPD_GET_VAR_VALUE
+  bcs :+
+  call #KPR_PRINT_ASCIIZ
+  print_cr
+:  
+  rts
 bad_boot:
   print  #press_a_key_to_continue
 restart:    
@@ -148,6 +174,16 @@ kipper_signature_not_found:
   iny
   jmp :-
 
+httpd_callback:
+  jsr print_vars
+  ldax #html
+  ldy #2 ;text/html
+  clc
+  rts
+  
+
+.rodata
+
 kipper_signature:
   .byte "KIPPER" ; API signature
  error_code:  
@@ -164,9 +200,12 @@ ok:
  .byte "NO KIPPER API FOUND",13,"PRESS ANY KEY TO RESET", 0
 initializing:  
   .byte "INITIALIZING ",0
-
-
-
+listening:
+  .byte "LISTENING",0
+said:
+  .byte ":",0
+html:
+  .byte "<h1>hello world</h1>%?mMessage recorded as '%$h:%$m'%.<form>Your Handle:<input name=h type=text length=20 value='%$h'><br>Your Message: <input type=text lengh=60 name='m'><br><input type=submit></form><br>",0
 
 ;-- LICENSE FOR test_httpd.s --
 ; The contents of this file are subject to the Mozilla Public License
