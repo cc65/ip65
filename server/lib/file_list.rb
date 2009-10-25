@@ -31,13 +31,13 @@ class FileList
         normalised_subdir="$/#{subdir}".gsub("//","/").gsub("//","/")
         s<<"#{normalised_subdir}\000"
       end
-      current_dir[:directories].each do |directory_attributes|
+      current_dir[:directories].sort.each do |directory_attributes|
         subdir=directory_attributes[0]
         normalised_subdir="$/#{subdir}".gsub("//","/").gsub("//","/")
         s<<"#{normalised_subdir}\000"
       end
 
-      current_dir[:files].each do |filename|
+      current_dir[:files].sort.each do |filename|
         s<<"#{filename}\000" if filename.downcase=~/#{target_extension}$/
       end
       s<<0.chr if s.length==0 #make sure there is at least one 'empty' string
