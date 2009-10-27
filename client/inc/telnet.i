@@ -13,7 +13,7 @@
 .import telnet_use_native_charset
 .import telnet_port
 .import telnet_ip
-
+.import filter_number
 
 .code
 telnet_main_entry:
@@ -21,21 +21,25 @@ telnet_main_entry:
   
   ldax #remote_host
   jsr print
-  kippercall #KPR_INPUT_HOSTNAME
+  ldy #40 ;max chars
+  ldax #filter_dns
+  jsr get_filtered_input
   bcc @host_entered
   ;if no host entered, then bail.
   jmp exit_telnet
 @host_entered:
-  stax kipper_param_buffer
+  stax temp_ax
   jsr print_cr
   ldax #resolving
   jsr print
-  ldax kipper_param_buffer
-  kippercall #KPR_PRINT_ASCIIZ
+  ldax temp_ax
+  jsr print
   jsr print_cr
-  ldax #kipper_param_buffer
-  kippercall #KPR_DNS_RESOLVE
+  jsr dns_set_hostname 
+  bcs @resolve_error  
+  jsr dns_resolve
   bcc @resolved_ok
+@resolve_error:
   print_failed
   jsr print_cr
   jsr print_errorcode
@@ -43,25 +47,31 @@ telnet_main_entry:
 @resolved_ok:
   ldx #3
 @copy_telnet_ip_loop:
-  lda kipper_param_buffer,x
+  lda dns_ip,x
   sta telnet_ip,x
   dex
   bpl @copy_telnet_ip_loop
 @get_port:
   ldax #remote_port
   jsr print
-  kippercall #KPR_INPUT_PORT_NUMBER
+  ldy #5 ;max chars
+  ldax #filter_number
+  jsr get_filtered_input  
+  bcs @no_port_entered  
+  ;AX now points a string containing port number    
+  jsr parse_integer
   bcc @port_entered
+@no_port_entered:  
   ;if no port entered, then assume port 23
   ldax #23
 @port_entered:
   stax telnet_port
   jsr print_cr
-  
+
   ldax #char_mode_prompt
   jsr print
 @char_mode_input:
-  jsr get_key
+  jsr get_key_ip65
   cmp #'A'
   beq @ascii_mode
   cmp #'a'
@@ -76,7 +86,7 @@ telnet_main_entry:
   beq @line_mode
   cmp #'L'
   beq @line_mode
-  
+
   jmp @char_mode_input
 @ascii_mode:
   lda #0

@@ -2,28 +2,9 @@
 ; KIPPER TERM - Telnet/Gopher client for C64
 ; jonno@jamtronix.com 
 
-  .macro print_failed
-    ldax #failed_msg
-    jsr print
-    jsr print_cr
-  .endmacro
 
-  .macro print_ok
-    ldax #ok_msg
-    jsr print
-    jsr print_cr
-  .endmacro
-
-  .macro kippercall arg
-    ldy arg
-    jsr KPR_DISPATCH_VECTOR
-  .endmacro
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU     =
-  .include "../inc/kipper_constants.i"
-.endif
   .include "../inc/common.i"
+  .include "../inc/commonprint.i"
   .include "../inc/c64keycodes.i"
   .include "../inc/menu.i"
 
@@ -32,7 +13,6 @@
   KEY_SHOW_HISTORY=KEYCODE_F2
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
-
   
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
@@ -40,8 +20,6 @@
   .import cls
   .import beep
   .import exit_to_basic
-  .import timer_vbl_handler
-  .import kipper_dispatcher
   .import ip65_process
   .import ip65_init
   .import get_filtered_input
@@ -52,33 +30,21 @@
   .import parse_dotted_quad
   .import dotted_quad_value
   .import parse_integer
-  .import print_integer
-  .import get_key_ip65   
+  
+  .import get_key_ip65
+  .import cfg_mac
+  .import dhcp_init
+  
   .import cfg_ip
 	.import cfg_netmask
 	.import cfg_gateway
 	.import cfg_dns
   .import cfg_tftp_server
   
-  .import print_ascii_as_native
-  .import print_dotted_quad
-  .import print_hex
-  .import print_errorcode
-  .import print_ip_config
-  .import ok_msg
-  .import failed_msg
-  .import init_msg
-  .import ip_address_msg
-  .import netmask_msg
-  .import gateway_msg
-  .import dns_server_msg
-  .import tftp_server_msg
-  .import press_a_key_to_continue
   
   .import print_a
   .import print_cr
-  .import print
-	.import copymem
+  .import copymem
 	.importzp copy_src
 	.importzp copy_dest
   .import get_filtered_input
@@ -90,22 +56,20 @@
   .import  __SELF_MODIFIED_CODE_SIZE__
     
   .import cfg_tftp_server
-  kipper_param_buffer = $6000
-  directory_buffer = $6020
-
+  directory_buffer = $6000
 
 .bss
-temp_ptr: .res 2
-.segment "SELF_MODIFIED_CODE"
+;temp_ax: .res 2
 
 
 .segment "CARTRIDGE_HEADER"
 .word cold_init  ;cold start vector
 .word warm_init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
-.byte "KIPPER"         ; API signature
-jmp kipper_dispatcher    ; KPR_DISPATCH_VECTOR   : entry point for KIPPER functions
-jmp ip65_process          ;KPR_PERIODIC_PROCESSING_VECTOR : routine to be periodically called to check for arrival of ethernet packets
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
 .byte $0,$0,$0             ;reserved for future use
 
 .code
@@ -125,6 +89,7 @@ cold_init:
 warm_init:
   ;set some funky colours
 
+  
   LDA #$04  ;purple
 
   STA $D020 ;border
@@ -155,8 +120,13 @@ warm_init:
   ldax #init_msg+1
 	jsr print
   
-  kippercall #KPR_INITIALIZE
+  jsr ip65_init
+  bcs init_failed
+  jsr dhcp_init
   bcc init_ok
+  jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
+  bcc init_ok
+init_failed:  
   print_failed
   jsr print_errorcode
   jsr wait_for_keypress  
@@ -348,14 +318,17 @@ main_menu:
   ldy #40
   jsr get_filtered_input
   bcs @no_server_entered
-  stax kipper_param_buffer 
+  stax temp_ax
   jsr print_cr  
   ldax #resolving
   jsr print
-  ldax #kipper_param_buffer
-  kippercall #KPR_DNS_RESOLVE  
+  ldax temp_ax
+  jsr dns_set_hostname 
   bcs @resolve_error  
-  ldax #kipper_param_buffer
+  jsr dns_resolve
+  bcs @resolve_error  
+
+  ldax #dns_ip
   stax copy_src
   ldax #cfg_tftp_server
   stax copy_dest
@@ -406,8 +379,7 @@ get_key:
 
 
 cfg_get_configuration_ptr:
-  ldax #kipper_param_buffer  
-  kippercall #KPR_GET_IP_CONFIG
+  ldax  #cfg_mac
   rts
 
 exit_telnet:
@@ -466,7 +438,7 @@ resolving:
 ; License for the specific language governing rights and limitations
 ; under the License.
 ; 
-; The Original Code is netboot65.
+; The Original Code is KipperTerm.
 ; 
 ; The Initial Developer of the Original Code is Jonno Downes,
 ; jonno@jamtronix.com.

@@ -11,7 +11,7 @@
 ;  .include "../inc/c64keycodes.i"
 ; 3) define a routine called 'exit_gopher'
 
-;  .import get_key
+
   .import get_key_if_available
   .import mul_8_16
   .importzp acc16
@@ -493,7 +493,7 @@ get_keypress_then_rts:
   jsr print_cr
   ldax #press_a_key_to_continue
   jsr print
-  jsr get_key
+  jsr get_key_ip65
   rts
   
 
