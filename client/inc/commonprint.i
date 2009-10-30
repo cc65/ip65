@@ -22,8 +22,6 @@
  .import ip65_error
  .export print_errorcode
  .export press_a_key_to_continue
- .import arp_cache
- .importzp ac_size
 
 .import ascii_to_native
 
@@ -41,28 +39,28 @@ temp_ptr: .res 2
 .code
 .macro print_driver_init
   ldax #cs_driver_name
-  jsr print
+  jsr print_ascii_as_native
   ldax #init_msg
-	jsr print
+	jsr print_ascii_as_native
 .endmacro
 
 
 .macro print_dhcp_init
   ldax #dhcp_msg
-  jsr print
+  jsr print_ascii_as_native
   ldax #init_msg
-	jsr print
+	jsr print_ascii_as_native
 .endmacro
 
 .macro print_failed
   ldax #failed_msg
-	jsr print
+	jsr print_ascii_as_native
   jsr print_cr
 .endmacro
 
 .macro print_ok
   ldax #ok_msg
-	jsr print
+	jsr print_ascii_as_native
   jsr print_cr
 .endmacro
 
@@ -75,21 +73,21 @@ temp_ptr: .res 2
 print_ip_config:
 
   ldax #interface_type
-  jsr print
+  jsr print_ascii_as_native
 
   ldax #cs_driver_name
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   
   ldax #mac_address_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   ;first 6 bytes of cfg_get_configuration_ptr is MAC address
   jsr print_mac
   jsr print_cr
 
   ldax #ip_address_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #KPR_CFG_IP
   bcc :+
@@ -99,7 +97,7 @@ print_ip_config:
   jsr print_cr
 
   ldax #netmask_msg
-  jsr print
+  jsr print_ascii_as_native
    jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #KPR_CFG_NETMASK
   bcc :+
@@ -109,7 +107,7 @@ print_ip_config:
   jsr print_cr
 
   ldax #gateway_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #KPR_CFG_GATEWAY
   bcc :+
@@ -119,7 +117,7 @@ print_ip_config:
   jsr print_cr
 
   ldax #dns_server_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #KPR_CFG_DNS_SERVER
   bcc :+
@@ -128,13 +126,13 @@ print_ip_config:
   jsr print_cr
 
   ldax #tftp_server_msg
-  jsr print
+  jsr print_ascii_as_native
   ldax #cfg_tftp_server
   jsr print_dotted_quad
   jsr print_cr
 
   ldax #dhcp_server_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr cfg_get_configuration_ptr ;ax=base config, carry flag clear
   adc #KPR_CFG_DHCP_SERVER
   bcc :+
@@ -319,52 +317,50 @@ hexdigits:
 .byte "0123456789ABCDEF"
 
 interface_type:
-.byte "INTERFACE   : ",0
+.byte "Interface   : ",0
 
 mac_address_msg:
-.byte "MAC ADDRESS : ", 0
+.byte "MAC Address : ", 0
 
 ip_address_msg:
-.byte "IP ADDRESS  : ", 0
+.byte "IP Address  : ", 0
 
 netmask_msg:
-.byte "NETMASK     : ", 0
+.byte "Netmask     : ", 0
 
 gateway_msg:
-.byte "GATEWAY     : ", 0
+.byte "Gateway     : ", 0
   
 dns_server_msg:
-.byte "DNS SERVER  : ", 0
+.byte "DNS Server  : ", 0
 
 dhcp_server_msg:
-.byte "DHCP SERVER : ", 0
+.byte "DHCP Server : ", 0
 
 tftp_server_msg:
-.byte "TFTP SERVER : ", 0
+.byte "TFTP Server : ", 0
 
 dhcp_msg:
   .byte "DHCP",0
 
 init_msg:
-  .byte " INITIALIZING ",0
+  .byte " Initializing ",0
 
-arp_cache_header:
-  .byte " MEM          MAC         IP",13,0
 
 failed_msg:
-	.byte "FAILED", 0
+	.byte "failed", 0
 
 ok_msg:
 	.byte "OK", 0
  
 dns_lookup_failed_msg:
- .byte "DNS LOOKUP FAILED", 0
+ .byte "DNS lookup failed", 0
 
 error_code:  
-  .asciiz "ERROR CODE: "
+  .asciiz "error code: "
 
 press_a_key_to_continue:
-  .byte "PRESS A KEY TO CONTINUE",13,0
+  .byte "Press a key to continue",10,0
 
 
 

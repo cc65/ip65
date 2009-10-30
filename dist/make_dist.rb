@@ -24,7 +24,7 @@ end
 ["client/carts/kipperkart.prg","c64/"],
 ["client/carts/kipperkart.bin","c64/"],
 ["client/carts/kipperkart_rr.bin","c64/"],
-["client/carts/kipperterm.bin","c64/"],
+#["client/carts/kipperterm.bin","c64/"],
 ["client/carts/netboot.bin","c64/"],
 ["client/nb65/d64_upload.prg","boot/"],
 ["client/examples/upnatom.prg","boot/"],
@@ -38,6 +38,9 @@ end
 ["doc/netboot65.html","doc/index.html"],
 #["doc/README.Apple2.html","doc"],
 ["doc/README.C64.html","doc"],
+["doc/CONTRIBUTORS.txt","doc/"],
+["doc/LICENSE.txt","doc/"],
+
 ["doc/kipper_api_technical_reference.doc","doc"],
 ["client/inc/common.i","inc"],
 ["client/inc/kipper_constants.i","inc"],

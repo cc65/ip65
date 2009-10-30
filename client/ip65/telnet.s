@@ -22,7 +22,10 @@
   .import tcp_close
   .import print_a
   .import print_cr
-  
+  .import vt100_init_terminal
+  .import vt100_process_inbound_char
+  .import vt100_transform_outbound_char
+
 
   .import ip65_process
   .import get_key_ip65
@@ -48,6 +51,10 @@ buffer_ptr:	.res 2			; source pointer
 
 .code
 telnet_connect:
+  lda telnet_use_native_charset
+  beq :+
+  jsr vt100_init_terminal
+:  
   ldax #telnet_callback
   stax tcp_callback
   ldx #3
@@ -291,7 +298,7 @@ telnet_callback:
   jmp @add_iac_response
 
 @not_iac:
-@convert_to_native:  
+@convert_to_native:
   txa
   cmp #$0a  ;suppress LF (since it probably follows a CR which will have done the LF as well)
   beq @byte_processed
@@ -301,9 +308,6 @@ telnet_callback:
   tya
   pha
   txa  
-;  pha 
-;  jsr print_hex
-;  pla
   jsr print_a
   pla
   tay

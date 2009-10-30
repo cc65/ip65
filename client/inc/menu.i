@@ -119,7 +119,7 @@ select_option_from_menu:
   jsr   cls
   
   ldax  #select_from_following_options
-  jsr   print
+  jsr   print_ascii_as_native
   
   
   jsr   print_cr
@@ -173,7 +173,7 @@ select_option_from_menu:
 @jump_to:
   jsr print_cr
   ldax #jump_to_prompt
-  jsr print
+  jsr print_ascii_as_native
   lda #'?'
   
   jsr get_key
@@ -218,7 +218,7 @@ select_option_from_menu:
   bcc   :+
 @navigation_instructions:  
   ldax  #navigation_instructions
-  jsr   print  
+  jsr   print_ascii_as_native
 :  
 @get_keypress:
   lda #'?'
@@ -311,13 +311,13 @@ select_option_from_menu:
 
 .rodata
 
-select_from_following_options: .byte "SELECT ONE OF THE FOLLOWING OPTIONS:",13,0
-navigation_instructions: .byte 13,"ARROW KEYS NAVIGATE BETWEEN MENU PAGES",13
-.byte "/ TO JUMP OR "
+select_from_following_options: .byte "Select one of the following options:",10,0
+navigation_instructions: .byte 10,"Arrow keys navigate between menu pages",10
+.byte "/ to jump or "
 .byte KEYNAME_ABORT
-.byte " TO QUIT",13,0
+.byte " to quit",10,0
 
-jump_to_prompt: .byte "JUMP TO:",0
+jump_to_prompt: .byte "jump to:",0
 
 
 

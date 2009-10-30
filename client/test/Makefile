@@ -21,11 +21,12 @@ INCFILES=\
 all: \
 	testdns.prg \
 	test_disk_io.prg \
-	test_disk_io.d64 \
+#	test_disk_io.d64 \
 	testdns.pg2 \
 	testtftp.prg \
 	testtftp.pg2\
 	test_cart_api.prg\
+	test_vt100.prg\
 	testdottedquad.pg2\
 	testdottedquad.prg\
 	test_tcp.prg \
@@ -35,7 +36,7 @@ all: \
 	test_sntp.prg \
 	test_get_url.prg \
 	test_parse_querystring.prg \
-	httpd_test.d64 \
+#	httpd_test.d64 \
 #	ip65test.dsk \
 
 %.o: %.c

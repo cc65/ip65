@@ -8,7 +8,7 @@ ping_retries: .res 1
 .code
 ping_loop:
   ldax #remote_host
-  jsr print
+  jsr print_ascii_as_native
   kippercall #KPR_INPUT_HOSTNAME
   bcc @host_entered
   ;if no host entered, then bail.
@@ -17,7 +17,7 @@ ping_loop:
   stax kipper_param_buffer
   jsr print_cr
   ldax #resolving
-  jsr print
+  jsr print_ascii_as_native
   ldax kipper_param_buffer
   kippercall #KPR_PRINT_ASCIIZ
   jsr print_cr
@@ -35,7 +35,7 @@ ping_loop:
   sta ping_retries  
 @ping_once:
   ldax #pinging
-  jsr print
+  jsr print_ascii_as_native
   ldax #kipper_param_buffer
   jsr print_dotted_quad
   lda #' '
@@ -51,7 +51,7 @@ ping_loop:
 bcs @ping_error
   jsr print_integer
   ldax #ms
-  jsr print
+  jsr print_ascii_as_native
 @check_retries:  
   dec ping_retries
   bpl @ping_once
@@ -62,8 +62,8 @@ bcs @ping_error
   jmp @check_retries
 
   
-ms: .byte " MS",13,0
-pinging: .byte "PINGING ",0
+ms: .byte " ms",10,0
+pinging: .byte "pinging ",0
 
 
 

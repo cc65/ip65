@@ -12,11 +12,14 @@
 screen_current_row=$d6
 screen_current_col=$d3
 
-.data
+
 ;use C64 Kernel ROM function to print a character to the screen
 ;inputs: A contains petscii value of character to print
 ;outputs: none
 print_a = $ffd2
+
+.bss
+beep_timer: .res 1
 
 .code
 
@@ -38,7 +41,44 @@ cls:
 ;inputs: none
 ;outputs: none
 beep:
+  lda #15
+  sta $d418	;set volume
+
+  lda #0
+  sta $d405
+  lda #240
+  sta $d406
+  lda #8
+  sta $d403
+
+  ;tone values for voice 1
+  lda #48
+  sta $d400
+  lda #28
+  sta $d401
+
+  ;enable tone register
+  lda #65
+  sta $d404
+
+
+; pause for qtr second
+  lda $dd06   ;
+  sta beep_timer
+  inc beep_timer  ;time counts backwards
+:  
+  lda $dd06   ;
+  cmp beep_timer
+  bne :-
+
+  ;disable tone register
+  lda #65
+  sta $d404
+  lda #0
+  sta $d418	;set volume
+
   rts
+
   
 ;print a single char in inverse text:
 print_a_inverse:
