@@ -61,6 +61,10 @@ text_background_colour = col_gray_1
 border_colour = col_gray_2
 
 
+.segment "APP_SCRATCH" 
+escape_buffer: .res $100
+
+
 .zeropage
 
 ; --- esc mode ---
@@ -120,8 +124,6 @@ Screen = $0400
 
 ; --- escape buffer --- 
 ; $0800 - $0bff
-
-escape_buffer= $0800
 
 ; --- char --- 
 ; $2000 - $27ff

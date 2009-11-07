@@ -8,7 +8,7 @@ require 'ftools'
 
 WORKING_DIR=File.expand_path(File.dirname(__FILE__)+"/ip65")
 SRC_DIR=File.expand_path(File.dirname(__FILE__)+"/../")
-["","ip65","doc","cfg","drivers","inc","test","carts"].each do |dir_suffix|
+["","ip65","doc","cfg","drivers","inc","test","carts","examples"].each do |dir_suffix|
   dir_path="#{WORKING_DIR}/#{dir_suffix}"
   Dir.mkdir(dir_path) unless File.exist?(dir_path)
 end
@@ -21,6 +21,12 @@ end
   ["client/carts/*.rb","carts/"],
   ["client/carts/*.obj","carts/"],
   ["client/carts/*.src","carts/"],
+  ["client/examples/*.[s|i]","examples/"],
+  ["client/examples/Makefile","examples/"],
+  ["client/examples/*.bin","examples/"],
+  ["client/examples/*.spr","examples/"],
+  ["client/examples/*.rb","examples/"],
+  ["client/examples/*.cfg","examples/"],
   ["client/inc/*.i","inc/"],
   ["client/inc/vt100_font.bin","inc/"],
   ["client/test/*.[s|i]","test/"],

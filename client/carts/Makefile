@@ -45,6 +45,7 @@ netboot.bin: netboot.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_8kcart.cf
 kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
 	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
 	ruby fix_cart.rb $@ 16384
+	ruby set_ip_config.rb $@ mac auto
 	ruby dupe_cart.rb kipperkart.bin kipperkart_29c040.bin 32
 
 kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg

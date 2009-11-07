@@ -307,7 +307,7 @@ print_hex:
 
 print_errorcode:
   ldax #error_code
-  jsr print
+  jsr print_ascii_as_native
   lda ip65_error
   jsr print_hex
   jmp print_cr

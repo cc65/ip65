@@ -56,7 +56,7 @@ temp_x: .res 1
 
 .segment "HTTP_VARS"
 
-httpd_io_buffer: .word $2000 ;by default, use a 2k buffer at $2000 for storing inbound requests.
+httpd_io_buffer: .word $2000 ;by default, use a 3k buffer at $2000 for storing inbound requests.
 httpd_scratch_buffer: .word $2B00 ;by default, use a 1k buffer at $2b00 as a scratchpad
 httpd_port_number: .word 80
 

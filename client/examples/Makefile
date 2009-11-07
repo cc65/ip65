@@ -14,7 +14,7 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
 
-all: 	upnatom.prg upnatom.d64 httpd.d64 raster.prg sidplay.prg sidplay_zigzag.prg irc.d64
+all: 	upnatom.prg upnatom.d64 
 
 %.o: %.s 
 	$(AS) $(AFLAGS) $<
@@ -27,7 +27,7 @@ sine_data.i: make_sine_data.rb
   
 upnatom.prg: upnatom.o nt2play.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  upnatom.map -vm -C ../cfg/c64prg.cfg -o  upnatom.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
-	cp upnatom.prg ../../server/boot/
+#	cp upnatom.prg ../../server/boot/
 
 %.prg: %.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  

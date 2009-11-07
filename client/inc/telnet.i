@@ -20,7 +20,7 @@ telnet_main_entry:
 ;prompt for a hostname, then resolve to an IP address
   
   ldax #remote_host
-  jsr print
+  jsr print_ascii_as_native
   ldy #40 ;max chars
   ldax #filter_dns
   jsr get_filtered_input
@@ -31,10 +31,11 @@ telnet_main_entry:
   stax temp_ax
   jsr print_cr
   ldax #resolving
-  jsr print
+  jsr print_ascii_as_native
   ldax temp_ax
   jsr print
   jsr print_cr
+  ldax temp_ax
   jsr dns_set_hostname 
   bcs @resolve_error  
   jsr dns_resolve
@@ -53,7 +54,7 @@ telnet_main_entry:
   bpl @copy_telnet_ip_loop
 @get_port:
   ldax #remote_port
-  jsr print
+  jsr print_ascii_as_native
   ldy #5 ;max chars
   ldax #filter_number
   jsr get_filtered_input  
@@ -69,13 +70,13 @@ telnet_main_entry:
   jsr print_cr
 
   ldax #char_mode_prompt
-  jsr print
+  jsr print_ascii_as_native
 @char_mode_input:
   jsr get_key_ip65
-  cmp #'A'
-  beq @ascii_mode
-  cmp #'a'
-  beq @ascii_mode
+  cmp #'V'
+  beq @vt100_mode
+  cmp #'v'
+  beq @vt100_mode
 
   cmp #'P'
   beq @petscii_mode
@@ -88,7 +89,7 @@ telnet_main_entry:
   beq @line_mode
 
   jmp @char_mode_input
-@ascii_mode:
+@vt100_mode:
   lda #0
   sta telnet_use_native_charset
   sta telnet_line_mode
@@ -115,34 +116,34 @@ telnet_main_entry:
   jsr print_a
   
   ldax  #connecting_in
-  jsr print
+  jsr print_ascii_as_native
   lda  telnet_use_native_charset
-  beq @a_mode
+  beq @v_mode
   ldax #petscii
   jmp @c_mode
-@a_mode:
+@v_mode:
   lda telnet_line_mode
   bne @l_mode
-  ldax #ascii  
+  ldax #vt100
   jmp @c_mode
 @l_mode:
   ldax #line  
 @c_mode:
-  jsr print  
+  jsr print_ascii_as_native  
   ldax #mode
-  jsr print
+  jsr print_ascii_as_native
   jsr telnet_connect
   jmp telnet_main_entry  
   
 ;constants
-connecting_in: .byte "CONNECTING IN ",0
-ascii: .byte "ASCII",0
-petscii: .byte "PETSCII",0
-line: .byte "LINE",0
-mode: .byte " MODE",13,0
-remote_host: .byte "HOSTNAME (LEAVE BLANK TO QUIT)",13,": ",0
-remote_port: .byte "PORT # (LEAVE BLANK FOR DEFAULT)",13,": ",0
-char_mode_prompt: .byte "MODE - A=ASCII, P=PETSCII, L=LINE",13,0
+connecting_in: .byte "connecting in ",0
+vt100: .byte "vt100",0
+petscii: .byte "petscii",0
+line: .byte "line",0
+mode: .byte " mode",10,0
+remote_host: .byte "hostname (leave blank to quit)",10,": ",0
+remote_port: .byte "port # (leave blank for default)",10,": ",0
+char_mode_prompt: .byte "mode - V=vt100, P=petscii, L=line",10,0
 
 
 

@@ -98,6 +98,9 @@ warm_init:
   lda #$05  ;petscii for white text
   jsr print_a
 
+  lda #14
+  jsr print_a ;switch to lower case 
+
 ;relocate our r/w data
   ldax #__DATA_LOAD__
   stax copy_src
@@ -116,9 +119,9 @@ warm_init:
   jsr copymem
 
   ldax #netboot65_msg
-  jsr print
+  jsr print_ascii_as_native
   ldax #init_msg+1
-	jsr print
+	jsr print_ascii_as_native
   
   jsr ip65_init
   bcs init_failed
@@ -133,13 +136,11 @@ init_failed:
   jmp exit_to_basic
 
 print_main_menu:
-  lda #21 ;make sure we are in upper case
-  sta $d018
   jsr cls  
   ldax  #netboot65_msg
-  jsr print
+  jsr print_ascii_as_native
   ldax  #main_menu_msg
-  jmp print
+  jmp print_ascii_as_native
 
 init_ok:
 
@@ -153,20 +154,16 @@ main_menu:
   cmp #KEYCODE_F1
   bne @not_f1
   jsr cls
-  lda #14
-  jsr print_a ;switch to lower case  
   ldax #telnet_header
-  jsr print
+  jsr print_ascii_as_native
   jmp telnet_main_entry
 
  @not_f1:  
   cmp #KEYCODE_F3
   bne @not_f3
   jsr cls
-  lda #14
-  jsr print_a ;switch to lower case
   ldax #gopher_header
-  jsr print
+  jsr print_ascii_as_native
   jsr prompt_for_gopher_resource ;only returns if no server was entered.
   jmp exit_gopher
  @not_f3:  
@@ -174,8 +171,6 @@ main_menu:
   cmp #KEYCODE_F5
   bne @not_f5
   jsr cls
-  lda #14
-  jsr print_a ;switch to lower case
   
   ldax #gopher_initial_location
   sta resource_pointer_lo
@@ -187,15 +182,28 @@ main_menu:
 
   cmp #KEYCODE_F7
   beq @change_config
+  cmp #KEYCODE_F8
+  bne @not_f8
+
+  jsr cls  
+  ldax  #netboot65_msg
+  jsr print_ascii_as_native
+  ldax  #credits
+  jsr print_ascii_as_native
+  ldax #press_a_key_to_continue
+  jsr print_ascii_as_native
+  jsr get_key_ip65
+  jmp main_menu
+@not_f8:
   
   jmp @get_key
 
 @change_config:
   jsr cls  
   ldax  #netboot65_msg
-  jsr print
+  jsr print_ascii_as_native
   ldax  #config_menu_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_ip_config
   jsr print_cr
 @get_key_config_menu:  
@@ -207,9 +215,9 @@ main_menu:
   cmp #KEYCODE_F1
   bne @not_ip
   ldax #new
-  jsr print
+  jsr print_ascii_as_native
   ldax #ip_address_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   ldax #filter_ip
   ldy #20
@@ -232,9 +240,9 @@ main_menu:
   cmp #KEYCODE_F2
   bne @not_netmask
   ldax #new
-  jsr print
+  jsr print_ascii_as_native
   ldax #netmask_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   ldax #filter_ip
   ldy #20
@@ -257,9 +265,9 @@ main_menu:
   cmp #KEYCODE_F3
   bne @not_gateway
   ldax #new
-  jsr print
+  jsr print_ascii_as_native
   ldax #gateway_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   ldax #filter_ip
   ldy #20
@@ -284,9 +292,9 @@ main_menu:
   cmp #KEYCODE_F4
   bne @not_dns_server
   ldax #new
-  jsr print
+  jsr print_ascii_as_native
   ldax #dns_server_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   ldax #filter_ip
   ldy #20
@@ -310,9 +318,9 @@ main_menu:
   cmp #KEYCODE_F5
   bne @not_tftp_server
   ldax #new
-  jsr print
+  jsr print_ascii_as_native
   ldax #tftp_server_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_cr
   ldax #filter_dns
   ldy #40
@@ -321,7 +329,7 @@ main_menu:
   stax temp_ax
   jsr print_cr  
   ldax #resolving
-  jsr print
+  jsr print_ascii_as_native
   ldax temp_ax
   jsr dns_set_hostname 
   bcs @resolve_error  
@@ -364,7 +372,7 @@ cmp #KEYCODE_F7
 
 wait_for_keypress:
   ldax  #press_a_key_to_continue
-  jsr print
+  jsr print_ascii_as_native
 @loop:  
   jsr $ffe4
   beq @loop
@@ -384,48 +392,57 @@ cfg_get_configuration_ptr:
 
 exit_telnet:
 exit_gopher:
-  lda #142
-  jsr print_a ;switch to upper case
   lda #$05  ;petscii for white text
   jsr print_a
   jmp main_menu
 .rodata
 
 netboot65_msg: 
-.byte 13,"KIPPERTERM V"
+.byte 10,"KipperTerm V"
 .include "../inc/version.i"
-.byte 13,0
+.byte 10,0
 main_menu_msg:
-.byte 13,"MAIN MENU",13,13
-.byte "F1: TELNET      F3: GOPHER ",13
-.byte "F5: GOPHER (FLOODGAP.COM)",13
-.byte "                F7: CONFIG",13,13
+.byte 10,"Main Menu",10,10
+.byte "F1: Telnet      F3: Gopher ",10
+.byte "F5: Gopher (floodgap.com)",10
+.byte "F7: Config      F8: Credits",10,10
 
 .byte 0
 
 config_menu_msg:
-.byte 13,"CONFIGURATION",13,13
-.byte "F1: IP ADDRESS  F2: NETMASK",13
-.byte "F3: GATEWAY     F4: DNS SERVER",13
-.byte "F5: TFTP SERVER F6: RESET TO DEFAULT",13
-.byte "F7: MAIN MENU",13,13
+.byte 10,"Configuration",10,10
+.byte "F1: IP Address  F2: Netmask",10
+.byte "F3: Gateway     F4: DNS Server",10
+.byte "F5: TFTP Server F6: Reset To Default",10
+.byte "F7: Main Menu",10,10
 .byte 0
+
 
 gopher_initial_location:
 .byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
 
-gopher_header: .byte "gopher",13,0
-telnet_header: .byte "telnet",13,0
+gopher_header: .byte "gopher",10,0
+telnet_header: .byte "telnet",10,0
 
 current:
-.byte "CURRENT ",0
+.byte "current ",0
 
 new:
-.byte"NEW ",0
+.byte"new ",0
   
 resolving:
-  .byte "RESOLVING ",0
+  .byte "resolving ",0
 
+credits: 
+.byte 10,"License: Mozilla Public License v1.1",10,"http://www.mozilla.org/MPL/"
+.byte 10
+.byte 10,"Contributors:",10
+.byte 10,"Jonno Downes"
+.byte 10,"Glenn Holmmer"
+.byte 10,"Per Olofsson"
+.byte 10,"Lars Stollenwerk"
+.byte 10,10
+.byte 0
 
 ;-- LICENSE FOR kipperterm.s --
 ; The contents of this file are subject to the Mozilla Public License
