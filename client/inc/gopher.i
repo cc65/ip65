@@ -618,10 +618,16 @@ prompt_for_gopher_resource:
   stax resource_port
   lda  #'/'
   sta resource_selector
-  lda #0
+  lda  #$0d
   sta resource_selector+1
+
+  lda  #$0a
+  sta resource_selector+2
+
+  lda #0
+  sta resource_selector+3
   sta resource_selector_length+1
-  lda #1
+  lda #3
   sta resource_selector_length
   lda #'1'  
   sta displayed_resource_type

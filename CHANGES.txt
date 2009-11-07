@@ -1,8 +1,4 @@
-	- bugfix - NB65 API not setting "ip initialized" flag correct, hence extra DHCP inits occuring
+- telnet now supports vt100 emulation (thanks to Lars Stollenwerk)
+- gopher: fixed bug preventing connection to jamtronix.com
 
-0.9.8
-	- created stubs for TCP functions
-	- split nb65 cart images into 8k (UDP only - green) & 16k (UDP+TCP - purple) images
-0.9.7
-	- tweak directory listing code in server so $ works by itself
-	- client & server updated to support subdirectories (prefixed by $)
+

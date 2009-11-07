@@ -176,26 +176,45 @@ telnet_connect:
 
   lda telnet_use_native_charset
   bne @no_conversion_required
-  txa
-  cmp #$0d
-  bne @not_cr
   
-  ;if we get a CR in ascii mode, send CR/LF
-  ldy tcp_send_data_len
+  
+  txa
+  
+  jsr vt100_transform_outbound_char
+
+  sta temp_a
+  tya
+  bne :+ 
+  jmp @main_polling_loop  ;Y=0 means nothing to send
+:  
+  
+  cmp #2
+  beq :+
+  ldx temp_a
+  jmp @no_conversion_required
+:  
+
+
+  lda temp_a
+  stax buffer_ptr
+  ldy #0  
+:
+  lda (buffer_ptr),y
+  beq @send_char
   sta scratch_buffer,y
   inc tcp_send_data_len
-  ldx #$0a
-  jmp @no_conversion_required
-@not_cr:
-  txa
-  jsr native_to_ascii  
-  tax
+  iny
+  bne :-
+  
+  jmp @send_char
 @no_conversion_required:
   txa
   ldy tcp_send_data_len
   sta scratch_buffer,y
   inc tcp_send_data_len
+  
 @send_char:
+
   ldax  #scratch_buffer
   jsr tcp_send
   bcs @error_on_send
@@ -454,7 +473,7 @@ terminal_type_response:
   .byte $fa; SB
   .byte  $18 ; TERMINAL TYPE
   .byte $0 ; IS
-  .byte "xterm" ;we pretend to be a vt100
+  .byte "vt100" ;what we pretend to be
   .byte $ff ; IAC
   .byte $f0 ; SE
 terminal_type_response_length=*-terminal_type_response
@@ -492,7 +511,7 @@ telnet_state_got_suboption=3
 buffer_length: .res 2
 
 telnet_state: .res 1
-
+temp_a: .res 1
 iac_response_buffer: .res 64
 iac_response_buffer_length: .res 1
 scratch_buffer : .res 40

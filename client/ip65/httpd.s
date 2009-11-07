@@ -1,6 +1,5 @@
 ;a simple HTTP server
 ;to use - call httpd_start with AX pointing at routine to call for each inbound page
-;call httpd_stop to exit gracefully.
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
