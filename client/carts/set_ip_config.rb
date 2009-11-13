@@ -4,8 +4,9 @@
 #	$22=netmask (4 bytes)
 #	$26=gateway (4 bytes)
 #	$2A=DNS (4 bytes)
-#	$2E=TFTP server (4 bytes)
-
+#	$2E= DHCP server (4 bytes) (not changeable)
+#	$32=TFTP server (4 bytes)
+#   $36=drive (1 byte)
 
 @cartridge_offsets={
 #symobol => offset, length
@@ -14,7 +15,8 @@
   :netmask=>[0x22,4],
   :gateway=>[0x26,4],
   :dns=>[0x2a,4],
-  :tftp=>[0x2e,4],
+  :tftp=>[0x32,4],
+  :drive=>[0x36,1]
  } 
  
  @progname=File.basename($0)
@@ -79,6 +81,8 @@ end
       end
     end
     packed_option=mac.pack("cccccc")
+  elsif option_length==1 then #it must be drive letter
+    packed_option=[value.to_i].pack("c")
   else #it must be an IP
     split_values=value.split(".")
     if (split_values.length!=4) || (split_values[3].nil?) then

@@ -11,6 +11,7 @@
   .export cfg_tftp_server
   .export cfg_get_configuration_ptr
   .export cfg_init
+  .export cfg_default_drive
   .export dhcp_server 
   .import copymem
   .importzp copy_src
@@ -50,6 +51,7 @@ cfg_gateway_default:	.byte 192, 168, 1, 1 ;ip address of router on local network
 cfg_dns_default:	.byte 0, 0, 0, 0; ip address of dns server to use (will be overwritten if dhcp_init is called)
 dhcp_server_default: .res 4   ;will be set address of dhcp server that configuration was obtained from
 cfg_tftp_server_default: .byte $ff,$ff,$ff,$ff ; ip address of server to send tftp requests to (can be a broadcast address)
+cfg_default_drive_default: .byte 8
 cfg_end_defaults:
 cfg_size=cfg_end_defaults-cfg_mac_default+1
 
@@ -63,6 +65,7 @@ cfg_gateway:	.res 4 ;ip address of router on local network (will be overwritten 
 cfg_dns:	.res 4; ip address of dns server to use (will be overwritten if dhcp_init is called)
 dhcp_server: .res 4   ;will be set address of dhcp server that configuration was obtained from
 cfg_tftp_server: .res 4 ; ip address of server to send tftp requests to (can be a broadcast address)
+cfg_default_drive: .res 0
 
 
 

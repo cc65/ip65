@@ -69,7 +69,7 @@
   .import dns_server_msg
   .import tftp_server_msg
   .import press_a_key_to_continue
-  
+  .import cfg_default_drive
   .import print_a
   .import print_cr
   .import print
@@ -416,19 +416,13 @@ cmp #KEYCODE_F7
 
 cmp #'+'
   bne @not_plus
-  inc io_device_no
-  bpl :+
-  dec io_device_no
-:  
+  inc cfg_default_drive
   jmp @config_menu
 @not_plus:
 
 cmp #'-'
   bne @not_minus
-  dec io_device_no
-  bpl :+
-  inc io_device_no
-:
+  dec cfg_default_drive
   jmp @config_menu
   
 @not_minus:
@@ -576,9 +570,11 @@ disk_boot:
   .import io_filename
   .import io_read_file
   .import io_load_address
-  lda #00 ;use default drive
-  sta io_device_no
 
+  lda cfg_default_drive
+  sec
+  sbc #7
+  sta io_device_no
   ldax #directory_buffer
   jsr io_read_catalogue
   
@@ -738,9 +734,7 @@ exit_ping:
 print_default_drive:
   ldax #default_drive
 	jsr print_ascii_as_native
-  lda io_device_no
-  clc
-  adc #08
+  lda cfg_default_drive
   jsr print_hex
   jmp print_cr
   
