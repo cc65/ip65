@@ -201,6 +201,7 @@ init_ok:
 main_menu:
   jsr print_main_menu
   jsr print_ip_config
+  jsr print_default_drive
   jsr print_cr
   
 @get_key:
@@ -245,19 +246,6 @@ main_menu:
   cmp #KEYCODE_F7
   beq @change_config
   
-  cmp #KEYCODE_F8
-  bne @not_f8
-
-  jsr cls  
-  ldax  #netboot65_msg
-  jsr print_ascii_as_native
-  ldax  #credits
-  jsr print_ascii_as_native
-  ldax #press_a_key_to_continue
-  jsr print_ascii_as_native
-  jsr get_key_ip65
-  jmp main_menu
-@not_f8:
    
   jmp @get_key
 
@@ -268,11 +256,13 @@ main_menu:
 
 @change_config:
   jsr cls  
+@config_menu:  
   ldax  #netboot65_msg
   jsr print_ascii_as_native
   ldax  #config_menu_msg
   jsr print_ascii_as_native
   jsr print_ip_config
+  jsr print_default_drive
   jsr print_cr
 @get_key_config_menu:  
   jsr get_key_ip65
@@ -423,6 +413,26 @@ cmp #KEYCODE_F7
   jmp main_menu
   
 @not_main_menu:
+
+cmp #'+'
+  bne @not_plus
+  inc io_device_no
+  bpl :+
+  dec io_device_no
+:  
+  jmp @config_menu
+@not_plus:
+
+cmp #'-'
+  bne @not_minus
+  dec io_device_no
+  bpl :+
+  inc io_device_no
+:
+  jmp @config_menu
+  
+@not_minus:
+
   jmp @get_key_config_menu
     
 
@@ -724,7 +734,15 @@ exit_ping:
   lda #$05  ;petscii for white text
   jsr print_a
   jmp main_menu
-  
+
+print_default_drive:
+  ldax #default_drive
+	jsr print_ascii_as_native
+  lda io_device_no
+  clc
+  adc #08
+  jsr print_hex
+  jmp print_cr
   
 ;init the Time-Of-Day clock - cribbed from http://codebase64.org/doku.php?id=base:initialize_tod_clock_on_all_platforms
 init_tod:
@@ -780,7 +798,7 @@ init_tod:
 .rodata
 
 netboot65_msg: 
-.byte 10,"KipperKart V"
+.byte $13,10,"KipperKart V"
 .include "../inc/version.i"
 .byte 10,0
 main_menu_msg:
@@ -788,7 +806,7 @@ main_menu_msg:
 .byte "F1: TFTP Boot   F2: Disk Boot",10
 .byte "F3: Upload D64  F4: Download D64",10
 .byte "F5: SID Netplay F6: Ping",10
-.byte "F7: Config      F8: Credits",10,10
+.byte "F7: Config",10,10
 
 .byte 0
 
@@ -797,7 +815,7 @@ config_menu_msg:
 .byte "F1: IP Address  F2: Netmask",10
 .byte "F3: Gateway     F4: DNS Server",10
 .byte "F5: TFTP Server F6: Reset To Default",10
-.byte "F7: Main Menu",10,10
+.byte "F7: Main Menu   +/- Drive #",10,10
 .byte 0
 
 cant_boot_basic:
@@ -821,6 +839,8 @@ dir_listing_fail_msg:
 tftp_download_fail_msg:
 	.byte "download failed", 10, 0
 
+default_drive:
+.byte "Use Drive # : $",0
 tftp_download_ok_msg:
 	.byte "down"
 load_ok_msg:
@@ -848,16 +868,6 @@ resolving:
   .byte "resolving ",0
 
 remote_host: .byte "hostname (return to quit)",10,": ",0
-credits: 
-.byte 10,"License: Mozilla Public License v1.1",10,"http://www.mozilla.org/MPL/"
-.byte 10
-.byte 10,"Contributors:",10
-.byte 10,"Jonno Downes"
-.byte 10,"Glenn Holmmer"
-.byte 10,"Per Olofsson"
-.byte 10
-.byte 10
-.byte 0
 
 ;-- LICENSE FOR kipperkart.s --
 ; The contents of this file are subject to the Mozilla Public License
