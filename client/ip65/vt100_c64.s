@@ -55,10 +55,10 @@ charmode_blink_underline = $0a
 charmode_blink_underline_bold = $07
 
 ; text background 
-text_background_colour = col_gray_1
+text_background_colour = col_black
 
 ; border colour 
-border_colour = col_gray_2
+border_colour = col_blue
 
 
 .segment "APP_SCRATCH" 

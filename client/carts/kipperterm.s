@@ -89,18 +89,8 @@ cold_init:
 warm_init:
   ;set some funky colours
 
+  jsr setup_screen
   
-  LDA #$04  ;purple
-
-  STA $D020 ;border
-  LDA #$00  ;black 
-  STA $D021 ;background
-  lda #$05  ;petscii for white text
-  jsr print_a
-
-  lda #14
-  jsr print_a ;switch to lower case 
-
 ;relocate our r/w data
   ldax #__DATA_LOAD__
   stax copy_src
@@ -390,10 +380,26 @@ cfg_get_configuration_ptr:
   ldax  #cfg_mac
   rts
 
-exit_telnet:
-exit_gopher:
+
+setup_screen:
+  ;make sure normal font
+  lda #$15
+  sta $d018
+
+  LDA #$06  ;blue
+
+  STA $D020 ;border
+  LDA #$00  ;black 
+  STA $D021 ;background
   lda #$05  ;petscii for white text
   jsr print_a
+
+  lda #14
+  jmp print_a ;switch to lower case 
+
+exit_telnet:
+exit_gopher:
+  jsr setup_screen
   jmp main_menu
 .rodata
 

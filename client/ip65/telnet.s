@@ -88,14 +88,11 @@ telnet_connect:
   lda telnet_line_mode
   bne @main_polling_loop
   
-;if we get here, we are in VT100 'char at a time mode'
-;so tell the other end that
 
-  ldax #initial_telnet_options_length
-  stax tcp_send_data_len
-  ldax  #initial_telnet_options
-  jsr tcp_send
-  
+;  ldax #initial_telnet_options_length
+;  stax tcp_send_data_len
+;  ldax  #initial_telnet_options
+;  jsr tcp_send
   
     
 @main_polling_loop:
@@ -284,6 +281,7 @@ telnet_callback:
 
 @waiting_for_suboption_end:
   txa 
+  
   ldx iac_suboption_buffer_length  
   sta iac_suboption_buffer,x
   inc iac_suboption_buffer_length
@@ -295,7 +293,7 @@ telnet_callback:
   lda iac_suboption_buffer
   cmp #$18
   bne @not_terminal_type
-  
+
   ldx #0
 :  
   lda terminal_type_response,x
@@ -329,10 +327,11 @@ telnet_callback:
   sta telnet_state
   jmp @byte_processed
 @suboption:
+  
   lda #telnet_state_got_suboption
   sta telnet_state
   lda #0
-  sta iac_suboption_buffer
+  sta iac_suboption_buffer_length
   jmp @byte_processed
   
 @option:
@@ -419,11 +418,9 @@ telnet_callback:
   bne :-
   
   
-  lda #telnet_state_normal  
-  sta telnet_state
-  
-  jmp @byte_processed
-  
+  lda #$fb ;WILL
+  jmp @add_iac_response
+
 
 @do_terminaltype:
   lda #$fb ;WILL
@@ -462,11 +459,11 @@ closing_connection: .byte "CLOSING CONNECTION",13,0
 disconnected: .byte 13,"CONNECTION CLOSED",13,0
 transmission_error: .byte "ERROR WHILE SENDING ",0
 
-initial_telnet_options:
-  .byte $ff,$fb,$1F   ;IAC WILL NAWS
-  .byte $ff,$fb,$18   ;IAC WILL TERMINAL TYPE
+;initial_telnet_options:
+;  .byte $ff,$fb,$1F   ;IAC WILL NAWS
+;  .byte $ff,$fb,$18   ;IAC WILL TERMINAL TYPE
   
-initial_telnet_options_length=*-initial_telnet_options
+;initial_telnet_options_length=*-initial_telnet_options
 
 terminal_type_response:
   .byte $ff ; IAC
