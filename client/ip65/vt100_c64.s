@@ -1,4 +1,5 @@
 ; vt100 emulation for C64
+; vt100 emulation for C64
 ; originally from CaTer - Copyright Lars Stollenwerk 2003
 ; CaTer homepage is http://formica.nusseis.de/Cater/
 ; converted for use with ip65 by Jonno Downes, 2009.
@@ -836,7 +837,7 @@ vt100_transform_outbound_char:
   rts
 :                
   cmp #$ff
-  beq cursor_sequence  ; send a string
+  beq output_string
   cmp #$fe
   beq command_key  ; command key
   ;default - send (possibly transformed) single char 
@@ -851,7 +852,7 @@ rts
 ; -------------------------------------
 
 
-cursor_sequence:
+output_string:
   tya         ; restore original key
 
 ; --- crsr U ---
@@ -863,12 +864,18 @@ cursor_sequence:
 ; --- crsr L ---
 @not_U:      
   cmp #$9d    ; test crsr L
-  bne @done
+  bne @not_L
   ldax #ansi_cursor_left
   ldy #2
   rts
+@not_L:
+  cmp #$0d  ;test CR
+  bne @not_CR
+  ldax #crlf
+  ldy #2
+  rts
 
-@done:
+@not_CR:
   ldy #0  ;must be some kind of error 
   rts
 
@@ -1538,7 +1545,7 @@ ansi_cursor_up:     .byte esc, brace, $41, $00 ; esc [ A
 ansi_cursor_down:   .byte esc, brace, $42, $00 ; esc [ B
 ansi_cursor_right:  .byte esc, brace, $43, $00 ; esc [ C 
 ansi_cursor_left:   .byte esc, brace, $44, $00 ; esc [ D 
-
+crlf:  .byte $0d,$0a,0
 
 ; -------------------------------------
 ; table ASCII  to PETSCII 
@@ -1831,7 +1838,7 @@ petscii_to_ascii:
   .byte $0a   ; $0a
   .byte $0b   ; $0b
   .byte $0c   ; $0c
-  .byte $0d   ; $0d CR
+  .byte $ff   ; $0d CR
   .byte $0e   ; $0e
   .byte $0f   ; $0f
   .byte $10   ; $10

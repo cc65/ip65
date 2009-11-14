@@ -43,7 +43,7 @@ end
  
  filebytes=File.open(filename,"rb").read
 
-start_of_kipper_cart_image=filebytes.index("80KIPPER")
+start_of_kipper_cart_image=filebytes.index("80KIP")
  if start_of_kipper_cart_image.nil? then
    puts "file '#{filename}' does not appear to be a kipper cartridge image"
    exit

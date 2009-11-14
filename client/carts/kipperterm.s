@@ -66,8 +66,7 @@
 .word cold_init  ;cold start vector
 .word warm_init  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
-.byte $0,$0,$0             ;reserved for future use
-.byte $0,$0,$0             ;reserved for future use
+.byte "KIPTRM"
 .byte $0,$0,$0             ;reserved for future use
 .byte $0,$0,$0             ;reserved for future use
 .byte $0,$0,$0             ;reserved for future use
