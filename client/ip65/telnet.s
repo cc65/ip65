@@ -241,11 +241,6 @@ telnet_callback:
   lda tcp_inbound_data_length+1
   sta buffer_length+1
   
-  ;since we don't check the buffer length till the end of the loop, set 'buffer length' to be 1 less than the actual number of bytes
-  dec buffer_length 
-  bpl :+
-   dec buffer_length+1
-:  
 @next_byte:
   ldy #0
   lda (buffer_ptr),y
@@ -358,11 +353,14 @@ telnet_callback:
   
   
   lda telnet_option
+  
   cmp #$18  ;terminal type
   beq @do_terminaltype
+  
   cmp #$1f
   beq @do_naws
-  
+
+
   ;if we get here, then it's a "do" command we don't honour
 
 @iac_dont:
@@ -418,9 +416,7 @@ telnet_callback:
   bne :-
   
   
-  lda #$fb ;WILL
-  jmp @add_iac_response
-
+  ;fall through to send back 'will'
 
 @do_terminaltype:
   lda #$fb ;WILL
@@ -440,16 +436,20 @@ telnet_callback:
   bne :+
   inc buffer_ptr+1
 :  
-  dec buffer_length
-  lda #$ff
-  cmp buffer_length
-  beq :+
-  jmp @next_byte
-:  
-  
+  lda buffer_length+1
+  beq @last_page
+  lda buffer_length
+  bne @not_end_of_page
   dec buffer_length+1
-  bmi @finished
+@not_end_of_page:  
+  dec buffer_length  
   jmp @next_byte
+@last_page:
+  dec buffer_length
+  beq @finished
+  
+  jmp @next_byte
+
 @finished:  
   
   rts
