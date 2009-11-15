@@ -1026,7 +1026,9 @@ tcp_process:
 	sta tcp_remote_ip,x
   lda tcp_connect_ack_number,x
   sta tcp_ack_number,x
-  lda tcp_connect_sequence_number,x
+;if we have just sent a packet out, we may not yet have updated tcp_connect_sequence_number yet
+;so use current value of tcp_connect_expected_ack_number as outbound sequence number instead
+  lda tcp_connect_expected_ack_number,x   
   sta tcp_sequence_number,x
 	dex
 	bpl :-
