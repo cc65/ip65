@@ -18,12 +18,15 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 C64PROGLIB=../drivers/c64prog.lib
 #C64NB65LIB=../drivers/c64nb65.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg
+all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin
 
-kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i 
+kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
 
-kipperterm.o: kipperterm.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i 
+kipperterm.o: kipperterm.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i
+	$(AS) $(AFLAGS) -o $@ $<
+
+kippergo.o: kippergo.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
 
 %.o: %.s $(INCFILES) 
@@ -34,6 +37,9 @@ kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
 
 kipperterm.prg: kipperterm.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kipperterm.bin > kipperterm.prg
+
+kippergo.prg: kippergo.bin c64_cart_ram_header.prg
+	cat c64_cart_ram_header.prg kippergo.bin > kippergo.prg
 
 %.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
@@ -52,6 +58,22 @@ kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_
 	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kipperterm.bin kipperterm_29c040.bin 32
+
+kipperterm_rr.bin: kipperterm.bin 
+	cp crt8040.obj rrnet_header.bin	
+	cat rrnet_header.bin kipperterm.bin > kipperterm_rr.bin
+	ruby fix_cart.rb $@ 32768
+
+
+kippergo.bin: kippergo.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kippergo.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
+	ruby fix_cart.rb $@ 16384
+	ruby dupe_cart.rb kippergo.bin kippergo_29c040.bin 32
+
+kippergo_rr.bin: kippergo.bin 
+	cp crt8040.obj rrnet_header.bin	
+	cat rrnet_header.bin kippergo.bin > kippergo_rr.bin
+	ruby fix_cart.rb $@ 32768
 
 kipperkart_rr.bin: kipperkart.bin 
 	cp crt8040.obj rrnet_header.bin	

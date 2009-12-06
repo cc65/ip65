@@ -85,7 +85,7 @@ dl_loop_counter: .res 2
 this_is_last_page: .res 1
 
 
-temp_ax: .res 2
+;temp_ax: .res 2 
 
 RESOURCE_HOSTNAME_MAX_LENGTH=64
 current_resource:

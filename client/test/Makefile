@@ -19,9 +19,9 @@ INCFILES=\
   ../inc/net.i\
 
 all: \
+	test_getc.prg \
 	testdns.prg \
 	test_disk_io.prg \
-#	test_disk_io.d64 \
 	testdns.pg2 \
 	testtftp.prg \
 	testtftp.pg2\
@@ -30,6 +30,8 @@ all: \
 	testdottedquad.pg2\
 	testdottedquad.prg\
 	test_tcp.prg \
+	test_xmodem.prg \
+	test_xmodem.d64 \
 	test_httpd.prg \
 	test_parser.prg \
 	test_ping.prg \
@@ -38,6 +40,7 @@ all: \
 	test_parse_querystring.prg \
 #	httpd_test.d64 \
 #	ip65test.dsk \
+#	test_disk_io.d64 \
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
@@ -50,6 +53,12 @@ all: \
 
 test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+
+test_xmodem.o: test_xmodem.s ../ip65/xmodem.s
+	$(AS) $(AFLAGS) $<
+
+test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg 
+	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
 test_parser.prg: test_parser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_parser.map -vm -C ../cfg/c64prg.cfg -o  test_parser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
@@ -81,7 +90,10 @@ test_disk_io.d64:  test_disk_io.prg
 		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg
 		cp screen_prg.bin screen.prg
 		ripxplore.rb test_disk_io.d64 -a screen.prg 
-    
+
+test_xmodem.d64:  test_xmodem.prg 
+		ripxplore.rb --init CbmDos test_xmodem.d64 -a test_xmodem.prg
+
 clean:
 	rm -f *.o *.pg2 *.prg
 	rm -f ip65test.dsk

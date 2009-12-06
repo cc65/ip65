@@ -1,5 +1,5 @@
 ; #############
-; KIPPER TERM - Telnet (only) client for C64
+; KIPPER GO - Telnet/Gopher client for C64
 ; jonno@jamtronix.com 
 
 
@@ -15,7 +15,7 @@
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
   
-
+  .include "../inc/gopher.i"
   .include "../inc/telnet.i"
   
   .import cls
@@ -31,11 +31,7 @@
   .import parse_dotted_quad
   .import dotted_quad_value
   .import parse_integer
-
- .import dns_ip
-  .import dns_resolve
-  .import dns_set_hostname
- 
+  
   .import get_key_ip65
   .import cfg_mac
   .import dhcp_init
@@ -66,6 +62,9 @@
   .import cfg_tftp_server
   directory_buffer = $6000
 
+.bss
+;temp_ax: .res 2
+
 
 .segment "CARTRIDGE_HEADER"
 .word cold_init  ;cold start vector
@@ -92,9 +91,6 @@ cold_init:
 
 warm_init:
   ;set some funky colours
-
-  lda #0    
-  sta $dc08 ;set deciseconds - starts TOD going 
 
   jsr setup_screen
   
@@ -144,7 +140,6 @@ init_ok:
 main_menu:
   jsr print_main_menu
   jsr print_ip_config
-  jsr print_default_drive
   jsr print_cr
   
 @get_key:
@@ -157,6 +152,26 @@ main_menu:
   jmp telnet_main_entry
 
  @not_f1:  
+  cmp #KEYCODE_F3
+  bne @not_f3
+  jsr cls
+  ldax #gopher_header
+  jsr print_ascii_as_native
+  jsr prompt_for_gopher_resource ;only returns if no server was entered.
+  jmp exit_gopher
+ @not_f3:  
+
+  cmp #KEYCODE_F5
+  bne @not_f5
+  jsr cls
+  
+  ldax #gopher_initial_location
+  sta resource_pointer_lo
+  stx resource_pointer_hi
+  ldx #0
+  jsr  select_resource_from_current_directory
+  jmp exit_gopher  
+@not_f5:  
 
   cmp #KEYCODE_F7
   beq @change_config
@@ -179,7 +194,10 @@ main_menu:
 @change_config:
   jsr configuration_menu
   jmp main_menu
-    
+  
+  
+
+  
 
 wait_for_keypress:
   ldax  #press_a_key_to_continue
@@ -202,7 +220,7 @@ setup_screen:
   lda #$15
   sta $d018
 
-  LDA #$07  ;yellow
+  LDA #$06  ;blue
 
   STA $D020 ;border
   LDA #$00  ;black 
@@ -213,165 +231,8 @@ setup_screen:
   lda #14
   jmp print_a ;switch to lower case 
 
-save_screen_settings:
-  ;save current settings
-  lda $d018
-  sta temp_font
-  lda $d020
-  sta temp_border
-  lda $d021
-  sta temp_text_back
-  lda $0286
-  sta temp_text_fore
-
-  ldx #$27
-@save_page_zero_vars_loop:
-  lda $cf,x
-  sta temp_page_zero_vars,x
-  dex
-  bne @save_page_zero_vars_loop
-  
-  ldax #$400
-  stax  copy_src
-  ldax #temp_screen_chars
-  stax  copy_dest
-  ldax #$400
-  jsr copymem
-  
-  ldax #$d800
-  stax  copy_src
-  ldax #temp_colour_ram
-  stax  copy_dest
-  ldax #$400
-  jmp copymem
-  
-restore_screen_settings:
-  lda temp_font
-  sta $d018
-  
-  
-  lda temp_border
-  sta $d020
-  lda temp_text_back
-  sta $d021
-  lda temp_text_fore
-  sta $0286
- 
-  ldx #$27
-@restore_page_zero_vars_loop:
-  lda temp_page_zero_vars,x
-  sta $cf,x  
-  dex
-  bne @restore_page_zero_vars_loop
-
-  ldax #temp_screen_chars
-  stax  copy_src
-  ldax #$400
-  stax  copy_dest
-  ldax #$400
-  jsr copymem
-  
-  ldax #temp_colour_ram
-  stax  copy_src  
-  ldax #$d800
-  stax  copy_dest
-  ldax #$400
-  jmp copymem
-
-
 telnet_menu:
-  
-  jsr save_screen_settings
-  jsr setup_screen
-  jsr cls 
-  
-  
-  ldax #menu_header_msg
-  jsr print_ascii_as_native
-  ldax #telnet_menu_msg
-  jsr print_ascii_as_native
-  
-@get_menu_option:
-  jsr get_key
-  cmp #KEYCODE_F1
-  bne :+
-  jsr xmodem_download
-  jmp @exit
-:
-  cmp #KEYCODE_F7
-  beq @exit
-  jmp @get_menu_option
-@exit:  
-  jsr restore_screen_settings  
   rts
-
-xmodem_download:
-  ldax #opening_file
-  jsr print_ascii_as_native
-  jsr open_dl_file
-  bcs @error
-  ldax #ok_msg  
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #write_byte
-  jsr xmodem_receive
-  bcs @error
-  jsr close_file
-
-  rts
-@error:
-  print_failed
-  jsr print_errorcode
-  jsr close_file
-  jmp wait_for_keypress
-  
-open_dl_file:  
-  lda #fname_end-fname
-  ldx #<fname
-  ldy #>fname
-  
-  jsr $FFBD     ; call SETNAM
-  lda #$02      ; file number 2
-.import cfg_default_drive  
-  ldx cfg_default_drive
-  
-  ldy #$02      ; secondary address 2
-  jsr $FFBA     ; call SETLFS
-
-  jsr $FFC0     ; call OPEN
-  bcs @error    ; if carry set, the file could not be opened
-  rts
-@error:
-  sta ip65_error
-  jsr close_file
-  sec
-  rts
-  
-write_byte:
-  pha
-  ldx #$02      ; filenumber 2 = output file
-  jsr $FFC9     ; call CHKOUT 
-  pla
-  jsr $ffd2     ;write byte
-  JSR $FFB7     ; call READST (read status byte)
-  bne @error
-  ldx #$00      ; filenumber 0 = console
-  jsr $FFC9     ; call CHKOUT 
-  rts
-@error:  
-  lda #KPR_ERROR_FILE_ACCESS_FAILURE
-  sta ip65_error
-  jsr close_file
-  sec
-  rts
-  
-  
-close_file:
-
-  lda #$02      ; filenumber 2
-  jsr $FFC3     ; call CLOSE  
-  rts
-
 
 exit_telnet:
 exit_gopher:
@@ -380,28 +241,24 @@ exit_gopher:
 .rodata
 
 menu_header_msg: 
-.byte $13,10,"KipperTerm V"
+.byte $13,10,"KipperGo V"
 .include "../inc/version.i"
 .byte 10,0
 main_menu_msg:
 .byte 10,"Main Menu",10,10
-.byte "F1: Telnet ",10
+.byte "F1: Telnet      F3: Gopher ",10
+.byte "F5: Gopher (floodgap.com)",10
 .byte "F7: Config      F8: Credits",10,10
 
 .byte 0
 
 
 
-telnet_menu_msg:
-.byte 10,10,10
-.byte "F1: D/L File (XMODEM)",10
-.byte "F7: Return",10,10
-.byte 0
+gopher_initial_location:
+.byte "1gopher.floodgap.com",$09,"/",$09,"gopher.floodgap.com",$09,"70",$0D,$0A,0
 
+gopher_header: .byte "gopher",10,0
 telnet_header: .byte "telnet",10,0
-
-opening_file:
-.byte 10,"opening file",10,0
 
 current:
 .byte "current ",0
@@ -412,9 +269,6 @@ new:
 resolving:
   .byte "resolving ",0
 
-fname:  .byte "@0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
-fname_end:
-.byte 0
 
 credits: 
 .byte 10,"License: Mozilla Public License v1.1",10,"http://www.mozilla.org/MPL/"
@@ -426,16 +280,6 @@ credits:
 .byte 10,"Lars Stollenwerk"
 .byte 10,10
 .byte 0
-
-.segment "APP_SCRATCH"
-
-temp_font: .res 1 
-temp_border: .res 1
-temp_text_back: .res 1
-temp_text_fore: .res 1
-temp_page_zero_vars: .res $28
-temp_screen_chars: .res $400
-temp_colour_ram: .res $400
 
 ;-- LICENSE FOR kipperterm.s --
 ; The contents of this file are subject to the Mozilla Public License

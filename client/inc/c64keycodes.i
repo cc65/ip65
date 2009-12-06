@@ -14,7 +14,7 @@ KEYCODE_F8=$8c
 KEYCODE_ABORT=$03 ;RUN/STOP
 .define KEYNAME_ABORT "RUN/STOP"
 .export KEYCODE_ABORT
-
+.export KEYCODE_F1
 
 ;-- LICENSE FOR c64keycodes.i --
 ; The contents of this file are subject to the Mozilla Public License

@@ -31,6 +31,7 @@
   .include "../inc/sidplay.i"
 
   .include "../inc/disk_transfer.i"
+  .include "../inc/config_menu.i"
 
   .import cls
   .import beep
@@ -159,7 +160,7 @@ warm_init:
   ldax #__SELF_MODIFIED_CODE_SIZE__
   jsr copymem
   
-  ldax #netboot65_msg
+  ldax #menu_header_msg
   jsr print_ascii_as_native
   ldax #init_msg+1
 	jsr print_ascii_as_native
@@ -174,7 +175,7 @@ warm_init:
 print_main_menu:
  
   jsr cls  
-  ldax  #netboot65_msg
+  ldax  #menu_header_msg
   jsr print_ascii_as_native
   ldax  #main_menu_msg
   jmp print_ascii_as_native
@@ -255,186 +256,8 @@ main_menu:
 
 
 @change_config:
-  jsr cls  
-@config_menu:  
-  ldax  #netboot65_msg
-  jsr print_ascii_as_native
-  ldax  #config_menu_msg
-  jsr print_ascii_as_native
-  jsr print_ip_config
-  jsr print_default_drive
-  jsr print_cr
-@get_key_config_menu:  
-  jsr get_key_ip65
-  cmp #KEYCODE_ABORT
-  bne @not_abort
+  jsr configuration_menu
   jmp main_menu
-@not_abort:  
-  cmp #KEYCODE_F1
-  bne @not_ip
-  ldax #new
-  jsr print_ascii_as_native
-  ldax #ip_address_msg
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #filter_ip
-  ldy #20
-  jsr get_filtered_input
-  bcs @no_ip_address_entered
-  jsr parse_dotted_quad  
-  bcc @no_ip_resolve_error  
-  jmp @change_config
-@no_ip_resolve_error:  
-  ldax #dotted_quad_value
-  stax copy_src
-  ldax #cfg_ip
-  stax copy_dest
-  ldax #4
-  jsr copymem
-@no_ip_address_entered:  
-  jmp @change_config
-  
-@not_ip:
-  cmp #KEYCODE_F2
-  bne @not_netmask
-  ldax #new
-  jsr print_ascii_as_native
-  ldax #netmask_msg
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #filter_ip
-  ldy #20
-  jsr get_filtered_input
-  bcs @no_netmask_entered
-  jsr parse_dotted_quad  
-  bcc @no_netmask_resolve_error  
-  jmp @change_config
-@no_netmask_resolve_error:  
-  ldax #dotted_quad_value
-  stax copy_src
-  ldax #cfg_netmask
-  stax copy_dest
-  ldax #4
-  jsr copymem
-@no_netmask_entered:  
-  jmp @change_config
-  
-@not_netmask:
-  cmp #KEYCODE_F3
-  bne @not_gateway
-  ldax #new
-  jsr print_ascii_as_native
-  ldax #gateway_msg
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #filter_ip
-  ldy #20
-  jsr get_filtered_input
-  bcs @no_gateway_entered
-  jsr parse_dotted_quad  
-  bcc @no_gateway_resolve_error  
-  jmp @change_config
-@no_gateway_resolve_error:  
-  ldax #dotted_quad_value
-  stax copy_src
-  ldax #cfg_gateway
-  stax copy_dest
-  ldax #4
-  jsr copymem
-  jsr arp_calculate_gateway_mask                ;we have modified our netmask, so we need to recalculate gw_test
-@no_gateway_entered:  
-  jmp @change_config
-  
-  
-@not_gateway:
-  cmp #KEYCODE_F4
-  bne @not_dns_server
-  ldax #new
-  jsr print_ascii_as_native
-  ldax #dns_server_msg
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #filter_ip
-  ldy #20
-  jsr get_filtered_input
-  bcs @no_dns_server_entered
-  jsr parse_dotted_quad  
-  bcc @no_dns_resolve_error  
-  jmp @change_config
-@no_dns_resolve_error:  
-  ldax #dotted_quad_value
-  stax copy_src
-  ldax #cfg_dns
-  stax copy_dest
-  ldax #4
-  jsr copymem
-@no_dns_server_entered:  
-  
-  jmp @change_config
-  
-@not_dns_server:
-  cmp #KEYCODE_F5
-  bne @not_tftp_server
-  ldax #new
-  jsr print_ascii_as_native
-  ldax #tftp_server_msg
-  jsr print_ascii_as_native
-  jsr print_cr
-  ldax #filter_dns
-  ldy #40
-  jsr get_filtered_input
-  bcs @no_server_entered
-  stax kipper_param_buffer 
-  jsr print_cr  
-  ldax #resolving
-  jsr print_ascii_as_native
-  ldax #kipper_param_buffer
-  kippercall #KPR_DNS_RESOLVE  
-  bcs @resolve_error  
-  ldax #kipper_param_buffer
-  stax copy_src
-  ldax #cfg_tftp_server
-  stax copy_dest
-  ldax #4
-  jsr copymem
-@no_server_entered:  
-  jmp @change_config
-  
-@not_tftp_server:
-
-
-cmp #KEYCODE_F6
-  bne @not_reset
-  jsr ip65_init ;this will reset everything
-  jmp @change_config
-@not_reset:  
-cmp #KEYCODE_F7
-  bne @not_main_menu
-  jmp main_menu
-  
-@not_main_menu:
-
-cmp #'+'
-  bne @not_plus
-  inc cfg_default_drive
-  jmp @config_menu
-@not_plus:
-
-cmp #'-'
-  bne @not_minus
-  dec cfg_default_drive
-  jmp @config_menu
-  
-@not_minus:
-
-  jmp @get_key_config_menu
-    
-
-@resolve_error:
-  print_failed
-  jsr wait_for_keypress
-  jsr @change_config
-  
 @tftp_boot:  
 
   ldax #tftp_dir_filemask
@@ -731,12 +554,6 @@ exit_ping:
   jsr print_a
   jmp main_menu
 
-print_default_drive:
-  ldax #default_drive
-	jsr print_ascii_as_native
-  lda cfg_default_drive
-  jsr print_hex
-  jmp print_cr
   
 ;init the Time-Of-Day clock - cribbed from http://codebase64.org/doku.php?id=base:initialize_tod_clock_on_all_platforms
 init_tod:
@@ -791,7 +608,7 @@ init_tod:
   
 .rodata
 
-netboot65_msg: 
+menu_header_msg: 
 .byte $13,10,"KipperKart V"
 .include "../inc/version.i"
 .byte 10,0
@@ -804,13 +621,7 @@ main_menu_msg:
 
 .byte 0
 
-config_menu_msg:
-.byte 10,"Configuration",10,10
-.byte "F1: IP Address  F2: Netmask",10
-.byte "F3: Gateway     F4: DNS Server",10
-.byte "F5: TFTP Server F6: Reset To Default",10
-.byte "F7: Main Menu   +/- Drive #",10,10
-.byte 0
+
 
 cant_boot_basic:
 .byte "BASIC file execution not supported",10,0
@@ -833,8 +644,6 @@ dir_listing_fail_msg:
 tftp_download_fail_msg:
 	.byte "download failed", 10, 0
 
-default_drive:
-.byte "Use Drive # : $",0
 tftp_download_ok_msg:
 	.byte "down"
 load_ok_msg:

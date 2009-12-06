@@ -15,6 +15,7 @@
   .import tcp_connect_ip
   .import tcp_listen
   .importzp KEYCODE_ABORT
+  .importzp KEYCODE_F1
   .import tcp_inbound_data_ptr
   .import tcp_inbound_data_length
   .import tcp_send
@@ -43,6 +44,8 @@
 .export telnet_use_native_charset
 .export telnet_port
 .export telnet_ip
+
+.import telnet_menu
 
 .segment "IP65ZP" : zeropage
 
@@ -150,8 +153,13 @@ telnet_connect:
   jsr get_key_if_available
   beq @wait_for_keypress
 
+  cmp #KEYCODE_F1
+  bne @not_telnet_menu
+  jsr telnet_menu
+  jmp @wait_for_keypress
+@not_telnet_menu:
   tax  
-;  beq @send_char
+
   cmp #KEYCODE_ABORT
   bne @not_abort
 
@@ -376,7 +384,7 @@ telnet_callback:
   inc iac_response_buffer_length
   inc iac_response_buffer_length
   inc iac_response_buffer_length
-  
+@after_set_iac_response:  
   lda #telnet_state_normal
   sta telnet_state
   jmp @byte_processed
@@ -414,9 +422,8 @@ telnet_callback:
   txa
   cmp #naws_response_length
   bne :-
-  
-  
-  ;fall through to send back 'will'
+    
+  jmp @after_set_iac_response
 
 @do_terminaltype:
   lda #$fb ;WILL
@@ -474,7 +481,10 @@ terminal_type_response:
   .byte $ff ; IAC
   .byte $f0 ; SE
 terminal_type_response_length=*-terminal_type_response
+
+
 naws_response:
+  .byte $ff,$fb,$1F   ;IAC WILL NAWS
   .byte $ff ; IAC
   .byte $fa; SB
   .byte  $1F ; NAWS
@@ -487,6 +497,8 @@ naws_response:
   .byte $f0 ; SE
 
 naws_response_length=*-naws_response
+
+
 ;variables
 .segment "APP_SCRATCH" 
 telnet_ip:  .res 4  ;ip address of remote server

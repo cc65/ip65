@@ -22,9 +22,9 @@ Within the major flavours, there are also variations in media - the majority of 
 </table>
 
 
-<h2>USING THE CARTRIDGE</h2>
+<h2>USING THE CARTRIDGES</h2>
 
-When the cartridge starts, it will attempt to configure the IP stack via DHCP. If the DHCP config fails (either by timing out, or the user press RUN/STOP)
+When one of the cartridge images start, it will attempt to configure the IP stack via DHCP. If the DHCP config fails (either by timing out, or the user press RUN/STOP)
 then the IP stack will fall back to using the IP configuration built into the cartridge. See the section "IP CONFIGURATION" for info on how to modify the
 cartridge defaults prior to burning an image.
 <p>
@@ -42,8 +42,8 @@ Once the IP stack is initialised, an attempt to boot from the network will take 
   pure machine language programs, since BASIC is not available when this cart is active. (NB - programs that are pure M/L except for a BASIC stub consisting of a single SYS call will be executed). 
 </li>
 
-	<li>F3 : UPLOAD D64. TBD</li>
-  <li>F4 : DOWNLOAD D64. A TFTP server is queried for a list of D64 files, which can be selected from a menu. Once a D64 file is selected, it will be downloaded and written to drive #8.</li>
+	<li>F3 : UPLOAD D64. You will prompted to specify a filename, then the disk in the default drive will be read and sent to the tftp server</li>
+  <li>F4 : DOWNLOAD D64. A TFTP server is queried for a list of D64 files, which can be selected from a menu. Once a D64 file is selected, it will be downloaded and written to the default drive (usually #8).</li>
 	<li>F5 : SID NETPLAY. A TFTP server is queried for a list of SID files, which can be selected from a menu. Once a SID file is selected, it will be played. Not all SIDs work yet.</li>
   <li>F6 : PING. You will be prompted for a hostname which will be pinged 3 times, and a response time (in milliseconds) is printed for each ping.</li>	
 	<li>F7 : CONFIG. This brings up a menu where the IP configuration can be modified. Changes made here will be persistent until the next reboot.</li>
@@ -58,8 +58,7 @@ call, the target of the SYS call will be used as the address to start execution 
 <ul>
 	<li>F1 : TELNET. You will be prompted to enter a hostname, a port number, and a connection mode. Connection mode is either 
   <ul>
-  <li>ASCII - . keypresses are converted to ASCII before  being sent out, and incoming data is converted to PETSCII before being displayed. 
-  There is no terminal emulation, and keystrokes are sent a character at a time.</li>
+  <li>VT100 -  keypresses are converted to ASCII before  being sent out, and incoming data is converted to PETSCII before being displayed. Many common VT100 escape codes are interpreted, and keystrokes are sent a character at a time.</li>
   <li>PETSCII - no translation is done on data coming in or out. This mode is suitable for connecting to PETSCII BBSs</li>
   <li>Line -  Data is converted to/from ASCII, but each line of input can be edited and is not sent until the RETURN key is pressed.</li>
   </ul>
@@ -140,5 +139,12 @@ NETBOOT65 is licensed under the same terms as IP65, the <a href=http://www.mozil
 	Browse online at <a href=http://netboot65.svn.sourceforge.net/viewvc/netboot65/>http://netboot65.svn.sourceforge.net/viewvc/netboot65/</a> or else download the whole tree  through SVN with the following instruction set: 
   <pre>svn co https://netboot65.svn.sourceforge.net/svnroot/netboot65 netboot65 </pre>
 
-<h2>AUTHOR</h2>
-	Jonno Downes - jonno@jamtronix.com
+<h2>CREDITS</h2>
+Package is maintained by Jonno Downes - jonno@jamtronix.com
+<h3>Contributors</h3>
+<ul>
+<li>Jonno Downes - current maintainer of ip65, layers 4-7 (dhcp,dns,tcp,telnet, http, gopher)</li>
+<li>Glenn Holmer - icmp enhancements, bugfixes</li>
+<li>Per Olofsson - initial creator of ip65, layers 1-3 (eth,arp,ip,icmp,udp)</li>
+<li>Lars Stollenwerk - vt100 emulation </li>
+</ul>

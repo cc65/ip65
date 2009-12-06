@@ -15,6 +15,9 @@
 ;      Y = 1 means A contains single character to send to remote host
 ;      Y = 2 means AX points at null terminated string to send to remote host (e.g. an ANSI escape sequence)
 
+;FIXME! - this should be a platform-specific driver
+
+
 .include "../inc/common.i"
 
 .export vt100_init_terminal
