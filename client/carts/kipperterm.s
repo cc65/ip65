@@ -315,8 +315,19 @@ xmodem_download:
   jsr print_cr
   ldax #write_byte
   jsr xmodem_receive
-  bcs @error
+  bcs @error  
   jsr close_file
+  ldax #transfer_complete
+  jsr print_ascii_as_native
+  ldax #prompt_for_filename
+  jsr print_ascii_as_native
+@get_filename:  
+  ldax #filter_dns
+  ldy #40
+  jsr get_filtered_input
+  bcs @get_filename
+  jsr rename_file  
+
 
   rts
 @error:
@@ -326,10 +337,13 @@ xmodem_download:
   jmp wait_for_keypress
   
 open_dl_file:  
-  lda #fname_end-fname
-  ldx #<fname
-  ldy #>fname
-  
+  lda #temp_filename_end-temp_filename_start
+  ldx #<temp_filename_start
+  ldy #>temp_filename_start
+
+
+open_file:
+  ;A,X,Y set up ready for a call to SETNAM for file #2
   jsr $FFBD     ; call SETNAM
   lda #$02      ; file number 2
 .import cfg_default_drive  
@@ -373,6 +387,66 @@ close_file:
   rts
 
 
+rename_file:
+;AX points at new filename
+  stax  copy_src
+  ldx #0
+  ldy #0
+  ;first the "RENAME0:"
+
+: 
+  lda rename_cmd,y
+  sta command_buffer,x
+  inx
+  iny
+  cmp #':'
+  bne :-
+  
+  ;now the new filename
+  ldy #0
+:  
+  lda (copy_src),y
+  beq @end_of_new_filename
+  sta command_buffer,x
+  inx
+  iny
+  bne :-
+@end_of_new_filename:
+  
+  ;now the "="
+  lda #'='
+  sta command_buffer,x
+  inx
+
+  ;now the old filename
+  ldy #0
+:  
+  lda temp_filename,y
+  cmp #','
+  beq @end_of_old_filename
+  sta command_buffer,x
+  inx
+  iny
+  bne :-
+@end_of_old_filename:  
+  txa ;filename length
+  ldx #<command_buffer
+  ldy #>command_buffer
+  
+  jsr $FFBD     ; call SETNAM
+  lda #$0F      ; filenumber 15
+  ldx cfg_default_drive
+  ldy #$0F      ; secondary address 15
+  jsr $FFBA     ; call SETLFS
+  jsr $FFC0     ; call OPEN
+  lda #$0F      ; filenumber 15
+  jsr $FFC3     ; call CLOSE  
+  rts
+  
+rename_cmd:
+  .byte "RENAME0:"
+;  FOO.BAR=0:XMODEM.TMP"
+
 exit_telnet:
 exit_gopher:
   jsr setup_screen
@@ -391,7 +465,6 @@ main_menu_msg:
 .byte 0
 
 
-
 telnet_menu_msg:
 .byte 10,10,10
 .byte "F1: D/L File (XMODEM)",10
@@ -402,7 +475,9 @@ telnet_header: .byte "telnet",10,0
 
 opening_file:
 .byte 10,"opening file",10,0
-
+transfer_complete:
+.byte "transfer complete.",10,0
+prompt_for_filename: .byte "save file as?",10,0
 current:
 .byte "current ",0
 
@@ -412,8 +487,10 @@ new:
 resolving:
   .byte "resolving ",0
 
-fname:  .byte "@0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
-fname_end:
+temp_filename_start:  .byte "@"
+temp_filename:
+.byte "0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
+temp_filename_end:
 .byte 0
 
 credits: 
@@ -436,7 +513,7 @@ temp_text_fore: .res 1
 temp_page_zero_vars: .res $28
 temp_screen_chars: .res $400
 temp_colour_ram: .res $400
-
+command_buffer: .res $80
 ;-- LICENSE FOR kipperterm.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
