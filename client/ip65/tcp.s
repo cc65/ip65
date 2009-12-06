@@ -26,6 +26,7 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_send_string
 .export tcp_close
 .export tcp_listen
+.export tcp_send_keep_alive
 
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length
@@ -1013,7 +1014,9 @@ tcp_process:
 
 @not_syn:
   rts
+
 @send_ack:
+
 ;create an ACK packet
   lda #tcp_flag_ACK
   
@@ -1041,6 +1044,12 @@ tcp_process:
   jmp tcp_send_packet
 
 
+;send an empty ACK packet on the current connection
+;inputs:
+;   none
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_send_keep_alive=@send_ack
 
 ;-- LICENSE FOR tcp.s --
 ; The contents of this file are subject to the Mozilla Public License

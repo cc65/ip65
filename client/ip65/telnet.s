@@ -26,7 +26,8 @@
   .import vt100_init_terminal
   .import vt100_process_inbound_char
   .import vt100_transform_outbound_char
-
+  .import tcp_send_keep_alive
+  .import timer_read
 
   .import ip65_process
   .import get_key_if_available
@@ -136,8 +137,19 @@ telnet_connect:
   jmp @send_char
   
 @not_line_mode:  
-  
+
+@inner_loop:
+  jsr timer_read
+  txa
+  adc #$20  ;32 x 1/4 = ~ 8seconds
+  sta telnet_timeout
 @wait_for_keypress:  
+  jsr timer_read
+  cpx telnet_timeout
+  bne @no_timeout
+  jsr tcp_send_keep_alive
+  jmp @inner_loop
+@no_timeout:  
   jsr ip65_process
   lda iac_response_buffer_length  
   beq @no_iac_response
@@ -156,7 +168,7 @@ telnet_connect:
   cmp #KEYCODE_F1
   bne @not_telnet_menu
   jsr telnet_menu
-  jmp @wait_for_keypress
+  jmp @inner_loop
 @not_telnet_menu:
   tax  
 
@@ -503,7 +515,7 @@ naws_response_length=*-naws_response
 .segment "APP_SCRATCH" 
 telnet_ip:  .res 4  ;ip address of remote server
 telnet_port: .res 2 ;port number to connect to
-
+telnet_timeout: .res 1
 connection_closed: .res 1
 telnet_use_native_charset: .res 1 ; 0 means all data is translated to/from NVT ASCII 
 buffer_offset: .res 1
