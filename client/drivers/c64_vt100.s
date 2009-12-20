@@ -1103,7 +1103,6 @@ print_to_screen:
 ; chr in A
 ; X and Y unaffected
 ; -------------------------------------
-;plot_char = $e716
 
 plot_char:
   sta temp_ptr_x ; save char
@@ -1159,13 +1158,34 @@ plot_char:
 ; --- put char to screen ---
 @put_char:
   ldy $d3     ; get crsr col
+  cpy #$28    ;col = 40
+  bcc @no_line_wrap
+              ;the only way we end up trying to write to column 40 should
+              ;be if we skipped the normal line wrap after writing to col 39
+              ;because we are at the end of the scroll region
+              ;that means we should do a scroll up and then write this char at col 0
+  pha
+  jsr scroll_up_scrollregion
+  pla
+  ldy #$00    ; begin of line
+  sty $d3
+@no_line_wrap:  
   sta ($d1),y ; char to screen
   lda $0286   ; get colour
   sta ($f3),y ; set colour
   
 ; --- move on crsr ---
+  
+  ldx $d6     ; get crsr row
+  cpx scroll_region_end     ; end of scroll reg?  
+  beq @dont_scroll_yet     ; we don't want to trigger a scroll of the whole screen unless
+                                    ; we are actually writing a char. we shouldn't scroll just when
+                                    ; writing to the bottom right hand screen (else e.g. the title bar 
+                                    ; in 'nano' gets pushed off the top of the screen.
+                                    ;
   cpy #$27    ; col = 39?
   beq move_to_next_line   ; yes -> new line
+@dont_scroll_yet:  
   iny         ; move on
   sty $d3
   
