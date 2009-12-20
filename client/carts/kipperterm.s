@@ -15,7 +15,10 @@
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
   
+  XMODEM_IN_TELNET = 1
 
+  .import xmodem_iac_escape
+  
   .include "../inc/telnet.i"
   
   .import cls
@@ -284,7 +287,6 @@ telnet_menu:
   jsr save_screen_settings
   jsr setup_screen
   jsr cls 
-  
   
   ldax #menu_header_msg
   jsr print_ascii_as_native

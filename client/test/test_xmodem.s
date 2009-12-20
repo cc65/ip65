@@ -2,8 +2,6 @@
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
 
-;  .include "../ip65/xmodem.s"
-
   .import parse_dotted_quad
   .import dotted_quad_value
   
@@ -18,7 +16,8 @@
   .import tcp_inbound_data_ptr
   .import tcp_inbound_data_length
 
-.import xmodem_receive
+  .import xmodem_receive
+  .import xmodem_iac_escape
   
   .import tcp_send
   .import tcp_send_data_len
@@ -61,12 +60,18 @@ init:
   lda #14
   jsr print_a ;switch to lower case 
     
+    
+  lda #1
+;  lda #0
+  sta xmodem_iac_escape
   lda #0    
   sta $dc08 ;set deciseconds - starts TOD going 
   jsr print_cr
   init_ip_via_dhcp 
   jsr print_ip_config
 
+  ldax #starting
+  jsr print_ascii_as_native
   jsr print_cr
 
   lda #'1'
@@ -175,8 +180,6 @@ open_file:
   jsr $FFC0     ; call OPEN
   bcs @error    ; if carry set, the file could not be opened
 
-  ldx #$02      ; filenumber 2
-  jsr $FFC9     ; call CHKOUT (file 2 now used as output)
   rts
 @error:
   sta ip65_error
@@ -215,6 +218,8 @@ close_file:
   
 	.rodata
 
+starting: 
+.byte "saving to "
 fname:  .byte "@0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
 fname_end:
 .byte 0
@@ -222,7 +227,7 @@ first_message:
   .byte "yo!",0
 
 start_download: 
-  .byte "R",0
+  .byte "B",0   ;b=Binary, i.e. trigger IAC escape, R=receive text, i.e. no IAC escape
 .data
 
 tcp_dest_ip:

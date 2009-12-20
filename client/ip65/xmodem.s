@@ -18,6 +18,8 @@ CAN = $18
 
 .export xmodem_receive
 
+.export xmodem_iac_escape ;are IAC bytes ($FF) escaped?
+
 .import ip65_process
 .import ip65_error
 .import tcp_callback
@@ -77,6 +79,7 @@ xmodem_receive:
 ;recieve a file via XMODEM (checksum mode only, not CRC)
 ;assumes that a tcp connection has already been set up, and that the other end is waiting to start sending
 ;inputs: AX points to routine to call once for each byte in downloaded file (e.g. save to disk, print to screen, whatever) - byte will be in A
+; xmodem_iac_escape should be set to non-zero if the remote end escapes $FF bytes (i.e. if it is a real telnet server)
 ;outputs: none
 
   
@@ -172,7 +175,9 @@ xmodem_receive:
 @next_byte:
   lda #XMODEM_TIMEOUT_SECONDS
   jsr getc
-  bcs @exit
+  bcc :+
+  jmp @exit
+:  
   ldx block_ptr
   sta xmodem_block_buffer,x
   adc checksum
@@ -200,6 +205,22 @@ xmodem_receive:
   lda received_checksum
   cmp checksum
   beq @checksum_ok
+  ;checksum error :-(
+  inc error_number
+  ldax #checksum_error_msg
+  jsr print_ascii_as_native
+  lda error_number
+  jsr print_hex
+  jsr print_cr
+  lda error_number
+  cmp #XMODEM_MAX_ERRORS
+  bcs :+
+  jmp @wait_for_block_start
+:  
+  lda #KPR_ERROR_TOO_MANY_ERRORS
+  sta ip65_error
+  jmp @exit
+
   jsr send_nak
   jmp @next_block
 
@@ -264,6 +285,22 @@ send_ack:
 
 
 getc:
+  jsr @real_getc
+  bcc :+  ;of we got an error, then bail
+  rts
+:  
+  cmp #$ff
+  beq @got_ff
+  clc
+  rts
+@got_ff:    
+  lda xmodem_iac_escape
+  bne @real_getc  ;need to skip over the $FF and go read another byte
+  lda #$ff
+  clc
+  rts
+  
+@real_getc:
   sta getc_timeout_seconds
 
   clc
@@ -279,7 +316,6 @@ getc:
   sta getc_timeout_end  
 
 @poll_loop: 
-;  inc $d021
   jsr next_char
   bcs @no_char
   rts ;done!
@@ -309,7 +345,8 @@ expecting: .byte "expecting",0
 receiving: .byte "receiving",0
 bad_block_number: .byte "bad block number",0
 checksum_msg: .byte "checksum $",0
-timeout_msg: .byte "timeout $",0
+checksum_error_msg : .byte "checksum error - error count $",0 
+timeout_msg: .byte "timeout error - error count $",0
 
 .segment "APP_SCRATCH"
 xmodem_stream_buffer: .res 1600
@@ -321,6 +358,7 @@ received_checksum: .res 1
 block_ptr: .res 1
 error_number: .res 1
 user_abort: .res 1
+xmodem_iac_escape: .res 1
 
 ;-- LICENSE FOR xmodem.s --
 ; The contents of this file are subject to the Mozilla Public License

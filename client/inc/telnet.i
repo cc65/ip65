@@ -95,6 +95,9 @@ telnet_main_entry:
   sta telnet_line_mode
   lda #1
   sta telnet_local_echo
+.ifdef XMODEM_IN_TELNET
+  sta xmodem_iac_escape
+.endif
   jmp @after_mode_set
 @petscii_mode:
   lda #1
@@ -102,10 +105,16 @@ telnet_main_entry:
   lda #0
   sta telnet_local_echo
   sta telnet_line_mode
+.ifdef XMODEM_IN_TELNET
+  sta xmodem_iac_escape
+.endif  
   jmp @after_mode_set
 @line_mode:
   lda #0
   sta telnet_use_native_charset
+.ifdef XMODEM_IN_TELNET
+  sta xmodem_iac_escape
+.endif  
   lda #1
   sta telnet_local_echo
   sta telnet_line_mode
