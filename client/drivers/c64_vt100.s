@@ -15,7 +15,6 @@
 ;      Y = 1 means A contains single character to send to remote host
 ;      Y = 2 means AX points at null terminated string to send to remote host (e.g. an ANSI escape sequence)
 
-;FIXME! - this should be a platform-specific driver
 
 
 .include "../inc/common.i"
@@ -2088,7 +2087,7 @@ petscii_to_ascii:
 ROM_FONT:
 .incbin "../inc/vt100_font.bin"
 
-;-- LICENSE FOR vt100_c64.s --
+;-- LICENSE FOR c64_vt100.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

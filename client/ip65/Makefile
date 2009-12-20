@@ -21,7 +21,6 @@ ETHOBJS= \
 	printf.o \
 	debug.o \
 	http.o \
-	vt100_c64.o \
 	httpd.o \
   dhcp.o \
   dns.o \
