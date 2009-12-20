@@ -17,6 +17,7 @@ NAK = $15
 CAN = $18
 
 .export xmodem_receive
+.export xmodem_send
 
 .export xmodem_iac_escape ;are IAC bytes ($FF) escaped?
 
@@ -38,6 +39,9 @@ CAN = $18
 
 .segment "SELF_MODIFIED_CODE"
 got_byte:
+  jmp $ffff
+
+get_byte:
   jmp $ffff
 
 next_char:
@@ -63,9 +67,23 @@ next_char:
   sbc #0
   sta   buffer_length+1
   pla
-  clc
-  
+  clc  
   rts
+  
+
+emit_a:
+emit_a_ptr=*+1
+  sta $ffff
+  inc emit_a_ptr
+  bne :+
+  inc emit_a_ptr+1
+:
+  inc xmodem_block_buffer_length
+  bne :+
+  inc xmodem_block_buffer_length+1
+:
+  rts
+  
 	.bss
 
 original_tcp_callback: .res 2
@@ -74,16 +92,110 @@ getc_timeout_seconds: .res 1
 buffer_length: .res 2
 
 	.code
- 
-xmodem_receive:
-;recieve a file via XMODEM (checksum mode only, not CRC)
-;assumes that a tcp connection has already been set up, and that the other end is waiting to start sending
-;inputs: AX points to routine to call once for each byte in downloaded file (e.g. save to disk, print to screen, whatever) - byte will be in A
+
+xmodem_send:
+;send a file via XMODEM (checksum mode only, not CRC)
+;assumes that a tcp connection has already been set up, and that the other end is waiting to start receiving
+;inputs: AX points to routine to call once for each byte in file to send (e.g. save to disk, print to screen, whatever) - byte will be in A, carry flag set means EOF
 ; xmodem_iac_escape should be set to non-zero if the remote end escapes $FF bytes (i.e. if it is a real telnet server)
 ;outputs: none
+  stax get_byte+1
+  jsr xmodem_transfer_setup
+
+
+@send_block:
+  ldax #sending
+  jsr print_ascii_as_native
+
+  ldax #block_number_msg
+  jsr print_ascii_as_native
+  lda expected_block_number
+  jsr print_hex
+  jsr print_cr
+
+
+@wait_for_ack_or_nak:
+  lda #XMODEM_TIMEOUT_SECONDS
+  jsr getc
+  bcs @synch_error
+  cmp   #ACK
+  beq @got_ack
+  cmp   #NAK
+  beq @got_nak
+
+@synch_error:
+  pha
+  lda user_abort
+  beq @no_user_abort
+  jmp xmodem_transfer_exit
+@no_user_abort:  
+  
+  lda #'('
+  jsr print_a
+  pla 
+  jsr print_hex
+  lda #')'
+  jsr print_a
+  
+  inc error_number
+  ldax #sync_error_msg
+  jsr print_ascii_as_native
+  ldax #error_count_msg
+  jsr print_ascii_as_native
+  lda error_number
+  jsr print_hex
+  jsr print_cr
+  lda error_number
+  cmp #XMODEM_MAX_ERRORS
+  bcc @wait_for_ack_or_nak
+  lda #KPR_ERROR_TOO_MANY_ERRORS
+  sta ip65_error
+  jmp xmodem_transfer_exit
+
+@got_ack:
+  inc expected_block_number
+@got_nak:
+
+  lda #0
+  sta checksum
+  sta xmodem_block_buffer_length
+  sta xmodem_block_buffer_length+1
+  ldax #xmodem_block_buffer
+  stax emit_a_ptr
+  
+  lda #SOH
+  jsr emit_a
+  lda expected_block_number
+  jsr emit_a
+  eor #$ff
+  jsr emit_a
+  lda #$80
+  sta block_ptr
+@copy_one_byte:
+  lda #$1; FIX ME
+  pha
+  clc
+  adc checksum
+  sta checksum
+  pla
+  jsr emit_a
+  dec block_ptr
+  bne @copy_one_byte
+  lda checksum
+  jsr emit_a
+      
+  ldax xmodem_block_buffer_length
+  stax tcp_send_data_len
+  ldax #xmodem_block_buffer
+  jsr tcp_send
+  
+  jmp @send_block
+
+  rts
+
 
   
-  stax got_byte+1
+xmodem_transfer_setup:
   lda #0
   sta buffer_length
   sta buffer_length+1
@@ -95,8 +207,20 @@ xmodem_receive:
 
   ldax tcp_callback
   stax original_tcp_callback
-  ldax #xmodem_receive_callback
+  ldax #xmodem_tcp_callback
   stax tcp_callback 
+  rts
+  
+xmodem_receive:
+;recieve a file via XMODEM (checksum mode only, not CRC)
+;assumes that a tcp connection has already been set up, and that the other end is waiting to start sending
+;inputs: AX points to routine to call once for each byte in downloaded file (e.g. save to disk, print to screen, whatever) - byte will be in A
+; xmodem_iac_escape should be set to non-zero if the remote end escapes $FF bytes (i.e. if it is a real telnet server)
+;outputs: none
+
+  
+  stax got_byte+1
+  jsr xmodem_transfer_setup
   jsr send_nak  
 
 
@@ -119,11 +243,13 @@ xmodem_receive:
   bcc @got_block_start
   lda user_abort
   beq @no_user_abort
-  jmp @exit
+  jmp xmodem_transfer_exit
 @no_user_abort:  
   jsr send_nak
   inc error_number
   ldax #timeout_msg
+  jsr print_ascii_as_native
+  ldax #error_count_msg
   jsr print_ascii_as_native
   lda error_number
   jsr print_hex
@@ -133,13 +259,13 @@ xmodem_receive:
   bcc @wait_for_block_start
   lda #KPR_ERROR_TOO_MANY_ERRORS
   sta ip65_error
-  jmp @exit
+  jmp xmodem_transfer_exit
 @got_block_start:
   cmp #EOT
   bne :+
   jsr send_ack
   clc
-  jmp @exit
+  jmp xmodem_transfer_exit
 :  
   cmp #SOH
   bne @wait_for_block_start
@@ -176,7 +302,7 @@ xmodem_receive:
   lda #XMODEM_TIMEOUT_SECONDS
   jsr getc
   bcc :+
-  jmp @exit
+  jmp xmodem_transfer_exit
 :  
   ldx block_ptr
   sta xmodem_block_buffer,x
@@ -189,6 +315,7 @@ xmodem_receive:
   
   ldax #checksum_msg
   jsr print_ascii_as_native
+  
   lda checksum
   jsr print_hex
   
@@ -197,7 +324,7 @@ xmodem_receive:
   
   lda #XMODEM_TIMEOUT_SECONDS
   jsr getc
-  bcs @exit
+  bcs xmodem_transfer_exit
   sta received_checksum
   jsr print_hex
   jsr print_cr
@@ -209,6 +336,8 @@ xmodem_receive:
   inc error_number
   ldax #checksum_error_msg
   jsr print_ascii_as_native
+  ldax #error_count_msg
+  jsr print_ascii_as_native
   lda error_number
   jsr print_hex
   jsr print_cr
@@ -219,7 +348,7 @@ xmodem_receive:
 :  
   lda #KPR_ERROR_TOO_MANY_ERRORS
   sta ip65_error
-  jmp @exit
+  jmp xmodem_transfer_exit
 
   jsr send_nak
   jmp @next_block
@@ -247,13 +376,14 @@ xmodem_receive:
   jmp @next_block
 
   clc
-@exit:  
+
+xmodem_transfer_exit:
   ldax original_tcp_callback
   stax tcp_callback
   
   rts
 
-xmodem_receive_callback:
+xmodem_tcp_callback:
   lda tcp_inbound_data_length+1
   cmp #$ff
   bne @not_eof
@@ -268,8 +398,8 @@ xmodem_receive_callback:
 
   ldax tcp_inbound_data_length
   stax buffer_length
-  jmp copymem
-
+  jsr copymem
+  rts
   
 send_nak:
   ldax #1
@@ -331,6 +461,7 @@ getc:
   lda $dc09  ;time of day clock: seconds
   cmp getc_timeout_end  
   bne @poll_loop
+  lda #00
   sec
   rts
   
@@ -343,14 +474,18 @@ getc:
 block_number_msg: .byte " block $",0
 expecting: .byte "expecting",0
 receiving: .byte "receiving",0
+sending: .byte "sending",0
+
 bad_block_number: .byte "bad block number",0
 checksum_msg: .byte "checksum $",0
-checksum_error_msg : .byte "checksum error - error count $",0 
-timeout_msg: .byte "timeout error - error count $",0
-
+checksum_error_msg : .byte "checksum",0 
+timeout_msg: .byte "timeout error",0
+sync_error_msg: .byte "sync",0
+error_count_msg: .byte " error - error count $",0
 .segment "APP_SCRATCH"
 xmodem_stream_buffer: .res 1600
-xmodem_block_buffer: .res 128
+xmodem_block_buffer: .res 300
+xmodem_block_buffer_length: .res 2
 expected_block_number: .res 1
 actual_block_number: .res 1
 checksum: .res 1

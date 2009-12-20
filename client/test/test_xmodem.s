@@ -16,6 +16,7 @@
   .import tcp_inbound_data_ptr
   .import tcp_inbound_data_length
 
+  .import xmodem_send
   .import xmodem_receive
   .import xmodem_iac_escape
   
@@ -74,8 +75,6 @@ init:
   jsr print_ascii_as_native
   jsr print_cr
 
-  lda #'1'
-  jsr print_a
    
   ;connect to port 1000 - xmodem server
 
@@ -91,21 +90,56 @@ init:
   ldax  #1000
   jsr tcp_connect
   
-  bcs @error
-  
-  lda #'2'
-  jsr print_a
+  bcc :+
+  jmp check_for_error
+:  
   
   ldax #first_message
   jsr tcp_send_string
-
 :  
   jsr ip65_process
   lda packet_count
   beq :-
+
+  ldax #connected
+  jsr print_ascii_as_native
+  jsr download_file
+  jsr check_for_error
+  jsr upload_file
+  jsr check_for_error
+  jsr tcp_close
+  rts
+
+upload_file:
+  ldax #uploading
+  jsr print_ascii_as_native
   
-  lda #'3'
-  jsr print_a
+  ldax #start_upload
+  jsr tcp_send_string
+  bcc :+
+@error:
+  jsr check_for_error
+:
+
+  jsr open_upload_file
+  bcc :+
+  jmp check_for_error
+:  
+  ldax #read_byte
+  jsr xmodem_send
+  jsr close_file  
+  
+  rts
+
+read_byte:
+  .byte $92
+  
+
+
+
+download_file:
+  ldax #downloading
+  jsr print_ascii_as_native
   
   ldax #start_download
   jsr tcp_send_string
@@ -114,8 +148,7 @@ init:
   jsr check_for_error
 :
 
-
-  jsr open_file
+  jsr open_download_file
   bcc :+
   jmp check_for_error
 :  
@@ -123,11 +156,7 @@ init:
   jsr xmodem_receive
   jsr close_file
   
-  jsr tcp_close
     
-  lda #'4'
-  jsr print_a
-
   rts
 
 
@@ -160,11 +189,19 @@ check_for_error:
   jsr print_cr
   rts
   
-open_file:  
-  lda #fname_end-fname
-  ldx #<fname
-  ldy #>fname
+
+open_upload_file:  
+  lda #upload_filename_end-upload_filename
+  ldx #<upload_filename
+  ldy #>upload_filename
+  jmp open_file
   
+open_download_file:  
+  lda #download_filename_end-download_filename
+  ldx #<download_filename
+  ldy #>download_filename
+
+open_file:
   jsr $FFBD     ; call SETNAM
   lda #$02      ; file number 2
   ldx $BA       ; last used device number
@@ -220,16 +257,27 @@ close_file:
 
 starting: 
 .byte "saving to "
-fname:  .byte "@0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
-fname_end:
+download_filename:  .byte "@0:XMODEM.TMP,P,W"  ; @0: means 'overwrite if existing', ',P,W' is required to make this an output file
+download_filename_end:
 .byte 0
 first_message:
   .byte "yo!",0
 
+upload_filename:  .byte "XMODEM.TMP"  
+upload_filename_end:
+.byte 0
+
 start_download: 
-  .byte "B",0   ;b=Binary, i.e. trigger IAC escape, R=receive text, i.e. no IAC escape
+  .byte "B",0   ;B=Binary, i.e. trigger IAC escape, R=receive text, i.e. no IAC escape
 .data
 
+start_upload: 
+  .byte "S",0   ;S send via normal checksum mode (not CRC)
+.data
+
+uploading: .byte "uploading",10,0
+downloading: .byte "downloading",10,0
+connected: .byte "connected",10,0
 tcp_dest_ip:
   .byte 10,5,1,102
 ;  .byte 192,168,160,1
