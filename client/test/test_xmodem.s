@@ -132,9 +132,30 @@ upload_file:
   rts
 
 read_byte:
-  .byte $92
+  lda eof
+  beq @not_eof
+  sec
+  rts
+@not_eof:  
+  ldx #$02      ; filenumber 2 = output file
+  jsr $FFC6     ; call CHKIN (file 2 now used as input)
   
+  jsr $FFCF     ; call CHRIN (get a byte from file)
+  pha
+  
+  jsr   $FFB7     ; call READST (read status byte)
+  
+  beq :+      ; either EOF or read error
+  inc eof
+:
+  ldx #$00      ; filenumber 0 = console
+  jsr $FFC6     ; call CHKIN (console now used as input)
 
+  pla
+  clc
+  rts
+
+eof: .byte $0
 
 
 download_file:

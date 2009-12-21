@@ -459,7 +459,6 @@ tcp_send:
   
 	
   jsr tcp_send_packet
-  
   lda tcp_packet_sent_count
   adc #1
   sta tcp_loop_count       ;we wait a bit longer between each resend  
@@ -497,6 +496,7 @@ tcp_send:
 
 @too_many_messages_sent:
 @failed:
+
   lda #tcp_cxn_state_closed
   sta tcp_state
   lda #KPR_ERROR_TIMEOUT_ON_RECEIVE

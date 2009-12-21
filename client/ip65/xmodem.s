@@ -15,6 +15,7 @@ EOT = $04
 ACK = $06
 NAK = $15
 CAN = $18
+PAD = $1A ;padding added to end of file
 
 .export xmodem_receive
 .export xmodem_send
@@ -72,6 +73,14 @@ next_char:
   
 
 emit_a:
+;put a byte to the output buffer
+;if the byte is $FF, and xmodem_iac_escape is not zero, it is doubled
+  jsr @real_emit_a
+  cmp #$ff
+  bne exit_emit_a
+  ldx xmodem_iac_escape
+  beq exit_emit_a
+@real_emit_a:
 emit_a_ptr=*+1
   sta $ffff
   inc emit_a_ptr
@@ -82,6 +91,7 @@ emit_a_ptr=*+1
   bne :+
   inc xmodem_block_buffer_length+1
 :
+exit_emit_a:
   rts
   
 	.bss
@@ -101,7 +111,8 @@ xmodem_send:
 ;outputs: none
   stax get_byte+1
   jsr xmodem_transfer_setup
-
+  lda #0
+  sta at_eof
 
 @send_block:
   ldax #sending
@@ -127,9 +138,16 @@ xmodem_send:
   pha
   lda user_abort
   beq @no_user_abort
+  pla
   jmp xmodem_transfer_exit
 @no_user_abort:  
+
   
+;flush the input buffer
+  lda   #0
+  sta   buffer_length
+  lda   buffer_length+1
+
   lda #'('
   jsr print_a
   pla 
@@ -150,12 +168,15 @@ xmodem_send:
   bcc @wait_for_ack_or_nak
   lda #KPR_ERROR_TOO_MANY_ERRORS
   sta ip65_error
+  
+
   jmp xmodem_transfer_exit
 
 @got_ack:
   inc expected_block_number
+  lda at_eof
+  bne @send_eot
 @got_nak:
-
   lda #0
   sta checksum
   sta xmodem_block_buffer_length
@@ -172,7 +193,31 @@ xmodem_send:
   lda #$80
   sta block_ptr
 @copy_one_byte:
-  lda #$1; FIX ME
+  lda at_eof
+  bne @add_pad_byte
+
+  jsr get_byte
+  bcc @got_byte
+  ;sec indicates EOF 
+  lda block_ptr
+  cmp #$80  ;have we sent any data at all?
+  bne @add_pad_byte
+
+@send_eot:
+  ;if we get here, we should send an EOT, then read an ACK
+  ldax #1
+  stax tcp_send_data_len
+  ldax #eot_packet
+  jsr tcp_send
+
+  lda #XMODEM_TIMEOUT_SECONDS
+  jsr getc      ;should be an ACK coming back, doesn't really matter if we don't see it though
+
+  jmp xmodem_transfer_exit
+  
+@add_pad_byte:
+  lda #PAD
+@got_byte:  
   pha
   clc
   adc checksum
@@ -188,7 +233,13 @@ xmodem_send:
   stax tcp_send_data_len
   ldax #xmodem_block_buffer
   jsr tcp_send
-  
+  bcc @send_ok
+  ldax #send_error
+  jsr print_ascii_as_native
+  lda ip65_error
+  jsr print_hex
+  jsr print_cr
+@send_ok:  
   jmp @send_block
 
   rts
@@ -470,7 +521,8 @@ getc:
 .rodata
   ack_packet: .byte ACK
   nak_packet: .byte NAK
-
+  eot_packet: .byte EOT
+  
 block_number_msg: .byte " block $",0
 expecting: .byte "expecting",0
 receiving: .byte "receiving",0
@@ -482,6 +534,8 @@ checksum_error_msg : .byte "checksum",0
 timeout_msg: .byte "timeout error",0
 sync_error_msg: .byte "sync",0
 error_count_msg: .byte " error - error count $",0
+send_error: .byte " send error - $",0
+
 .segment "APP_SCRATCH"
 xmodem_stream_buffer: .res 1600
 xmodem_block_buffer: .res 300
@@ -494,7 +548,7 @@ block_ptr: .res 1
 error_number: .res 1
 user_abort: .res 1
 xmodem_iac_escape: .res 1
-
+at_eof: .res 1
 ;-- LICENSE FOR xmodem.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
