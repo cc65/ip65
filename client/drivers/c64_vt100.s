@@ -60,9 +60,6 @@ charmode_blink_underline_bold = $07
 ; text background 
 text_background_colour = col_black
 
-; border colour 
-border_colour = col_blue
-
 
 .segment "APP_SCRATCH" 
 escape_buffer: .res $100
@@ -1460,8 +1457,6 @@ set_line_vectors:
 initialise_screen:
 
  ;--- set background ---
-  lda #border_colour
-  sta $d020
   lda #text_background_colour
   sta $d021
 ; --- disable Shift C= ---
