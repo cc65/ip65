@@ -80,7 +80,7 @@ get_filtered_input:
 
 ;Wait for a character.
 @input_get:
-  jsr get_key_ip65
+  jsr get_key
   sta LASTCHAR
 
   cmp #$14               ;Delete
