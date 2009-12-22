@@ -35,7 +35,10 @@
   .import dotted_quad_value
   .import parse_integer
 
- .import dns_ip
+  .import io_read_catalogue
+  .import io_device_no
+  
+  .import dns_ip
   .import dns_resolve
   .import dns_set_hostname
  
@@ -50,7 +53,8 @@
   .import cfg_tftp_server
 
   .import xmodem_receive
-
+  .import xmodem_send
+  
   .export telnet_menu
   
   .import print_a
@@ -300,11 +304,97 @@ telnet_menu:
   jsr xmodem_download
   jmp @exit
 :
+  cmp #KEYCODE_F3
+  bne :+
+  jsr xmodem_upload
+  jmp @exit
+:
+
   cmp #KEYCODE_F7
   beq @exit
   jmp @get_menu_option
 @exit:  
   jsr restore_screen_settings  
+  rts
+
+xmodem_upload:
+  
+  lda #0
+  sta eof
+  lda cfg_default_drive
+  sec
+  sbc #7
+  sta io_device_no
+  ldax #directory_buffer
+  jsr io_read_catalogue
+  bcs @dir_failed
+  lda directory_buffer ;get the first byte that was downloaded
+  bne :+
+  jmp @no_files_on_disk
+:  
+
+  ldax  #directory_buffer
+  ldy #0 ;filenames will NOT be ASCII
+  jsr select_option_from_menu  
+  bcc @disk_filename_set
+  rts
+  
+@dir_failed:  
+  ldax  #dir_listing_fail_msg
+@print_error:  
+  jsr print_ascii_as_native
+  jsr print_errorcode
+  jsr print_cr
+  jmp wait_for_keypress
+  
+@no_files_on_disk:
+  ldax #no_files
+	jsr print_ascii_as_native
+@wait_keypress_then_return_to_main:  
+  jmp wait_for_keypress
+  
+
+@disk_filename_set:
+
+;open file needs XY=pointer to name, A = length of name  
+  stax copy_src
+  ldy #$ff
+@next_byte:
+  iny
+  lda  (copy_src),y
+  bne @next_byte
+  tya
+  ldx copy_src
+  ldy copy_src+1
+  
+  jsr open_file
+  ldax #read_byte
+  jsr xmodem_send
+  jsr close_file  
+  rts
+
+read_byte:
+  lda eof
+  beq @not_eof
+  sec
+  rts
+@not_eof:  
+  ldx #$02      ; filenumber 2 = output file
+  jsr $FFC6     ; call CHKIN (file 2 now used as input)
+  
+  jsr $FFCF     ; call CHRIN (get a byte from file)
+  pha
+  
+  jsr   $FFB7     ; call READST (read status byte)
+  
+  beq :+      ; either EOF or read error
+  inc eof
+:
+  ldx #$00      ; filenumber 0 = console
+  jsr $FFC6     ; call CHKIN (console now used as input)
+
+  pla
+  clc
   rts
 
 xmodem_download:
@@ -447,7 +537,6 @@ rename_file:
   
 rename_cmd:
   .byte "RENAME0:"
-;  FOO.BAR=0:XMODEM.TMP"
 
 exit_telnet:
 exit_gopher:
@@ -470,6 +559,7 @@ main_menu_msg:
 telnet_menu_msg:
 .byte 10,10,10
 .byte "F1: D/L File (XMODEM)",10
+.byte "F3: U/L File (XMODEM)",10
 .byte "F7: Return",10,10
 .byte 0
 
@@ -488,6 +578,12 @@ new:
   
 resolving:
   .byte "resolving ",0
+
+no_files:
+  .byte "no files",10,0
+
+dir_listing_fail_msg:
+	.byte "directory listing failed",10,0
 
 temp_filename_start:  .byte "@"
 temp_filename:
@@ -516,6 +612,8 @@ temp_page_zero_vars: .res $28
 temp_screen_chars: .res $400
 temp_colour_ram: .res $400
 command_buffer: .res $80
+eof: .res 1
+
 ;-- LICENSE FOR kipperterm.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
