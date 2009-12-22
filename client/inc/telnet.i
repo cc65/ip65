@@ -8,8 +8,6 @@
 ; 3) define a routine called 'exit_telnet'
 
 .import telnet_connect
-.import telnet_local_echo
-.import telnet_line_mode
 .import telnet_use_native_charset
 .import telnet_port
 .import telnet_ip
@@ -83,42 +81,25 @@ telnet_main_entry:
   cmp #'p'
   beq @petscii_mode
   
-  cmp #'l'
-  beq @line_mode
-  cmp #'L'
-  beq @line_mode
-
   jmp @char_mode_input
 @vt100_mode:
   lda #0
   sta telnet_use_native_charset
-  sta telnet_line_mode
-  lda #1
-  sta telnet_local_echo
+      
 .ifdef XMODEM_IN_TELNET
+  lda #1
   sta xmodem_iac_escape
 .endif
   jmp @after_mode_set
 @petscii_mode:
   lda #1
   sta telnet_use_native_charset
-  lda #0
-  sta telnet_local_echo
-  sta telnet_line_mode
-.ifdef XMODEM_IN_TELNET
-  sta xmodem_iac_escape
-.endif  
-  jmp @after_mode_set
-@line_mode:
-  lda #0
-  sta telnet_use_native_charset
-.ifdef XMODEM_IN_TELNET
-  sta xmodem_iac_escape
-.endif  
-  lda #1
-  sta telnet_local_echo
-  sta telnet_line_mode
   
+.ifdef XMODEM_IN_TELNET
+  lda #0
+  sta xmodem_iac_escape
+.endif  
+
 @after_mode_set:
   
   lda #147  ; 'CLR/HOME'
@@ -131,12 +112,7 @@ telnet_main_entry:
   ldax #petscii
   jmp @c_mode
 @v_mode:
-  lda telnet_line_mode
-  bne @l_mode
   ldax #vt100
-  jmp @c_mode
-@l_mode:
-  ldax #line  
 @c_mode:
   jsr print_ascii_as_native  
   ldax #mode
@@ -148,11 +124,10 @@ telnet_main_entry:
 connecting_in: .byte "connecting in ",0
 vt100: .byte "vt100",0
 petscii: .byte "petscii",0
-line: .byte "line",0
 mode: .byte " mode",10,0
 remote_host: .byte "hostname (leave blank to quit)",10,": ",0
 remote_port: .byte "port # (leave blank for default)",10,": ",0
-char_mode_prompt: .byte "mode - V=vt100, P=petscii, L=line",10,0
+char_mode_prompt: .byte "mode - V=vt100, P=petscii",10,0
 
 
 

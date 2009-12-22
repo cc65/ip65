@@ -1,11 +1,7 @@
 ;minimal telnet implementation (dumb terminal emulation only)
 ;to use:
-;set the following variables - telnet_local_echo, telnet_line_mode,telnet_use_native_charset,telnet_port,telnet_ip
+;set the following variables - telnet_use_native_charset,telnet_port,telnet_ip
 ;then call telnet_connect
-;sensible combinations of telnet_local_echo, telnet_line_mode,telnet_use_native_charset are:
-;for interacting with 'line at time' servers (smtp/pop3/http/gopher): telnet_local_echo=1, telnet_line_mode=1,telnet_use_native_charset=0
-;for logging in to a normal telnet server:  telnet_local_echo=0, telnet_line_mode=0,telnet_use_native_charset=0
-;for logging in to a PETSCII BBS on a C64 : telnet_local_echo=0, telnet_line_mode=0,telnet_use_native_charset=1
 
 
 .include "../inc/common.i"
@@ -40,8 +36,6 @@
   .import ascii_to_native
 
 .export telnet_connect
-.export telnet_local_echo
-.export telnet_line_mode
 .export telnet_use_native_charset
 .export telnet_port
 .export telnet_ip
@@ -84,20 +78,7 @@ telnet_connect:
   jsr print_cr
   lda #0
   sta connection_closed
-  sta iac_response_buffer_length  
-  
-  lda telnet_use_native_charset
-  bne @main_polling_loop  
-
-  lda telnet_line_mode
-  bne @main_polling_loop
-  
-
-;  ldax #initial_telnet_options_length
-;  stax tcp_send_data_len
-;  ldax  #initial_telnet_options
-;  jsr tcp_send
-  
+  sta iac_response_buffer_length      
     
 @main_polling_loop:
 
@@ -108,35 +89,6 @@ telnet_connect:
   jsr print
   rts
 @not_disconnected:
-  lda telnet_line_mode  
-  beq @not_line_mode
-  
-  ldy #40 ;max chars
-  ldax #$0000
-  jsr get_filtered_input
-  stax buffer_ptr
-  ldy #0
-@copy_one_char:
-  lda (buffer_ptr),y
-  jsr native_to_ascii
-  beq @end_of_input_string
-  sta scratch_buffer,y
-  iny 
-  bne @copy_one_char
-@end_of_input_string:
-  lda #$0d
-  sta scratch_buffer,y
-  iny 
-  lda #$0a
-  sta scratch_buffer,y
-  iny 
-  sty tcp_send_data_len
-  lda #0
-  sta tcp_send_data_len+1
-  jsr print_cr  
-  jmp @send_char
-  
-@not_line_mode:  
 
 @inner_loop:
   jsr timer_read
@@ -270,10 +222,6 @@ telnet_callback:
   jmp  @no_conversion_req
 :
 
-  lda telnet_line_mode
-  beq :+ 
-  jmp@convert_to_native
-:  
 ;if we get here, we are in ASCII 'char at a time' mode,  so look for (and process) Telnet style IAC bytes
   lda telnet_state
   cmp #telnet_state_got_command
@@ -412,14 +360,10 @@ telnet_callback:
   jmp @add_iac_response
   
 @will_echo:
-  lda #0
-  sta telnet_local_echo
   lda #$fd ;DO
   jmp @add_iac_response
   
 @will_suppress_ga:
-  lda #0
-  sta telnet_line_mode
   lda #$fd ;DO
   jmp @add_iac_response
 
@@ -519,8 +463,6 @@ telnet_timeout: .res 1
 connection_closed: .res 1
 telnet_use_native_charset: .res 1 ; 0 means all data is translated to/from NVT ASCII 
 buffer_offset: .res 1
-telnet_local_echo: .res 1   ;0 should mean local echo is disabled - in fact at the moment we never do local echo except in 'line mode'
-telnet_line_mode: .res 1 ;do characters get sent after each keypress, or can a line be created/edited and then sent only when return is pressed?
 telnet_command: .res 1
 telnet_option: .res 1
 

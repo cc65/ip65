@@ -34,8 +34,6 @@
   .import telnet_port
   .import telnet_ip
   .import telnet_connect
-  .import telnet_local_echo
-  .import telnet_line_mode
   .import telnet_use_native_charset
 
   .import  url_ip
@@ -529,8 +527,6 @@ load_resource_into_buffer:
   ldax resource_port
   stax  telnet_port
   lda #0
-  sta telnet_local_echo
-  sta telnet_line_mode
   sta telnet_use_native_charset
   
   ;if the username = '/n', then connect in native mode
