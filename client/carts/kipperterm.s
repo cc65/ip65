@@ -43,6 +43,7 @@
   .import dns_set_hostname
  
   .import get_key_ip65
+  .import get_key
   .import cfg_mac
   .import dhcp_init
   
@@ -195,9 +196,6 @@ wait_for_keypress:
   jsr $ffe4
   beq @loop
   rts
-
-get_key:
-  jmp get_key_ip65
 
 cfg_get_configuration_ptr:
   ldax  #cfg_mac

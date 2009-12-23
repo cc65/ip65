@@ -1368,6 +1368,7 @@ erase_line_by_vector:
 ; -------------------------------------
 
 erase_to_end_of_line:
+  jsr cursor_off
 ; erase chars
   ldy $d3       ; get crsr col
   lda #$20      ; load space
@@ -1386,6 +1387,7 @@ erase_to_end_of_line:
   iny
   cpy #$28      ; pos 40?
   bne :-      ; next char        
+  jsr cursor_on
   rts
 
 ; -------------------------------------
