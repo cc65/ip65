@@ -15,6 +15,7 @@
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
   
+  
   XMODEM_IN_TELNET = 1
 
   .import xmodem_iac_escape
@@ -35,6 +36,9 @@
   .import dotted_quad_value
   .import parse_integer
 
+  .import tcp_send
+  .import tcp_send_data_len
+  
   .import io_read_catalogue
   .import io_device_no
   
@@ -288,6 +292,9 @@ telnet_menu:
   
   jsr save_screen_settings
   jsr setup_screen
+ 
+@show_menu:
+   
   jsr cls 
   
   ldax #menu_header_msg
@@ -307,7 +314,29 @@ telnet_menu:
   jsr xmodem_upload
   jmp @exit
 :
-
+  cmp #KEYCODE_F5
+  bne :+
+@get_ascii_value:
+  ldax #enter_ascii
+  jsr print_ascii_as_native
+  ldy #3 ;max chars
+  ldax #filter_number
+  jsr get_filtered_input  
+  bcs @show_menu  
+  ;AX now points a string containing 0..999
+  .import parse_integer
+  jsr parse_integer
+  cpx #0
+  bne @get_ascii_value
+  sta ascii_packet
+  lda #1
+  stax tcp_send_data_len 
+  jsr restore_screen_settings  ;since we won't return from tcp_send
+  ldax #ascii_packet
+  jmp tcp_send
+  
+  
+:
   cmp #KEYCODE_F7
   beq @exit
   jmp @get_menu_option
@@ -368,8 +397,16 @@ xmodem_upload:
   jsr open_file
   ldax #read_byte
   jsr xmodem_send
-  jsr close_file  
-  rts
+  bcc @no_error
+  print_failed
+  jsr print_errorcode
+  jmp :+
+@no_error:  
+  print_ok
+:
+  jsr close_file
+  jmp wait_for_keypress
+
 
 read_byte:
   lda eof
@@ -558,6 +595,7 @@ telnet_menu_msg:
 .byte 10,10,10
 .byte "F1: D/L File (XMODEM)",10
 .byte "F3: U/L File (XMODEM)",10
+.byte "F5: Send ASCII char",10
 .byte "F7: Return",10,10
 .byte 0
 
@@ -570,6 +608,12 @@ transfer_complete:
 prompt_for_filename: .byte "save file as?",10,0
 current:
 .byte "current ",0
+
+enter_ascii:
+.byte 10,"ASCII value (0..255)? ",0
+
+byte_sent:
+.byte 10,"byte sent.",0
 
 new:
 .byte"new ",0
@@ -594,7 +638,7 @@ credits:
 .byte 10
 .byte 10,"Contributors:",10
 .byte 10,"Jonno Downes"
-.byte 10,"Glenn Holmmer"
+.byte 10,"Glenn Holmer"
 .byte 10,"Per Olofsson"
 .byte 10,"Lars Stollenwerk"
 .byte 10,10
@@ -611,6 +655,7 @@ temp_screen_chars: .res $400
 temp_colour_ram: .res $400
 command_buffer: .res $80
 eof: .res 1
+ascii_packet: .res 1
 
 ;-- LICENSE FOR kipperterm.s --
 ; The contents of this file are subject to the Mozilla Public License
