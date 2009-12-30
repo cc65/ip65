@@ -275,7 +275,7 @@ credits:
 .byte 10
 .byte 10,"Contributors:",10
 .byte 10,"Jonno Downes"
-.byte 10,"Glenn Holmmer"
+.byte 10,"Glenn Holmer"
 .byte 10,"Per Olofsson"
 .byte 10,"Lars Stollenwerk"
 .byte 10,10
