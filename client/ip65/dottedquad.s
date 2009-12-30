@@ -8,7 +8,13 @@
 	.bss
   dotted_quad_value: .res 4 ;set to 32 bit ip address on a succesful call to parse_dotted_quad
   
-  dotted_quad_ptr:  .res 4
+  .data
+  
+  ;self modifying code
+  dotted_quad_ptr:
+  lda $FFFF
+  rts
+    
   
 	.code
 
@@ -22,13 +28,7 @@
 ;   dotted_quad_value: will be set to (32 bit) ip address (if no error)
 ; (*) NB to assist with url parsing, a ':' or '/' can also terminate the string
 parse_dotted_quad:
-    stax  dotted_quad_ptr+1
-    
-    lda #$AD  ; $AD='LDA immediate'
-    sta dotted_quad_ptr 
-
-    lda #$60  ; $60='RTS
-    sta dotted_quad_ptr+3 
+    stax  dotted_quad_ptr+1    
     ldx #0
     txa 
     sta dotted_quad_value
@@ -61,6 +61,8 @@ parse_dotted_quad:
     
 @got_dot:
   inx
+  cpx #4
+  beq @error
   lda #0
   sta dotted_quad_value,x
   jmp @each_byte
