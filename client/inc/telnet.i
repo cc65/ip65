@@ -13,6 +13,11 @@
 .import telnet_ip
 .import filter_number
 
+.export telnet_on_connection
+
+.bss
+original_border: .res 1
+
 .code
 telnet_main_entry:
 ;prompt for a hostname, then resolve to an IP address
@@ -117,8 +122,22 @@ telnet_main_entry:
   jsr print_ascii_as_native  
   ldax #mode
   jsr print_ascii_as_native
-  jsr telnet_connect
+
+  lda $d020
+  sta original_border
+  
+  jsr telnet_connect  
+  
+  lda original_border
+  sta $d020
+  ;reset the background colour
+  
   jmp telnet_main_entry  
+
+telnet_on_connection:
+  ;toggle the background colour
+  dec $d020
+  rts
   
 ;constants
 connecting_in: .byte "connecting in ",0

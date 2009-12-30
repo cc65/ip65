@@ -2,7 +2,9 @@
 ;to use:
 ;set the following variables - telnet_use_native_charset,telnet_port,telnet_ip
 ;then call telnet_connect
-
+;you must also define (and export) these function
+; telnet_menu - called whenever the F1 key is pressed.
+; telnet_on_connection - called after succesful connection
 
 .include "../inc/common.i"
 
@@ -41,6 +43,7 @@
 .export telnet_ip
 
 .import telnet_menu
+.import telnet_on_connection
 
 .segment "IP65ZP" : zeropage
 
@@ -48,6 +51,12 @@
 buffer_ptr:	.res 2			; source pointer
 
 .code
+
+;connect to a remote telnet server
+;inputs:
+;telnet_use_native_charset: set to 0 if remote server uses standard ASCII, 1 if remote server uses the 'native' charset (i.e. PETSCII)
+;telnet_port: port number to connect to
+;telnet_ip: ip address of remote server
 telnet_connect:
   lda telnet_use_native_charset
   bne :+
@@ -73,6 +82,9 @@ telnet_connect:
   jsr print_errorcode
   rts
 @connect_ok:
+  
+  jsr telnet_on_connection
+  
   ldax #ok_msg
   jsr print
   jsr print_cr
@@ -82,15 +94,6 @@ telnet_connect:
     
 @main_polling_loop:
 
-  jsr ip65_process
-  lda connection_closed
-  beq @not_disconnected
-  ldax #disconnected
-  jsr print
-  rts
-@not_disconnected:
-
-@inner_loop:
   jsr timer_read
   txa
   adc #$20  ;32 x 1/4 = ~ 8seconds
@@ -100,9 +103,15 @@ telnet_connect:
   cpx telnet_timeout
   bne @no_timeout
   jsr tcp_send_keep_alive
-  jmp @inner_loop
+  jmp @main_polling_loop
 @no_timeout:  
   jsr ip65_process
+  lda connection_closed
+  beq @not_disconnected
+  ldax #disconnected
+  jsr print
+  rts
+@not_disconnected:
   lda iac_response_buffer_length  
   beq @no_iac_response
   ldx #0
@@ -120,7 +129,7 @@ telnet_connect:
   cmp #KEYCODE_F1
   bne @not_telnet_menu
   jsr telnet_menu
-  jmp @inner_loop
+  jmp @main_polling_loop
 @not_telnet_menu:
   tax  
 
