@@ -4,6 +4,7 @@ v1.0.27
 - ADD: can now send an arbitrary character (by entering ASCII value : option F5 from F1 telnet menu)
 - FIX: Can now send a ^C in telnet
 - CHANGE: added a 'wait for keypress' after succesful xmodem upload
+- FIX: default drive selection being overwritten with random values
 
 v1.0.26
 - FIX: telnet often failed to notice disconnect by remote server

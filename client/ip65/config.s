@@ -65,7 +65,7 @@ cfg_gateway:	.res 4 ;ip address of router on local network (will be overwritten 
 cfg_dns:	.res 4; ip address of dns server to use (will be overwritten if dhcp_init is called)
 dhcp_server: .res 4   ;will be set address of dhcp server that configuration was obtained from
 cfg_tftp_server: .res 4 ; ip address of server to send tftp requests to (can be a broadcast address)
-cfg_default_drive: .res 0
+cfg_default_drive: .res 1
 
 
 
