@@ -32,7 +32,7 @@ parse_integer:
   lda (target_string),y
   cmp #$30
   bcc @end_of_int  ;any non-decimal char should be treated as end of integer   
-  cmp #$39
+  cmp #$3A
   bcs @end_of_int  ;any non-decimal char should be treated as end of integer 
    
   ldax  temp_value
