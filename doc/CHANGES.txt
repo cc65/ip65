@@ -1,8 +1,13 @@
 v1.0.27
-- ADD: change border colour to indicate telnet connect/disconnect
+- FIX: more than 3 dots in a dotted quad would crash the hostname resolver
+- FIX: parse_integer was treating digit '9' as marking end of string :-(
+- ADD: can now send an arbitrary character (by entering ASCII value : option F5 from F1 telnet menu)
+- FIX: Can now send a ^C in telnet
+- CHANGE: added a 'wait for keypress' after succesful xmodem upload
 
 v1.0.26
 - FIX: telnet often failed to notice disconnect by remote server
+- ADD: change border colour to indicate telnet connect/disconnect
 
 v1.0.25
 - FIX: vt100 emulation was leaving a cursor after a "clear to end of line" command ( ]J ) 
