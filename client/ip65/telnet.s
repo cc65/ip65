@@ -12,7 +12,6 @@
   .import tcp_callback
   .import tcp_connect_ip
   .import tcp_listen
-  .importzp KEYCODE_ABORT
   .importzp KEYCODE_F1
   .import tcp_inbound_data_ptr
   .import tcp_inbound_data_length
@@ -131,32 +130,14 @@ telnet_connect:
   jsr telnet_menu
   jmp @main_polling_loop
 @not_telnet_menu:
-  tax  
 
-  cmp #KEYCODE_ABORT
-  bne @not_abort
+  ldx #0
+  stx tcp_send_data_len
+  stx tcp_send_data_len+1
 
-  ldax #closing_connection
-  jsr print
-  jsr tcp_close
-  bcs @error_on_disconnect
-  ldax #disconnected
-  jsr print
-  rts
-@error_on_disconnect:
-  jsr print_errorcode
-  jsr print_cr
-  rts
-@not_abort:
-  lda #0
-  sta tcp_send_data_len
-  sta tcp_send_data_len+1
-
-  lda telnet_use_native_charset
+  ldx telnet_use_native_charset
   bne @no_conversion_required
   
-  
-  txa
   
   jsr vt100_transform_outbound_char
 
