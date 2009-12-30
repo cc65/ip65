@@ -1,0 +1,25 @@
+v1.0.27
+- ADD: change border colour to indicate telnet connect/disconnect
+
+v1.0.26
+- FIX: telnet often failed to notice disconnect by remote server
+
+v1.0.25
+- FIX: vt100 emulation was leaving a cursor after a "clear to end of line" command ( ]J ) 
+- ADD: XMODEM upload support
+- CHANGE: removed 'line mode' from telnet
+
+v1.0.24
+- CHANGE: split KipperTerm (telnet + gopher) into KipperTerm (enhanced telnet) and KipperGo (basic telnet + gopher)
+- ADD: XMODEM download support for KipperTerm
+- FIX: tell remote server screen size (40x25)
+- FIX: vt100 no longer does line wrap & scroll when writing to bottom right hand corner
+- FIX: telnet sessions now send 'keep alive' (stops my broadband router from losing NAT state)
+- FIX: tcp was sending wrong seq number when ACKing inbound data just after sending data out
+- FIX: telnet packets > 256 bytes not completely processed
+- ADD: can change default disk drive
+
+v1.0.23
+- telnet now supports vt100 emulation (thanks to Lars Stollenwerk)
+- gopher: fixed bug preventing connection to jamtronix.com
+

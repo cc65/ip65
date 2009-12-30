@@ -1,4 +1,0 @@
-- telnet now supports vt100 emulation (thanks to Lars Stollenwerk)
-- gopher: fixed bug preventing connection to jamtronix.com
-
-

@@ -102,13 +102,13 @@ getc_timeout_seconds: .res 1
 buffer_length: .res 2
 
 	.code
-
-xmodem_send:
+  
 ;send a file via XMODEM (checksum mode only, not CRC)
 ;assumes that a tcp connection has already been set up, and that the other end is waiting to start receiving
 ;inputs: AX points to routine to call once for each byte in file to send (e.g. save to disk, print to screen, whatever) - byte will be in A, carry flag set means EOF
 ; xmodem_iac_escape should be set to non-zero if the remote end escapes $FF bytes (i.e. if it is a real telnet server)
 ;outputs: none
+xmodem_send:
   stax get_byte+1
   jsr xmodem_transfer_setup
   lda #0
@@ -262,13 +262,13 @@ xmodem_transfer_setup:
   stax tcp_callback 
   rts
   
-xmodem_receive:
+
 ;recieve a file via XMODEM (checksum mode only, not CRC)
 ;assumes that a tcp connection has already been set up, and that the other end is waiting to start sending
 ;inputs: AX points to routine to call once for each byte in downloaded file (e.g. save to disk, print to screen, whatever) - byte will be in A
 ; xmodem_iac_escape should be set to non-zero if the remote end escapes $FF bytes (i.e. if it is a real telnet server)
 ;outputs: none
-
+xmodem_receive:
   
   stax got_byte+1
   jsr xmodem_transfer_setup
@@ -294,6 +294,7 @@ xmodem_receive:
   bcc @got_block_start
   lda user_abort
   beq @no_user_abort
+  sec
   jmp xmodem_transfer_exit
 @no_user_abort:  
   jsr send_nak
@@ -314,18 +315,32 @@ xmodem_receive:
 @got_block_start:
   cmp #EOT
   bne :+
+  ldax #got_eot
+  jsr print_ascii_as_native
+
   jsr send_ack
   clc
   jmp xmodem_transfer_exit
 :  
+    
+  cmp #$81 ;jamming signal BBS seems to use $81 not $01 as SOH
+  beq @got_soh
   cmp #SOH
-  bne @wait_for_block_start
+  beq @got_soh
+  jsr print_hex
+  lda #'!'  ;we got an unexpected character
+  jsr print_a
+  jsr print_a
 
+  jmp @wait_for_block_start
+@got_soh:
   ;now get block number
   lda #XMODEM_TIMEOUT_SECONDS
   jsr getc
   bcc :+
   jsr send_nak
+  lda #'.'
+  jmp print_a
   jmp @wait_for_block_start
 :
   sta actual_block_number
@@ -334,12 +349,18 @@ xmodem_receive:
   lda #XMODEM_TIMEOUT_SECONDS
   jsr getc
   bcc :+
+  lda #'.'
+  jmp print_a
   jsr send_nak
   jmp @wait_for_block_start
 :
   adc actual_block_number
   cmp #$ff
-  bne @wait_for_block_start
+  beq :+
+  lda #'?'
+  jsr print_a  
+  jmp @wait_for_block_start
+:  
   ldax #receiving
   jsr print_ascii_as_native
 
@@ -527,6 +548,7 @@ block_number_msg: .byte " block $",0
 expecting: .byte "expecting",0
 receiving: .byte "receiving",0
 sending: .byte "sending",0
+got_eot: .byte "end of transmission",10,0
 
 bad_block_number: .byte "bad block number",0
 checksum_msg: .byte "checksum $",0
