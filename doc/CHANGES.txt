@@ -1,3 +1,6 @@
+v1.0.28
+- CHANGE: after playing a SID, go back to last viewed dir listing, not main menu
+
 v1.0.27
 - FIX: more than 3 dots in a dotted quad would crash the hostname resolver
 - FIX: parse_integer was treating digit '9' as marking end of string :-(
@@ -11,7 +14,7 @@ v1.0.26
 - ADD: change border colour to indicate telnet connect/disconnect
 
 v1.0.25
-- FIX: vt100 emulation was leaving a cursor after a "clear to end of line" command ( ]J ) 
+- FIX: vt100 emulation was leaving a cursor after a "clear to end of line" command ( [J ) 
 - ADD: XMODEM upload support
 - CHANGE: removed 'line mode' from telnet
 

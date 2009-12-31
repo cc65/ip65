@@ -56,6 +56,9 @@
 	.import cfg_dns
   .import cfg_tftp_server
   
+  .import timer_read
+  .import timer_timeout
+  
   .import print_ascii_as_native
   .import print_dotted_quad
   .import print_hex
@@ -91,7 +94,7 @@
 
 
 .bss
-temp_ptr: .res 2
+filemask_ptr: .res 2
 .segment "SELF_MODIFIED_CODE"
 
 call_downloaded_prg: 
@@ -261,6 +264,7 @@ main_menu:
 @tftp_boot:  
 
   ldax #tftp_dir_filemask
+  stax filemask_ptr
   jsr get_tftp_directory_listing
   bcs return_to_main
   
@@ -313,10 +317,14 @@ exit_cart_via_ax:
   jmp call_downloaded_prg
 
 get_tftp_directory_listing:  
-  stax  temp_ptr
-@get_listing:  
+
   stax kipper_param_buffer+KPR_TFTP_FILENAME
-  
+  stax copy_src
+  ldax #last_dir_mask
+  stax copy_dest
+  ldax #$80
+  jsr copymem
+
   ldax #directory_buffer
   stax kipper_param_buffer+KPR_TFTP_POINTER
 
@@ -358,7 +366,7 @@ get_tftp_directory_listing:
    bne  @look_for_trailing_zero
    
 ; got trailing zero
-  ldax  temp_ptr
+  ldax  filemask_ptr
   clc
   adc #1   ;skip the leading '$'
   bcc :+
@@ -368,7 +376,7 @@ get_tftp_directory_listing:
   ldax  #$07
   jsr copymem   
   ldax get_value_of_axy+1
-  jmp @get_listing
+  jmp get_tftp_directory_listing
 
 @not_directory_name:
   ldax  get_value_of_axy+1
@@ -455,6 +463,9 @@ error_handler:
 netplay_sid:
   
   ldax #sid_filemask
+  stax filemask_ptr
+@get_sid_dir:  
+  
   jsr get_tftp_directory_listing
   bcc @sid_filename_set
   jmp error_handler
@@ -477,13 +488,27 @@ netplay_sid:
   jsr load_sid
   jsr play_sid
   
-
-  jmp main_menu
+  jsr print_cr
+;wait a little bit to allow the RUN/STOP key to be released
+  jsr timer_read
+  inx ;add 256 ms
+  inx ;add 256 ms
+:  
+  jsr timer_timeout
+	bcs :-
+  
+  jsr ip65_process
+  lda #0
+  sta $cb
+    
+  ldax #last_dir_mask  
+  jsr @get_sid_dir
 
 
 d64_download:
   
   ldax #d64_filemask
+  stax filemask_ptr
   jsr get_tftp_directory_listing
   bcc @d64_filename_set
   jmp main_menu
@@ -671,6 +696,9 @@ resolving:
   .byte "resolving ",0
 
 remote_host: .byte "hostname (return to quit)",10,": ",0
+
+.segment "APP_SCRATCH"
+last_dir_mask: .res 128
 
 ;-- LICENSE FOR kipperkart.s --
 ; The contents of this file are subject to the Mozilla Public License
