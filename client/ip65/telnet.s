@@ -149,7 +149,7 @@ telnet_connect:
   
   cmp #2
   beq :+
-  ldx temp_a
+  lda temp_a
   jmp @no_conversion_required
 :  
 
@@ -163,11 +163,10 @@ telnet_connect:
   sta scratch_buffer,y
   inc tcp_send_data_len
   iny
-  bne :-
-  
+  bne :-  
   jmp @send_char
+  
 @no_conversion_required:
-  txa
   ldy tcp_send_data_len
   sta scratch_buffer,y
   inc tcp_send_data_len
