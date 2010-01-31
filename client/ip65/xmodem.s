@@ -327,10 +327,17 @@ xmodem_receive:
   beq @got_soh
   cmp #SOH
   beq @got_soh
-  jsr print_hex
   lda #'!'  ;we got an unexpected character
   jsr print_a
+  jsr print_hex
+  ;we need to clear the input buffer
+@clear_input_buffer:  
+  lda #'!'  ;we got an unexpected character
   jsr print_a
+  lda #1
+  jsr getc
+  bcc @clear_input_buffer  
+  
 
   jmp @wait_for_block_start
 @got_soh:
