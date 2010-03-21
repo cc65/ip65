@@ -1,3 +1,6 @@
+v1.0.30
+- FIX: TCP - when using tcp_listen, an incorrect sequence number was being sent in the SYN/ACK packet
+
 v1.0.29
 - FIX: XMODEM didn't recover if remote end tried to use 1K blocks
 

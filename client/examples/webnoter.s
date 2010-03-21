@@ -240,8 +240,6 @@ look_for_signature:
 
   jsr reset_input_buffer
 
-  lda #0  
-  sta scroll_buffer_1    ;set this buffer to be an empty string, in case we try to scroll it
 
 
 start_web_server:
@@ -251,8 +249,20 @@ start_web_server:
 
 	
 reset_input_buffer:  
-  ldax #scroll_buffer_0
-  stax current_input_ptr
+
+  lda new_message
+  beq @no_message_yet
+  ldx #0
+  stx new_message
+:
+  lda message_buffer,x
+  sta scroll_buffer,x
+  inx
+  bne :-
+  
+@no_message_yet:  
+  ldax #scroll_buffer
+  stax current_input_ptr  
   rts
   
 httpd_callback:
@@ -261,7 +271,9 @@ httpd_callback:
   bcs @no_handle
   stax  copy_src  
   ldy #0
-
+  lda (copy_src),y
+  beq @no_handle
+       
 @copy_handle_loop:  
   lda (copy_src),y
   beq @end_of_handle
@@ -278,12 +290,24 @@ httpd_callback:
   tax
   bcs @end_of_message
   
-  lda #':'
-  sta message_buffer,x
-  inx
   lda #' '
   sta message_buffer,x
   inx
+  lda #'s'
+  sta message_buffer,x
+  inx
+  lda #'e'
+  sta message_buffer,x
+  inx
+  lda #'z'
+  sta message_buffer,x
+  inx  
+  lda #' '
+  sta message_buffer,x
+  inx
+  lda #'"'
+  sta message_buffer,x
+  inx  
   ldy #0
 @copy_message_loop:
   lda (copy_src),y
@@ -292,10 +316,16 @@ httpd_callback:
   iny
   inx
   bne @copy_message_loop
-@end_of_message:  
+@end_of_message: 
+  lda #'"'
+  sta message_buffer,x
+  inx
+  lda #' '
+  sta message_buffer,x
+  inx
   lda #0
   sta message_buffer,x
-  
+  inc new_message
   
 @no_handle:
 
@@ -519,7 +549,9 @@ move_sprites_irq:
 
 
 setup_static_scroll_text:
-  ldax #scroll_buffer_0
+  lda #0
+  sta new_message
+  ldax #scroll_buffer
   stax current_output_ptr
   ldax #scroll_template
   stax current_input_ptr
@@ -765,7 +797,7 @@ sprite_text:
 .byte  "KIPPERS_"   ;options are A-Z, "[\]^_"
 
 scroll_template:
-.byte "http://%i/ - WebNoter [enterprise edition] - http://%i/ - powered by kippers -"
+.byte "http://%i/  -  WebNoter  -"
 .byte " ",0
 
 
@@ -804,8 +836,8 @@ charset_font:
 sprite_font:
   .incbin "spud_letters.spr"
 musicdata:
-.incbin "tune.bin"
-;.incbin "powertrain.bin"
+;.incbin "tune.bin"
+.incbin "powertrain.bin"
 musicdata_size=*-musicdata
 
 
@@ -813,10 +845,10 @@ musicdata_size=*-musicdata
 .segment "BSS4K"
 ;we want our variables to start at $4000, out of the way of our music player and the font data
 
+new_message:
+.res 1
 message_buffer: 
-.repeat 256
-.byte $64
-.endrepeat
+.res 256
 
 param_offset: .res 1
 
@@ -831,10 +863,7 @@ download_buffer_length=4000
  .res download_buffer_length
 
 .res 10 ;filler
-scroll_buffer_0:
-  .res 1000
-
-scroll_buffer_1:
+scroll_buffer:
   .res 1000
 
 string_offset: .res 1
