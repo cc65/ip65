@@ -178,6 +178,7 @@ tcp_listen:
   sta tcp_connect_sequence_number+1
   jsr ip65_random_word
   stax  tcp_connect_sequence_number+2
+  jsr set_expected_ack;       ;due to various ugly hacks, the 'expected ack' value is now what is put into the 'SEQ' field in outbound packets 
 @listen_loop:
   jsr ip65_process
   jsr check_for_abort_key
@@ -286,7 +287,8 @@ tcp_connection_established:
   stax  acc32
   ldax  #$01
   jsr add_16_32
-  
+
+set_expected_ack:
 ;set the expected ack number with current seq number
 	ldx #3				; 
 :	lda tcp_connect_sequence_number,x
