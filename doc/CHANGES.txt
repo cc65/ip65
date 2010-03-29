@@ -1,3 +1,7 @@
+v1.0.31
+ - FIX: prg version of carts had garbled screen at start
+ - FIX: remove background colour flicker when httpd request received (old debug code)
+
 v1.0.30
 - FIX: TCP - when using tcp_listen, an incorrect sequence number was being sent in the SYN/ACK packet
 

@@ -10,7 +10,7 @@
 
 HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for?
 
-DEBUG=1
+;DEBUG=1
 
 .export httpd_start
 

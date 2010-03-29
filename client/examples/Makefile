@@ -45,7 +45,8 @@ upnatom.d64:  upnatom.prg url.cfg
 
 webnoter.d64:  webnoter.prg 
 	cp webnoter.prg autoexec.prg
-	ripxplore.rb --init CbmDos webnoter.d64 -a autoexec.prg
+	ripxplore.rb --init CbmDos webnoter.d64 -a ..\carts\kipperkart.prg
+	ripxplore.rb webnoter.d64 -a autoexec.prg
 
 httpd.prg: httpd.asm
 	$(DA) httpd.asm -ohttpd.prg

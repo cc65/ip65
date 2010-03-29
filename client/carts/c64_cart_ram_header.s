@@ -24,6 +24,9 @@ basicstub:
 
 init:
 
+  ;clear screen
+  lda #147  ; 'CLR/HOME'
+  jsr $ffd2
   ;turn off BASIC
   lda $01
   and #$FE  ;mask out bit 0

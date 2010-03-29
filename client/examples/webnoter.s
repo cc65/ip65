@@ -9,6 +9,17 @@
 print_a = $ffd2
 
 
+.export musicdata
+.export musicdata_size
+.export sprite_font
+.export html
+.export scroll_template_1
+.export scroll_template_2
+
+.import  __DATA6K_LOAD__
+.import  __DATA6K_RUN__
+.import  __DATA6K_SIZE__
+
 SCREEN_RAM 	= $0400
 COLOUR_RAM 	= $d800
 VIC_CTRL_A	= $d011
@@ -139,14 +150,16 @@ look_for_signature:
 
 ;if we got here, we have found the KIPPER API and initialised the IP stack
 
-  jsr setup_static_scroll_text  
   
-	lda 	#0
-	jsr	clear_screen
-	lda	#DARK_GRAY
-	sta	BORDER_COLOR
-  lda #YELLOW
-  sta BACKGROUND_COLOR_0
+  ;copy our runtime data to where it lives
+  ldax #__DATA6K_LOAD__
+  stax param_buffer+KPR_BLOCK_SRC
+  ldax #__DATA6K_RUN__
+  stax param_buffer+KPR_BLOCK_DEST
+  ldax #__DATA6K_SIZE__
+  stax param_buffer+KPR_BLOCK_SIZE    
+  ldax #param_buffer
+  kippercall #KPR_BLOCK_COPY
 
 
 
@@ -181,6 +194,17 @@ look_for_signature:
   stax param_buffer+KPR_BLOCK_SIZE    
   ldax #param_buffer
   kippercall #KPR_BLOCK_COPY
+
+
+  ldax #scroll_template_1
+  jsr setup_static_scroll_text  
+  
+	lda 	#0
+	jsr	clear_screen
+	lda	#DARK_GRAY
+	sta	BORDER_COLOR
+  lda #YELLOW
+  sta BACKGROUND_COLOR_0
 
   lda #$1c ; use charset at $3000
   sta VIC_MEMORY_CTRL
@@ -227,6 +251,8 @@ look_for_signature:
 	sta 	$01	  ;the cpu now sees RAM everywhere except at $d000-$e000, where still the registers of
               ;SID/VICII/etc are visible
 
+  lda #((SPRITE_FRAMES-1)*8)
+  sta sprite_text_frame
   jsr setup_sprites
   
   jsr setup_music
@@ -252,13 +278,10 @@ reset_input_buffer:
 
   lda new_message
   beq @no_message_yet
+  ldax #scroll_template_2
+  jsr setup_static_scroll_text
   ldx #0
   stx new_message
-:
-  lda message_buffer,x
-  sta scroll_buffer,x
-  inx
-  bne :-
   
 @no_message_yet:  
   ldax #scroll_buffer
@@ -268,66 +291,41 @@ reset_input_buffer:
 httpd_callback:
   lda #'h'
   kippercall #KPR_HTTPD_GET_VAR_VALUE
-  bcs @no_handle
+  bcs @not_complete_fields
   stax  copy_src  
   ldy #0
   lda (copy_src),y
-  beq @no_handle
+  beq @not_complete_fields
        
 @copy_handle_loop:  
   lda (copy_src),y
   beq @end_of_handle
-  sta message_buffer,y
+  sta handle,y
   iny
   bne @copy_handle_loop
 @end_of_handle:
-  tya
-  pha
+  lda #0
+  sta handle,y
   lda #'m'
   kippercall #KPR_HTTPD_GET_VAR_VALUE  
-  stax  copy_src    
-  pla
-  tax
-  bcs @end_of_message
-  
-  lda #' '
-  sta message_buffer,x
-  inx
-  lda #'s'
-  sta message_buffer,x
-  inx
-  lda #'e'
-  sta message_buffer,x
-  inx
-  lda #'z'
-  sta message_buffer,x
-  inx  
-  lda #' '
-  sta message_buffer,x
-  inx
-  lda #'"'
-  sta message_buffer,x
-  inx  
+  bcs @not_complete_fields
+  stax  copy_src  
   ldy #0
+  lda (copy_src),y
+  beq @not_complete_fields
+
 @copy_message_loop:
   lda (copy_src),y
   beq @end_of_message
-  sta message_buffer,x
+  sta message_text,y
   iny
-  inx
   bne @copy_message_loop
 @end_of_message: 
-  lda #'"'
-  sta message_buffer,x
-  inx
-  lda #' '
-  sta message_buffer,x
-  inx
   lda #0
-  sta message_buffer,x
+  sta message_text,y
   inc new_message
-  
-@no_handle:
+
+@not_complete_fields:
 
   ldax #html
   ldy #2 ;text/html
@@ -347,7 +345,7 @@ setup_sprites:
   lda #$FF
   sta $d015
   
-  ldx #$07  
+  ldx #$07
 @setup_sprite:  
   ;position each sprite
   txa
@@ -363,12 +361,6 @@ setup_sprites:
   sta $d027,x ;sprite 0 color
   
   ;select bitmap for sprite
-  sec
-  lda sprite_text,x
-  sbc #'A'
-  clc
-  adc #<($3800/64)  ;sprite font should be relocated to $3000
-  sta SCREEN_RAM+$03f8,x
   dex
   bpl @setup_sprite
   
@@ -507,9 +499,38 @@ pixel_scroll_irq:
 move_sprites_irq:
   start_irq
   wait_next_raster
-  ldy sprite_ticker
+
   inc sprite_ticker
-  
+  bne @sprite_not_offscreen
+  clc
+  lda sprite_text_frame
+  adc #8
+  cmp #8*SPRITE_FRAMES
+  bne @not_last_frame
+  lda #0
+@not_last_frame:  
+  sta sprite_text_frame
+  ldx #$07
+@set_sprite_text:  
+  clc
+  txa 
+  adc sprite_text_frame
+  tay
+  lda sprite_text,y
+  cmp #' '
+  bne @not_space
+  lda #'`'  ;map a space in the sprite text to 0x60,so it ends up with font offset 0x1F after subbing 'A'
+@not_space:  
+  sec
+  sbc #'A'
+  clc
+  adc #<($3800/64)  ;sprite font should be relocated here
+  sta SCREEN_RAM+$03f8,x
+  dex
+  bpl @set_sprite_text
+
+@sprite_not_offscreen:
+  ldy sprite_ticker
   ldx #$0e    ;7*2  
 @position_sprite:  
   lda sprite_y_pos,y      
@@ -548,13 +569,12 @@ move_sprites_irq:
 	jmp	exit_from_irq
 
 
-setup_static_scroll_text:
+setup_static_scroll_text:  
+  stax current_input_ptr
   lda #0
   sta new_message
   ldax #scroll_buffer
   stax current_output_ptr
-  ldax #scroll_template
-  stax current_input_ptr
 @next_byte:
   jsr get_a
   beq @next_byte  
@@ -568,6 +588,33 @@ setup_static_scroll_text:
   
 @operator:  
   jsr get_a
+  cmp #'m'
+  bne @not_message
+  ldx #0
+:  
+  lda message_text,x
+  beq @next_byte  
+  cmp #$20
+  bpl @not_ctrl_char
+  lda #' '
+@not_ctrl_char:  
+  jsr emit_a
+  inx
+  bne :-
+  
+@not_message:
+  cmp #'h'
+  bne @not_handle
+  ldx #0
+  :  
+  lda handle,x  
+  beq @next_byte  
+  jsr emit_a
+  inx
+  bne :-
+  
+@not_handle:
+
   cmp #'i'
   bne @not_ip
   lda #KPR_CFG_IP
@@ -772,36 +819,7 @@ raster_jump_table:
 
 jump_counter:	.byte	0
 
-
-
 .data
-
-sprite_x_pos:
-.byte  $34,$54,$78,$90,$Bb,$Db,$Fb,$1b
-  
-sprite_x_msb:
-.byte $80
-
-sprite_y_pos:
-.repeat 128
-  .byte 0
-.endrep
-.include "sine_data.i"
-
-;.include "sine_data.i"
-
-
-
-sprite_text:
-
-.byte  "KIPPERS_"   ;options are A-Z, "[\]^_"
-
-scroll_template:
-.byte "http://%i/  -  WebNoter  -"
-.byte " ",0
-
-
-
 kipper_api_not_found_message:
   .byte "ERROR - KIPPER API NOT FOUND.",13,0
 
@@ -824,26 +842,79 @@ kipper_signature:
 error_code:  
   .asciiz "ERROR CODE: "
 
+charset_font:
+	 .incbin "font16x8.bin"
+sprite_font:
+  .incbin "spud_letters.spr"
+
+musicdata:
+.incbin "powertrain.bin"
+musicdata_size=*-musicdata
+
+
+.segment "DATA6K"
+
+
+sprite_x_pos:
+.byte  $34,$54,$78,$90,$Bb,$Db,$Fb,$1b
+  
+sprite_x_msb:
+.byte $80
+
+sprite_y_pos:
+.repeat 128
+  .byte 0
+.endrep
+.include "sine_data.i"
+
+;.include "sine_data.i"
+
 
 html:
   .incbin "form.html"
 .byte 0
 
+scroll_template_1:
+.byte "WebNoter - go to http://%i/ and bang away! -"
+.byte " ",0
+
+scroll_template_2:
+.byte "http://%i/"
+.byte " - %h sez '%m' -"
+.byte " ",0
+
+sprite_text:
+;[\]^_`=0,29?
+.byte "WEBNOTER"
+.byte "A KIPPER"
+.byte " POWERED"
+.byte "PRODUCT "
+.byte "TUNE IS "
+.byte "BY JCH  "
+.byte "FROM THE"
+.byte "VIBRANTS"
+.byte "GREETZ ]"
+.byte "ALL AT  "
+.byte "DA BEACH"
+.byte "PARTY I["
+SPRITE_FRAMES=(*-sprite_text)/8
 
 
-charset_font:
-	 .incbin "font16x8.bin"
-sprite_font:
-  .incbin "spud_letters.spr"
-musicdata:
-;.incbin "tune.bin"
-.incbin "powertrain.bin"
-musicdata_size=*-musicdata
+
+
+
+
+
+
+
 
 
 
 .segment "BSS4K"
 ;we want our variables to start at $4000, out of the way of our music player and the font data
+
+handle: .res 256
+message_text: .res 256
 
 new_message:
 .res 1
@@ -858,13 +929,13 @@ temp_bcd: .res 2
 
 param_buffer: .res $20  
 
-download_buffer:
-download_buffer_length=4000
- .res download_buffer_length
-
 .res 10 ;filler
 scroll_buffer:
   .res 1000
-
+sprite_text_frame: .res 1
 string_offset: .res 1
+
+download_buffer:
+download_buffer_length=6000
+ .res download_buffer_length
 
