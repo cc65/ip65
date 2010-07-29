@@ -60,7 +60,7 @@ class Netboot65TFTPServer
       got_ack=false
       TFTP_MAX_RESENDS.times do |attempt_number|
         log_msg("sending block #{block_number+1}/#{blocks_to_send} of #{filename} to #{client_ip}:#{client_port} - #{block_data.length} bytes - attempt #{attempt_number+1}")
-        client_sock.send(packet,0,client_ip,client_port)
+        client_sock.send(packet,0)
         if (IO.select([client_sock], nil, nil, 1)) then
           data,addr_info=client_sock.recvfrom(4096)
           client_ip=addr_info[3]
@@ -105,7 +105,7 @@ class Netboot65TFTPServer
       got_block=false
       TFTP_MAX_RESENDS.times do |attempt_number|
         log_msg("ACKing block #{block_number} of #{filename} from #{client_ip}:#{client_port} - attempt #{attempt_number+1}")
-        client_sock.send(packet,0,client_ip,client_port)
+        client_sock.send(packet,0)
         if got_last_block then
           puts "last block received"
           finished=true

@@ -18,7 +18,7 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 C64PROGLIB=../drivers/c64prog.lib
 #C64NB65LIB=../drivers/c64nb65.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin
+all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin kipperdisk.d64
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
@@ -80,10 +80,12 @@ kipperkart_rr.bin: kipperkart.bin
 	cat rrnet_header.bin kipperkart.bin > kipperkart_rr.bin
 	ruby fix_cart.rb $@ 32768
   
-c64boot.d64: netboot_ram.prg 
-	ripxplore.rb --init CbmDos $@ -a netboot_ram.prg
-	ripxplore.rb $@ -a ..\test\test_cart_api.prg
-  
+kipperdisk.d64: kipperkart.prg kipperterm.prg kipperkart.prg kippergo.prg
+	ripxplore.rb --init CbmDos $@ -a kipperkart.prg
+	ripxplore.rb $@ -a kipperterm.prg
+	ripxplore.rb $@ -a kippergo.prg
+	cp $@ ../../server/boot/
+  		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/
 	ripxplore.rb --init CbmDos $@ -a d64_upload.prg
