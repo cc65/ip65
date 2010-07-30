@@ -14,15 +14,20 @@ CLEAR=$A65E		;clears BASIC variables
 .import dhcp_init
 .import ip65_init
 .import cfg_get_configuration_ptr
-
+.import tcp_listen
+.import tcp_callback
+.import tcp_connect_ip
+.import tcp_send
+.import tcp_send_data_len
 .zeropage
 temp_buff: .res 2
 
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 .word jump_table		; load address
 jump_table:
-	jmp	init	; this should be at $4000 ie SYS(16384)
-
+	jmp	init	              ; this should be at $4000 ie SYS 16384
+  jmp listen_on_port      ; this should be at $4003 ie SYS 16387
+  jmp send_data           ; this should be at $4006 ie SYS 16390
 .code
 
 init:
@@ -52,22 +57,54 @@ init:
 	ldax #init_msg+1
 	jsr print_ascii_as_native
   
-  	jsr ip65_init
+  jsr ip65_init
 	bcs @init_failed
-  	jsr dhcp_init
-  	bcc @init_ok
-  	jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
-  	bcc @init_ok
+  jsr dhcp_init
+  bcc @init_ok
+  jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
+  bcc @init_ok
 @init_failed:  
-  	print_failed
-  	jsr print_errorcode
-
+  print_failed
+  jsr print_errorcode
+  jmp		set_error_var
 @init_ok:
   jsr print_ip_config
 	
 exit_to_basic:	
-	jmp		set_error_var
+	rts
 	
+  
+listen_on_port:
+  ldax #tcp_data_arrived
+  stax tcp_callback
+  lda #0
+  sta ip65_error
+
+  jsr get_io_var
+  jsr tcp_listen
+  bcs @error
+  ldax #connected
+  jsr print_ascii_as_native
+  ldax #tcp_connect_ip
+  jsr print_dotted_quad
+  jsr print_cr
+@error:
+  jmp set_error_var
+  
+send_data:
+  jsr get_io_string_ptr
+  sty tcp_send_data_len
+  ldy #0
+  sty tcp_send_data_len+1
+
+  jsr tcp_send
+  bcs @error
+  lda #0
+  sta ip65_error
+@error:  
+  jmp set_error_var
+  
+  
 set_error_var:
 	ldy		#16 ;we want to set 3rd & 4th byte of 3rd entry in variable table entry
 	ldx 	#0	
@@ -85,6 +122,27 @@ set_var:
 	sta		(VARTAB),y ; set low byte
 	rts
 	
+get_io_var:
+	ldy		#9 ;we want to read 3rd & 4th byte of 2nd entry in variable table entry
+	lda		(VARTAB),y ; set high byte
+  tax
+	iny
+	lda		(VARTAB),y ; set low byte
+	rts
+
+get_io_string_ptr:
+	ldy		#4 ;we want to read 1st entry in variable table entry
+	lda		(VARTAB),y ; ptr high byte
+  tax
+	dey
+	lda		(VARTAB),y ; ptr low byte
+  pha
+	dey
+  
+	lda		(VARTAB),y ; length
+  tay
+  pla
+	rts
 
 set_io_string:
 	stax	copy_src
@@ -110,6 +168,10 @@ set_io_string:
 	
 	rts
 
+tcp_data_arrived:
+  
+  rts
+
 .data
 
 basic_vartable_entries:
@@ -128,8 +190,8 @@ basic_vartable_entries:
 	.byte 	0,0,0	;3 dummy bytes
 
 basic_vartable_entries_length=*-basic_vartable_entries
-hello_world:
-	.byte "HELLO WORLD!",0
+connected:
+	.byte "connected - ",0
 .bss
 transfer_buffer: .res $100
 
