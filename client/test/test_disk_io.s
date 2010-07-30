@@ -13,7 +13,6 @@
 .import  io_track_no
 .import  io_read_sector
 .import  io_write_sector
-
 .import io_read_file_with_callback
 .import io_read_file
 .import io_filename
@@ -62,6 +61,27 @@ init:
   ;switch to lower case charset
   lda #23
   sta $d018
+
+  ;test we can read catalogue the hard way
+  ldax #loading
+  jsr print
+  ldax #dir_fname
+  stax io_filename
+  jsr print
+
+
+  jsr print_cr
+  lda #01
+  sta io_device_no
+
+  ldax #readfile_callback
+  stax  io_callback
+  ldax  #$3000
+  jsr io_read_file
+  bcc :+
+  jsr print_error_code
+  rts
+:  
 
 
 
@@ -394,6 +414,8 @@ write_sector:
 read_sector:
   .byte "READING SECTOR",13,0
 
+
+dir_fname: .byte "$",0
 
 read_catalogue:
   .byte "READING CATALOGUE",13,0
