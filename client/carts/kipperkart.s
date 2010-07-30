@@ -189,6 +189,10 @@ init_ok:
   jsr print_cr
   ldax #loading_msg
   jsr print_ascii_as_native
+  lda cfg_default_drive
+  sec
+  sbc #7
+  sta io_device_no
   ldax #autoexec_filename  
   stax io_filename
   jsr print_ascii_as_native

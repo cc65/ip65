@@ -15,6 +15,8 @@
   KEY_BACK_IN_HISTORY=KEYCODE_F3
   KEY_NEW_SERVER=KEYCODE_F5
   
+  GOPHER_BUFFER_SIZE=16000  
+  
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
   

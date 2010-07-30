@@ -473,6 +473,9 @@ tcp_send:
   bcc @no_abort
   lda #KPR_ERROR_ABORTED_BY_USER
   sta ip65_error
+  lda #tcp_cxn_state_closed
+  sta tcp_state
+  
   rts
 @no_abort:  
   ldax #tcp_connect_last_ack
@@ -641,6 +644,14 @@ check_current_connection:
 ; eth_inp: should contain an ethernet frame encapsulating an inbound tcp packet
 ;outputs:
 ; carry flag clear if inbound tcp packet part of existing connection
+
+  
+  lda tcp_state
+  cmp #tcp_cxn_state_closed
+  bne @connection_not_closed
+  sec
+  rts
+@connection_not_closed:  
   ldax  #ip_inp+ip_src
   stax  acc32
   ldax  #tcp_connect_ip

@@ -98,7 +98,7 @@ RESOURCE_HISTORY_ENTRIES=8
 resource_history:
 .res $100*RESOURCE_HISTORY_ENTRIES
 
-scratch_buffer_length=16000
+scratch_buffer_length=GOPHER_BUFFER_SIZE
 scratch_buffer:
   .res scratch_buffer_length
   
@@ -152,7 +152,7 @@ display_resource_in_buffer:
   jmp @end_of_current_page
 
 @displayed_resource_is_directory:
-
+  
   lda #0
   sta resource_counter
   
@@ -211,6 +211,9 @@ display_resource_in_buffer:
 @print_until_tab:
 @next_byte:
   jsr get_next_byte
+  cmp #0
+  beq @last_line
+
   cmp #$09
   beq @skip_to_end_of_line
   jsr ascii_to_native

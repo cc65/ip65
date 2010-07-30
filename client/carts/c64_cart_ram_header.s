@@ -41,6 +41,22 @@ init:
   ldax #$4000
   jsr copymem
   
+  
+  ;if this is a KIPPERKART, then set default drive to
+  ;be whatever we just booted from
+  
+  lda $8009
+  cmp #'K'
+  bne @drive_done
+  lda $8009
+  cmp #'K'
+  bne @drive_done
+  lda $8036 ;location in cart config of default drive
+  cmp #08
+  bne @drive_done
+  lda $ba
+  sta $8036   
+@drive_done:  
   jmp ($8002) ;warm start vector
  
 ;copy memory

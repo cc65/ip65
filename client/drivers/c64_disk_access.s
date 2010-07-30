@@ -21,12 +21,15 @@
 .export io_filesize
 .export io_load_address
 .export io_callback
+.export io_error_buffer
 
 .importzp copy_src
 .import ip65_error  
 .import output_buffer
 .importzp copy_dest
 
+
+io_error_buffer=error_buffer
 ;reuse the copy_src zero page location
 buffer_ptr = copy_src
 
@@ -148,6 +151,7 @@ io_read_file_with_callback:
   stax sector_buffer_address
   jsr CLALL
   jsr parse_filename
+  
   jsr SETNAM
 
   jsr set_drive_id

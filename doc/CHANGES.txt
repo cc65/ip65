@@ -1,3 +1,11 @@
+ v1.0.33
+  - FIX: gracefully close the TCP connection when a telnet connection is aborted by user keystroke
+  
+v1.0.32
+ - CHANGE: when loading cart images from disk, set default drive for cart image to be whatever drive the cart
+  was loaded from
+ - FIX: autoexec.prg gets loaded from whatever is configured as current default drive, not drive 8
+
 v1.0.31
  - FIX: prg version of carts had garbled screen at start
  - FIX: remove background colour flicker when httpd request received (old debug code)
