@@ -16,7 +16,7 @@
   KEY_NEW_SERVER=KEYCODE_F5
  
    XMODEM_IN_TELNET = 1 
-   GOPHER_BUFFER_SIZE = 8000
+   GOPHER_BUFFER_SIZE = 2000
   .include "../inc/gopher.i"
   .include "../inc/telnet.i"
  

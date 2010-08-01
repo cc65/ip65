@@ -32,6 +32,7 @@ kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ..
 
 kipperterm2.d64: kipperterm2.prg addresses.txt abe.bas
 	ripxplore.rb --init CbmDos $@ -a kipperterm2.prg
+	ripxplore.rb $@ -a 80columns -t C64Prg
 	ripxplore.rb $@ -a addresses.txt -t C64Seq
 	ripxplore.rb $@ -a abe -t C64Prg
 	cp kipperterm2.d64 ../../server/boot

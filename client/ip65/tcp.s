@@ -933,7 +933,6 @@ tcp_process:
   beq @syn 
   jmp @not_syn
 @syn:  
-  ;for the moment, inbound connections not accepted. so send a RST
   
   ;is this the port we are listening on?
   lda tcp_inp+tcp_dest_port+1
@@ -947,6 +946,9 @@ tcp_process:
   lda #tcp_cxn_state_listening  
   cmp tcp_state  
   beq @this_is_connection_we_are_waiting_for
+  ;is this the current connection? that would mean our ACK got lost, so resend
+  jsr check_current_connection
+  bcc @this_is_connection_we_are_waiting_for
   
   rts ;if we've currently got a connection open, then ignore any new requests
       ;the sender will timeout and resend the SYN, by which time we may be

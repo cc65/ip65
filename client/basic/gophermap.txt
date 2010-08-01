@@ -1,0 +1,2 @@
+1FLOODGAP GOPHER	/	GOPHER.FLOODGAP.COM	70
+1Interesting telnet destinations	/ADDRESSES.TXT	10.5.1.9	70
