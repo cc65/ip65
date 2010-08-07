@@ -17,13 +17,19 @@ IP65LIB=../ip65/ip65_tcp.lib
 
 C64PROGLIB=../drivers/c64prog.lib
 
-all:  gopherd.d64
+all:  gopherd.d64 kipperbas.d64
 
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 	
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
+%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_mlstub.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64_mlstub.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
+
+
+kipperbas.d64: kipperbas.prg 
+	ripxplore.rb -r -e kbload $@ -o kbload
+	ripxplore.rb -r -e kbapp $@ -o kbapp
+	ripxplore.rb $@ -a kipperbas.prg
 
   
 gopherd.d64: mlstub.prg gophermap.txt addresses.txt
