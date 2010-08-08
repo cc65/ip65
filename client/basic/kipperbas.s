@@ -42,6 +42,7 @@ LINNUM   = $14            ;Number returned by GETPAR
 crunched_line      = $0200          ;Input buffer
 
 .import copymem
+.importzp copy_src
 .importzp copy_dest
 .import dhcp_init
 .import ip65_init
@@ -77,16 +78,98 @@ crunched_line      = $0200          ;Input buffer
 .import tftp_download
 .import tftp_set_callback_vector
 .import tftp_data_block_length
+.import tftp_upload
 
 .zeropage
 temp:	.res 2
 temp2:	.res 2
 pptr=temp
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
-.word jump_table		; load address
-jump_table:
-  jmp init	              ; $4000 (PTR 16384) - vars io$,io%,er% should be created (in that order!) before calling
+.word basicstub		; load address
+basicstub:
+	.word @nextline
+	.word 2003    ;line number
+	.byte $9e     ;SYS
+	.byte <(((relocate / 1000) .mod 10) + $30)
+	.byte <(((relocate / 100 ) .mod 10) + $30)
+	.byte <(((relocate / 10  ) .mod 10) + $30)
+	.byte <(((relocate       ) .mod 10) + $30)
+	.byte 0
+@nextline:
+	.word 0  
+relocate:  
+  ldax  #end_of_loader
+  stax  copy_src
+  ldax  #main_start
+  stax  copy_dest
+  stax  MEMSIZ
+FS=$8000-main_start  
+  ldax  #FS
 
+;copy memory
+	sta end
+	ldy #0
+
+	cpx #0
+	beq @tail
+
+:	lda (copy_src),y
+	sta (copy_dest),y
+	iny
+	bne :-
+  inc copy_src+1    ;next page
+  inc copy_dest+1  ;next page
+	dex
+	bne :-
+
+@tail:
+	lda end
+	beq @done
+
+:	lda (copy_src),y
+	sta (copy_dest),y
+	iny
+	cpy end
+	bne :-
+
+@done:
+  ldax #welcome_banner
+  jsr print
+  
+	ldx	#5           ;Copy CURRENT vectors
+@copy_old_vectors_loop:
+	lda ICRUNCH,x
+	sta	oldcrunch,x
+	dex
+	bpl	@copy_old_vectors_loop
+
+	ldx	#5           ;Copy CURRENT vectors
+install_new_vectors_loop:
+	lda vectors,x
+	sta	ICRUNCH,x
+	dex
+	bpl	install_new_vectors_loop
+    
+  ;BASIC keywords installed, now bring up the ip65 stack
+    
+  jsr ip65_init
+  bcs @init_failed
+  lda #0
+  sta ip65_error  
+@init_failed:  
+  jsr		set_error
+  
+  jsr $A644 ;do a "NEW"
+  jmp $A474 ;"READY" prompt
+
+welcome_banner:
+.incbin "welcome_banner.txt"
+.byte 0
+end:  .res  1
+end_of_loader:
+
+.segment "MAINSTART"
+main_start:
 
 safe_getvar:      ;if GETVAR doesn't find the desired variable name in the VARTABLE, a routine at $B11D will create it
                   ;however that routine checks if the low byte of the return address of the caller is $2A. if it is,
@@ -99,36 +182,7 @@ safe_getvar:      ;if GETVAR doesn't find the desired variable name in the VARTA
   jsr GETVAR
   rts
 .code  
-;
-;BASIC extensions derived from BLARG - http://www.ffd2.com/fridge/programs/blarg/blarg.s
-;
 
-init:
-	ldx	#5           ;Copy CURRENT vectors
-@copy_old_vectors_loop:
-	lda ICRUNCH,x
-	sta	oldcrunch,x
-	dex
-	bpl	@copy_old_vectors_loop
-
-
-	ldx	#5           ;Copy CURRENT vectors
-install_new_vectors_loop:
-	lda vectors,x
-	sta	ICRUNCH,x
-	dex
-	bpl	install_new_vectors_loop
-  
-  
-  ;BASIC keywords installed, now bring up the ip65 stack
-    
-  jsr ip65_init
-  bcs @init_failed
-  lda #0
-  sta ip65_error
-  
-@init_failed:  
-  jmp		set_error
 		
 ; CRUNCH -- If this is one of our keywords, then tokenize it
 ;
@@ -669,8 +723,12 @@ ping_keyword:
   lda #'.'
 @print_and_loop:  
   jsr print_a  
+  lda $cb ;current key pressed
+  cmp #$3F  ;RUN/STOP?
+  beq @done
   dec ping_counter
   bne @ping_loop
+@done:  
   jsr print_cr
   jmp set_error
 @error:
@@ -698,17 +756,22 @@ tftp_keyword:
   ldax #cfg_tftp_server
   jmp get_ip_parameter  
 
-tfget_keyword:
-  jsr extract_string
-  ldax  #get_msg
+
+tf_param_setup:  
   jsr print
+  jsr extract_string
   ldax  #transfer_buffer
   stax  tftp_filename
   jsr print 
-  ldax #from_msg
-  jsr  print
+  lda #' '
+  jsr print_a
+  lda #'('
+  jsr print_a
   ldax  #cfg_tftp_server
   jsr print_dotted_quad
+  lda #')'
+  jsr print_a
+
   jsr print_cr
 
   ldx #$03
@@ -717,6 +780,11 @@ tfget_keyword:
   sta tftp_ip,x
   dex
   bpl :-
+  rts
+
+tfget_keyword:
+  ldax  #get_msg
+  jsr tf_param_setup
   ldax #tftp_download_callback
   jsr tftp_set_callback_vector
   lda #0
@@ -749,13 +817,12 @@ tfget_keyword:
   sta string_length
   
   jsr tftp_download
-  bcs @error
-  jsr   close_file
-  rts
-@error:  
+after_tftp_xfer:  
+  bcc @no_error
   ldax  #tftp_error  
 @error_set:  
-  jsr   print
+  jsr  print
+@no_error:  
   jsr   close_file
   jmp		set_error
   
@@ -763,6 +830,17 @@ close_file:
   lda #$02      ; filenumber 2
   jsr $FFC3     ; call CLOSE  
   rts
+
+open_file:
+  ;A,X,Y set up ready for a call to SETNAM for file #2
+  jsr $FFBD     ; call SETNAM
+  lda #$02      ; file number 2
+  ldx $BA       ; last used drive
+  
+  ldy #$02      ; secondary address 2
+  jsr $FFBA     ; call SETLFS
+
+  jmp $FFC0     ; call OPEN
 
   
 tftp_download_callback:
@@ -777,16 +855,7 @@ tftp_download_callback:
   lda string_length  
   ldx #<string_buffer
   ldy #>string_buffer
-
-  ;A,X,Y set up ready for a call to SETNAM for file #2
-  jsr $FFBD     ; call SETNAM
-  lda #$02      ; file number 2
-  ldx $BA       ; last used drive
-  
-  ldy #$02      ; secondary address 2
-  jsr $FFBA     ; call SETLFS
-
-  jsr $FFC0     ; call OPEN
+  jsr open_file
     
 @already_opened:  
 
@@ -816,10 +885,65 @@ tftp_download_callback:
 @done:
 
   ldx #$00      ; filenumber 0 = console
-  jsr $FFC9     ; call CHKOUT 
+  jmp $FFC9     ; call CHKOUT 
 
-  rts
+
+tfput_keyword:
+  ldax  #put_msg
+  jsr tf_param_setup
   
+  lda param_length  
+  ldx #<transfer_buffer
+  ldy #>transfer_buffer
+  jsr open_file  
+  bcs @error
+  lda $90 ;get ST
+  beq @ok  
+@error:
+  
+  ldx #4  ;"FILE NOT FOUND" error
+  jmp $A437   ;error
+@ok:
+  ldax #tftp_upload_callback
+  jsr tftp_set_callback_vector
+  jsr tftp_upload
+  jmp after_tftp_xfer
+  
+  
+tftp_upload_callback:  
+  stax  copy_dest  
+  lda #'.'
+  jsr print_a
+  lda #0
+  sta bytes_read
+  sta bytes_read+1
+
+  ldx #$02      ; filenumber 2 = output file
+  jsr $FFC6     ; call CHKIN (file 2 now used as input)
+@loop:  
+  jsr $FFCF     ; call CHRIN (get a byte from file)
+  ldy #0
+  sta (copy_dest),y
+  inc copy_dest
+  bne :+
+  inc copy_dest+1
+:  
+  inc bytes_read
+  bne :+
+  inc bytes_read+1
+: 
+  lda bytes_read+1
+  cmp #2
+  beq @done
+  jsr $FFB7     ; call READST (read status byte)  
+  beq @loop      ; nonzero mean either EOF or read error
+  
+@done:
+  ldx #$00      ; filenumber 0 = console
+  jsr $FFC6     ; call CHKIN (console now used as input)
+  ldax bytes_read
+  rts
+
 .rodata
 vectors:
 	.word crunch	
@@ -864,8 +988,9 @@ dns_error:
 .byte "ADDRESS RESOLUTION ERROR",0
 get_msg:
 .byte "GETTING ",0
-from_msg:
-.byte " FROM ",0
+put_msg:
+.byte "PUTTING ",0
+
 tftp_error:
 .byte "TFTP ERROR",0
 dhcp_error:
@@ -882,9 +1007,10 @@ keywords:
   .byte "TFTP",$E8
   .byte "TFGET",$E9
   .byte "TF",$A1,$E9  ;since BASIC will replace GET with A1
+  .byte "TFPUT",$EA
 
 	.byte $00					;end of list
-HITOKEN=$EA
+HITOKEN=$EB
 
 ;
 ; Table of token locations-1
@@ -900,6 +1026,8 @@ E6: .word gateway_keyword-1
 E7: .word dns_keyword-1
 E8: .word tftp_keyword-1
 E9: .word tfget_keyword-1
+EA: .word tfput_keyword-1
+
 .segment "SELF_MODIFIED_CODE"
 
 
@@ -921,6 +1049,7 @@ current_output_ptr=emit_a+1
 
 
 .bss
+bytes_read: .res 2
 string_length: .res 1
 param_length: .res 1
 ip_string:  .res 15 
