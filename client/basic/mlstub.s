@@ -33,6 +33,7 @@ CLOSE=$FFC3
 .import dns_resolve
 .import dns_ip
 .import ip65_process
+.import icmp_echo_ip
 
 .zeropage
 temp_buff: .res 2

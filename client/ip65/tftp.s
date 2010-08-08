@@ -18,7 +18,6 @@
   .export tftp_upload
   .export tftp_data_block_length
   .export tftp_set_callback_vector
-  .export tftp_data_block_length
   .export tftp_clear_callbacks
   .export tftp_filesize
   .export tftp_upload_from_memory
@@ -105,12 +104,7 @@ tftp_bytes_remaining: .res 2
 ; outputs: carry flag is set if there was an error
 ;   if a callback vector has been set with tftp_set_callback_vector
 ;   then the specified routine will be called once for each 512 byte packet
-;   sent from the tftp server (each time AX will point at data block just arrived,
-;   and tftp_data_block_length will contain number of bytes in that data block)
-;   otherwise, the buffer at tftp_load_address will be filled
-;   with file downloaded.
-;   tftp_load_address: will be set to the actual address loaded into (NB - this field is
-;       ignored if a callback vector has been set with tftp_set_callback_vector)
+;   to be sent to the tftp server 
 tftp_upload_from_memory:
   ldax #copy_ram_to_tftp_block
   jsr tftp_set_callback_vector
@@ -559,6 +553,7 @@ copy_ram_to_tftp_block:
 ; outputs: none
 tftp_set_callback_vector:
   stax  tftp_callback_vector+1
+  inc tftp_callback_address_set
   rts
   
 ;clear callback vectors, i.e. all future transfers read from/write to RAM
