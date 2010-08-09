@@ -34,6 +34,8 @@ NEWSTT	= $A7AE
 GETVAR = $B0E7          ;find or create a variable
 FRMEVL = $AD9E    ;evaluate expression
 FRESTR = $B6A3  ;free temporary string
+FRMNUM = $AD8A ;get a number
+GETADR = $B7F7 ;convert number to 16 bit integer
 
 VALTYP=$0D  ;00=number, $FF=string
 
@@ -79,6 +81,9 @@ crunched_line      = $0200          ;Input buffer
 .import tftp_set_callback_vector
 .import tftp_data_block_length
 .import tftp_upload
+.import get_key_if_available
+.import tcp_send_keep_alive
+.import timer_read
 
 .zeropage
 temp:	.res 2
@@ -314,8 +319,18 @@ list:
 	iny
 	bne	@loop
 @done:
+  lda keywords,y
+  cmp #$91    ;is it "ON"?
+  bne @not_on
+  lda #'O'
+  jsr CHROUT
+  lda #'N'
+  bne @skip
+  
+@not_on:  
 	lda	keywords,y
-	bmi	@out
+	bmi	@out  ;is it >=$80?
+@skip:
 	jsr	CHROUT
 	iny
 	bne	@done
@@ -547,10 +562,9 @@ get_ip_parameter:
   jsr dns_resolve
   bcc @ok
 @error:  
-  ldax  #dns_error
-  jsr print
-  sec
-  rts
+  ldax  #address_resolution
+  jmp print_error
+
 @ok:
   ldax #dns_ip
   ldx #4
@@ -562,11 +576,16 @@ get_ip_parameter:
   bne @copy_dns_ip  
   rts
 
-print_dotted_quad:
+
+reset_string:
   ldy #<string_buffer
   sty current_output_ptr  
   ldy #>string_buffer
   sty current_output_ptr+1
+  rts
+  
+print_dotted_quad:
+  jsr reset_string
   jsr emit_dotted_quad
 make_null_terminated_and_print:  
   lda #0
@@ -575,10 +594,7 @@ make_null_terminated_and_print:
   jmp print
 
 print_mac:
-  ldy #<string_buffer
-  sty current_output_ptr  
-  ldy #>string_buffer
-  sty current_output_ptr+1
+  jsr reset_string
   jsr emit_mac
   jmp make_null_terminated_and_print
 
@@ -619,6 +635,22 @@ emit_hex:
   jsr emit_a
   pla
   rts
+
+print_hex:
+  jsr reset_string
+  jsr emit_hex
+  jmp make_null_terminated_and_print
+
+print_error:
+  jsr print
+  ldax #error
+  jsr print
+  lda ip65_error
+  jsr print_hex
+  jsr print_cr
+  jsr set_error
+  sec
+  rts
   
 get_optional_byte:  
   jsr CHRGOT
@@ -631,6 +663,7 @@ get_optional_byte:
   rts
 @eol:
   jmp $AF08 ;SYNTAX ERROR
+  
 ipcfg_keyword:
 
   ldax #interface_type
@@ -692,8 +725,8 @@ dhcp_keyword:
   
 @init_failed:  
   jsr		set_error
-  ldax  #dhcp_error
-  jmp print
+  ldax  #dhcp
+  jmp print_error
 @init_ok:
   jmp		clear_error  
  rts
@@ -819,9 +852,9 @@ tfget_keyword:
   jsr tftp_download
 after_tftp_xfer:  
   bcc @no_error
-  ldax  #tftp_error  
+  ldax  #tftp
 @error_set:  
-  jsr  print
+  jsr  print_error
 @no_error:  
   jsr   close_file
   jmp		set_error
@@ -944,6 +977,198 @@ tftp_upload_callback:
   ldax bytes_read
   rts
 
+skip_comma_get_integer:
+  jsr CHRGOT
+  jsr CHKCOM  ;make sure next char is a comma (and skip it)
+get_integer:  
+  jsr CHRGOT
+  beq @eol 
+  jsr FRMNUM
+  jsr GETADR
+  ldax  LINNUM
+@no_param:
+  rts
+@eol:
+  jmp $AF08 ;SYNTAX ERROR
+
+
+make_tcp_connection:
+   ldax  #tcp_connect_ip
+  jsr get_ip_parameter
+  bcc @no_error
+  rts
+@no_error:  
+  jsr skip_comma_get_integer
+  jsr tcp_connect
+  bcc :+
+@connect_error:
+  ldax #connect
+  jmp print_error
+
+:  
+  ldax #connected_msg
+  jsr print
+  lda #0
+  sta connection_closed
+  clc
+  rts
+  
+netcat_keyword:
+  ldax #netcat_callback
+  stax tcp_callback  
+  jsr make_tcp_connection
+  bcc @main_polling_loop
+  rts
+    
+@main_polling_loop:
+  jsr timer_read
+  txa
+  adc #$20  ;32 x 1/4 = ~ 8seconds
+  sta netcat_timeout
+@wait_for_keypress:  
+  jsr timer_read
+  cpx netcat_timeout
+  bne @no_timeout
+  jsr tcp_send_keep_alive
+  jmp @main_polling_loop
+@no_timeout:  
+  jsr ip65_process
+  lda connection_closed
+  beq @not_disconnected
+  ldax #disconnected
+  jsr print
+  rts
+@not_disconnected:
+  
+  jsr get_key_if_available
+  beq @wait_for_keypress
+
+  ldx #1
+  stx tcp_send_data_len
+  dex
+  stx tcp_send_data_len+1
+  
+  sta transfer_buffer
+  
+@send_char:
+
+  ldax  #transfer_buffer
+  jsr tcp_send
+  bcs @error_on_send
+  jmp @main_polling_loop
+
+@error_on_send:
+  ldax #transmission
+  jmp print_error
+  
+  
+netcat_callback: 
+  lda tcp_inbound_data_length+1
+  cmp #$ff
+  bne @not_eof
+  lda #1
+  sta connection_closed
+  rts
+@not_eof:
+  
+  ldax tcp_inbound_data_ptr
+  stax temp2
+  lda tcp_inbound_data_length
+  sta buffer_length
+  lda tcp_inbound_data_length+1
+  sta buffer_length+1
+  
+@next_byte:
+  ldy #0
+  lda (temp2),y
+  jsr print_a
+  inc temp2
+  bne :+
+  inc temp2+1
+:  
+  lda buffer_length+1
+  beq @last_page
+  lda buffer_length
+  bne @not_end_of_page
+  dec buffer_length+1
+@not_end_of_page:  
+  dec buffer_length  
+  jmp @next_byte
+@last_page:
+  dec buffer_length
+  beq @finished
+  
+  jmp @next_byte
+
+@finished:  
+  
+  rts
+
+
+tcpconnect_keyword:
+  lda #0
+  sta data_arrived_flag  
+  ldax #tcpconnect_callback
+  stax tcp_callback  
+  jmp make_tcp_connection
+
+tcpconnect_callback:
+  inc data_arrived_flag
+  ldax #transfer_buffer
+  stax  copy_dest
+  ldax  tcp_inbound_data_ptr
+  stax  copy_src
+  lda   tcp_inbound_data_length
+  ldx   tcp_inbound_data_length+1  
+  beq @short_packet
+  cpx #$ff
+  bne @not_end_packet
+  inc data_arrived_flag
+  rts
+@not_end_packet:
+  lda #$ff
+@short_packet:
+
+set_input_string:
+  pha
+  lda #'I'
+  sta VARNAM
+  lda #'N'+$80 
+  sta VARNAM+1
+  jsr safe_getvar
+  ldy #0
+  pla
+  pha
+  sta (VARPNT),y
+  iny
+  lda #<transfer_buffer
+  sta (VARPNT),y
+  iny
+  lda #>transfer_buffer
+  sta (VARPNT),y  
+  pla
+  beq :+
+  ldx #0
+  jsr copymem
+:  
+  rts
+
+poll_keyword:
+  ldax #$FFFF
+  jsr set_result_code
+  lda #0
+  sta data_arrived_flag  
+  jsr set_input_string
+  jsr ip65_process
+  lda ip65_error
+  beq @no_error
+  jmp set_error
+@no_error:
+  lda data_arrived_flag
+  ldx #0
+  jmp set_result_code
+  
+  
 .rodata
 vectors:
 	.word crunch	
@@ -984,17 +1209,33 @@ dhcp_server_msg:
 tftp_server_msg:
 .byte "TFTP SERVER : ", 0
 
-dns_error:
-.byte "ADDRESS RESOLUTION ERROR",0
+address_resolution:
+.byte "ADDRESS RESOLUTION",0
+
 get_msg:
 .byte "GETTING ",0
 put_msg:
 .byte "PUTTING ",0
 
-tftp_error:
-.byte "TFTP ERROR",0
-dhcp_error:
-.byte "DHCP INITIALIZATION ERROR",13,0
+tftp:
+.byte "TFTP",0
+dhcp:
+.byte "DHCP",0
+
+connect:
+.byte "CONNECT",0
+
+transmission:
+.byte "TRANSMISSION",0
+
+error:
+.byte " ERROR $",0
+
+disconnected:
+.byte "DIS"
+connected_msg:
+.byte "CONNECTED",13,0
+
 keywords:                    
   .byte "IF",$E0  ;our dummy 'IF' entry takes $E0
 	.byte "IPCFG",$E1
@@ -1005,12 +1246,13 @@ keywords:
   .byte "GATEWAY",$E6
   .byte "DNS",$E7
   .byte "TFTP",$E8
-  .byte "TFGET",$E9
-  .byte "TF",$A1,$E9  ;since BASIC will replace GET with A1
+  .byte "TF",$A1,$E9  ;TFGET - BASIC will replace GET with A1 
   .byte "TFPUT",$EA
-
+  .byte "NETCAT",$EB
+  .byte "TCPC",$91,"NECT",$EC ; TCPCONNECT BASIC will replace ON with 91
+  .byte "POLL",$ED
 	.byte $00					;end of list
-HITOKEN=$EB
+HITOKEN=$EE
 
 ;
 ; Table of token locations-1
@@ -1027,6 +1269,9 @@ E7: .word dns_keyword-1
 E8: .word tftp_keyword-1
 E9: .word tfget_keyword-1
 EA: .word tfput_keyword-1
+EB: .word netcat_keyword-1
+EC: .word tcpconnect_keyword-1
+ED: .word poll_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
@@ -1062,4 +1307,7 @@ ping_counter: .res 1
 string_buffer: .res 128
 transfer_buffer: .res 256
 file_opened: .res 1
- 
+connection_closed: .res 1
+netcat_timeout: .res 1
+buffer_length: .res 1
+data_arrived_flag: .res 1

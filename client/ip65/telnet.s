@@ -181,7 +181,7 @@ telnet_connect:
 @error_on_send:
   ldax #transmission_error
   jsr print
-  jsr print_errorcode
+  jmp print_errorcode
  
 
 ;tcp callback - will be executed whenever data arrives on the TCP connection
