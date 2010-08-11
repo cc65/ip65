@@ -36,6 +36,7 @@ FRMEVL = $AD9E    ;evaluate expression
 FRESTR = $B6A3  ;free temporary string
 FRMNUM = $AD8A ;get a number
 GETADR = $B7F7 ;convert number to 16 bit integer
+INLIN = $A560 ; read a line from keyboard
 
 VALTYP=$0D  ;00=number, $FF=string
 
@@ -84,7 +85,8 @@ crunched_line      = $0200          ;Input buffer
 .import get_key_if_available
 .import tcp_send_keep_alive
 .import timer_read
-
+.import native_to_ascii
+.import ascii_to_native
 .zeropage
 temp:	.res 2
 temp2:	.res 2
@@ -1017,10 +1019,15 @@ netcat_keyword:
   ldax #netcat_callback
   stax tcp_callback  
   jsr make_tcp_connection
-  bcc @main_polling_loop
+  bcc :+
   rts
-    
+ :   
+  ;is there an optional parameter?
+  ldx #0
+  jsr get_optional_byte
+  stx netcat_mode
 @main_polling_loop:
+  
   jsr timer_read
   txa
   adc #$20  ;32 x 1/4 = ~ 8seconds
@@ -1040,24 +1047,116 @@ netcat_keyword:
   rts
 @not_disconnected:
   
-  jsr get_key_if_available
-  beq @wait_for_keypress
-
-  ldx #1
-  stx tcp_send_data_len
-  dex
-  stx tcp_send_data_len+1
+  lda netcat_mode  
+  beq @not_line_mode
   
-  sta transfer_buffer
-  
-@send_char:
+  lda #$00
+  sta string_length
 
+;process inbound ip packets while waiting for a keypress
+@read_line:
+  lda $cb ;current key pressed
+  cmp #$3F  ;RUN/STOP?
+  beq @runstop
+  jsr ip65_process
+  lda connection_closed
+  beq :+
+  ldax #disconnected
+  jsr print
+  rts
+:  
+  jsr $f142 ;not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
+ 
+  beq @read_line
+  
+  cmp #$14               ;Delete
+  beq @delete
+
+  cmp #$0d               ;Return
+  beq @input_done
+
+  ;End reached?
+  ldy string_length
+  cpy #$FF
+  beq @read_line
+
+  jsr $ffd2             ;Print it
+  jsr native_to_ascii
+  sta transfer_buffer,y        ;Add it to string  
+
+  inc string_length
+
+  ;Not yet.
+  jmp @read_line
+
+
+@delete:
+  ;First, check if we're at the beginning.  
+  lda string_length
+  bne @delete_ok
+  jmp @read_line
+
+  ;At least one character entered.
+@delete_ok:
+  ;Move pointer back.
+  dec string_length
+
+  ;Print the delete char
+  lda #$14
+  jsr $ffd2
+
+  ;Wait for next char
+  jmp @read_line
+
+@input_done:
+  lda #$0d
+  jsr $ffd2 ;print a newline
+  ldy string_length
+  lda #$0d  
+  sta transfer_buffer,y
+  iny
+  lda #$0a
+  sta transfer_buffer,y
+  iny
+  sty tcp_send_data_len
+  jmp @send_buffer
+@not_line_mode:
+
+  ;is there anything in the input buffer?
+  lda $c6 ;NDX - chars in keyboard buffer
+  bne :+ 
+  jmp @wait_for_keypress
+:  
+  lda #0
+  sta tcp_send_data_len
+  sta tcp_send_data_len+1
+@get_next_char:
+  lda $cb ;current key pressed
+  cmp #$3F  ;RUN/STOP?
+  bne @not_runstop
+@runstop:
+  lda  #0
+  sta $cb ;overwrite "current key pressed" else it's seen by the tcp stack and the close aborts
+  jmp tcp_close
+@not_runstop:
+  jsr $ffe4 ;getkey - 0 means no input
+  tax  
+  beq @no_more_input
+  txa
+  
+  ldy tcp_send_data_len
+  sta transfer_buffer,y
+  inc tcp_send_data_len
+  jmp @get_next_char
+@no_more_input:
+@send_buffer: 
   ldax  #transfer_buffer
   jsr tcp_send
   bcs @error_on_send
   jmp @main_polling_loop
 
 @error_on_send:
+  
   ldax #transmission
   jmp print_error
   
@@ -1079,8 +1178,16 @@ netcat_callback:
   sta buffer_length+1
   
 @next_byte:
+  lda $cb ;current key pressed
+  cmp #$3F  ;RUN/STOP?
+  beq @finished
+
   ldy #0
   lda (temp2),y
+  ldx netcat_mode
+  beq @no_transform
+  jsr ascii_to_native
+@no_transform:  
   jsr print_a
   inc temp2
   bne :+
@@ -1232,7 +1339,7 @@ error:
 .byte " ERROR $",0
 
 disconnected:
-.byte "DIS"
+.byte 13,"DIS"
 connected_msg:
 .byte "CONNECTED",13,0
 
@@ -1294,6 +1401,7 @@ current_output_ptr=emit_a+1
 
 
 .bss
+netcat_mode: .res 1
 bytes_read: .res 2
 string_length: .res 1
 param_length: .res 1
@@ -1309,5 +1417,5 @@ transfer_buffer: .res 256
 file_opened: .res 1
 connection_closed: .res 1
 netcat_timeout: .res 1
-buffer_length: .res 1
+buffer_length: .res 2
 data_arrived_flag: .res 1
