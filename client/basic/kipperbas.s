@@ -166,6 +166,15 @@ install_new_vectors_loop:
 @init_failed:  
   jsr		set_error
   
+;look for the CHAIN variabke
+  lda #'C'
+  sta VARNAM
+  lda #'H'+$80 
+  sta VARNAM+1
+  jsr safe_getvar
+  .byte $92
+  sta (VARPNT),y
+
   jsr $A644 ;do a "NEW"
   jmp $A474 ;"READY" prompt
 

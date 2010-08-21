@@ -29,7 +29,8 @@ all:  kipperbas.d64
 kipperbas.d64: kipperbas.prg 
 #	ripxplore.rb -r -e kbload $@ -o kbload
 #	ripxplore.rb -r -e kbapp $@ -o kbapp
-	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
+#	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
+	ripxplore.rb $@  -a kipperbas.prg
   
 clean:
 	rm -f *.o *.bin *.map *.prg
