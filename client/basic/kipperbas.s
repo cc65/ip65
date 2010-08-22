@@ -556,14 +556,14 @@ print:
 
 extract_string:
   jsr FRMEVL
-  jsr $AD8F   ;check result is a string, if not create type mismatch error
-  ldy $19 ;temp string created by FRMEVL
-  sty param_length
+  jsr FRESTR  ;if not string, will create type mismatch error
+  sta param_length
+  tay
   lda #0
   sta transfer_buffer,y  
   dey
 @loop:
-  lda ($1a),y
+  lda ($22),y
   sta transfer_buffer,y  
   dey  
   bpl @loop
@@ -1327,7 +1327,6 @@ tcpblat_keyword:
   ldx  #<transfer_buffer
   ldy #>transfer_buffer
   lda param_length
-
   jsr SETNAM
   lda #$02      ; file number 2
   ldx $BA       ; last used device number
