@@ -1,5 +1,9 @@
 
 .include "../inc/common.i"
+.ifndef KPR_API_VERSION_NUMBER
+  .define EQU     =
+  .include "../inc/kipper_constants.i"
+.endif
 
 VARTAB	=	$2D		;BASIC variable table storage
 ARYTAB	=	$2F		;BASIC array table storage
@@ -163,17 +167,9 @@ install_new_vectors_loop:
   bcs @init_failed
   lda #0
   sta ip65_error  
+  sta connection_state
 @init_failed:  
   jsr		set_error
-  
-;look for the CHAIN variabke
-  lda #'C'
-  sta VARNAM
-  lda #'H'+$80 
-  sta VARNAM+1
-  jsr safe_getvar
-  .byte $92
-  sta (VARPNT),y
 
   jsr $A644 ;do a "NEW"
   jmp $A474 ;"READY" prompt
@@ -339,6 +335,18 @@ list:
   bne @skip
   
 @not_on:  
+  cmp #$9B    ;is it "LIST"?
+
+  bne @not_list
+  lda #'L'
+  jsr CHROUT
+  lda #'I'
+  jsr CHROUT
+  lda #'S'
+  jsr CHROUT  
+  lda #'T'
+  bne @skip
+@not_list:
 	lda	keywords,y
 	bmi	@out  ;is it >=$80?
 @skip:
@@ -416,32 +424,31 @@ if_keyword:
   jsr CHRGOT
   jmp   execute_a ;execute current token  
 
-set_result_code:
-  pha
-  txa
-  pha
-  lda #'R'+$80 
+
+
+find_var:
   sta VARNAM
-  lda #'C'+$80 
-  sta VARNAM+1
+  stx VARNAM+1
   jsr safe_getvar  
   ldy #0
-  pla
-  sta (VARPNT),y
+  rts
+
+set_connection_state:  
+  lda #'C'+$80 
+  ldx #'O'+$80 
+  jsr find_var  
+  tya
+  sta (VARPNT),y  
   iny
-  pla
+  lda connection_state 
   sta (VARPNT),y
-clear_error:
-  lda #0
-  sta ip65_error
+    
 set_error:
   lda #'E'+$80 
-  sta VARNAM
-  lda #'R'+$80 
+  ldx #'R'+$80 
   sta VARNAM+1
-  jsr safe_getvar
+  jsr find_var
   lda #0
-  tay
   sta (VARPNT),y
   iny
   lda ip65_error
@@ -727,7 +734,10 @@ ipcfg_keyword:
   jsr print_dotted_quad
   jsr print_cr
 
-  jmp		clear_error  
+clear_error:
+  lda #0
+  sta ip65_error
+  jmp set_error
   
 dhcp_keyword:
   jsr dhcp_init
@@ -763,7 +773,6 @@ ping_keyword:
 @ping_loop:  
   jsr   icmp_ping
   bcs @error
-  jsr		set_result_code
   lda #'.'
 @print_and_loop:  
   jsr print_a  
@@ -1004,7 +1013,10 @@ get_integer:
 
 
 make_tcp_connection:
-   ldax  #tcp_connect_ip
+  lda #0
+  sta connection_state
+  jsr set_connection_state
+  ldax  #tcp_connect_ip
   jsr get_ip_parameter
   bcc @no_error
   rts
@@ -1015,12 +1027,14 @@ make_tcp_connection:
 @connect_error:
   ldax #connect
   jmp print_error
-
 :  
   ldax #connected_msg
   jsr print
+  lda #1
+  sta connection_state
   lda #0
-  sta connection_closed
+  sta ip65_error
+  jsr set_connection_state
   clc
   rts
   
@@ -1049,8 +1063,8 @@ netcat_keyword:
   jmp @main_polling_loop
 @no_timeout:  
   jsr ip65_process
-  lda connection_closed
-  beq @not_disconnected
+  lda connection_state
+  bne @not_disconnected
   ldax #disconnected
   jsr print
   rts
@@ -1068,8 +1082,8 @@ netcat_keyword:
   cmp #$3F  ;RUN/STOP?
   beq @runstop
   jsr ip65_process
-  lda connection_closed
-  beq :+
+  lda connection_state
+  bne :+
   ldax #disconnected
   jsr print
   rts
@@ -1174,8 +1188,8 @@ netcat_callback:
   lda tcp_inbound_data_length+1
   cmp #$ff
   bne @not_eof
-  lda #1
-  sta connection_closed
+  lda #0
+  sta connection_state
   rts
 @not_eof:
   
@@ -1222,14 +1236,12 @@ netcat_callback:
 
 
 tcpconnect_keyword:
-  lda #0
-  sta data_arrived_flag  
   ldax #tcpconnect_callback
   stax tcp_callback  
   jmp make_tcp_connection
 
 tcpconnect_callback:
-  inc data_arrived_flag
+  
   ldax #transfer_buffer
   stax  copy_dest
   ldax  tcp_inbound_data_ptr
@@ -1239,7 +1251,8 @@ tcpconnect_callback:
   beq @short_packet
   cpx #$ff
   bne @not_end_packet
-  inc data_arrived_flag
+  lda #0
+  sta connection_state
   rts
 @not_end_packet:
   lda #$ff
@@ -1248,10 +1261,8 @@ tcpconnect_callback:
 set_input_string:
   pha
   lda #'I'
-  sta VARNAM
-  lda #'N'+$80 
-  sta VARNAM+1
-  jsr safe_getvar
+  ldx #'N'+$80 
+  jsr find_var
   ldy #0
   pla
   pha
@@ -1270,19 +1281,108 @@ set_input_string:
   rts
 
 poll_keyword:
-  ldax #$FFFF
-  jsr set_result_code
   lda #0
-  sta data_arrived_flag  
   jsr set_input_string
+  jsr set_connection_state
   jsr ip65_process
   lda ip65_error
   beq @no_error
   jmp set_error
 @no_error:
-  lda data_arrived_flag
-  ldx #0
-  jmp set_result_code
+  jmp set_connection_state
+
+tcplisten_keyword:
+  lda #0
+  sta connection_state
+  sta ip65_error
+  ldax #tcpconnect_callback
+  stax tcp_callback  
+  jsr get_integer
+  jsr tcp_listen
+  bcs :+
+  inc connection_state
+:  
+  jmp set_connection_state
+
+tcpsend_keyword:
+  jsr extract_string
+  ldy param_length
+  sty tcp_send_data_len
+  ldy #0
+  sty tcp_send_data_len+1
+  ldax #transfer_buffer
+  jsr tcp_send
+  jmp set_connection_state
+
+tcpclose_keyword:
+  lda #0
+  sta connection_state
+  jsr tcp_close
+  jmp set_connection_state
+  
+tcpblat_keyword:
+
+  jsr extract_string
+  
+  ldx  #<transfer_buffer
+  ldy #>transfer_buffer
+  lda param_length
+
+  jsr SETNAM
+  lda #$02      ; file number 2
+  ldx $BA       ; last used device number
+  bne @skip
+  ldx #$08      ; default to device 8
+@skip:
+  ldy #$02      ; secondary address 2
+  jsr SETLFS
+  jsr OPEN
+  bcs @error    ; if carry set, the file could not be opened
+  ldx #$02      ; filenumber 2
+  jsr CHKIN
+  ldy #$00
+@loop:   
+  jsr READST
+  bne @eof          ; either EOF or read error
+  jsr CHRIN
+  sta transfer_buffer,y
+  iny 
+  bne @loop
+  ldax #$100
+  stax  tcp_send_data_len  
+  ldax  #transfer_buffer
+  jsr tcp_send
+  bcs @error_stored
+  ldy #0
+  jmp @loop
+@eof:
+  and #$40      ; end of file?
+  beq @readerror
+  lda #$00
+  sty  tcp_send_data_len
+  sta  tcp_send_data_len+1
+  ldax  #transfer_buffer
+  jsr tcp_send
+  bcs @error_stored
+  
+@close:
+  lda #0
+@store_error:  
+  sta ip65_error
+@error_stored:      
+  lda #$02      ; filenumber 2
+  jsr CLOSE        
+  ldx #$00      ; filenumber 0 = keyboard
+  jsr CHKIN ;keyboard now input device again
+  jmp set_error
+  
+@error:
+  lda #KPR_ERROR_DEVICE_FAILURE
+  jmp @store_error
+@readerror:
+  lda #KPR_ERROR_FILE_ACCESS_FAILURE
+  jmp @store_error
+
   
   
 .rodata
@@ -1365,10 +1465,14 @@ keywords:
   .byte "TF",$A1,$E9  ;TFGET - BASIC will replace GET with A1 
   .byte "TFPUT",$EA
   .byte "NETCAT",$EB
-  .byte "TCPC",$91,"NECT",$EC ; TCPCONNECT BASIC will replace ON with 91
+  .byte "TCPC",$91,"NECT",$EC ; TCPCONNECT - BASIC will replace ON with $91
   .byte "POLL",$ED
+  .byte "TCP",$9B,"EN",$EE ;TCPLISTEN - BASIC will replace LIST with $9b
+  .byte "TCPS",$80,$EF  ;TCPSEND - BASIC will replace END with $80
+  .byte "TCP",$A0,$F0  ;TCPLOSE - BASIC will replace CLOSE with $A0
+  .byte "TCPBLAT",$F1
 	.byte $00					;end of list
-HITOKEN=$EE
+HITOKEN=$F2
 
 ;
 ; Table of token locations-1
@@ -1388,6 +1492,10 @@ EA: .word tfput_keyword-1
 EB: .word netcat_keyword-1
 EC: .word tcpconnect_keyword-1
 ED: .word poll_keyword-1
+EE: .word tcplisten_keyword-1
+EF: .word tcpsend_keyword-1
+FO: .word tcpclose_keyword-1
+F1: .word tcpblat_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
@@ -1424,7 +1532,7 @@ ping_counter: .res 1
 string_buffer: .res 128
 transfer_buffer: .res 256
 file_opened: .res 1
-connection_closed: .res 1
+connection_state: .res 1
 netcat_timeout: .res 1
 buffer_length: .res 2
-data_arrived_flag: .res 1
+
