@@ -75,6 +75,12 @@ crunched_line      = $0200          ;Input buffer
 .import timer_read
 .import native_to_ascii
 .import ascii_to_native
+
+.import http_parse_request
+.import http_get_value
+.import http_variables_buffer
+
+
 .zeropage
 temp:	.res 2
 temp2:	.res 2
@@ -405,13 +411,6 @@ if_keyword:
   jmp   execute_a ;execute current token  
 
 
-
-find_var:
-  sta VARNAM
-  stx VARNAM+1
-  jsr safe_getvar  
-  ldy #0
-  rts
 
 ;emit the 4 bytes pointed at by AX as dotted decimals
 emit_dotted_quad:
@@ -805,16 +804,6 @@ hook_keyword:
   sta hook_table+5,y
   rts
 
-grok_keyword:
-  jsr extract_string
-  jsr find_hook
-  bcc @got_hook
-  ldx #$11 ;UNDEFED FUNCTION
-  jmp $A437		;print error
- @got_hook:
-  lda hook_table+4,y
-  ldx hook_table+5,y
-  jmp	goto
 
 goto:
   sta  $14
@@ -876,6 +865,101 @@ yield_keyword:
   rts
 gosub:
     
+bang_keyword:
+	jsr extract_string
+	ldy #0
+	sty	string_ptr
+@loop:
+	lda transfer_buffer,y
+	jsr	putchar
+	inc string_ptr
+	ldy string_ptr
+	cpy param_length
+	bne	@loop
+	rts
+
+	
+putchar:
+	jmp	$ffd2
+
+
+grok_keyword:
+  ldax #http_buffer
+  stax http_variables_buffer
+  jsr extract_string
+  ldax #transfer_buffer
+  jsr http_parse_request
+  lda #$02
+  jsr http_get_value
+  stax copy_src
+  ldy #0
+@copy_path:  
+  lda (copy_src),y
+  beq	@done
+  sta transfer_buffer,y
+  iny
+  bne	@copy_path
+@done:
+  sty string_length
+  lda #0
+  sta transfer_buffer,y
+  sty	param_length
+  sty	tmp_length
+  clc
+  lda	#'P'
+  sta VARNAM
+  lda	#'A'+$80  
+  jmp @set_var_value
+@copy_vars:
+  iny
+  lda (copy_src),y
+  beq	@last_var
+  tax	;var name
+  iny
+  clc
+  tya  
+  adc	copy_src
+  sta	copy_src
+  bcc	:+
+  inc	copy_src+1
+:  
+  ldy #0  
+:  
+  lda (copy_src),y
+  beq	@end_of_var
+  iny
+  bne :-
+@end_of_var:  
+  sty	tmp_length
+  clc
+  stx VARNAM
+  lda	#$80  
+@set_var_value:  
+  sta VARNAM+1
+  jsr safe_getvar
+  ldy	#0
+  lda tmp_length
+  sta (VARPNT),y
+  iny
+  lda copy_src
+  sta (VARPNT),y
+  iny
+  lda copy_src+1
+  sta (VARPNT),y
+  ldy tmp_length
+  jmp @copy_vars
+
+  
+ @last_var:
+ 
+  jsr find_hook
+  bcc @got_hook
+  ldx #$11 ;UNDEFED FUNCTION
+  jmp $A437		;print error
+ @got_hook:
+  lda hook_table+4,y
+  ldx hook_table+5,y
+  jmp	goto
 
 .rodata
 vectors:
@@ -946,8 +1030,9 @@ keywords:
   .byte "HOOK",$E8
   .byte "YIELD",$E9
   .byte "GROK",$EA
+  .byte "!",$EB
 	.byte $00					;end of list
-HITOKEN=$EB
+HITOKEN=$EC
 
 ;
 ; Table of token locations-1
@@ -964,6 +1049,7 @@ E7: .word dns_keyword-1
 E8: .word hook_keyword-1
 E9: .word yield_keyword-1
 EA: .word grok_keyword-1
+EB: .word bang_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
@@ -983,7 +1069,7 @@ current_output_ptr=emit_a+1
 :  
   rts
 
-MAX_HOOKS=4
+MAX_HOOKS=40
 
 hook_table:
 .res MAX_HOOKS*6
@@ -998,10 +1084,13 @@ hooks: .byte 0
 .bss
 string_length: .res 1
 param_length: .res 1
+tmp_length: .res 1
 temp_bin: .res 1
 temp_bcd: .res 2
 ping_counter: .res 1
+http_buffer: .res 256
 string_buffer: .res 128
 transfer_buffer: .res 256
 handler_address: .res 2
 hash: .res 1
+string_ptr: .res 1
