@@ -954,13 +954,21 @@ grok_keyword:
  
   jsr find_hook
   bcc @got_hook
-  ldx #$11 ;UNDEFED FUNCTION
-  jmp $A437		;print error
+  ldax default_line_number
+  jmp goto
  @got_hook:
   lda hook_table+4,y
   ldx hook_table+5,y
   jmp	goto
 
+
+httpd_keyword:
+	jsr get_integer
+	stax	httpd_port
+	jsr skip_comma_get_integer
+	stax	default_line_number
+	rts
+	
 .rodata
 vectors:
 	.word crunch	
@@ -1020,19 +1028,20 @@ connected_msg:
 
 keywords:                    
   .byte "IF",$E0  ;our dummy 'IF' entry takes $E0
-	.byte "IPCFG",$E1
-	.byte "DHCP",$E2
-  .byte "PING",$E3
-  .byte "MYIP",$E4
-  .byte "NETMASK",$E5
-  .byte "GATEWAY",$E6
-  .byte "DNS",$E7
-  .byte "HOOK",$E8
-  .byte "YIELD",$E9
-  .byte "GROK",$EA
-  .byte "!",$EB
-	.byte $00					;end of list
-HITOKEN=$EC
+   	.byte "IPCFG",$E1
+   	.byte "DHCP",$E2
+	.byte "PING",$E3
+  	.byte "MYIP",$E4
+  	.byte "NETMASK",$E5
+  	.byte "GATEWAY",$E6
+  	.byte "DNS",$E7
+  	.byte "HOOK",$E8
+  	.byte "YIELD",$E9
+  	.byte "GROK",$EA
+  	.byte "!",$EB
+  	.byte "HTTPD",$EC
+  	.byte $00					;end of list
+HITOKEN=$ED
 
 ;
 ; Table of token locations-1
@@ -1050,6 +1059,7 @@ E8: .word hook_keyword-1
 E9: .word yield_keyword-1
 EA: .word grok_keyword-1
 EB: .word bang_keyword-1
+EC: .word httpd_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
@@ -1094,3 +1104,5 @@ transfer_buffer: .res 256
 handler_address: .res 2
 hash: .res 1
 string_ptr: .res 1
+httpd_port: .res 2
+default_line_number: .res 2
