@@ -27,6 +27,8 @@ MAX_TCP_PACKETS_SENT=8     ;timeout after sending 8 messages will be about 7 sec
 .export tcp_close
 .export tcp_listen
 .export tcp_send_keep_alive
+.export tcp_connect_remote_port
+.export tcp_remote_ip
 
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length

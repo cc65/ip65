@@ -81,6 +81,7 @@ crunched_line      = $0200          ;Input buffer
 .import http_variables_buffer
 
 
+
 .zeropage
 temp:	.res 2
 temp2:	.res 2
@@ -566,6 +567,16 @@ make_null_terminated_and_print:
   ldax #string_buffer
   jmp print
 
+print_integer:
+sta $63
+stx $62
+jmp $bdd1 ;BASIC routine
+
+print_decimal:
+  jsr reset_string
+  jsr emit_decimal
+  jmp make_null_terminated_and_print
+
 print_mac:
   jsr reset_string
   jsr emit_mac
@@ -888,7 +899,8 @@ grok_keyword:
   stax http_variables_buffer
   jsr extract_string
   ldax #transfer_buffer
-  jsr http_parse_request
+got_http_request:  
+  jsr http_parse_request  
   lda #$02
   jsr http_get_value
   stax copy_src
@@ -964,10 +976,19 @@ grok_keyword:
 
 httpd_keyword:
 	jsr get_integer
-	stax	httpd_port
+	stax httpd_port_number
 	jsr skip_comma_get_integer
 	stax	default_line_number
-	rts
+  ldax #listening
+  jsr print
+  ldax  #cfg_ip
+  jsr print_dotted_quad
+  lda #':'
+  jsr print_a
+  ldax httpd_port_number
+  jsr print_integer
+  jsr print_cr
+  jmp httpd_start
 	
 .rodata
 vectors:
@@ -982,6 +1003,9 @@ vectors:
 ; so they easily mark the end of the keyword
 hexdigits:
 .byte "0123456789ABCDEF"
+
+listening:
+.byte"LISTENING ON ",0
 
 pinging:
 .byte"PINGING ",0
@@ -1104,5 +1128,25 @@ transfer_buffer: .res 256
 handler_address: .res 2
 hash: .res 1
 string_ptr: .res 1
-httpd_port: .res 2
 default_line_number: .res 2
+
+
+.include "httpd.inc"
+;-- LICENSE FOR bails.s --
+; The contents of this file are subject to the Mozilla Public License
+; Version 1.1 (the "License"); you may not use this file except in
+; compliance with the License. You may obtain a copy of the License at
+; http://www.mozilla.org/MPL/
+; 
+; Software distributed under the License is distributed on an "AS IS"
+; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+; License for the specific language governing rights and limitations
+; under the License.
+; 
+; The Original Code is netboot65.
+; 
+; The Initial Developer of the Original Code is Jonno Downes,
+; jonno@jamtronix.com.
+; Portions created by the Initial Developer are Copyright (C) 2009,2010
+; Jonno Downes. All Rights Reserved.  
+; -- LICENSE END --

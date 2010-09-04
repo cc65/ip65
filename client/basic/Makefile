@@ -19,6 +19,9 @@ C64PROGLIB=../drivers/c64prog.lib
 
 all:  kipperbas.d64 bails.prg
 
+bails.o: bails.s $(INCFILES) httpd.inc
+	$(AS) $(AFLAGS) $<
+
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 	
