@@ -1,7 +1,10 @@
 
 10 dhcp
 20 hook"/hello",1000 
-30 httpd80,100
+25 fa$="/"+chr$(102)+chr$(97)+chr$(118)+chr$(105)+chr$(99)+chr$(111)
+27 fa$=fa$+chr$(110)+chr$(46)+chr$(105)+chr$(99)+chr$(111)
+30 hookfa$,2000
+40 httpd80,100
 100 !"<h1>hello</h1>"
 110 !"<form action=/hello>"
 120 !"what's your name?"
@@ -13,3 +16,6 @@
 1000!"<br>hello "+n$+", i'm a c64 running basic on bails."
 1010 yield
 
+2000 type"image/x-icon"
+2010 xsend"favicon.ico"
+2020 yield
