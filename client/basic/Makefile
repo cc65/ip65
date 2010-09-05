@@ -17,10 +17,8 @@ IP65LIB=../ip65/ip65_tcp.lib
 
 C64PROGLIB=../drivers/c64prog.lib
 
-all:  kipperbas.d64 bails.prg
+all:  kipperbas.d64 bails.d64
 
-bails.o: bails.s $(INCFILES) httpd.inc
-	$(AS) $(AFLAGS) $<
 
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
@@ -29,12 +27,18 @@ bails.o: bails.s $(INCFILES) httpd.inc
 	$(LD) -m  $*.map -vm -C ../cfg/kipperbas.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
                                       
 
+bails.d64: bails.prg 
+#	ripxplore.rb -r -e kbload $@ -o kbload
+#	ripxplore.rb -r -e kbapp $@ -o kbapp
+#	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
+	ripxplore.rb $@  -a bails.prg
+
 kipperbas.d64: kipperbas.prg 
 #	ripxplore.rb -r -e kbload $@ -o kbload
 #	ripxplore.rb -r -e kbapp $@ -o kbapp
 #	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
 	ripxplore.rb $@  -a kipperbas.prg
-  
+
 clean:
 	rm -f *.o *.bin *.map *.prg
 
