@@ -118,6 +118,23 @@ basicstub:
 @nextline:
 	.word 0  
 relocate:  
+  lda MEMSIZ+1
+  cmp	#$A0	;standard end of memory
+  beq	ok_to_install
+  
+  ldy #0
+@loop:  
+  lda not_installing,y
+  beq	@done  
+  jsr	$ffd2
+  iny
+  bne	@loop
+@done:
+  rts
+not_installing:
+  .byte "INSUFFICIENT FREE MEMORY",0
+ok_to_install:  
+  
   ldax  #end_of_loader
   stax  copy_src
   ldax  #main_start
@@ -179,10 +196,19 @@ install_new_vectors_loop:
   ;BASIC keywords installed, now bring up the ip65 stack
     
   jsr ip65_init
-@init_failed:  
-
+  bcc @init_ok
+  ldax #@no_nic
+  jsr	print
+@reboot:  
+  jsr	$e453	;reset vectors
+  jsr	$e3bf	;init BASIC
+  jsr	$a644	;NEW
+  jmp	$e39d
+@no_nic:
+  .byte "NO RR-NET FOUND - UNINSTALLING",0  
+  
+@init_ok:
   jsr $A644 ;do a "NEW"
-
   jmp $A474 ;"READY" prompt
 
 welcome_banner:
@@ -783,6 +809,15 @@ netmask_keyword:
   ldax #cfg_netmask
   jmp get_ip_parameter  
 
+mac_keyword:
+  jsr extract_string  
+  ldy #5
+:  
+  lda transfer_buffer,y
+  sta cfg_mac,y
+  dey
+  bpl:-
+  rts
   
 
 skip_comma_get_integer:
@@ -1535,8 +1570,9 @@ keywords:
     .byte "TYPE",$ED
     .byte "STATUS",$EE
     .byte "FLUSH",$EF
+    .byte "MAC",$F0
   	.byte $00					;end of list
-HITOKEN=$F0
+HITOKEN=$F1
 
 ;
 ; Table of token locations-1
@@ -1558,6 +1594,7 @@ EC: .word httpd_keyword-1
 ED: .word type_keyword-1
 EE: .word status_keyword-1
 EF: .word flush_keyword-1
+F0: .word mac_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 

@@ -109,6 +109,22 @@ basicstub:
 @nextline:
 	.word 0  
 relocate:  
+  lda MEMSIZ+1
+  cmp	#$A0	;standard end of memory
+  beq	ok_to_install
+  
+  ldy #0
+@loop:  
+  lda not_installing,y
+  beq	@done  
+  jsr	$ffd2
+  iny
+  bne	@loop
+@done:
+  rts
+not_installing:
+  .byte "INSUFFICIENT FREE MEMORY",0
+ok_to_install:  
   ldax  #end_of_loader
   stax  copy_src
   ldax  #main_start
@@ -164,13 +180,24 @@ install_new_vectors_loop:
   ;BASIC keywords installed, now bring up the ip65 stack
     
   jsr ip65_init
-  bcs @init_failed
+  bcc @init_ok
+  ldax #@no_nic
+  jsr	print
+@reboot:  
+  jsr	$e453	;reset vectors
+  jsr	$e3bf	;init BASIC
+  jsr	$a644	;NEW
+  jmp	$e39d
+@no_nic:
+  .byte "NO RR-NET FOUND - UNINSTALLING",0  
+  
+@init_ok:
+
   lda #0
   sta ip65_error  
   sta connection_state
-@init_failed:  
   jsr		set_error
-
+@exit:
   jsr $A644 ;do a "NEW"
   jmp $A474 ;"READY" prompt
 
@@ -372,8 +399,9 @@ list:
 execute:                          
 	jsr	CHRGET
 execute_a:
-	php
-  
+  php
+  cmp #':'  ;is it a colon?
+  beq	execute;if so, skip over and go to next token
   cmp #$8B  ;is it 'IF'?
   bne @not_if
   lda #$E0  ;our dummy IF token
@@ -751,6 +779,16 @@ dhcp_keyword:
 @init_ok:
   jmp		clear_error  
  rts
+
+mac_keyword:
+  jsr extract_string  
+  ldy #5
+:  
+  lda transfer_buffer,y
+  sta cfg_mac,y
+  dey
+  bpl:-
+  rts
 
 ping_keyword:
   ldax  #icmp_echo_ip
@@ -1470,8 +1508,9 @@ keywords:
   .byte "TCPS",$80,$EF  ;TCPSEND - BASIC will replace END with $80
   .byte "TCP",$A0,$F0  ;TCPLOSE - BASIC will replace CLOSE with $A0
   .byte "TCPBLAT",$F1
+  .byte "MAC",$F2
 	.byte $00					;end of list
-HITOKEN=$F2
+HITOKEN=$F3
 
 ;
 ; Table of token locations-1
@@ -1495,6 +1534,7 @@ EE: .word tcplisten_keyword-1
 EF: .word tcpsend_keyword-1
 FO: .word tcpclose_keyword-1
 F1: .word tcpblat_keyword-1
+F2: .word mac_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
