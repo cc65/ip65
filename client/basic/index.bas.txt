@@ -12,7 +12,6 @@
 140 !"</form>"
 200 yield
 
-100 !"<h1>hello</h1>"
 1000!"<br>hello "+n$+", i'm a c64 running basic on bails."
 1010 yield
 

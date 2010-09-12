@@ -79,6 +79,7 @@ crunched_line      = $0200          ;Input buffer
 .import print_cr
 .import dhcp_server
 .import cfg_mac
+.import cfg_mac_default
 .import cs_driver_name
 .importzp tftp_filename
 .import tftp_ip
@@ -130,7 +131,7 @@ relocate:
 @done:
   rts
 not_installing:
-  .byte "INSUFFICIENT FREE MEMORY",0
+  .byte "INSUFFICIENT FREE MEMORY",13,0
 ok_to_install:  
   ldax  #end_of_loader
   stax  copy_src
@@ -790,12 +791,13 @@ dhcp_keyword:
 
 mac_keyword:
   jsr extract_string  
-  ldy #5
+  ldy #2
 :  
   lda transfer_buffer,y
-  sta cfg_mac,y
+  sta cfg_mac_default+3,y
   dey
   bpl:-
+  jsr ip65_init
   rts
 
 ping_keyword:

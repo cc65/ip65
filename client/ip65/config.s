@@ -4,6 +4,7 @@
 .include "../inc/common.i"
 
 	.export cfg_mac
+  .export cfg_mac_default
 	.export cfg_ip
 	.export cfg_netmask
 	.export cfg_gateway
