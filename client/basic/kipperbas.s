@@ -99,12 +99,19 @@ pptr=temp
 .word basicstub		; load address
 basicstub:
 	.word @nextline
-	.word 2003    ;line number
+	.word 10    ;line number
 	.byte $9e     ;SYS
 	.byte <(((relocate / 1000) .mod 10) + $30)
 	.byte <(((relocate / 100 ) .mod 10) + $30)
 	.byte <(((relocate / 10  ) .mod 10) + $30)
 	.byte <(((relocate       ) .mod 10) + $30)
+	.byte ":"
+	.byte "D"
+	.byte $b2	;=
+	.byte $c2	;PEEK
+	.byte "(186):"
+	.byte $93	;LOAD
+	.byte $22,"AUTOEXEC.BAS",$22,",D"
 	.byte 0
 @nextline:
 	.word 0  
@@ -198,9 +205,10 @@ install_new_vectors_loop:
   sta connection_state
   jsr		set_error
 @exit:
-  jsr $A644 ;do a "NEW"
-  jmp $A474 ;"READY" prompt
-
+ ; jsr $A644 ;do a "NEW"
+ ; jmp $A474 ;"READY" prompt
+  rts
+	
 welcome_banner:
 .incbin "welcome_banner.txt"
 .byte 0
