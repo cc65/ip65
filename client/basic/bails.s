@@ -76,6 +76,7 @@ crunched_line      = $0200          ;Input buffer
 .import print_cr
 .import dhcp_server
 .import cfg_mac
+.import cfg_mac_default
 .import cs_driver_name
 .import get_key_if_available
 .import timer_read
@@ -108,12 +109,19 @@ pptr=temp
 .word basicstub		; load address
 basicstub:
 	.word @nextline
-	.word 2003    ;line number
+	.word 10    ;line number
 	.byte $9e     ;SYS
 	.byte <(((relocate / 1000) .mod 10) + $30)
 	.byte <(((relocate / 100 ) .mod 10) + $30)
 	.byte <(((relocate / 10  ) .mod 10) + $30)
 	.byte <(((relocate       ) .mod 10) + $30)
+	.byte ":"
+	.byte "D"
+	.byte $b2	;=
+	.byte $c2	;PEEK
+	.byte "(186):"
+	.byte $93	;LOAD
+	.byte $22,"INDEX.BAS",$22,",D"
 	.byte 0
 @nextline:
 	.word 0  
@@ -208,9 +216,10 @@ install_new_vectors_loop:
   .byte "NO RR-NET FOUND - UNINSTALLING",0  
   
 @init_ok:
-  jsr $A644 ;do a "NEW"
-  jmp $A474 ;"READY" prompt
-
+;  jsr $A644 ;do a "NEW"
+;  jmp $A474 ;"READY" prompt
+  rts ;so BASIC will LOAD & RUN INDEX.BAS
+  
 welcome_banner:
 .byte "### BASIC ON BAILS ###",13
 .byte 0
@@ -811,12 +820,13 @@ netmask_keyword:
 
 mac_keyword:
   jsr extract_string  
-  ldy #5
+  ldy #2
 :  
   lda transfer_buffer,y
-  sta cfg_mac,y
+  sta cfg_mac_default+3,y
   dey
   bpl:-
+  jsr ip65_init
   rts
   
 
