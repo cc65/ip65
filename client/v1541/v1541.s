@@ -17,6 +17,8 @@ SERVER_PORT=1541
 .import dns_ip
 .import	print_a
 .import tcp_connect_ip
+.import tcp_send
+.import tcp_send_data_len
 .import tcp_send_string
 .import tcp_connect
 .import tcp_close
@@ -273,12 +275,32 @@ load_dev_2:
   lda (FNADDR),y
   cmp #'!'
   beq @do_disks
+  cmp #'>'
+  beq @do_command
+
 @done:
   clc  
 	jmp	swap_basic_in
 
+@do_command:
+  ldy FNLEN
+@copy_cmd:
+  lda (FNADDR),y
+  sta cmd_buffer-1,y
+  dey
+  bne @copy_cmd
+  ldy FNLEN
+  lda #$0D
+  sta cmd_buffer-1,y
+  lda #0
+  sta cmd_buffer,y
+  
+  ldax #cmd_buffer
+  jmp@send_string_show_list
+  
 @do_disks:
 	ldax	  #@cmd_dsks
+@send_string_show_list:
   jsr tcp_send_string	
   bcs @error
 	jsr show_list
@@ -511,7 +533,8 @@ old_irq_vector:
 underneath_basic: .res 1
 
 .segment "TCP_VARS"
-csip_stream_buffer: .res 1600
+csip_stream_buffer: .res 1500
+cmd_buffer: .res 100
 user_abort: .res 1
 getc_timeout_end: .res 1
 getc_timeout_seconds: .res 1
