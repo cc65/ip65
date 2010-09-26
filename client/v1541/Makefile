@@ -15,7 +15,7 @@ IP65LIB=../ip65/ip65_tcp.lib
 
 C64PROGLIB=../drivers/c64prog.lib
 
-all: v1541.prg v1541.d64
+all: v1541.prg 
 
 
 %.o: %.s $(INCFILES) 
