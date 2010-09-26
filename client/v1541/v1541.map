@@ -1,0 +1,605 @@
+Modules list:
+-------------
+v1541.o:
+    CODE              Offs = 000000   Size = 00001D
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000000   Size = 000000
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    STARTUP           Offs = 000000   Size = 000108
+    CODESTUB          Offs = 000000   Size = 00001D
+../ip65/ip65_tcp.lib(copymem.o):
+    CODE              Offs = 00001D   Size = 000027
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000000   Size = 000001
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    IP65ZP            Offs = 000000   Size = 000004
+../ip65/ip65_tcp.lib(config.o):
+    CODE              Offs = 000044   Size = 00001D
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000001   Size = 00001F
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    IP65_DEFAULTS     Offs = 000000   Size = 00001F
+../ip65/ip65_tcp.lib(timer.o):
+    CODE              Offs = 000061   Size = 000018
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000020   Size = 000002
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(cs8900a.o):
+    CODE              Offs = 000079   Size = 000151
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000022   Size = 000BE0
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    IP65ZP            Offs = 000004   Size = 000002
+../ip65/ip65_tcp.lib(eth.o):
+    CODE              Offs = 0001CA   Size = 000020
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C02   Size = 000000
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(arp.o):
+    CODE              Offs = 0001EA   Size = 000202
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C02   Size = 000066
+    DATA              Offs = 000000   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    IP65ZP            Offs = 000006   Size = 000002
+../ip65/ip65_tcp.lib(udp.o):
+    CODE              Offs = 0003EC   Size = 00017C
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C68   Size = 00001F
+    DATA              Offs = 000000   Size = 000003
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(ip65.o):
+    CODE              Offs = 000568   Size = 00005A
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C87   Size = 000004
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(dhcp.o):
+    CODE              Offs = 0005C2   Size = 00028A
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C8B   Size = 000005
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(output_buffer.o):
+    CODE              Offs = 00084C   Size = 000000
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000C90   Size = 000208
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(arithmetic.o):
+    CODE              Offs = 00084C   Size = 00009D
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000E98   Size = 000002
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../ip65/ip65_tcp.lib(ip.o):
+    CODE              Offs = 0008E9   Size = 000212
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000E9A   Size = 00000C
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    IP65ZP            Offs = 000008   Size = 000002
+../ip65/ip65_tcp.lib(tcp.o):
+    CODE              Offs = 000AFB   Size = 000664
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000EA6   Size = 000000
+    DATA              Offs = 000003   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    TCP_VARS          Offs = 000000   Size = 000041
+../ip65/ip65_tcp.lib(icmp.o):
+    CODE              Offs = 00115F   Size = 000230
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000EA6   Size = 000009
+    DATA              Offs = 000003   Size = 000003
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+    TCP_VARS          Offs = 000041   Size = 000008
+../drivers/c64prog.lib(c64print.o):
+    CODE              Offs = 00138F   Size = 000058
+    RODATA            Offs = 000000   Size = 000000
+    BSS               Offs = 000EAF   Size = 000001
+    DATA              Offs = 000006   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../drivers/c64prog.lib(rr-net.o):
+    CODE              Offs = 0013E7   Size = 000009
+    RODATA            Offs = 000000   Size = 000007
+    BSS               Offs = 000EB0   Size = 000000
+    DATA              Offs = 000006   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../drivers/c64prog.lib(c64timer.o):
+    CODE              Offs = 0013F0   Size = 000033
+    RODATA            Offs = 000007   Size = 000000
+    BSS               Offs = 000EB0   Size = 000000
+    DATA              Offs = 000006   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+../drivers/c64prog.lib(c64inputs.o):
+    CODE              Offs = 001423   Size = 0000DA
+    RODATA            Offs = 000007   Size = 000000
+    BSS               Offs = 000EB0   Size = 00002D
+    DATA              Offs = 000006   Size = 000000
+    ZEROPAGE          Offs = 000000   Size = 000000
+    NULL              Offs = 000000   Size = 000000
+
+
+Segment list:
+-------------
+Name                  Start   End     Size
+--------------------------------------------
+NULL                  000000  000000  000000
+IP65ZP                0000A3  0000AC  00000A
+ZEROPAGE              0000AD  0000AD  000000
+STARTUP               0007FF  000906  000108
+CODE                  00A000  00B4FC  0014FD
+RODATA                00B4FD  00B503  000007
+DATA                  00B504  00B509  000006
+IP65_DEFAULTS         00C000  00C01E  00001F
+CODESTUB              00C01F  00C03B  00001D
+BSS                   00C03C  00CF18  000EDD
+TCP_VARS              00CF19  00CF61  000049
+
+
+Exports list:
+-------------
+__CODESTUB_LOAD__         001E30 RLA    __CODESTUB_RUN__          00C01F RLA    
+__CODESTUB_SIZE__         00001D REA    __CODE_LOAD__             000907 RLA    
+__CODE_RUN__              00A000 RLA    __CODE_SIZE__             0014FD REA    
+__DATA_LOAD__             001E0B RLA    __DATA_RUN__              00B504 RLA    
+__DATA_SIZE__             000006 REA    __IP65_DEFAULTS_LOAD__    001E11 RLA    
+__IP65_DEFAULTS_RUN__     00C000 RLA    __IP65_DEFAULTS_SIZE__    00001F REA    
+__RODATA_LOAD__           001E04 RLA    __RODATA_RUN__            00B4FD RLA    
+__RODATA_SIZE__           000007 REA    __UNDERBASIC_LAST__       00B50A  LA    
+__UNDERBASIC_SIZE__       002000  EA    __UNDERBASIC_START__      00A000  LA    
+ac_size                   000008  EZ    acc16                     0000A3 REZ    
+acc32                     0000A3 REZ    add_16_32                 00A8A5 RLA    
+add_32_32                 00A886  LA    arp_add                   00A376  LA    
+arp_cache                 00CC49  LA    arp_calculate_gateway_mask 00A1F4 RLA    
+arp_init                  00A1EA RLA    arp_ip                    00CC45 RLA    
+arp_lookup                00A219 RLA    arp_mac                   00CC3F RLA    
+arp_process               00A2F8 RLA    beep                      00B399  LA    
+cfg_default_drive         00C05B  LA    cfg_dns                   00C04F RLA    
+cfg_gateway               00C04B RLA    cfg_get_configuration_ptr 00A044  LA    
+cfg_init                  00A04A RLA    cfg_ip                    00C043 RLA    
+cfg_mac                   00C03D RLA    cfg_mac_default           00C000  LA    
+cfg_netmask               00C047 RLA    cfg_tftp_server           00C057  LA    
+check_for_abort_key       00B432 RLA    cls                       00B394  LA    
+cmp_16_16                 00A868 RLA    cmp_32_32                 00A84C RLA    
+copy_dest                 0000A5 RLZ    copy_src                  0000A3 RLZ    
+copymem                   00A01D RLA    cs_driver_name            00B4FD  LA    
+cs_init                   00B3E7 RLA    cs_packet_data            00DE04 REA    
+cs_packet_page            00DE02 REA    cs_rxtx_data              00DE08 REA    
+cs_tx_cmd                 00DE0C REA    cs_tx_len                 00DE0E REA    
+dhcp_init                 00A5C2 RLA    dhcp_server               00C053 RLA    
+dhcp_state                00CCC7  LA    eth_data                  00000E REZ    
+eth_dest                  000000 REZ    eth_init                  00A079 RLA    
+eth_inp                   00C060 RLA    eth_inp_len               00C05E RLA    
+eth_outp                  00C650 RLA    eth_outp_len              00C64E RLA    
+eth_proto_arp             000006 REZ    eth_proto_ip              000000 REZ    
+eth_rx                    00A0D2 RLA    eth_set_broadcast_dest    00A1CA RLA    
+eth_set_my_mac_src        00A1D5 RLA    eth_set_proto             00A1E1 RLA    
+eth_src                   000006 REZ    eth_tx                    00A133 RLA    
+eth_type                  00000C  EZ    filter_dns                00B4D6  LA    
+filter_ip                 00B4F1  LA    filter_number             00B4F2  LA    
+filter_text               00B4C7  LA    filter_url                00B4CF  LA    
+get_filtered_input        00B447  LA    get_key                   00B423  LA    
+get_key_if_available      00F142  EA    get_key_ip65              00B429  LA    
+icmp_add_listener         00B20B  LA    icmp_callback             00CEE2  LA    
+icmp_cksum                000002  EZ    icmp_code                 000001  EZ    
+icmp_data                 000004  EZ    icmp_echo_ip              00CF5A  LA    
+icmp_init                 00B15F RLA    icmp_inp                  00C082  EA    
+icmp_outp                 00C672  EA    icmp_ping                 00B2DC  LA    
+icmp_process              00B165 RLA    icmp_remove_listener      00B237  LA    
+icmp_send_echo            00B26C  LA    icmp_type                 000000  EZ    
+ip65_ctr                  00CCC3  LA    ip65_ctr_arp              00CCC4  LA    
+ip65_ctr_ip               00CCC5  LA    ip65_error                00CCC6 RLA    
+ip65_init                 00A587  LA    ip65_process              00A5A0 RLA    
+ip65_random_word          00A568 RLA    ip_broadcast              00CEDA RLA    
+ip_calc_cksum             00AA57 RLA    ip_cksum_ptr              0000AB RLZ    
+ip_create_packet          00A9C3 RLA    ip_data                   000014 REZ    
+ip_dest                   000010 REZ    ip_frag                   000006  EZ    
+ip_header_cksum           00000A REZ    ip_id                     000004 REZ    
+ip_init                   00A8E9 RLA    ip_inp                    00C06E REA    
+ip_len                    000002 REZ    ip_outp                   00C65E REA    
+ip_process                00A901 RLA    ip_proto                  000009 REZ    
+ip_proto_icmp             000001 REZ    ip_proto_tcp              000006 REZ    
+ip_proto_udp              000011 REZ    ip_send                   00A9F0 RLA    
+ip_src                    00000C REZ    ip_tos                    000001  EZ    
+ip_ttl                    000008  EZ    ip_ver_ihl                000000  EZ    
+mul_8_16                  00A8C1  LA    op32                      0000A5 REZ    
+output_buffer             00CCCC RLA    print_a                   00FFD2 REA    
+print_a_inverse           00B3D8  LA    print_cr                  00B38F  LA    
+screen_current_col        0000D3  EZ    screen_current_row        0000D6  EZ    
+sub_16_16                 00A870 RLA    tcp_callback              00CF32  LA    
+tcp_close                 00AC0F  LA    tcp_connect               00AB3D  LA    
+tcp_connect_ip            00CF53  LA    tcp_connect_remote_port   00CF51  LA    
+tcp_inbound_data_length   00CF39  LA    tcp_inbound_data_ptr      00CF37  LA    
+tcp_init                  00AAFB RLA    tcp_listen                00AAFF  LA    
+tcp_process               00AEED RLA    tcp_remote_ip             00CF1E  LA    
+tcp_send                  00ACD6  LA    tcp_send_data_len         00CF30  LA    
+tcp_send_keep_alive       00B11E  EA    tcp_send_string           00ACAE  LA    
+timer_init                00B3F0 RLA    timer_read                00B417 RLA    
+timer_timeout             00A061 RLA    udp_add_listener          00A424 RLA    
+udp_callback              00CCA4 RLA    udp_cksum                 000006  EZ    
+udp_data                  000008 REZ    udp_dest_port             000002  EZ    
+udp_init                  00A3EC RLA    udp_inp                   00C082 REA    
+udp_len                   000004  EZ    udp_outp                  00C672  EA    
+udp_process               00A3F2 RLA    udp_remove_listener       00A46B RLA    
+udp_send                  00A4B7 RLA    udp_send_dest             00CCA6 RLA    
+udp_send_dest_port        00CCAC RLA    udp_send_len              00CCAE RLA    
+udp_send_src_port         00CCAA RLA    udp_src_port              000000  EZ    
+
+
+
+Imports list:
+-------------
+__CODESTUB_LOAD__ ([linker generated]):
+    v1541.o                   v1541.s(37)
+__CODESTUB_RUN__ ([linker generated]):
+    v1541.o                   v1541.s(38)
+__CODESTUB_SIZE__ ([linker generated]):
+    v1541.o                   v1541.s(39)
+__CODE_LOAD__ ([linker generated]):
+    v1541.o                   v1541.s(21)
+__CODE_RUN__ ([linker generated]):
+    v1541.o                   v1541.s(22)
+__CODE_SIZE__ ([linker generated]):
+    v1541.o                   v1541.s(23)
+__DATA_LOAD__ ([linker generated]):
+    v1541.o                   v1541.s(29)
+__DATA_RUN__ ([linker generated]):
+    v1541.o                   v1541.s(30)
+__DATA_SIZE__ ([linker generated]):
+    v1541.o                   v1541.s(31)
+__IP65_DEFAULTS_LOAD__ ([linker generated]):
+    v1541.o                   v1541.s(33)
+__IP65_DEFAULTS_RUN__ ([linker generated]):
+    v1541.o                   v1541.s(34)
+__IP65_DEFAULTS_SIZE__ ([linker generated]):
+    v1541.o                   v1541.s(35)
+__RODATA_LOAD__ ([linker generated]):
+    v1541.o                   v1541.s(25)
+__RODATA_RUN__ ([linker generated]):
+    v1541.o                   v1541.s(26)
+__RODATA_SIZE__ ([linker generated]):
+    v1541.o                   v1541.s(27)
+__UNDERBASIC_LAST__ ([linker generated]):
+__UNDERBASIC_SIZE__ ([linker generated]):
+__UNDERBASIC_START__ ([linker generated]):
+ac_size (arp.o):
+acc16 (arithmetic.o):
+    tcp.o                     tcp.s(50)
+acc32 (arithmetic.o):
+    tcp.o                     tcp.s(48)
+add_16_32 (arithmetic.o):
+    tcp.o                     tcp.s(53)
+add_32_32 (arithmetic.o):
+arp_add (arp.o):
+arp_cache (arp.o):
+arp_calculate_gateway_mask (arp.o):
+    dhcp.o                    dhcp.s(29)
+arp_init (arp.o):
+    ip65.o                    ip65.s(23)
+arp_ip (arp.o):
+    ip.o                      ip.s(48)
+arp_lookup (arp.o):
+    ip.o                      ip.s(46)
+arp_mac (arp.o):
+    ip.o                      ip.s(47)
+arp_process (arp.o):
+    ip65.o                    ip65.s(32)
+beep (c64print.o):
+cfg_default_drive (config.o):
+cfg_dns (config.o):
+    dhcp.o                    dhcp.s(27)
+cfg_gateway (config.o):
+    arp.o                     arp.s(28)
+    dhcp.o                    dhcp.s(26)
+cfg_get_configuration_ptr (config.o):
+cfg_init (config.o):
+    ip65.o                    ip65.s(19)
+cfg_ip (config.o):
+    tcp.o                     tcp.s(74)
+    ip.o                      ip.s(30)
+    udp.o                     udp.s(55)
+    arp.o                     arp.s(26)
+    dhcp.o                    dhcp.s(24)
+cfg_mac (config.o):
+    eth.o                     eth.s(14)
+    cs8900a.o                 cs8900a.s(35)
+    ip.o                      ip.s(29)
+    arp.o                     arp.s(25)
+    dhcp.o                    dhcp.s(23)
+cfg_mac_default (config.o):
+cfg_netmask (config.o):
+    arp.o                     arp.s(27)
+    dhcp.o                    dhcp.s(25)
+cfg_tftp_server (config.o):
+check_for_abort_key (c64inputs.o):
+    tcp.o                     tcp.s(44)
+    dhcp.o                    dhcp.s(49)
+cls (c64print.o):
+cmp_16_16 (arithmetic.o):
+    tcp.o                     tcp.s(55)
+cmp_32_32 (arithmetic.o):
+    tcp.o                     tcp.s(54)
+copy_dest (copymem.o):
+    arithmetic.o              arithmetic.s(7)
+    tcp.o                     tcp.s(72)
+    udp.o                     udp.s(53)
+    config.o                  config.s(19)
+    v1541.o                   v1541.s(15)
+copy_src (copymem.o):
+    c64inputs.o               c64inputs.s(11)
+    arithmetic.o              arithmetic.s(6)
+    tcp.o                     tcp.s(71)
+    ip.o                      ip.s(60)
+    udp.o                     udp.s(52)
+    config.o                  config.s(18)
+    v1541.o                   v1541.s(14)
+copymem (copymem.o):
+    tcp.o                     tcp.s(70)
+    udp.o                     udp.s(51)
+    config.o                  config.s(17)
+cs_driver_name (rr-net.o):
+cs_init (rr-net.o):
+    cs8900a.o                 cs8900a.s(28)
+cs_packet_data (rr-net.o):
+    cs8900a.o                 cs8900a.s(30)
+cs_packet_page (rr-net.o):
+    cs8900a.o                 cs8900a.s(29)
+cs_rxtx_data (rr-net.o):
+    cs8900a.o                 cs8900a.s(31)
+cs_tx_cmd (rr-net.o):
+    cs8900a.o                 cs8900a.s(32)
+cs_tx_len (rr-net.o):
+    cs8900a.o                 cs8900a.s(33)
+dhcp_init (dhcp.o):
+    v1541.o                   v1541.s(9)
+dhcp_server (config.o):
+    dhcp.o                    dhcp.s(19)
+dhcp_state (dhcp.o):
+eth_data (cs8900a.o):
+    ip.o                      ip.s(42)
+eth_dest (cs8900a.o):
+    ip.o                      ip.s(39)
+eth_init (cs8900a.o):
+    ip65.o                    ip65.s(21)
+eth_inp (cs8900a.o):
+    icmp.o                    icmp.s(52)
+    ip.o                      ip.s(34)
+    ip65.o                    ip65.s(27)
+    arp.o                     arp.s(15)
+eth_inp_len (cs8900a.o):
+    icmp.o                    icmp.s(53)
+    ip.o                      ip.s(35)
+eth_outp (cs8900a.o):
+    eth.o                     eth.s(12)
+    icmp.o                    icmp.s(54)
+    ip.o                      ip.s(36)
+    ip65.o                    ip65.s(28)
+    arp.o                     arp.s(17)
+eth_outp_len (cs8900a.o):
+    icmp.o                    icmp.s(55)
+    ip.o                      ip.s(37)
+    arp.o                     arp.s(18)
+eth_proto_arp (eth.o):
+    ip65.o                    ip65.s(34)
+    arp.o                     arp.s(23)
+eth_proto_ip (eth.o):
+    ip.o                      ip.s(43)
+eth_rx (cs8900a.o):
+    ip65.o                    ip65.s(29)
+eth_set_broadcast_dest (eth.o):
+    arp.o                     arp.s(20)
+eth_set_my_mac_src (eth.o):
+    arp.o                     arp.s(21)
+eth_set_proto (eth.o):
+    ip.o                      ip.s(33)
+    arp.o                     arp.s(22)
+eth_src (cs8900a.o):
+    ip.o                      ip.s(40)
+eth_tx (cs8900a.o):
+    icmp.o                    icmp.s(51)
+    ip.o                      ip.s(32)
+    arp.o                     arp.s(19)
+eth_type (cs8900a.o):
+filter_dns (c64inputs.o):
+filter_ip (c64inputs.o):
+filter_number (c64inputs.o):
+filter_text (c64inputs.o):
+filter_url (c64inputs.o):
+get_filtered_input (c64inputs.o):
+get_key (c64inputs.o):
+get_key_if_available (c64inputs.o):
+get_key_ip65 (c64inputs.o):
+icmp_add_listener (icmp.o):
+icmp_callback (icmp.o):
+icmp_cksum (icmp.o):
+icmp_code (icmp.o):
+icmp_data (icmp.o):
+icmp_echo_ip (icmp.o):
+icmp_init (icmp.o):
+    ip.o                      ip.s(50)
+icmp_inp (icmp.o):
+icmp_outp (icmp.o):
+icmp_ping (icmp.o):
+icmp_process (icmp.o):
+    ip.o                      ip.s(51)
+icmp_remove_listener (icmp.o):
+icmp_send_echo (icmp.o):
+icmp_type (icmp.o):
+ip65_ctr (ip65.o):
+ip65_ctr_arp (ip65.o):
+ip65_ctr_ip (ip65.o):
+ip65_error (ip65.o):
+    cs8900a.o                 cs8900a.s(37)
+    icmp.o                    icmp.s(33)
+    tcp.o                     tcp.s(17)
+    udp.o                     udp.s(11)
+    dhcp.o                    dhcp.s(22)
+ip65_init (ip65.o):
+ip65_process (ip65.o):
+    c64inputs.o               c64inputs.s(13)
+    icmp.o                    icmp.s(32)
+    tcp.o                     tcp.s(42)
+    dhcp.o                    dhcp.s(31)
+ip65_random_word (ip65.o):
+    tcp.o                     tcp.s(46)
+ip_broadcast (ip.o):
+    icmp.o                    icmp.s(38)
+ip_calc_cksum (ip.o):
+    icmp.o                    icmp.s(35)
+    tcp.o                     tcp.s(37)
+    udp.o                     udp.s(36)
+ip_cksum_ptr (ip.o):
+    icmp.o                    icmp.s(44)
+    tcp.o                     tcp.s(60)
+    udp.o                     udp.s(41)
+ip_create_packet (ip.o):
+    icmp.o                    icmp.s(40)
+    tcp.o                     tcp.s(39)
+    udp.o                     udp.s(38)
+ip_data (ip.o):
+    icmp.o                    icmp.s(48)
+    tcp.o                     tcp.s(64)
+    udp.o                     udp.s(45)
+ip_dest (ip.o):
+    icmp.o                    icmp.s(47)
+    tcp.o                     tcp.s(63)
+    udp.o                     udp.s(44)
+ip_frag (ip.o):
+ip_header_cksum (ip.o):
+    icmp.o                    icmp.s(45)
+ip_id (ip.o):
+    tcp.o                     tcp.s(67)
+    udp.o                     udp.s(48)
+ip_init (ip.o):
+    ip65.o                    ip65.s(24)
+ip_inp (ip.o):
+    icmp.o                    icmp.s(36)
+    tcp.o                     tcp.s(40)
+    udp.o                     udp.s(39)
+ip_len (ip.o):
+    icmp.o                    icmp.s(49)
+    tcp.o                     tcp.s(68)
+    udp.o                     udp.s(49)
+ip_outp (ip.o):
+    icmp.o                    icmp.s(37)
+    tcp.o                     tcp.s(41)
+    udp.o                     udp.s(40)
+ip_process (ip.o):
+    ip65.o                    ip65.s(31)
+ip_proto (ip.o):
+    icmp.o                    icmp.s(41)
+    tcp.o                     tcp.s(65)
+    udp.o                     udp.s(46)
+ip_proto_icmp (ip.o):
+    icmp.o                    icmp.s(42)
+ip_proto_tcp (ip.o):
+    tcp.o                     tcp.s(66)
+ip_proto_udp (ip.o):
+    udp.o                     udp.s(47)
+ip_send (ip.o):
+    icmp.o                    icmp.s(39)
+    tcp.o                     tcp.s(38)
+    udp.o                     udp.s(37)
+ip_src (ip.o):
+    icmp.o                    icmp.s(46)
+    tcp.o                     tcp.s(62)
+ip_tos (ip.o):
+ip_ttl (ip.o):
+ip_ver_ihl (ip.o):
+mul_8_16 (arithmetic.o):
+op32 (arithmetic.o):
+    tcp.o                     tcp.s(49)
+output_buffer (output_buffer.o):
+    dhcp.o                    dhcp.s(43)
+print_a (c64print.o):
+    v1541.o                   v1541.s(12)
+print_a_inverse (c64print.o):
+print_cr (c64print.o):
+screen_current_col (c64print.o):
+screen_current_row (c64print.o):
+sub_16_16 (arithmetic.o):
+    tcp.o                     tcp.s(56)
+tcp_callback (tcp.o):
+tcp_close (tcp.o):
+tcp_connect (tcp.o):
+tcp_connect_ip (tcp.o):
+tcp_connect_remote_port (tcp.o):
+tcp_inbound_data_length (tcp.o):
+tcp_inbound_data_ptr (tcp.o):
+tcp_init (tcp.o):
+    ip.o                      ip.s(57)
+tcp_listen (tcp.o):
+tcp_process (tcp.o):
+    ip.o                      ip.s(58)
+tcp_remote_ip (tcp.o):
+tcp_send (tcp.o):
+tcp_send_data_len (tcp.o):
+tcp_send_keep_alive (tcp.o):
+tcp_send_string (tcp.o):
+timer_init (c64timer.o):
+    ip65.o                    ip65.s(22)
+timer_read (c64timer.o):
+    timer.o                   timer.s(13)
+    icmp.o                    icmp.s(56)
+    tcp.o                     tcp.s(45)
+    ip65.o                    ip65.s(25)
+    arp.o                     arp.s(30)
+    dhcp.o                    dhcp.s(50)
+timer_timeout (timer.o):
+    icmp.o                    icmp.s(57)
+    arp.o                     arp.s(31)
+udp_add_listener (udp.o):
+    dhcp.o                    dhcp.s(33)
+udp_callback (udp.o):
+    dhcp.o                    dhcp.s(36)
+udp_cksum (udp.o):
+udp_data (udp.o):
+    dhcp.o                    dhcp.s(41)
+udp_dest_port (udp.o):
+udp_init (udp.o):
+    ip.o                      ip.s(53)
+udp_inp (udp.o):
+    dhcp.o                    dhcp.s(39)
+udp_len (udp.o):
+udp_outp (udp.o):
+udp_process (udp.o):
+    ip.o                      ip.s(54)
+udp_remove_listener (udp.o):
+    dhcp.o                    dhcp.s(34)
+udp_send (udp.o):
+    dhcp.o                    dhcp.s(37)
+udp_send_dest (udp.o):
+    dhcp.o                    dhcp.s(45)
+udp_send_dest_port (udp.o):
+    dhcp.o                    dhcp.s(47)
+udp_send_len (udp.o):
+    dhcp.o                    dhcp.s(48)
+udp_send_src_port (udp.o):
+    dhcp.o                    dhcp.s(46)
+udp_src_port (udp.o):
+
