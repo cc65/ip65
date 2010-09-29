@@ -36,13 +36,16 @@ SERVER_PORT=1541
 .importzp copy_dest
 .export keep_alive_counter
 pptr=copy_src
-
+IERROR=$300
 CINV=$314
 ILOAD=$330
 ISAVE=$332
+
 FNLEN		=	$B7
 FNADDR		=	$BB
-
+CHRGOT=$79
+TXTPTR=$7A
+MEMSIZ	=	$37		;highest address used by BASIC
 .import __CODE_LOAD__
 .import __CODE_RUN__
 .import __CODE_SIZE__
@@ -213,6 +216,9 @@ relocate:
 ldax #irq_handler
   sei
   stax CINV  
+  
+;  jsr install_wedge
+  
 @done:	
 	jsr	swap_basic_in
   lda #0
@@ -267,6 +273,64 @@ __print:
 @done_print:
   rts
 
+install_wedge:
+  ldax #wedge_start
+  stax copy_src  
+  sec
+  lda MEMSIZ
+  sbc #<wedge_length
+  sta MEMSIZ
+  sta copy_dest
+  sta IERROR
+  lda MEMSIZ+1
+  sbc #>wedge_length
+  sta MEMSIZ+1
+  sta copy_dest+1
+  sta IERROR+1
+  ldax #wedge_length  
+  jsr __copymem  
+  jmp  $a644	;NEW
+  
+wedge_start:
+
+  
+  ;new error handler
+  cpx #$0b	; is it a SYNTAX ERROR?
+	beq @syntax_error; yes, jump to command test
+@exit:
+	jmp $e38b	;nope, normal error handler
+
+@syntax_error:	
+ 
+	jsr CHRGOT	;read current character in buffer again
+  bcc @exit  
+	cmp #$b1		;is current character a > token?    
+	bne @exit	;nope, normal error handler
+@got_it:  
+	ldy #0
+  lda #'>'
+  sta (TXTPTR),y	;replace token with > symbol again
+@scan_command:
+	lda (TXTPTR),y	;
+	beq @end_of_command
+	cmp #':'
+	beq @end_of_command
+	iny
+	bne @scan_command
+@end_of_command:
+	sty FNLEN	;file name length
+	lda TXTPTR	;start of filename
+	sta FNADDR	
+	lda TXTPTR+1	;start of filename
+	sta FNADDR+1
+	lda #$2
+	sta $BA		;current device number
+  ;jmp (ILOAD)
+  jsr load_handler
+  jmp $A474  ;READY prompt
+	
+
+wedge_length=*-wedge_start
 
 .code
 
@@ -277,6 +341,8 @@ load_dev_2:
   beq @do_disks
   cmp #'>'
   beq @do_command
+  cmp #'#'  
+  beq @do_insert
 
 @done:
   clc  
@@ -289,14 +355,16 @@ load_dev_2:
   sta cmd_buffer-1,y
   dey
   bne @copy_cmd
+  
+  
   ldy FNLEN
   lda #$0D
   sta cmd_buffer-1,y
   lda #0
   sta cmd_buffer,y
-  
+@send_command_buffer:  
   ldax #cmd_buffer
-  jmp@send_string_show_list
+  jmp @send_string_show_list
   
 @do_disks:
 	ldax	  #@cmd_dsks
@@ -307,6 +375,36 @@ load_dev_2:
 	jmp @done
 
 @cmd_dsks:    .byte "DISKS 22",$0d,$0
+
+@do_insert:
+
+  ldx #0
+@copy_insert:  
+  lda @cmd_insert,x
+  beq @end_insert
+  sta cmd_buffer,x
+  inx
+  bne @copy_insert
+@end_insert:  
+  ldy #1
+:  
+  lda (FNADDR),y  
+  sta cmd_buffer,x
+  iny
+  inx
+  cpy FNLEN
+  
+  bne :-
+  
+  lda #$0D
+  sta cmd_buffer,x
+  lda #0
+  sta cmd_buffer+1,x
+  jmp @send_command_buffer
+
+@cmd_insert:    .byte "INSERT ",0
+
+
 @error:
   ldax #transmission_error
   jsr print
@@ -324,11 +422,10 @@ show_list:
   lda $91     ; look for STOP key
   cmp #$7F
   beq @done
-  lda #5 ;wait for max 5 seconds
+  lda #2 ;wait for max 2 seconds
   jsr getc
   bcc @got_data
-  ldax  #timeout_error
-  jmp print
+  rts
 @got_data:
   cmp #$03		;ETX byte (indicating end of page)?
   beq @get_user_input
@@ -533,7 +630,7 @@ old_irq_vector:
 underneath_basic: .res 1
 
 .segment "TCP_VARS"
-csip_stream_buffer: .res 1500
+csip_stream_buffer: .res 1400
 cmd_buffer: .res 100
 user_abort: .res 1
 getc_timeout_end: .res 1
@@ -544,7 +641,7 @@ keep_alive_counter: .res 1
 .data
 continue_cmd: .byte $0D,0
 stop_cmd: .byte "S",0
-timeout_error: .byte "TIMEOUT ERROR",13,0
+
 transmission_error: .byte "TRANSMISSION ERROR",13,0
 
 ;-- LICENSE FOR v1541.s --
