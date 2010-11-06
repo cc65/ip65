@@ -25,7 +25,7 @@ IERROR  = $0300
 ICRUNCH = $0304          ;Crunch ASCII into token
 IQPLOP  = $0306          ;List
 IGONE   = $0308          ;Execute next BASIC token
-                          
+IEVAL = $30A              ; evaluate expression                          
 CHRGET  = $73            
 CHRGOT  = $79            
 CHROUT  = $FFD2          
@@ -171,14 +171,14 @@ FS=$8000-main_start
   ldax #welcome_banner
   jsr print
   
-	ldx	#5           ;Copy CURRENT vectors
+	ldx	#7           ;Copy CURRENT vectors
 @copy_old_vectors_loop:
 	lda ICRUNCH,x
 	sta	oldcrunch,x
 	dex
 	bpl	@copy_old_vectors_loop
 
-	ldx	#5           ;Copy CURRENT vectors
+	ldx	#7           ;Copy CURRENT vectors
 install_new_vectors_loop:
 	lda vectors,x
 	sta	ICRUNCH,x
@@ -592,8 +592,11 @@ print:
 
 
 extract_string:
+
   jsr FRMEVL
+  
   jsr FRESTR  ;if not string, will create type mismatch error
+  
   sta param_length
   tay
   lda #0
@@ -827,7 +830,10 @@ ping_keyword:
   lda $cb ;current key pressed
   cmp #$3F  ;RUN/STOP?
   beq @done
+  lda ping_counter
+  beq @ping_loop
   dec ping_counter
+  cmp #1    
   bne @ping_loop
 @done:  
   jsr print_cr
@@ -1087,12 +1093,15 @@ make_tcp_connection:
   rts
   
 netcat_keyword:
+  lda $CC
+  sta cursor_state
+  lda #$0
+  sta $CC ;enable blinking cursor
   ldax #netcat_callback
   stax tcp_callback  
   jsr make_tcp_connection
-  bcc :+
-  rts
- :   
+  bcs @exit
+  
   ;is there an optional parameter?
   ldx #0
   jsr get_optional_byte
@@ -1113,8 +1122,12 @@ netcat_keyword:
   jsr ip65_process
   lda connection_state
   bne @not_disconnected
+@disconnected:  
   ldax #disconnected
   jsr print
+@exit:
+  lda cursor_state
+  sta $CC  
   rts
 @not_disconnected:
   
@@ -1131,11 +1144,8 @@ netcat_keyword:
   beq @runstop
   jsr ip65_process
   lda connection_state
-  bne :+
-  ldax #disconnected
-  jsr print
-  rts
-:  
+  beq @disconnected
+
   jsr $f142 ;not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
  
   beq @read_line
@@ -1180,6 +1190,7 @@ netcat_keyword:
   jmp @read_line
 
 @input_done:
+  jsr reset_cursor
   lda #$0d
   jsr $ffd2 ;print a newline
   ldy string_length
@@ -1208,6 +1219,9 @@ netcat_keyword:
 @runstop:
   lda  #0
   sta $cb ;overwrite "current key pressed" else it's seen by the tcp stack and the close aborts
+  lda cursor_state
+  sta $CC  
+  
   jmp tcp_close
 @not_runstop:
   jsr $ffe4 ;getkey - 0 means no input
@@ -1227,12 +1241,24 @@ netcat_keyword:
   jmp @main_polling_loop
 
 @error_on_send:
+  lda cursor_state
+  sta $CC  
   
   ldax #transmission
   jmp print_error
   
-  
+reset_cursor:
+  lda $cf ;0 means last cursor blink set char to be reversed
+  beq @done
+  lda $ce ;original value of cursor char
+  ldx $287  ;original colour
+  ldy #$0 ;blink phase
+  sty $cf
+  jsr $ea13 ;restore char & colour
+@done:
+  rts
 netcat_callback: 
+  jsr reset_cursor
   lda tcp_inbound_data_length+1
   cmp #$ff
   bne @not_eof
@@ -1430,14 +1456,42 @@ tcpblat_keyword:
   lda #KPR_ERROR_FILE_ACCESS_FAILURE
   jmp @store_error
 
+evaluate:
+  lda $00  
+  sta $0D ;set string flag to not string
+  jsr CHRGET
+  cmp #$E3  ; PING keyword
+  bne @done
   
+  jsr CHRGET    ;take PING command off stack
+  
+  ldax  #icmp_echo_ip
+  jsr get_ip_parameter  
+  lda #$00  
+  sta $0D ;set string flag to not string
+
+  bcs @error
+  jsr   icmp_ping
+  bcc @no_error
+@error:  
+  lda #$ff
+  tax
+@no_error:
+  tay
+  txa
+  jmp $b395 ;signed 16 bit number to floating point
+  rts
+  
+@done: 
+  jsr CHRGOT  
+  jmp $AE8D ;inside original EVAL routine
   
 .rodata
 vectors:
 	.word crunch	
 	.word list
 	.word execute
-
+  .word evaluate
 ; Keyword list
 ; Keywords are stored as normal text,
 ; followed by the token number.
@@ -1553,7 +1607,7 @@ jmp_crunch: .byte $4C          ;JMP
 oldcrunch: 	.res 2             ;Old CRUNCH vector
 oldlist:	.res 2             
 oldexec:	.res 2           
-
+oldeval: .res 2
 emit_a:
 current_output_ptr=emit_a+1
   sta $ffff
@@ -1563,7 +1617,6 @@ current_output_ptr=emit_a+1
   inc current_output_ptr+1
 :  
   rts
-
 
 
 .bss
@@ -1584,4 +1637,4 @@ file_opened: .res 1
 connection_state: .res 1
 netcat_timeout: .res 1
 buffer_length: .res 2
-
+cursor_state: .res 1

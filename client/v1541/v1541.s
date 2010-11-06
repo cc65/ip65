@@ -81,6 +81,9 @@ basicstub:
 	.word 0  
 relocate:  
 
+  ldax  #$9000
+  stax  $37; MEMSIZ
+  jsr $A65E ;do a CLR
 
   ;relocate everything
 	ldax #__CODE_LOAD__
@@ -101,7 +104,7 @@ relocate:
   @installed_msg: .byte "V1541 INSTALLED",0
   @already_installed_msg: .byte "V1541 ALREADY INSTALLED",0
 @not_installed:
-  
+
   
 	ldax #__DATA_LOAD__
 	stax copy_src
@@ -217,14 +220,13 @@ ldax #irq_handler
   sei
   stax CINV  
   
-;  jsr install_wedge
-  
 @done:	
 	jsr	swap_basic_in
   lda #0
   sta $dc08 ;make sure TOD clock is started
   cli
-	rts
+
+  rts
 	
 __copymem:
 	sta end
@@ -273,69 +275,14 @@ __print:
 @done_print:
   rts
 
-install_wedge:
-  ldax #wedge_start
-  stax copy_src  
-  sec
-  lda MEMSIZ
-  sbc #<wedge_length
-  sta MEMSIZ
-  sta copy_dest
-  sta IERROR
-  lda MEMSIZ+1
-  sbc #>wedge_length
-  sta MEMSIZ+1
-  sta copy_dest+1
-  sta IERROR+1
-  ldax #wedge_length  
-  jsr __copymem  
-  jmp  $a644	;NEW
-  
-wedge_start:
-
-  
-  ;new error handler
-  cpx #$0b	; is it a SYNTAX ERROR?
-	beq @syntax_error; yes, jump to command test
-@exit:
-	jmp $e38b	;nope, normal error handler
-
-@syntax_error:	
- 
-	jsr CHRGOT	;read current character in buffer again
-  bcc @exit  
-	cmp #$b1		;is current character a > token?    
-	bne @exit	;nope, normal error handler
-@got_it:  
-	ldy #0
-  lda #'>'
-  sta (TXTPTR),y	;replace token with > symbol again
-@scan_command:
-	lda (TXTPTR),y	;
-	beq @end_of_command
-	cmp #':'
-	beq @end_of_command
-	iny
-	bne @scan_command
-@end_of_command:
-	sty FNLEN	;file name length
-	lda TXTPTR	;start of filename
-	sta FNADDR	
-	lda TXTPTR+1	;start of filename
-	sta FNADDR+1
-	lda #$2
-	sta $BA		;current device number
-  ;jmp (ILOAD)
-  jsr load_handler
-  jmp $A474  ;READY prompt
-	
-
-wedge_length=*-wedge_start
 
 .code
 
 load_dev_2:
   ldy #$00
+  sty receive_type ;0 = display to screen, 1 = load to memory
+  sty buffer_length
+  sty buffer_length+1
   lda (FNADDR),y
   cmp #'!'
   beq @do_disks
@@ -343,8 +290,26 @@ load_dev_2:
   beq @do_command
   cmp #'#'  
   beq @do_insert
-
+  cmp #'='
+  beq @do_find
+  cmp #'/'
+  bne @not_cf  
+  lda FNLEN
+  cmp #1
+  bne @do_cf
+  ldax #cmd_cf_root
+  jmp @send_string_receive_response
+@not_cf:
+  cmp #'%'
+  beq @do_name
+  cmp #'$'
+  beq @do_cat
+  inc receive_type
+  ldax #cmd_load
+  jmp @copy_prefix
+  
 @done:
+
   clc  
 	jmp	swap_basic_in
 
@@ -356,7 +321,6 @@ load_dev_2:
   dey
   bne @copy_cmd
   
-  
   ldy FNLEN
   lda #$0D
   sta cmd_buffer-1,y
@@ -364,29 +328,57 @@ load_dev_2:
   sta cmd_buffer,y
 @send_command_buffer:  
   ldax #cmd_buffer
-  jmp @send_string_show_list
-  
+  jmp @send_string_receive_response
+
+@do_name:
+  ldax #cmd_name
+  jmp @send_string_receive_response
+
+@do_find:
+  ldax #cmd_find
+  jmp @copy_prefix
+
+@do_cat:
+  ldax #cmd_cat
+  jmp @send_string_receive_response
+
+
 @do_disks:
-	ldax	  #@cmd_dsks
-@send_string_show_list:
+	ldax	  #cmd_dsks
+@send_string_receive_response:
   jsr tcp_send_string	
   bcs @error
-	jsr show_list
+  lda receive_type
+  bne @load_file
+	jsr show_list  
 	jmp @done
+@load_file:
+	jsr receive_file
+	jmp @done
+  
+@do_cf:
+  ldax #cmd_cf
+  jmp @copy_prefix
 
-@cmd_dsks:    .byte "DISKS 22",$0d,$0
 
 @do_insert:
-
-  ldx #0
-@copy_insert:  
-  lda @cmd_insert,x
-  beq @end_insert
-  sta cmd_buffer,x
-  inx
-  bne @copy_insert
-@end_insert:  
+  ldax #cmd_insert
+@copy_prefix:  
+  stax copy_src  
+  ldy #0  
+@copy_prefix_loop:  
+  lda (copy_src),y
+  beq @end_copy_prefix
+  sta cmd_buffer,y
+  iny
+  bne @copy_prefix_loop
+@end_copy_prefix:  
+  tya
+  tax
   ldy #1
+  lda receive_type
+  beq :+
+  dey ;if this is a LOAD command, don't skip the first byte
 :  
   lda (FNADDR),y  
   sta cmd_buffer,x
@@ -402,22 +394,18 @@ load_dev_2:
   sta cmd_buffer+1,x
   jmp @send_command_buffer
 
-@cmd_insert:    .byte "INSERT ",0
-
-
 @error:
+  ldax #SERVER_PORT  
+  jsr tcp_connect  
+
   ldax #transmission_error
   jsr print
-  lda ip65_error
-  jsr print_hex
-  lda tcp_state
-  jsr print_hex
-
+  
   jmp @done
 
 
-show_list:
-
+show_list:  
+  
 @loop:
   lda $91     ; look for STOP key
   cmp #$7F
@@ -427,6 +415,7 @@ show_list:
   bcc @got_data
   rts
 @got_data:
+
   cmp #$03		;ETX byte (indicating end of page)?
   beq @get_user_input
   cmp #$04		;EOT byte (indicating end of list)?
@@ -436,6 +425,7 @@ show_list:
 
 ;End of page, so ask for user input
  @get_user_input:
+ 
   jsr get_key
   
   cmp #'S'
@@ -552,27 +542,8 @@ next_char:
   sta   buffer_length+1
   pla
   clc  
+  
   rts
-
-print_hex:
-  pha  
-  pha  
-  lsr
-  lsr
-  lsr
-  lsr
-  tax
-  lda hexdigits,x
-  jsr print_a
-  pla
-  and #$0F
-  tax
-  lda hexdigits,x
-  jsr print_a
-  pla
-  rts
-hexdigits:
-.byte "0123456789ABCDEF"
 
 tcp_irq_handler:
 
@@ -585,8 +556,98 @@ tcp_irq_handler:
 @done:  
 
   rts
-  
 
+receive_file:
+  lda #0
+  sta byte_count
+@loop:
+  lda $91     ; look for STOP key
+  cmp #$7F
+  beq @done
+  lda #2 ;wait for max 2 seconds
+  jsr getc  
+  bcc @got_data
+@done:  
+  rts
+@got_data:
+  ldy byte_count
+  sta file_length,y
+  inc byte_count
+  lda byte_count
+  cmp #4
+  bne @loop
+  ;is the first 4 bytes "500 "  
+;  
+  lda file_length+1
+  cmp  #'0'   ;if 2nd char was '0' this might be an ASCII error message
+  bne @real_file_transmission
+  lda file_location
+  cmp  #$01 
+  beq @real_file_transmission
+  ;this was probably an ASCII error message
+  
+  lda #0
+  sta byte_count
+:
+  ldy byte_count
+  lda file_length,y
+  jsr print_a
+  inc byte_count
+  lda byte_count
+  cmp #4
+  bne :-
+  jmp show_list
+@real_file_transmission:
+  ldax file_location
+  stax  copy_dest
+
+  lda file_length
+  sec
+  sbc #2  
+  sta file_length
+  
+  lda file_length+1
+  sbc #0
+  sta file_length+1
+  
+@rx_loop:
+  lda file_length+1
+  bne @not_done
+  lda file_length
+  bne @not_done
+  ;file now fully in RAM, time for housekeeping
+  sta $297  ;RS-232 status = 0 (no error)
+  sta $90   ;status = 0 (no error)
+  ldy copy_dest+1 ;high byte of end of loaded program
+  ldx copy_dest     ;lo byte of end of loaded program
+  inx
+  bne :+
+  iny                   ;if X rolled over, bump y
+:  
+  rts         ;done!
+  
+@not_done:  
+  lda #2 ;wait for max 2 seconds
+  jsr getc  
+  bcs @rx_error
+  ldy #0
+  sta (copy_dest),y
+  inc copy_dest
+  bne :+
+  inc copy_dest+1
+:  
+ lda  file_length
+ bne :+
+  dec file_length+1
+  lda #'.'
+  jsr print_a
+:
+  dec file_length
+  jmp @rx_loop
+  
+@rx_error:
+  ldax  #receive_error
+  jmp print
 
 .segment "CODESTUB"
 
@@ -605,6 +666,8 @@ swap_basic_in:
   sta underneath_basic
 	rts
 
+underneath_basic: .res 1
+
 load_handler:
 	ldx $BA       ; Current Device Number
 	cpx	#$02
@@ -617,7 +680,8 @@ old_load_vector:
 	jmp	load_dev_2
 
 irq_handler:
-  lda underneath_basic
+  
+  lda underneath_basic  
   bne @done 
   jsr swap_basic_out
   jsr tcp_irq_handler
@@ -627,22 +691,39 @@ irq_handler:
 old_irq_vector:	
 	.word	$ffff	
 
-underneath_basic: .res 1
+
+.data
+cmd_dsks:  .byte "DISKS 22",$0d,$0
+cmd_insert: .byte "INSERT ",0
+cmd_cat:  .byte "$",$0d,$00
+cmd_find: .byte "FIND ",$00
+cmd_name: .byte "NAME",$0d,$00
+cmd_cf:   .byte "CF ",0
+cmd_load:   .byte "LOAD ",0
+cmd_cf_root: .byte "CF /",$0d,0
+
+transmission_error: .byte "TRANSMIT ERROR",13,0
+receive_error: .byte "RECEIVE ERROR",13,0
 
 .segment "TCP_VARS"
-csip_stream_buffer: .res 1400
+csip_stream_buffer: .res 1500
 cmd_buffer: .res 100
+.bss
+
 user_abort: .res 1
 getc_timeout_end: .res 1
 getc_timeout_seconds: .res 1
 buffer_length: .res 2  
 keep_alive_counter: .res 1
-
+file_length: .res 2
+file_location: .res 2
+rx_length: .res 2
+receive_type: .res 1
+byte_count: .res 1
 .data
 continue_cmd: .byte $0D,0
 stop_cmd: .byte "S",0
 
-transmission_error: .byte "TRANSMISSION ERROR",13,0
 
 ;-- LICENSE FOR v1541.s --
 ; The contents of this file are subject to the Mozilla Public License

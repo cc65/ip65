@@ -1,5 +1,5 @@
 
- v1.0.33
+v1.0.33
   - FIX: gracefully close the TCP connection when a telnet connection is aborted by user keystroke
   - FIX: telnet client was reprocessing last received packet after an error (including user abort)
   - FIX: was not signalling an error when a RST or FIN was sent back to tcp_connect

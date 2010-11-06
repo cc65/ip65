@@ -17,8 +17,10 @@ IP65LIB=../ip65/ip65_tcp.lib
 
 C64PROGLIB=../drivers/c64prog.lib
 
-all:  kipperbas.d64 bails.d64
+all:  ip65 kipperbas.d64 bails.d64 
 
+ip65:
+	make -C ../ip65 all
 
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
