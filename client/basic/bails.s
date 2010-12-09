@@ -216,8 +216,10 @@ install_new_vectors_loop:
   .byte "NO RR-NET FOUND - UNINSTALLING",0  
   
 @init_ok:
-;  jsr $A644 ;do a "NEW"
-;  jmp $A474 ;"READY" prompt
+  lda CHAIN_FLAG
+  
+  jsr $A644 ;do a "NEW"
+  jmp $A474 ;"READY" prompt
   rts ;so BASIC will LOAD & RUN INDEX.BAS
   
 welcome_banner:
