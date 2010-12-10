@@ -26,7 +26,7 @@
 .import ascii_to_native
 
 
-.import cs_driver_name
+.import eth_driver_name
 .importzp copy_src
 .import cfg_tftp_server
 ;reuse the copy_src zero page var
@@ -38,7 +38,7 @@ temp_bcd: .res 3
 temp_ptr: .res 2
 .code
 .macro print_driver_init
-  ldax #cs_driver_name
+  ldax #eth_driver_name
   jsr print_ascii_as_native
   ldax #init_msg
 	jsr print_ascii_as_native
@@ -69,13 +69,13 @@ temp_ptr: .res 2
 
 .import print_a
 .import print_cr
-.import cs_driver_name
+.import eth_driver_name
 print_ip_config:
 
   ldax #interface_type
   jsr print_ascii_as_native
 
-  ldax #cs_driver_name
+  ldax #eth_driver_name
   jsr print_ascii_as_native
   jsr print_cr
   

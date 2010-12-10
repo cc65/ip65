@@ -15,8 +15,7 @@ IP65LIB=../ip65/ip65.lib
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
 
-C64PROGLIB=../drivers/c64prog.lib
-#C64NB65LIB=../drivers/c64nb65.lib
+C64RRNETLIB=../drivers/c64rrnet.lib
 
 all:  kipperterm2.prg kipperterm2.d64
 
@@ -26,8 +25,8 @@ kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ..
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64fullprg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64fullprg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+%.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64fullprg.cfg
+	$(LD) -m  $*.map -vm -C ../cfg/c64fullprg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 	ruby ../carts/set_ip_config.rb $@ mac auto
 
 kipperterm2.d64: kipperterm2.prg addresses.txt abe.bas

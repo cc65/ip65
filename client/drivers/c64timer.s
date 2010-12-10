@@ -5,7 +5,6 @@
 
 	.include "../inc/common.i"
 
-
 	.export timer_init
 	.export timer_read
   

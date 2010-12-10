@@ -15,8 +15,7 @@ IP65LIB=../ip65/ip65.lib
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
 
-C64PROGLIB=../drivers/c64prog.lib
-#C64NB65LIB=../drivers/c64nb65.lib
+C64RRNETLIB=../drivers/c64rrnet.lib
 
 all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin kipperdisk.d64
 
@@ -41,21 +40,21 @@ kipperterm.prg: kipperterm.bin c64_cart_ram_header.prg
 kippergo.prg: kippergo.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kippergo.bin > kippergo.prg
 
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
+%.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
 
-netboot.bin: netboot.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
-	$(LD) -m netboot.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65LIB) $(C64PROGLIB)  
+netboot.bin: netboot.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
+	$(LD) -m netboot.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65LIB) $(C64RRNETLIB)  
 	ruby fix_cart.rb $@ 8192
 
-kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
-	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
+kipperkart.bin: kipperkart.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kipperkart.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby set_ip_config.rb $@ mac auto
 	ruby dupe_cart.rb kipperkart.bin kipperkart_29c040.bin 32
 
-kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
-	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
+kipperterm.bin: kipperterm.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kipperterm.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kipperterm.bin kipperterm_29c040.bin 32
 
@@ -65,8 +64,8 @@ kipperterm_rr.bin: kipperterm.bin
 	ruby fix_cart.rb $@ 32768
 
 
-kippergo.bin: kippergo.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
-	$(LD) -m kippergo.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64PROGLIB)  
+kippergo.bin: kippergo.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kippergo.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)  
 	ruby fix_cart.rb $@ 16384
 	ruby dupe_cart.rb kippergo.bin kippergo_29c040.bin 32
 

@@ -77,7 +77,7 @@ crunched_line      = $0200          ;Input buffer
 .import dhcp_server
 .import cfg_mac
 .import cfg_mac_default
-.import cs_driver_name
+.import eth_driver_name
 .import get_key_if_available
 .import timer_read
 .import native_to_ascii
@@ -216,10 +216,9 @@ install_new_vectors_loop:
   .byte "NO RR-NET FOUND - UNINSTALLING",0  
   
 @init_ok:
-  lda CHAIN_FLAG
   
-  jsr $A644 ;do a "NEW"
-  jmp $A474 ;"READY" prompt
+;  jsr $A644 ;do a "NEW"
+;  jmp $A474 ;"READY" prompt
   rts ;so BASIC will LOAD & RUN INDEX.BAS
   
 welcome_banner:
@@ -714,7 +713,7 @@ ipcfg_keyword:
   ldax #interface_type
   jsr print
 
-  ldax #cs_driver_name
+  ldax #eth_driver_name
   jsr print
   jsr print_cr
   

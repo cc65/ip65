@@ -15,15 +15,15 @@
 	.export eth_rx
 	.export eth_tx
 
-	.export eth_inp
-	.export eth_inp_len
-	.export eth_outp
-	.export eth_outp_len
+	.import eth_inp
+	.import eth_inp_len
+	.import eth_outp
+	.import eth_outp_len
 
-	.exportzp eth_dest
-	.exportzp eth_src
-	.exportzp eth_type
-	.exportzp eth_data
+	.importzp eth_dest
+	.importzp eth_src
+	.importzp eth_type
+	.importzp eth_data
 
 	.import cs_init
 	.import cs_packet_page
@@ -49,21 +49,7 @@
 eth_packet:	.res 2
 
 
-	.bss
-
-; input and output buffers
-eth_inp_len:	.res 2		; input packet length
-eth_inp:	.res 1518	; space for input packet
-eth_outp_len:	.res 2		; output packet length
-eth_outp:	.res 1518	; space for output packet
-
-; ethernet packet offsets
-eth_dest	= 0		; offset of destination mac address in an ethernet packet
-eth_src		= 6		; offset of source address in an ethernet packet
-eth_type	= 12		; offset of packet type in an ethernet packet
-eth_data	= 14		; offset of packet data in an ethernet packet
-
-
+	
 	.code
 
 ;initialize the ethernet adaptor

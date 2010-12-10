@@ -10,7 +10,7 @@ AFLAGS=
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
 
-C64PROGLIB=../drivers/c64prog.lib
+C64RRNETLIB=../drivers/c64rrnet.lib
 
 #NT2PLAY=nt2play.o
 
@@ -39,18 +39,18 @@ webnoter.o: webnoter.s form.html
 	$(AS) $(AFLAGS) $<
 
 
-webnoter.prg: webnoter.o  $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  webnoter.map -vm -C ../cfg/c64prg.cfg -o  webnoter.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
+webnoter.prg: webnoter.o  $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  webnoter.map -vm -C ../cfg/c64prg.cfg -o  webnoter.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB) $(NT2PLAY)
 
 
 
-upnatom.prg: upnatom.o  $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  upnatom.map -vm -C ../cfg/c64prg.cfg -o  upnatom.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB) $(NT2PLAY)
+upnatom.prg: upnatom.o  $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  upnatom.map -vm -C ../cfg/c64prg.cfg -o  upnatom.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB) $(NT2PLAY)
 
 #	cp upnatom.prg ../../server/boot/
 
-%.prg: %.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+%.prg: %.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
 
 

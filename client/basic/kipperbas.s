@@ -80,7 +80,7 @@ crunched_line      = $0200          ;Input buffer
 .import dhcp_server
 .import cfg_mac
 .import cfg_mac_default
-.import cs_driver_name
+.import eth_driver_name
 .importzp tftp_filename
 .import tftp_ip
 .import tftp_download
@@ -727,7 +727,7 @@ ipcfg_keyword:
   ldax #interface_type
   jsr print
 
-  ldax #cs_driver_name
+  ldax #eth_driver_name
   jsr print
   jsr print_cr
   

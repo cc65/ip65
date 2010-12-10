@@ -5,13 +5,17 @@ CFLAGS=-Oirs -t $(TARGET)
 AFLAGS=
 
 
+
 IP65LIB=../ip65/ip65.lib
 
 IP65TCPLIB=../ip65/ip65_tcp.lib
 
-C64PROGLIB=../drivers/c64prog.lib
-C64PNB65LIB=../drivers/c64nb65.lib
+C64RRNETLIB=../drivers/c64rrnet.lib
+
+C64WIZNETLIB=../drivers/c64wiznet.lib
+
 APPLE2PROGLIB=../drivers/apple2prog.lib
+
 
 INCFILES=\
   ../inc/common.i\
@@ -37,10 +41,12 @@ all: \
 	test_ping.prg \
 	test_sntp.prg \
 	test_get_url.prg \
+	test_wiznet.prg \
 	test_parse_querystring.prg \
 #	httpd_test.d64 \
 #	ip65test.dsk \
 #	test_disk_io.d64 \
+
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
@@ -48,29 +54,43 @@ all: \
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
 
-test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+%.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
+
+
+
+test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
 test_xmodem.o: test_xmodem.s ../ip65/xmodem.s
 	$(AS) $(AFLAGS) $<
 
-test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg 
-	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
-test_parser.prg: test_parser.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_parser.map -vm -C ../cfg/c64prg.cfg -o  test_parser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
 
-test_get_url.prg: test_get_url.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_get_url.map -vm -C ../cfg/c64prg.cfg -o  test_get_url.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
+	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
-test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64PROGLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_ping.map -vm -C ../cfg/c64prg.cfg -o  test_ping.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64PROGLIB)  
+test_parser.prg: test_parser.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_parser.map -vm -C ../cfg/c64prg.cfg -o  test_parser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+
+
+test_get_url.prg: test_get_url.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_get_url.map -vm -C ../cfg/c64prg.cfg -o  test_get_url.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+
+
+test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_ping.map -vm -C ../cfg/c64prg.cfg -o  test_ping.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+
+test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65TCPLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65TCPLIB) $(C64WIZNETLIB)
+	cp test_wiznet.prg ../../server/boot/autoexec.prg
+
 
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
+
+
 
 
 httpd_test.d64:  test_httpd.prg index.html file1.html
@@ -79,6 +99,7 @@ httpd_test.d64:  test_httpd.prg index.html file1.html
 	ripxplore.rb httpd_test.d64 -a index.html -t C64Seq
 	ripxplore.rb httpd_test.d64 -a file1.html -t C64Seq
 
+
 ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
 		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    
@@ -86,10 +107,13 @@ ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2
 		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
 		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary
 	
+
 test_disk_io.d64:  test_disk_io.prg 
+
 		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg
 		cp screen_prg.bin screen.prg
 		ripxplore.rb test_disk_io.d64 -a screen.prg 
+
 
 test_xmodem.d64:  test_xmodem.prg 
 		ripxplore.rb --init CbmDos test_xmodem.d64 -a test_xmodem.prg
@@ -97,6 +121,7 @@ test_xmodem.d64:  test_xmodem.prg
 clean:
 	rm -f *.o *.pg2 *.prg
 	rm -f ip65test.dsk
+
   
 distclean: clean
 	rm -f *~

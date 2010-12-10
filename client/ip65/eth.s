@@ -8,10 +8,26 @@
 
 	.exportzp eth_proto_ip
 	.exportzp eth_proto_arp
+	.exportzp eth_dest
+	.exportzp eth_src
+	.exportzp eth_type
+	.exportzp eth_data
 
-	.import eth_outp
+	.export eth_outp
+	.export eth_outp_len
+	.export eth_inp
+	.export eth_inp_len
 
 	.import cfg_mac
+
+	.bss
+
+; input and output buffers
+eth_inp_len:	.res 2		; input packet length
+eth_inp:	.res 1518	; space for input packet
+eth_outp_len:	.res 2		; output packet length
+eth_outp:	.res 1518	; space for output packet
+
 
 
 ; ethernet packet offsets

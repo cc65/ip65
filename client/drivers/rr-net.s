@@ -8,7 +8,7 @@
 	.export cs_rxtx_data
 	.export cs_tx_cmd
 	.export cs_tx_len
-  .export cs_driver_name
+  .export eth_driver_name
 
 rr_ctl		= $de01 ;address of 'control' port on Retro-Replay
 cs_packet_page	= $de02 ;address of 'packet page' port on RR-Net
@@ -30,7 +30,7 @@ cs_init:
 	rts
 
 .rodata
-cs_driver_name:
+eth_driver_name:
 	.asciiz "RR-NET"
 
 

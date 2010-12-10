@@ -11,11 +11,8 @@ INCFILES=\
   ../inc/kipper_constants.i\
   ../inc/version.i\
 
-#IP65LIB=../ip65/ip65.lib
 IP65LIB=../ip65/ip65_tcp.lib
-#IP65TCPLIB=../ip65/ip65_tcp.lib
-
-C64PROGLIB=../drivers/c64prog.lib
+C64RRNETLIB=../drivers/c64rrnet.lib
 
 all:  ip65 kipperbas.d64 bails.d64 
 
@@ -25,8 +22,8 @@ ip65:
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
 	
-%.prg: %.o $(IP65LIB) $(C64PROGLIB) $(INCFILES) ../cfg/kipperbas.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/kipperbas.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64PROGLIB)  
+%.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/kipperbas.cfg
+	$(LD) -m  $*.map -vm -C ../cfg/kipperbas.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
                                       
 
 bails.d64: bails.prg 
