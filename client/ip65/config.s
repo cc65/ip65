@@ -43,7 +43,7 @@ cfg_init:
   jmp copymem
 
 .segment "IP65_DEFAULTS"
-cfg_mac_default:	.byte $00, $80, $10, $6d, $76, $30  ;mac address to be assigned to local machine
+cfg_mac_default:	.byte $00, $80, $10, $00, $51, $00  ;mac address to be assigned to local machine
 cfg_ip_default:		.byte 192, 168, 1, 64 ;ip address of local machine (will be overwritten if dhcp_init is called)
 ;cfg_ip_default:		.byte 0,0,0,0 ;ip address of local machine (will be overwritten if dhcp_init is called)
 cfg_netmask_default:	.byte 255, 255, 255, 0; netmask of local network (will be overwritten if dhcp_init is called)

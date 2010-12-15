@@ -17,7 +17,7 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 
 C64RRNETLIB=../drivers/c64rrnet.lib
 
-all:  kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin kipperdisk.d64
+all:  bobcart.bin kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin kipperdisk.d64
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
@@ -84,6 +84,11 @@ kipperdisk.d64: kipperkart.prg kipperterm.prg kipperkart.prg kippergo.prg
 	ripxplore.rb $@ -a kipperterm.prg
 	ripxplore.rb $@ -a kippergo.prg
 	cp $@ ../../server/boot/
+
+bobcart.bin: bobcart.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
+	$(LD) -m bobcart.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)  
+	ruby fix_cart.rb $@ 8192
+
   		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/

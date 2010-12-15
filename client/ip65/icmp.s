@@ -357,7 +357,7 @@ icmp_send_echo:
 ;outputs:
 ; carry flag - set if no response, otherwise AX is time (in miliseconds) for host to respond
 icmp_ping:
-
+	
   lda #0  ;reset the "packet sent" counter
   sta icmp_echo_cnt
 @send_one_message:
@@ -377,7 +377,7 @@ icmp_ping:
 :  
 
   jsr timer_timeout
-	bcs @loop_during_arp_lookup
+  bcs @loop_during_arp_lookup
   jsr icmp_send_echo  
   bcc @message_sent_ok
   ;still can't send? then give up

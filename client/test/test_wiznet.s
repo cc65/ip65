@@ -8,7 +8,6 @@
 	.import copymem
 	.importzp copy_src
 	.importzp copy_dest
-  
   .import icmp_echo_ip
   .import icmp_ping
   .import get_key
@@ -37,10 +36,11 @@ basicstub:
 .code
 
 init:
-  jsr print_cr
   init_ip_via_dhcp 
-  jsr print_ip_config
+;  jsr print_ip_config
   jsr print_cr
+
+  
   lda #0
   sta register_page
   jsr dump_wiznet_register_page
@@ -110,7 +110,6 @@ dump_wiznet_register_page:
   jmp @one_row
 @done:
   jsr print_cr
-  jsr wait_for_keypress
   rts
 
 wait_for_keypress:

@@ -16,7 +16,6 @@ ETHOBJS= \
 	timer.o \
 	eth.o \
 	arp.o \
-	udp.o \
 	ip65.o \
 	printf.o \
 	debug.o \
@@ -36,25 +35,29 @@ ETHOBJS= \
 	arithmetic.o\
 
   
-all: ip65.lib ip65_tcp.lib
+all: ip65.lib ip65_tcp.lib ip65_wiznet.lib
 
-ip65.lib: $(ETHOBJS) function_dispatcher.s ip.s icmp.s
+ip65.lib: $(ETHOBJS) function_dispatcher.s ip.s icmp.s udp.o
 	$(AS) $(AFLAGS) function_dispatcher.s
 	$(AS) $(AFLAGS) ip.s
 	$(AS) $(AFLAGS) icmp.s
-	ar65 a ip65.lib $(ETHOBJS) function_dispatcher.o ip.o icmp.o
+	ar65 a ip65.lib $(ETHOBJS) function_dispatcher.o ip.o icmp.o udp.o
 
-ip65_tcp.lib: tcp.o $(ETHOBJS) function_dispatcher.s ip.s tcp.s icmp.s
+ip65_tcp.lib: tcp.o $(ETHOBJS) function_dispatcher.s ip.s tcp.s icmp.s udp.o
 	$(AS) $(AFLAGS) function_dispatcher.s -DTCP -DAPI_VERSION=2
 	$(AS) $(AFLAGS) ip.s -DTCP
 	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_tcp.lib $(ETHOBJS) function_dispatcher.o ip.o tcp.o icmp.o
+	ar65 a ip65_tcp.lib $(ETHOBJS) function_dispatcher.o ip.o tcp.o icmp.o udp.o
+
+ip65_wiznet.lib: $(ETHOBJS) function_dispatcher.s
+	$(AS) $(AFLAGS) function_dispatcher.s
+	ar65 a ip65_wiznet.lib $(ETHOBJS) function_dispatcher.o 
 
 clean:
 	rm -f *.o
 	rm -f ip65.lib
 	rm -f ip65_tcp.lib
-
+	rm -f ip65_wiznet.lib
 
 
 distclean: clean

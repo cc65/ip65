@@ -7,15 +7,11 @@ AFLAGS=
 
 
 IP65LIB=../ip65/ip65.lib
-
+IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 IP65TCPLIB=../ip65/ip65_tcp.lib
-
 C64RRNETLIB=../drivers/c64rrnet.lib
-
 C64WIZNETLIB=../drivers/c64wiznet.lib
-
 APPLE2PROGLIB=../drivers/apple2prog.lib
-
 
 INCFILES=\
   ../inc/common.i\
@@ -82,8 +78,8 @@ test_get_url.prg: test_get_url.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg
 test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_ping.map -vm -C ../cfg/c64prg.cfg -o  test_ping.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
-test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65TCPLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65TCPLIB) $(C64WIZNETLIB)
+test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65WIZNETLIB) $(C64WIZNETLIB)
 	cp test_wiznet.prg ../../server/boot/autoexec.prg
 
 
