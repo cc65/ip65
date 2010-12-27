@@ -192,7 +192,7 @@ tcp_listen:
   lda #tcp_cxn_state_listening  
   cmp tcp_state
   beq @listen_loop
-  
+    
   jmp tcp_connection_established
   rts
 

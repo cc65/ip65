@@ -73,12 +73,12 @@ crunched_line      = $0200          ;Input buffer
 .import print_a
 .import print_cr
 .import cfg_mac
-.import cfg_mac_default
 .import eth_driver_name
 .import get_key_if_available
 .import timer_read
 .import native_to_ascii
 .import ascii_to_native
+.import eth_init
 
 .import http_parse_request
 .import http_get_value
@@ -114,6 +114,10 @@ pptr=temp_ptr
 .word init  ;cold start vector
 .word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
+.byte "KIPBOB"
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
 
 .code
 
@@ -135,9 +139,11 @@ init:
   
 ;make some room for extra RAM
 
-	ldax #$6000
+	ldax #$5800
 	stax MEMSIZ
-	
+  
+	stax http_variables_buffer
+  
   ldax #welcome_banner
   jsr print
   lda #$90 ;'rest of banner
@@ -754,6 +760,7 @@ ping_keyword:
 @done:  
   jmp print_cr
 @error:
+  jsr print_error
   lda #'!'
   jmp @print_and_loop
 
@@ -775,10 +782,10 @@ mac_keyword:
   ldy #2
 :  
   lda transfer_buffer,y
-  sta cfg_mac_default+3,y
+  sta cfg_mac+3,y
   dey
   bpl:-
-  jsr ip65_init
+  jsr eth_init
   rts
   
 
@@ -1011,7 +1018,7 @@ got_http_request:
 ; none
 ;outputs:
 ; none
-httpd_start:  
+httpd_start:
   ldx top_of_stack
   txs
   ldax #listening
@@ -1162,6 +1169,7 @@ http_callback:
   cmp #$0d
   bne @not_eol
 @found_eol:
+  
   inc found_eol
   rts
 @not_eol:
@@ -1502,12 +1510,14 @@ connection_from: .byte "CONNECTION FROM ",0
 ; All tokens are >$80,
 ; so they easily mark the end of the keyword
 keywords:                    
-  .byte "IF",$E0  ;our dummy 'IF' entry takes $E0
+    .byte "IF",$E0  ;our dummy 'IF' entry takes $E0
    	.byte "IPCFG",$E1
-	.byte "PING",$E3
+   	.byte "DHCP",$E2  ;DUMMY!
+	  .byte "PING",$E3  
   	.byte "MYIP",$E4
   	.byte "NETMASK",$E5
   	.byte "GATEWAY",$E6
+   	.byte "DNS",$E7 ;DUMMY!
   	.byte "HOOK",$E8
   	.byte "YIELD",$E9
     .byte "XS",$80,$EA  ;BASIC will replace 'END' with $80    
@@ -1573,39 +1583,9 @@ hook_table:
 
 hooks: .byte 0
 error_handling_mode: .byte 0
-
-.bss
-string_length: .res 1
-param_length: .res 1
-tmp_length: .res 1
-temp_bin: .res 1
-temp_bcd: .res 2
-ping_counter: .res 1
-http_buffer: .res 256
-string_buffer: .res 128
-transfer_buffer: .res 256
-handler_address: .res 2
-hash: .res 1
-string_ptr: .res 1
-default_line_number: .res 2
+connection_timeout_seconds: .byte 0
 found_eol: .byte 0
 connection_closed: .byte 0
-output_buffer_length: .res 2
-connection_timeout_seconds: .byte 0
-tcp_buffer_ptr: .res 2
-buffer_size: .res 1
-temp_x: .res 1
-sent_header: .res 1
-tmp_a: .res 1
-error_buffer: .res 80
-top_of_stack: .res 1
-.segment "TCP_VARS"
-
-__httpd_io_buffer: .res 1024 ;temp buffer for storing inbound requests.
-content_type_buffer: .res 128
-status_code_buffer: .res 128
-
-.segment "HTTP_VARS"
 
 httpd_io_buffer: .word __httpd_io_buffer  
 httpd_port_number: .word 80
@@ -1639,6 +1619,36 @@ xmit_a_ptr:
   ldx temp_x
 :    
   rts
+
+.bss
+string_length: .res 1
+param_length: .res 1
+tmp_length: .res 1
+temp_bin: .res 1
+temp_bcd: .res 2
+ping_counter: .res 1
+http_buffer: .res 256
+string_buffer: .res 128
+transfer_buffer: .res 256
+handler_address: .res 2
+hash: .res 1
+string_ptr: .res 1
+default_line_number: .res 2
+output_buffer_length: .res 2
+tcp_buffer_ptr: .res 2
+buffer_size: .res 1
+temp_x: .res 1
+sent_header: .res 1
+tmp_a: .res 1
+error_buffer: .res 80
+top_of_stack: .res 1
+.segment "TCP_VARS"
+
+__httpd_io_buffer: .res 1024 ;temp buffer for storing inbound requests.
+content_type_buffer: .res 128
+status_code_buffer: .res 128
+
+
 
 
 ;-- LICENSE FOR bails.s --
