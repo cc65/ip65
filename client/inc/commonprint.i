@@ -354,7 +354,7 @@ ok_msg:
 	.byte "OK", 0
  
 dns_lookup_failed_msg:
- .byte "DNS lookup failed", 0
+ .byte "DNS LOOKUP FAILED", 0
 
 error_code:  
   .asciiz "error code: "

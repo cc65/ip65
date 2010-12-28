@@ -34,6 +34,7 @@
 
 ap:		.res 2
 
+ARP_TIMEOUT_MS=100
 
 	.bss
 
@@ -211,10 +212,10 @@ arp_lookup:
 
 	jsr timer_read		; read current timer value
 	clc
-	adc #<1000		; set timeout to now + 1000 ms
+	adc #<ARP_TIMEOUT_MS		; set timeout to now + ARP_TIMEOUT_MS
 	sta arptimeout
 	txa
-	adc #>1000
+	adc #>ARP_TIMEOUT_MS
 	sta arptimeout + 1
 
 @notimeout:
