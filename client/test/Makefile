@@ -19,6 +19,8 @@ INCFILES=\
   ../inc/net.i\
 
 all: \
+	ip65 \
+	drivers \
 	test_getc.prg \
 	testdns.prg \
 	test_disk_io.prg \
@@ -43,6 +45,12 @@ all: \
 #	ip65test.dsk \
 #	test_disk_io.d64 \
 
+
+ip65:
+	make -C ../ip65 all
+
+drivers:
+	make -C ../drivers all
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
