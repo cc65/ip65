@@ -365,7 +365,8 @@ tcp_callback_routine:
 @not_end_of_file:
   lda #14
   jsr print_a ;switch to lower case
- 
+   
+  
   ldax tcp_inbound_data_ptr
   stax get_next_byte+1
     

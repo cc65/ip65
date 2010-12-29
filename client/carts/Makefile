@@ -12,12 +12,28 @@ INCFILES=\
   ../inc/version.i\
 
 IP65LIB=../ip65/ip65.lib
-
 IP65TCPLIB=../ip65/ip65_tcp.lib
-
 C64RRNETLIB=../drivers/c64rrnet.lib
+C64WIZNETLIB=../drivers/c64wiznet.lib
+IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 
-all:  bobcart.bin kipperkart.bin kipperkart_rr.bin netboot.bin kipperterm.bin kipperkart.prg kipperterm.prg kipperterm_rr.bin kippergo.bin kipperkart.prg kippergo.prg kippergo_rr.bin kipperdisk.d64
+all:    ip65 drivers\
+	kkwiz.bin \
+	kkwiz.prg \
+	bobcart.bin \
+	kipperkart.bin \
+	kipperkart_rr.bin \
+	netboot.bin \
+	kipperterm.bin \
+	kipperkart.prg \
+	kipperterm.prg \
+	kipperterm_rr.bin \
+	kippergo.bin \
+	kipperkart.prg \
+	kippergo.prg \
+	kippergo_rr.bin \
+	kipperdisk.d64 \
+
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
@@ -33,6 +49,9 @@ kippergo.o: kippergo.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i ../inc/config
 
 kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kipperkart.bin > kipperkart.prg
+
+kkwiz.prg: kkwiz.bin c64_cart_ram_header.prg
+	cat c64_cart_ram_header.prg kkwiz.bin > kkwiz.prg
 
 kipperterm.prg: kipperterm.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kipperterm.bin > kipperterm.prg
@@ -89,6 +108,12 @@ bobcart.bin: bobcart.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcar
 	$(LD) -m bobcart.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)  
 	ruby fix_cart.rb $@ 8192
 
+kkwiz.bin: kipperkart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_16kcart.cfg
+	$(LD) -m kkwiz.map -vm -C ../cfg/c64_16kcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB)
+	ruby fix_cart.rb $@ 16384
+#	ruby set_ip_config.rb $@ mac auto
+
+
   		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/
@@ -99,3 +124,9 @@ clean:
 
 distclean: clean
 	rm -f *~
+
+ip65:
+	make -C ../ip65 all
+
+drivers:
+	make -C ../drivers all

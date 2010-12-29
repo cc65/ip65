@@ -66,9 +66,6 @@ DEFAULT_W5100_BASE = $DF20
 	.import ip65_process
 	.import check_for_abort_key
 
-	.segment "IP65ZP" : zeropage
-	
-
 	
 	.code
 
@@ -752,6 +749,7 @@ tcp_rx:
 	lda #$ff
 	sta tcp_inbound_data_length
 	sta tcp_inbound_data_length+1
+	jsr @make_fake_eth_header
 	jsr jmp_to_callback   ;let the caller see the connection has closed
 	sec			;don't poll the MAC RAW socket, else it may clobber the output buffer
 	rts
@@ -768,8 +766,11 @@ tcp_rx:
 						;20 bytes of TCP header
 	
 	stax tcp_inbound_data_ptr
+	
+	
 	sta	eth_ptr_lo
 	stx eth_ptr_hi
+	
 	lda	#0
 	sta  byte_ctr_lo
 	sta  byte_ctr_hi
@@ -789,7 +790,7 @@ tcp_rx:
 	ldax rx_rd_ptr
 	jsr	w5100_read_register
 	jsr next_eth_packet_byte
-
+	
 	jsr @inc_rx_rd_ptr
 	
 	inc	byte_ctr_lo
@@ -824,7 +825,7 @@ tcp_rx:
  	ldy	#W5100_CMD_RECV
 	jsr	w5100_write_register
 
-
+	jsr @make_fake_eth_header
 	jsr jmp_to_callback   ;let the caller see the connection has closed
 	sec			;don't poll the MAC RAW socket, else it may clobber the output buffer
 	rts
@@ -850,7 +851,38 @@ tcp_rx:
 	jsr	w5100_read_register
 	sta rx_rd_ptr
 	rts
+
+;the function dispatcher (and possibly other parts of the ip65 stack) expect to find valid values in the eth_inp frame
+;when processing tcp data
+@make_fake_eth_header:
+
+	.import	ip_inp
+	.import udp_inp
+	;first set the TCP protocol value
+	lda #6	;TCP protocol number
+	sta ip_inp+9 ;proto number
 	
+	;now copy the remote IP address
+	ldx	#0
+@ip_loop:	
+	lda	tcp_remote_ip,x
+	sta ip_inp+12,x  ;src IP 
+	inx
+	cpx #$04
+	bne	@ip_loop	
+	
+	;now the local & remote ports
+	lda tcp_connect_remote_port
+	sta udp_inp+1 ;remote port (lo byte)
+	lda tcp_connect_remote_port+1	
+	sta udp_inp+0 ;remote port (high byte)
+	lda tcp_local_port
+	sta udp_inp+3 ;local port (lo byte)
+	lda tcp_local_port+1
+	sta udp_inp+2 ;local port (high byte)
+	
+	rts
+
 jmp_to_callback:
   jmp (tcp_callback)
 
@@ -988,9 +1020,11 @@ next_eth_packet_byte:
 eth_ptr_lo=next_eth_packet_byte+1
 eth_ptr_hi=next_eth_packet_byte+2
 
+; .bss
+; don't use BSS because we are out of room in the location that lives in the
+; config used for 16K carts ($C010..$CFFF)
+;there seems to be a little room still free in the seg used for SELF_MODIFIED_CODE
 
-
- .bss
  w5100_addr: .res 2
  byte_ctr_lo: .res 1
  byte_ctr_hi: .res 1
@@ -1009,8 +1043,8 @@ tcp_send_data_len: .res 2
 tcp_send_data_ptr = eth_ptr_lo
 
 
-tcp_inbound_data_ptr: .res 2
 tcp_inbound_data_length: .res 2
+tcp_inbound_data_ptr: .res 2
 
 tcp_connect_remote_port: .res 2
 tcp_remote_ip = tcp_connect_ip

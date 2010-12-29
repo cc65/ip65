@@ -7,10 +7,10 @@ AFLAGS=
 
 
 IP65LIB=../ip65/ip65.lib
-IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 IP65TCPLIB=../ip65/ip65_tcp.lib
 C64RRNETLIB=../drivers/c64rrnet.lib
 C64WIZNETLIB=../drivers/c64wiznet.lib
+IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 APPLE2PROGLIB=../drivers/apple2prog.lib
 
 INCFILES=\
