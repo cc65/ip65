@@ -126,7 +126,7 @@ tcp_callback: .res 2 ;vector to routine to be called when data is received over 
 tcp_flags: .res 1
 tcp_fin_sent: .res 1
 
-tcp_listen_port: .res 1
+tcp_listen_port: .res 2
 
 tcp_inbound_data_ptr: .res 2 ;pointer to data just recieved over tcp connection
 tcp_inbound_data_length: .res 2 ;length of data just received over tcp connection
@@ -387,7 +387,7 @@ tcp_close:
   rts
 
 
-tcp_send_string:
+
 ;send a string over the current tcp connection
 ;inputs:
 ;   tcp connection should already be opened
@@ -395,7 +395,7 @@ tcp_send_string:
 ; the first nul byte will be sent. max of 255 bytes will be sent.
 ;outputs:
 ;   carry flag is set if an error occured, clear otherwise
-
+tcp_send_string:
   stax tcp_send_data_ptr
   stax copy_src
   lda #0
@@ -414,14 +414,16 @@ tcp_send_string:
 @done:  
   ldax tcp_send_data_ptr
   ;now we can fall through into tcp_send
-tcp_send:
+  
+
 ;send tcp data
 ;inputs:
 ;   tcp connection should already be opened
 ;   tcp_send_data_len: length of data to send (exclusive of any headers)
 ;   AX: pointer to buffer containing data to be sent
 ;outputs:
-;   carry flag is set if an error occured, clear otherwise
+;   carry flag is set if an error occured, clear otherwise  
+tcp_send:
 
   stax tcp_send_data_ptr
   

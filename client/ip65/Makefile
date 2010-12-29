@@ -52,10 +52,10 @@ ip65_tcp.lib: tcp.o $(ETHOBJS) function_dispatcher.s tcp.s
 	ar65 a ip65_tcp.lib $(ETHOBJS) function_dispatcher.o tcp.o
 
 ip65_wiznet.lib: $(ETHOBJS) function_dispatcher.s
-	$(AS) $(AFLAGS) function_dispatcher.s -DTCP -DAPI_VERSION=2
-	$(AS) $(AFLAGS) ip.s -DTCP
+	$(AS) $(AFLAGS) function_dispatcher.s 
+	$(AS) $(AFLAGS) ip.s 
 	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_wiznet.lib $(ETHOBJS) function_dispatcher.o tcp.o
+	ar65 a ip65_wiznet.lib $(ETHOBJS) function_dispatcher.o 
 
 clean:
 	rm -f *.o

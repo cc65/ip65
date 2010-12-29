@@ -29,6 +29,7 @@
   .import ip65_process
   .import get_key_if_available
   .import get_filtered_input
+  .import check_for_abort_key
   .import ok_msg
   .import failed_msg
   .import print
@@ -93,6 +94,12 @@ telnet_connect:
     
 @main_polling_loop:
 
+  jsr check_for_abort_key
+  bcc	@no_abort
+  jsr	tcp_close
+  jmp 	@disconnected
+  
+@no_abort:
   jsr timer_read
   txa
   adc #$20  ;32 x 1/4 = ~ 8seconds
@@ -107,6 +114,7 @@ telnet_connect:
   jsr ip65_process
   lda connection_closed
   beq @not_disconnected
+@disconnected:  
   ldax #disconnected
   jsr print
   rts

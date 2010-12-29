@@ -24,6 +24,8 @@ DEFAULT_W5100_BASE = $DF20
 	.import eth_outp_len
 
 	.import timer_init
+	.import timer_read
+	
 	.import arp_init
 	.import ip_init
 	.import	cfg_init
@@ -32,14 +34,28 @@ DEFAULT_W5100_BASE = $DF20
 	.importzp eth_src
 	.importzp eth_type
 	.importzp eth_data
+	.importzp copy_src
 
 	.export w5100_ip65_init
 	.export w5100_read_register
 	.export w5100_write_register
-;	.export w5100_get_current_register
-;	.export w5100_select_register
-;	.export	w5100_read_next_byte
-;	.export	w5100_write_next_byte	
+
+	.export tcp_connect
+	.export tcp_connect_ip
+	.export tcp_callback
+	.export tcp_send_data_len
+	.export tcp_send_string
+	.export tcp_send
+	.export tcp_send_keep_alive
+	.export	tcp_close
+
+
+	.export tcp_connect_remote_port
+	.export tcp_remote_ip
+	.export tcp_listen
+	
+	.export tcp_inbound_data_ptr
+	.export tcp_inbound_data_length
 
 	.import cfg_mac
 	.import	cfg_ip
@@ -47,7 +63,8 @@ DEFAULT_W5100_BASE = $DF20
 	.import	cfg_gateway
 
 	.import ip65_error
-
+	.import ip65_process
+	.import check_for_abort_key
 
 	.segment "IP65ZP" : zeropage
 	
@@ -73,9 +90,11 @@ w5100_init:
 	stx	set_lo+2
 	stx	get_hi+2
 	stx	get_lo+2
+	stx	inc_hi+2
+	stx	inc_lo+2
 
-	stx	w5100_read_next_byte+2
-	stx	w5100_write_next_byte+2
+	stx	read_register+2
+	stx	write_register+2
 	stx	read_mode_reg+2
 	stx write_mode_reg+2
 	tax
@@ -84,12 +103,16 @@ w5100_init:
 	inx
 	stx	set_hi+1
 	stx	get_hi+1
+	stx	inc_hi+1
+	
 	inx
 	stx	set_lo+1
 	stx	get_lo+1
+	stx	inc_lo+1
+	
 	inx
-	stx	w5100_read_next_byte+1
-	stx	w5100_write_next_byte+1
+	stx	read_register+1
+	stx	write_register+1
 	
 	lda #$80  ;reset
 	jsr	write_mode_reg
@@ -98,10 +121,10 @@ w5100_init:
 				;after a reset, mode register is zero
 				;therefore, if there is a real W5100 at the specified address,
 				;we should be able to write a $80 and read back a $00
-	lda #$03  ;set indirect + autoincrement
+	lda #$11  ;set indirect mode, no autoinc, no auto PING
 	jsr	write_mode_reg
 	jsr	read_mode_reg
-	cmp #$03
+	cmp #$11
 	bne @error	;make sure if we write to mode register without bit 7 set,
 				;the value persists.
 	ldax #$0016
@@ -109,7 +132,7 @@ w5100_init:
 	ldx #$00		;start writing to reg $0016 - Interrupt Mask Register
 @loop:
 	lda w5100_config_data,x	
-	jsr	w5100_write_next_byte
+	jsr	write_reg_and_inc
 	inx
 	cpx #$06
 	bne @loop
@@ -120,16 +143,12 @@ w5100_init:
 	
 @mac_loop:
 	lda cfg_mac,x
-	jsr	w5100_write_next_byte
+	jsr	write_reg_and_inc
 	inx
 	cpx #$06
 	bne @mac_loop
 	
-	
-	;set up socket 0 for MAC RAW mode , no autoinc, no ping
-	lda #$11  ;set indirect - no autoincrement, no automatic ping response
-	jsr	write_mode_reg
-
+	;set up socket 0 for MAC RAW mode 
 
 	ldax #W5100_RMSR	;rx memory size (each socket)
 	ldy	#$0A			;sockets 0 & 1 4KB each, other sockets 0KB
@@ -150,6 +169,9 @@ w5100_init:
 	ldax #W5100_S0_CR
 	ldy	#W5100_CMD_OPEN
 	jsr	w5100_write_register
+		
+	lda #0
+	sta tcp_connected
 	
 	clc
 	rts
@@ -190,6 +212,20 @@ w5100_ip65_init:
 ; and eth_inp_len contains the length of the packet
 eth_rx:
 
+	;eth_rx will get called in the main polling loop
+	;we shoe horn a check for data on the TCP socket here
+	;if we do get TCP data, we will call the TCP callback routine
+	;but we hide all of this from the ip65 stack proper.
+	lda tcp_connected	
+	beq	@no_tcp
+
+	jsr	tcp_rx
+	bcc @no_tcp	;if we didn't get any TCP traffic, go check for a raw ethernet packet
+		;eth_inp and eth_inp_len are not valid, so leave carry flag set to indicate no ethernet frame data 
+	rts
+	
+@no_tcp:	
+
 	ldax #W5100_S0_RX_RSR0 
 	jsr	w5100_read_register
 	sta	eth_inp_len+1
@@ -213,40 +249,18 @@ eth_rx:
 	lda	#0
 	sta  byte_ctr_hi
 
-.ifdef DEBUG
-	.import print_hex
-	.import	print_cr		
-	lda	eth_inp_len+1
-	jsr	print_hex
-	lda	eth_inp_len
-	jsr	print_hex
-.endif
-
 ;read the 2 byte frame length
 	jsr	@get_current_rx_rd
 	jsr	@mask_and_adjust_rx_read
 
-.ifdef DEBUG
-	lda rx_rd_ptr+1	;DEBUG
-	jsr	print_hex	;DEBUG
-	lda rx_rd_ptr	;DEBUG
-	jsr	print_hex	;DEBUG
-.endif	
 	
 	ldax rx_rd_ptr
 	jsr	w5100_read_register
 	sta eth_inp_len+1	;high byte of frame length
-.ifdef DEBUG	
-	jsr	print_hex	;DEBUG
-.endif	
 	jsr @inc_rx_rd_ptr
 	ldax rx_rd_ptr
 	jsr	w5100_read_register
 	sta eth_inp_len	;lo byte of frame length
-.ifdef DEBUG	
-	jsr	print_hex	;DEBUG
-	jsr	print_cr	;DEBUG
-.endif
 
 	;now copy the rest of the frame to the eth_inp buffer
 @get_next_byte:
@@ -267,22 +281,6 @@ eth_rx:
 	cmp	eth_inp_len+1
 	bne	@get_next_byte
 
-.ifdef DEBUG	
-;print first 40 bytes of frame	
- 	ldy #0	
-@print_loop:
-  	tya
-  	pha
-  	lda eth_inp,y
-	jsr	print_hex
-	pla
-	tay
-	iny
-	cpy #40
-	bne	@print_loop
-
-	jsr	print_cr	;DEBUG
-.endif	
 	
 ;update the RX RD pointer past the frame we just read	
 	jsr	@get_current_rx_rd
@@ -432,7 +430,7 @@ advance_eth_ptr:
 ; y is overwritten
 w5100_read_register:	
 	jsr	w5100_select_register
-	jmp	w5100_read_next_byte
+	jmp	read_register
 
 ; write to one of the W5100 registers
 ; inputs: AX = register number to write
@@ -441,9 +439,482 @@ w5100_read_register:
 w5100_write_register:
 	jsr	w5100_select_register
 	tya
-	jmp	w5100_write_next_byte
+	jmp	write_register
 
 
+
+
+;listen for an inbound tcp connection
+;this is a 'blocking' call, i.e. it will not return until a connection has been made
+;inputs:
+; AX: destination port (2 bytes)
+; tcp_callback: vector to call when data arrives on this connection
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_listen:
+
+	stax  tcp_local_port
+	jsr	setup_tcp_socket
+	ldax #W5100_S1_CR
+	ldy	#W5100_CMD_LISTEN
+	jsr	w5100_write_register
+
+	;now wait for the status to change to 'established'
+@listen_loop:
+	inc $d020
+	jsr	ip65_process
+	jsr check_for_abort_key
+	bcc @no_abort
+  	lda #KPR_ERROR_ABORTED_BY_USER
+  	sta	ip65_error
+  	sec
+  	rts
+@no_abort:
+	ldax #W5100_S1_SR
+	jsr w5100_read_register
+	cmp #W5100_STATUS_SOCK_ESTABLISHED
+	bne	@listen_loop
+	inc tcp_connected
+
+	;copy the remote IP address & port number
+	ldax #W5100_S1_DIPR0
+	jsr	w5100_select_register
+	ldx	#0
+@ip_loop:	
+	jsr	read_reg_and_inc
+	sta	tcp_remote_ip,x
+	inx
+	cpx #$04
+	bne	@ip_loop
+	
+	ldax #W5100_S1_DPORT0
+	jsr	w5100_select_register
+	jsr read_reg_and_inc
+	sta tcp_connect_remote_port+1
+	jsr read_reg_and_inc
+	sta tcp_connect_remote_port
+	
+	clc
+	rts
+
+
+;make outbound tcp connection
+;inputs:
+; tcp_connect_ip:  destination ip address (4 bytes)
+; AX: destination port (2 bytes)
+; tcp_callback: vector to call when data arrives on this connection
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_connect:
+	stax tcp_remote_port
+	jsr	timer_read	;get a pseudo random value
+	sta tcp_local_port+1
+	inc tcp_local_port
+	
+
+	jsr	setup_tcp_socket
+		
+
+	;set the destination IP address
+	ldax #W5100_S1_DIPR0
+	jsr	w5100_select_register
+	ldx	#0
+@remote_ip_loop:
+	lda	tcp_connect_ip,x
+	jsr	write_reg_and_inc
+	inx
+	cpx #$04
+	bne	@remote_ip_loop
+	ldx	#0	
+
+;W5100 register address is now W5100_S1_DPORT0, so set the destination port
+	lda	tcp_remote_port+1
+	jsr	write_reg_and_inc
+	lda	tcp_remote_port
+	jsr	write_reg_and_inc
+
+	ldax #W5100_S1_CR
+	ldy	#W5100_CMD_CONNECT
+	jsr	w5100_write_register
+
+	;now wait for the status to change to 'established'
+@connect_loop:
+	ldax #W5100_S1_SR
+	jsr w5100_read_register
+	cmp #W5100_STATUS_SOCK_CLOSED
+	beq	@error
+	cmp #W5100_STATUS_SOCK_ESTABLISHED
+	beq	@ok
+
+	jsr check_for_abort_key
+	bcc @connect_loop
+  	lda #KPR_ERROR_ABORTED_BY_USER
+  	jmp @set_error_and_exit
+
+@ok:
+	inc tcp_connected
+	clc
+	rts
+@error:
+  	lda #KPR_ERROR_CONNECTION_CLOSED
+@set_error_and_exit:
+  	sta ip65_error
+	sec
+	rts
+
+;send a string over the current tcp connection
+;inputs:
+;   tcp connection should already be opened
+;   AX: pointer to buffer - data up to (but not including)
+; the first nul byte will be sent. max of 255 bytes will be sent.
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_send_string:
+  stax tcp_send_data_ptr
+  stax copy_src
+  lda #0
+  tay
+  sta tcp_send_data_len
+  sta tcp_send_data_len+1
+  lda (copy_src),y
+  bne @find_end_of_string
+  rts ; if the string is empty, don't send anything!
+@find_end_of_string:  
+  lda (copy_src),y
+  beq @done  
+  inc tcp_send_data_len
+  iny
+  bne @find_end_of_string
+@done:  
+  ldax tcp_send_data_ptr
+  ;now we can fall through into tcp_send
+
+;send tcp data
+;inputs:
+;   tcp connection should already be opened
+;   tcp_send_data_len: length of data to send (exclusive of any headers)
+;   AX: pointer to buffer containing data to be sent
+;outputs:
+;   carry flag is set if an error occured, clear otherwise  
+tcp_send:
+	stax tcp_send_data_ptr
+	
+	;are we connected?
+	ldax #W5100_S1_SR
+	jsr w5100_read_register
+	cmp #W5100_STATUS_SOCK_ESTABLISHED
+	beq	@ok
+
+  	lda #KPR_ERROR_CONNECTION_CLOSED
+  	sta ip65_error
+  	sec
+  	rts
+@ok:
+
+	
+	lda #$AD	;opcode for LDA
+	sta next_eth_packet_byte
+	
+	lda #0
+	sta  byte_ctr_lo
+	sta  byte_ctr_hi
+	
+	jsr @get_current_tx_wr	
+	jmp	@calculate_tx_wr_ptr	
+@send_next_byte:	
+	jsr	next_eth_packet_byte
+	tay
+	ldax tx_wr_ptr
+	jsr	w5100_write_register
+	
+	inc	byte_ctr_lo
+	bne	:+
+	inc	byte_ctr_hi
+:	
+
+	inc	tx_wr_ptr
+	bne	:+
+	inc tx_wr_ptr+1
+@calculate_tx_wr_ptr:	
+	lda tx_wr_ptr+1
+	and	#$0F
+	clc
+	adc	#$50
+	sta tx_wr_ptr+1
+:
+
+	lda	byte_ctr_lo
+	cmp	tcp_send_data_len
+	bne	@send_next_byte
+	lda	byte_ctr_hi
+	cmp	tcp_send_data_len+1
+	bne	@send_next_byte	
+
+;all bytes copied, now adjust the tx write ptr and SEND
+	jsr @get_current_tx_wr	
+	clc	
+	lda	tx_wr_ptr
+	adc tcp_send_data_len
+	sta tx_wr_ptr
+	lda	tx_wr_ptr+1
+	adc tcp_send_data_len+1
+	tay
+	ldax #W5100_S1_TX_WR0
+	jsr	w5100_write_register
+	ldy tx_wr_ptr
+	ldax #W5100_S1_TX_WR1
+	jsr	w5100_write_register
+	ldax #W5100_S1_CR
+ 	ldy	#W5100_CMD_SEND
+ 	jsr	w5100_write_register
+	
+	clc
+	rts
+
+@get_current_tx_wr:
+	ldax #W5100_S1_TX_WR0
+	jsr	w5100_read_register	
+	sta tx_wr_ptr+1
+	ldax #W5100_S1_TX_WR1
+	jsr	w5100_read_register
+	sta tx_wr_ptr
+	rts
+
+;send an empty ACK packet on the current connection
+;inputs:
+;   none
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+
+tcp_send_keep_alive:
+	;are we connected?
+	ldax #W5100_S1_SR
+	jsr w5100_read_register
+	cmp #W5100_STATUS_SOCK_ESTABLISHED
+	beq	@ok
+
+  	lda #KPR_ERROR_CONNECTION_CLOSED
+  	sta ip65_error
+  	sec
+  	rts
+@ok:
+	ldax #W5100_S1_CR
+	ldy	#W5100_CMD_SEND_KEEP
+	jsr	w5100_write_register
+	clc
+	rts
+	
+
+
+  
+;close the current connection
+;inputs:
+;   none
+;outputs:
+;   carry flag is set if an error occured, clear otherwise
+tcp_close:
+
+	ldax #W5100_S1_CR
+	ldy	#W5100_CMD_DISCONNECT
+	jsr	w5100_write_register
+	clc
+	rts
+
+
+;poll the TCP socket
+;if there is data available, call the user supplied TCP callback
+;inputs:
+;   none
+;outputs:
+;   carry flag is set if there was data, clear otherwise
+tcp_rx:
+
+	;is there data?
+	ldax #W5100_S1_RX_RSR0 
+	jsr	w5100_read_register
+	sta	tcp_inbound_data_length+1
+	ldax #W5100_S1_RX_RSR1
+	jsr	w5100_read_register
+	sta	tcp_inbound_data_length
+	bne	@got_data
+	lda	tcp_inbound_data_length+1
+	bne	@got_data
+	
+	;are we connected?
+	ldax #W5100_S1_SR
+	jsr w5100_read_register
+	cmp #W5100_STATUS_SOCK_ESTABLISHED
+	beq	@connected_but_no_data
+	;no longer connected
+	lda #0
+	sta tcp_connected
+	
+	lda #$ff
+	sta tcp_inbound_data_length
+	sta tcp_inbound_data_length+1
+	jsr jmp_to_callback   ;let the caller see the connection has closed
+	sec			;don't poll the MAC RAW socket, else it may clobber the output buffer
+	rts
+@connected_but_no_data:
+	clc	;no data - go check the MAC RAW socket
+	rts
+@got_data:
+	lda #$8D	;opcode for STA
+	sta next_eth_packet_byte
+
+	ldax #eth_inp+$36	;we will write to the location that TCP data would appear if this was a raw eth frame,
+						;14 bytes of ethernet header
+						;20 bytes of IP header
+						;20 bytes of TCP header
+	
+	stax tcp_inbound_data_ptr
+	sta	eth_ptr_lo
+	stx eth_ptr_hi
+	lda	#0
+	sta  byte_ctr_lo
+	sta  byte_ctr_hi
+
+	lda	tcp_inbound_data_length+1
+	cmp	#4	;don't allow more than $4FF bytes at once ($1279) since we are writing to a 1500 byte 
+	bmi	:+
+	lda	#4
+	sta	tcp_inbound_data_length+1
+:	
+
+	;now copy the data just arrived to the eth_inp buffer
+	jsr	@get_current_rx_rd
+	jsr @mask_and_adjust_rx_read
+@get_next_byte:
+
+	ldax rx_rd_ptr
+	jsr	w5100_read_register
+	jsr next_eth_packet_byte
+
+	jsr @inc_rx_rd_ptr
+	
+	inc	byte_ctr_lo
+	bne	:+
+	inc	byte_ctr_hi
+:	
+
+	lda	byte_ctr_lo
+	cmp	tcp_inbound_data_length
+	bne	@get_next_byte
+	lda	byte_ctr_hi
+	cmp	tcp_inbound_data_length+1
+	bne	@get_next_byte
+
+	
+;update the RX RD pointer past the frame we just read	
+	jsr	@get_current_rx_rd
+	clc	
+	lda	rx_rd_ptr
+	adc tcp_inbound_data_length
+	sta rx_rd_ptr
+	lda	rx_rd_ptr+1
+	adc tcp_inbound_data_length+1
+	tay
+	ldax #W5100_S1_RX_RD0
+	jsr	w5100_write_register
+	ldy rx_rd_ptr
+	
+	ldax #W5100_S1_RX_RD1
+	jsr	w5100_write_register
+	ldax #W5100_S1_CR
+ 	ldy	#W5100_CMD_RECV
+	jsr	w5100_write_register
+
+
+	jsr jmp_to_callback   ;let the caller see the connection has closed
+	sec			;don't poll the MAC RAW socket, else it may clobber the output buffer
+	rts
+	
+@inc_rx_rd_ptr:
+	inc	rx_rd_ptr
+	bne	:+
+	inc	rx_rd_ptr+1
+@mask_and_adjust_rx_read:
+	lda rx_rd_ptr+1
+	and	#$0F
+	clc
+	adc	#$70
+	sta rx_rd_ptr+1
+:	
+	rts
+	
+@get_current_rx_rd:
+	ldax #W5100_S1_RX_RD0
+	jsr	w5100_read_register	
+	sta rx_rd_ptr+1
+	ldax #W5100_S1_RX_RD1
+	jsr	w5100_read_register
+	sta rx_rd_ptr
+	rts
+	
+jmp_to_callback:
+  jmp (tcp_callback)
+
+
+;copy the IP65 configuration to the the w5100 onchip configuration
+;we assume MAC has been configured already via eth_init, but IP
+;address etc may not be known when the w5100 was initialised (e.g.
+;if using DHCP).
+setup_tcp_socket:
+	ldax #W5100_GAR0
+	jsr	w5100_select_register
+	ldx	#0
+@gateway_loop:	
+	lda	cfg_gateway,x
+	jsr	write_reg_and_inc
+	inx
+	cpx #$04
+	bne	@gateway_loop
+	ldx	#0	
+@netmask_loop:	
+	lda	cfg_netmask,x
+	jsr	write_reg_and_inc
+	inx
+	cpx #$04
+	bne	@netmask_loop
+	
+	ldax #W5100_SIPR0
+	jsr	w5100_select_register
+	ldx	#0
+@ip_loop:	
+	lda	cfg_ip,x
+	jsr	write_reg_and_inc
+	inx
+	cpx #$04
+	bne	@ip_loop
+	
+	ldax #W5100_S1_PORT0
+	jsr	w5100_select_register
+	lda tcp_local_port+1
+	jsr write_reg_and_inc
+	lda tcp_local_port
+	jsr write_reg_and_inc
+	
+	lda #0
+	sta tcp_connected
+
+	ldax #W5100_S1_MR
+	ldy	#W5100_MODE_TCP
+	jsr	w5100_write_register
+	
+	;open socket 1
+	ldax #W5100_S1_CR
+	ldy	#W5100_CMD_OPEN
+	jsr	w5100_write_register	
+	rts
+
+write_reg_and_inc:
+	jsr	write_register
+	jmp inc_register
+
+read_reg_and_inc:
+	jsr	read_register
+	jmp inc_register
+	
 .rodata
 eth_driver_name:
 	.asciiz "WIZNET 5100"
@@ -481,15 +952,25 @@ get_lo:
 ; read value from previously selected W5100 register 
 ; inputs: none
 ; outputs: A = value of selected register number (and register pointer auto incremented)	
-w5100_read_next_byte:
+read_register:
 	lda	$FFFF	;WIZNET_DATA
 	rts
 	
 ; write value to previously selected W5100 register 
 ; inputs: A = value to write to selected register
 ; outputs: none (although W5100 register pointer auto incremented)	
-w5100_write_next_byte:
+write_register:
 	sta	$FFFF	;WIZNET_DATA
+	rts
+
+
+inc_register:
+inc_lo:
+	inc $FFFF	;WIZNET_ADDR_LO
+	bne	:+
+inc_hi:
+	inc $FFFF	;WIZNET_ADDR_HI
+:	
 	rts
 
 
@@ -507,6 +988,8 @@ next_eth_packet_byte:
 eth_ptr_lo=next_eth_packet_byte+1
 eth_ptr_hi=next_eth_packet_byte+2
 
+
+
  .bss
  w5100_addr: .res 2
  byte_ctr_lo: .res 1
@@ -514,9 +997,25 @@ eth_ptr_hi=next_eth_packet_byte+2
  
  tx_wr_ptr: .res 2
  rx_rd_ptr: .res 2
- 
- 
- 
+tcp_local_port: .res 2
+
+tcp_connected: .res 1
+
+tcp_connect_ip: .res 4 ;ip address of remote server to connect to
+tcp_callback: .res 2 ;vector to routine to be called when data is received over tcp connection
+
+tcp_remote_port: .res 2 ;temp space for holding port to listen on or connect to
+tcp_send_data_len: .res 2
+tcp_send_data_ptr = eth_ptr_lo
+
+
+tcp_inbound_data_ptr: .res 2
+tcp_inbound_data_length: .res 2
+
+tcp_connect_remote_port: .res 2
+tcp_remote_ip = tcp_connect_ip
+
+
 ;-- LICENSE FOR w5100a.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in

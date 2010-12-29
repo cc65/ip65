@@ -369,6 +369,7 @@ icmp_ping:
 	jsr timer_read		; read current timer value
 	stax ping_timer
 @loop_during_arp_lookup:
+	
   jsr ip65_process
   ldax ping_timer
   adc #50		; set timeout to now + 50 ms
