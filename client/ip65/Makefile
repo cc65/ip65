@@ -35,6 +35,7 @@ ETHOBJS= \
 	arithmetic.o\
 	ip.o \
 	icmp.o \
+	cifs.o \
 	udp.o
   
 all: ip65.lib ip65_tcp.lib ip65_wiznet.lib

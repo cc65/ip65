@@ -23,6 +23,7 @@ all: \
 	drivers \
 	test_getc.prg \
 	testdns.prg \
+	test_cifs.prg \
 	test_disk_io.prg \
 	testdns.pg2 \
 	testtftp.prg \
