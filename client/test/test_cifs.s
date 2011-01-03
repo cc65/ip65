@@ -7,6 +7,7 @@
   .import cfg_get_configuration_ptr
   .import cifs_l1_encode 
   .import cifs_l1_decode
+  .import cifs_start
   
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
@@ -40,10 +41,8 @@ basicstub:
 init:
     
 ;  jsr print_cr
-;  jsr print_ip_config
-;  init_ip_via_dhcp 
-;  jsr overwrite_with_hardcoded_dns_server
-;  jsr print_ip_config
+  init_ip_via_dhcp 
+  jsr print_ip_config
   
   ldax #hostname_1
   jsr do_encoding_test  
@@ -53,16 +52,9 @@ init:
 
   ldax #hostname_3
   jsr do_encoding_test  
-
-  ldax #hostname_4
-  jsr do_encoding_test  
-
-  ldax #hostname_5
-  jsr do_encoding_test  
-
-  ldax #hostname_6
-  jsr do_encoding_test  
-
+  
+  ldax  #cifs_hostname
+  jsr cifs_start
   jmp exit_to_basic
 
 
@@ -101,15 +93,8 @@ hostname_2:
 hostname_3:
   .byte "HOSTNAMEWITHLOTSOFCHARSINNAME",0     ;this should be another CNAME
 
-hostname_4:
-  .byte "FOO.BAR.BOGUS",0         ;this should fail
-
-hostname_5:                       ;this should work (without hitting dns)
-  .byte "111.22.3.4",0
-
-hostname_6:                       ;make sure doesn't get treated as a number
-  .byte "3COM.COM",0
-
+cifs_hostname:
+  .byte "KIPPERCIFS",0
 
 sample_msg:
 .byte  $ff, $ff, $ff, $ff, $ff, $ff, $f8, $1e, $df, $dc, $47, $a1, $08, $00, $45, $00

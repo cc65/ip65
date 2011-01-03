@@ -34,7 +34,7 @@ all: \
 	testdottedquad.prg\
 	test_tcp.prg \
 	test_xmodem.prg \
-	test_xmodem.d64 \
+#	test_xmodem.d64 \
 	test_httpd.prg \
 	test_parser.prg \
 	test_ping.prg \
@@ -72,7 +72,6 @@ test_xmodem.o: test_xmodem.s ../ip65/xmodem.s
 	$(AS) $(AFLAGS) $<
 
 
-
 test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
 	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
@@ -90,6 +89,10 @@ test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64pr
 test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65WIZNETLIB) $(C64WIZNETLIB)
 	cp test_wiznet.prg ../../server/boot/autoexec.prg
+
+
+test_cifs.prg: test_cifs.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
+	$(LD) -m  test_cifs.map -vm -C ../cfg/c64prg.cfg -o  test_cifs.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
 
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg

@@ -232,14 +232,23 @@ checkaddr:
 @ok:	clc
 	rts
 @broadcast:
+;jonno 2011-01-2
+;previously this was just checking for 255.255.255.255
+;however it is also possible to do a broadcast to a specific subnet, e.g. 10.5.1.255
+;this is particularly common with NETBIOS over TCP 
+;we really should use the netmask, but as a kludge, just see if last octet is 255.
+;this will work on a /24 network
+;
 	inc ip_broadcast
-	lda ip_inp + ip_dest		; check for broadcast
-	and ip_inp + ip_dest + 1
-	and ip_inp + ip_dest + 2
-	and ip_inp + ip_dest + 3
+;	lda ip_inp + ip_dest		; check for broadcast
+;	and ip_inp + ip_dest + 1
+;	and ip_inp + ip_dest + 2
+;	and ip_inp + ip_dest + 3
+	lda ip_inp + ip_dest +3		; check for broadcast
 	cmp #$ff
 	beq @ok
 	inc bad_addr
+  
 	bne :+
 	inc bad_addr + 1
 :	sec
