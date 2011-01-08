@@ -37,6 +37,7 @@ PAD = $1A ;padding added to end of file
 .import print_cr
 .import print_ascii_as_native
 .import print_hex
+.import timer_seconds
 
 .segment "SELF_MODIFIED_CODE"
 got_byte:
@@ -513,7 +514,7 @@ getc:
   sta getc_timeout_seconds
 
   clc
-  lda $dc09  ;time of day clock: seconds (in BCD)
+  jsr timer_seconds  ;time of day clock: seconds (in BCD)
   sed
   adc getc_timeout_seconds
   cmp #$60
@@ -537,7 +538,7 @@ getc:
   rts
 @no_abort:  
   jsr ip65_process
-  lda $dc09  ;time of day clock: seconds
+  jsr timer_seconds  ;time of day clock: seconds
   cmp getc_timeout_end  
   bne @poll_loop
   lda #00

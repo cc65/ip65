@@ -15,7 +15,8 @@
 
   .bss
   current_time_value: .res 2
-  
+  current_seconds: .res 1
+  current_jiffies: .res 1
   .data 
   jmp_old_handler:
     .byte $4c ;JMP    
@@ -35,8 +36,11 @@ timer_init:
   ldax #timer_vbl_handler
   stax  IRQ_VECTOR
 @handler_installed:  
-  ldax  #0
-  stax current_time_value
+  lda  #0
+  sta current_time_value
+  sta current_time_value+1
+  sta current_seconds
+  sta current_jiffies
 	rts
 
 ;read the current timer value 
@@ -57,11 +61,47 @@ timer_vbl_handler:
   bcc :+
   inc current_time_value+1
 :
+
+  inc current_jiffies
+  lda current_jiffies
+  cmp #60
+  bne @done
+  lda #0
+  sta current_jiffies
+  inc current_seconds 
+  ;we don't want to mess around with decimal mode in an IRQ handler
+  lda current_seconds 
+  cmp #$0a
+  bne :+
+  lda #$10
+:  
+  cmp #$1a
+  bne :+
+  lda #$20
+:
+  cmp #$2a
+  bne :+
+  lda #$30
+:
+  cmp #$3a
+  bne :+
+  lda #$40
+:
+  cmp #$4a
+  bne :+
+  lda #$50
+:
+  cmp #$5a
+  bne :+
+  lda #$00
+:
+sta current_seconds
+@done:  
   pla
   jmp jmp_old_handler
 
 timer_seconds:
-  lda #0
+  lda current_seconds
   rts
 
 ;-- LICENSE FOR c64timer_nb65.s --

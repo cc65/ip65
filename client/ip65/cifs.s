@@ -10,7 +10,7 @@
   .include "../inc/kipper_constants.i"
 .endif
 
-DEFAULT_CIFS_CMD_BUFFER = $2800
+DEFAULT_CIFS_CMD_BUFFER = $6800
 .export cifs_l1_encode
 .export cifs_l1_decode
 .export cifs_start
@@ -32,10 +32,14 @@ DEFAULT_CIFS_CMD_BUFFER = $2800
 .importzp ip_src
 .import ip_data
 .import ip_inp
+.import tcp_close
 .import tcp_listen
 .import tcp_callback
 .import tcp_inbound_data_length
 .import tcp_inbound_data_ptr
+.import tcp_send
+.import tcp_send_data_len
+
 .import ip65_process
 .import udp_add_listener
 .import udp_callback
@@ -208,28 +212,17 @@ cifs_start:
 
 ;broadcast a Name Registration Request message to the local LAN
 cifs_advertise_hostname:
-
-
-  ;start with a template registration request message
-  
-  ldx #nbns_registration_message_length
-@copy_message_loop:  
-  lda workgroup_registration_request,x
-  sta output_buffer,x
-  dex
-  bpl @copy_message_loop
-
-  
+    
   ; advertise the 'server' service for own hostname
- ;overwrite the hostname in 'DNS compressed form'
- ;we assume this hostname ends with <20>
+  ;overwrite the hostname in 'DNS compressed form'
+  ;we assume this hostname ends with <20>
   lda #$20  ;indicates what follows is a netbios name
   sta output_buffer+nbns_question_name
   
   ldx #0
 @copy_hostname_loop:
   lda local_hostname,x
-  sta output_buffer+nbns_question_name+1,x
+  sta registration_request_servername+1,x
   inx
   cpx #$21
   bmi @copy_hostname_loop  
@@ -237,19 +230,10 @@ cifs_advertise_hostname:
   jsr  @send_nbns_message  
   
   
-  ;now send the host announcement
-  ldax #host_announce_message
-  stax  copy_src
-  ldax #output_buffer
-  stax  copy_dest
-  ldax #host_announce_message_length
-  jsr copymem
-
-
   ;copy our encode hostname to the host announcment
   ldax #local_hostname
   stax  copy_src
-  ldax # output_buffer+host_announce_hostname
+  ldax #host_announce_hostname
   stax  copy_dest
   ldax #$20
   jsr copymem
@@ -257,7 +241,7 @@ cifs_advertise_hostname:
   ;copy our encode hostname to the host announcment
   ldax #raw_local_hostname
   stax  copy_src
-  ldax # output_buffer+host_announce_servername
+  ldax #host_announce_servername
   stax  copy_dest
   ldax #$10
   jsr copymem
@@ -267,7 +251,7 @@ cifs_advertise_hostname:
   ldx #03
 @copy_sending_address_loop:
   lda  cfg_ip,x
-  sta output_buffer+host_announce_my_ip,x
+  sta host_announce_my_ip,x
   dex
   bpl @copy_sending_address_loop
 
@@ -279,7 +263,7 @@ cifs_advertise_hostname:
   ldax  #host_announce_message_length
   stax  udp_send_len
   
-  ldax  #output_buffer
+  ldax  #host_announce_message
   jsr udp_send
   rts
   
@@ -289,7 +273,7 @@ cifs_advertise_hostname:
   ldx #03
 @copy_my_address_loop:
   lda  cfg_ip,x
-  sta output_buffer+nbns_my_ip,x
+  sta nbns_my_ip,x
   dex
   bpl @copy_my_address_loop
     
@@ -308,7 +292,7 @@ cifs_advertise_hostname:
   ldax  #nbns_registration_message_length
   stax  udp_send_len
   
-  ldax  #output_buffer
+  ldax  #registration_request
   jsr udp_send
   
     
@@ -394,6 +378,7 @@ nb_session_callback:
   lda tcp_inbound_data_length+1
   cmp #$ff
   bne @not_eof
+@eof:
   inc connection_closed
 @done:  
   rts
@@ -438,7 +423,53 @@ nb_session_callback:
   bne @not_got_full_message
   
   ;we have a complete message!
-  inc $d020
+  ldy #0
+  lda (copy_src),y  ;get the message type
+  cmp #$81    ;is it a session request?
+  bne @not_session_request
+  ldax  #positive_session_response_packet_length
+  stax  tcp_send_data_len
+  ldax  #positive_session_response_packet
+  jsr tcp_send
+  
+  jmp @message_handled
+  @not_session_request:
+  cmp #$00    ;is it a session message?  
+  bne @not_session_message
+
+  ;this SHOULD be a SMB - best check the header
+  
+  ldy #4
+  lda (copy_src),y  ;get the message data
+  cmp #$FF    ;start of SMB header
+  bne @not_smb
+  iny
+  lda (copy_src),y  ;get the message data
+  cmp #'S'    ;start of SMB header
+  bne @not_smb
+  
+  jsr smb_handler
+  
+  jmp @message_handled
+  
+  ;this doesn't look like a NBT session message or SMB, so give up
+  @not_session_message:
+  @not_smb:
+  
+   jsr tcp_close
+  jmp @eof
+  
+@message_handled:  
+  ;reset ready for next message on this connection
+  ldax  #-4                 ;start at -4, to skip the NBT header length
+  stax cifs_cmd_length
+  
+  
+  ldax   cifs_cmd_buffer
+  stax  cifs_cmd_buffer_ptr  
+  
+  
+  
   @not_got_full_message:
   .import print_hex
   lda cifs_cmd_length+1 
@@ -448,19 +479,136 @@ nb_session_callback:
   rts
   
 
-.rodata
+smb_handler:
+;  at this point, copy_src points to an SMB block encapsulated in an NBT session header
+  
+  ldy #8
+  lda (copy_src),y  ;get the SMB type
+  cmp #$72
+  beq @negotiate_protcol
+;unknown SMB
+  
+  rts
+@negotiate_protcol:
+;copy the request TID,PID,UID,MID into the response
+  ldy #28 ;offset of TID from start of message
+  ldx #0
+:  
+  lda (copy_src),y
+  sta negotiate_protocol_response_tid,x
+  inx
+  iny
+  cpx #8
+  bne :-
+  
 
+  lda  #$ff
+  sta dialect_index
+  sta dialect_index+1
+  clc
+  lda cifs_cmd_buffer
+  adc #$26
+  sta copy_src
+  lda cifs_cmd_buffer+1
+  adc #$00
+  sta copy_src+1
+
+  ldy #$0
+@dialect_scan_loop:
+  iny
+  bmi @end_of_dialects ;if we go to offset $80, we have gone too far
+  lda dialect_index
+  cmp #$10    ;if we've scanned more than $10 dialects, something is wrong
+  beq @end_of_dialects
+  lda (copy_src),y
+  cmp #$02
+  bne @test_dialect
+  inc dialect_index
+  jmp @dialect_scan_loop
+@test_dialect:
+  
+  tya
+  clc
+  adc copy_src
+  sta copy_src
+  bcc :+
+  inc copy_src+1
+:
+  ldy #0
+  
+@test_dialect_loop:  
+  lda (copy_src),y
+  cmp preferred_dialect_id,y
+  bne @dialect_scan_loop
+  iny
+  cpy #preferred_dialect_id_length
+  bne @test_dialect_loop
+  inc dialect_index+1
+  jmp @found_preferred_dialect
+    
+@end_of_dialects:
+  lda #$ff
+  sta dialect_index
+    
+ @found_preferred_dialect:
+  
+  ldax #negotiate_protocol_response_message_length
+  stax tcp_send_data_len
+  ldax #negotiate_protocol_response_message
+  jsr tcp_send
+
+  rts
+
+.data
+
+negotiate_protocol_response_message:
+  .byte $00 ;message type = session message
+  .byte $00,$00,negotiate_protocol_response_message_length-4  ;NBT header
+  .byte $FF,"SMB"  ;SMB header
+  .byte $72   ;command = negotiate protocol
+  .byte $00,$00,$00,$00 ;status = OK
+  .byte $82   ;flags : oplocks not supported, paths are case sensitive
+  .byte $01,$00 ;flags 2 - long file names allowed
+  .byte $00, $00 ;PID HIGH
+  .byte $00,$00,$00,$00,$00,$00,$00,$00 ; signature
+  .byte $00, $00 ;reserved
+negotiate_protocol_response_tid:  
+  .byte $00,$00 ;tree ID
+  .byte $98,$76  ;PID - to be overwritten
+  .byte $65,$64 ;USER ID - to be overwritten
+  .byte $ab,$cd ;multiplex ID - to be overwritten
+  .byte $11 ;word count 
+dialect_index: .res 2 ;index of selected dialect
+  .byte $00 ;security mode: share, no encryption
+  .byte $01,$00 ;Max MPX count
+  .byte $01,$00 ;Max VCs count
+  .byte $00,$08,$00,$00 ;max buffer size
+  .byte $00,$08,$00,$00 ;max raw size
+  .byte $12,$34,$56,$78 ;session key
+  .byte $00,$00,$00,$00 ;capabilities
+  .byte $00,$00,$00,$00 ;server time low
+  .byte $00,$00,$00,$00 ;server time high
+  .byte $00,$00 ;server GMT offset
+  .byte $00 ;encryption key length
+  .word negotiate_protocol_response_message_data_length ;data length
+negotiate_protocol_response_message_data:
+  .byte "WORKGROUP",0
+  .byte "SERVERNAME",0
+
+negotiate_protocol_response_message_length=*-negotiate_protocol_response_message  
+negotiate_protocol_response_message_data_length=*-negotiate_protocol_response_message_data
+  
 host_announce_message:
   .byte $11 ;message type = direct group datagram
   .byte $02 ;no more fragments, this is first fragment, node type = B
   .byte $ab,$cd  ;txn id
-host_announce_my_ip=*- host_announce_message
+host_announce_my_ip:
   .byte $0,0,0,0  ;source IP
   .byte $0,138    ;source port
   .byte $00,<(host_announce_message_length-4) ;datagram length
   .byte $00,$00 ;packet offset
   .byte $20       ;hostname length
-host_announce_hostname=*- host_announce_message
+host_announce_hostname:
   .res 32           ;hostname
   .byte $0          ;nul at end of hostname
   ;now WORKGROUP<1D> encoded
@@ -507,7 +655,7 @@ host_announce_hostname=*- host_announce_message
   .byte $01 ;command - HOST ANNOUNCEMENT
   .byte $0  ;update count 0
   .byte $80,$fc,03,00 ;update period 
-  host_announce_servername =*-host_announce_message  
+  host_announce_servername:
   .res 16
   .byte $01 ;OS major version
   .byte $64 ;OS minor version
@@ -519,7 +667,7 @@ host_announce_hostname=*- host_announce_message
   host_announce_message_length=*-host_announce_message  
 
   
-workgroup_registration_request:
+registration_request:
 
   .byte $0c, $64  ;txn ID
   .byte $29,$10   ;Registration Request opcode & flags
@@ -527,6 +675,7 @@ workgroup_registration_request:
   .byte $00,$00   ;answers = 0
   .byte $00,$00   ;authority records = 0
   .byte $00,$01   ;additional records = 1
+registration_request_servername:  
   ;now WORKGROUP<00> encoded
   .byte $20, $46, $48, $45, $50, $46, $43, $45, $4c, $45, $48, $46, $43, $45, $50, $46
   .byte $46, $46, $41, $43, $41, $43, $41, $43, $41, $43, $41, $43, $41, $43, $41, $41, $41, $00
@@ -540,14 +689,22 @@ nbns_ttl_etc:
   .byte $00,$00,$01,$40 ; TTL = 64 seconds
   .byte $00,$06 ;data length
   .byte $00,$00 ;FLAGS = B-NODE, UNIQUE NAME
-  
+
+.rodata
+preferred_dialect_id: .byte "NT LM 0.12"
+preferred_dialect_id_length=*-preferred_dialect_id
+
+positive_session_response_packet:
+  .byte $82     ;packet type = Positive session response
+  .byte $00     ;flags
+  .byte $00, $00  ;message length
+positive_session_response_packet_length=*-positive_session_response_packet
+
 .bss
-hostname_buffer:	
-	.res 33
+hostname_buffer:	.res 33
   
   
-local_hostname:	
-	.res 33
+local_hostname:		.res 33
 
 raw_local_hostname:	
 	.res 16
@@ -558,6 +715,7 @@ connection_closed: .res 1
 
 cifs_cmd_buffer_ptr: .res 2
 cifs_cmd_length: .res 2
+
 .data 
 
 cifs_cmd_buffer: .word DEFAULT_CIFS_CMD_BUFFER

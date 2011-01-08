@@ -9,8 +9,8 @@
   
 .import timer_init
 .import timer_read
-
-
+.import timer_seconds
+.import beep
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
@@ -38,7 +38,15 @@ init:
   init_ip_via_dhcp
   jsr print
   jsr print_ip_config
-  
+
+  jsr beep
+@loop:  
+  jsr timer_seconds
+  cmp last_seconds
+  beq @loop
+  sta last_seconds
+  jsr print_hex
+  jmp @loop
   rts
   
 
@@ -49,7 +57,8 @@ print_ax:
   pla
   jmp print_hex
  
-
+.data
+last_seconds: .byte 0
 
 ;-- LICENSE FOR test_tcp.s --
 ; The contents of this file are subject to the Mozilla Public License

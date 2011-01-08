@@ -10,7 +10,6 @@
 
 HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for?
 
-;DEBUG=1
 
 .export httpd_start
 
@@ -36,6 +35,7 @@ HTTPD_TIMEOUT_SECONDS=5 ;what's the maximum time we let 1 connection be open for
 .import io_read_file_with_callback
 .import io_filename
 .import io_callback
+.import timer_seconds
 .import  __HTTP_VARS_LOAD__
 .import  __HTTP_VARS_RUN__
 .import  __HTTP_VARS_SIZE__
@@ -144,14 +144,12 @@ httpd_start:
   bcc @connect_ok
   rts 
 @connect_ok: 
-.ifdef DEBUG
-  inc $d020
-.endif
+
   lda #0
   sta connection_closed
   sta found_eol
   clc
-  lda $dc09  ;time of day clock: seconds (in BCD)
+  jsr timer_seconds  ;time of day clock: seconds (in BCD)
   sed
   adc #HTTPD_TIMEOUT_SECONDS
   cmp #$60
@@ -173,7 +171,7 @@ httpd_start:
   lda found_eol
   bne @got_eol  
 
-  lda $dc09  ;time of day clock: seconds
+  jsr timer_seconds  ;time of day clock: seconds
   
   cmp connection_timeout_seconds  
   beq @connection_timed_out
@@ -192,9 +190,6 @@ httpd_start:
   jsr send_response
   :
 
-.ifdef DEBUG
-  dec $d020
-.endif
 
   jmp @listen ;go listen for the next request
   
