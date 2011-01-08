@@ -17,6 +17,7 @@ DRIVERS=\
 	c64wiznet.lib \
 	vic20rrnet.lib \
 
+
   
 all: $(DRIVERS)
 
@@ -30,8 +31,11 @@ c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o cbm_disk_ac
 c64wiznet.lib: w5100.o c64print.o c64timer.o  c64kernal.o c64inputs.o cbm_disk_access.o petscii_charconv.o c64_vt100.o 
 	ar65 a $@ $^
 
-vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o cbm_disk_access.o petscii_charconv.o cs8900a.o
+
+vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o vic20input.o cbm_disk_access.o petscii_charconv.o cs8900a.o
+
 	ar65 a $@ $^
+
 
 clean:
 	rm -f *.o

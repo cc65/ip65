@@ -11,6 +11,8 @@
 .import timer_read
 .import timer_seconds
 .import beep
+.import check_for_abort_key
+.import get_key_if_available
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 	.word basicstub		; load address
@@ -46,7 +48,11 @@ init:
   beq @loop
   sta last_seconds
   jsr print_hex
-  jmp @loop
+  jsr check_for_abort_key
+  bcc @loop
+;  jsr get_key_if_available
+;  beq @loop
+  jsr	print_hex
   rts
   
 

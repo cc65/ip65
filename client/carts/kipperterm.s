@@ -634,7 +634,7 @@ temp_filename_end:
 .byte 0
 
 credits: 
-.byte 10,"License: Mozilla Public License v1.1",10,"http://www.mozilla.org/MPL/"
+.byte 10,"License: Mozilla Public License v1.1",10
 .byte 10
 .byte 10,"Contributors:",10
 .byte 10,"Jonno Downes"
