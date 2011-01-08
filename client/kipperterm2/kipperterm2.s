@@ -120,7 +120,8 @@ init_failed:
   print_failed
   jsr print_errorcode
   jsr wait_for_keypress  
-  jmp exit_to_basic
+  
+  jmp exit_to_basic 
 
 print_main_menu:
   jsr cls  
@@ -514,9 +515,21 @@ xmodem_download:
   jmp wait_for_keypress
   
 open_dl_file:  
-  lda #temp_filename_end-temp_filename_start
-  ldx #<temp_filename_start
-  ldy #>temp_filename_start
+
+  ;scratch the file first (if it exists)
+  ;first copy the "S:"
+  ldx #0
+: 
+  lda scratch_cmd,x
+  sta command_buffer,x
+  inx
+  cmp #':'
+  bne :-
+  jsr copy_tmp_filename_and_execute_cmd
+
+  lda #temp_filename_end-temp_filename
+  ldx #<temp_filename
+  ldy #>temp_filename
 
 
 open_file:
@@ -568,14 +581,13 @@ rename_file:
 ;AX points at new filename
   stax  copy_src
   ldx #0
-  ldy #0
   ;first the "RENAME0:"
 
 : 
-  lda rename_cmd,y
+  lda rename_cmd,x
   sta command_buffer,x
   inx
-  iny
+
   cmp #':'
   bne :-
   
@@ -595,6 +607,7 @@ rename_file:
   sta command_buffer,x
   inx
 
+copy_tmp_filename_and_execute_cmd:
   ;now the old filename
   ldy #0
 :  
@@ -609,7 +622,6 @@ rename_file:
   txa ;filename length
   ldx #<command_buffer
   ldy #>command_buffer
-  
   jsr $FFBD     ; call SETNAM
   lda #$0F      ; filenumber 15
   ldx cfg_default_drive
@@ -619,9 +631,13 @@ rename_file:
   lda #$0F      ; filenumber 15
   jsr $FFC3     ; call CLOSE  
   rts
+
+  
+scratch_cmd:
+  .byte "S:"
   
 rename_cmd:
-  .byte "RENAME0:"
+  .byte "RENAME:"
 
 exit_telnet:
 exit_gopher:
@@ -677,7 +693,6 @@ address_book_fail_msg:
 dir_listing_fail_msg:
 	.byte "directory listing failed",10,0
 
-temp_filename_start:  .byte "@"
 temp_filename:
 .byte "XMODEM.TMP,P,W"  ; @ means 'overwrite if existing', ',P,W' is required to make this an output file
 temp_filename_end:
@@ -703,6 +718,9 @@ credits:
 .byte 10,10
 .byte "Build "
 .include "../inc/version.i"
+.byte " ("
+.include "timestamp.i"
+.byte ")"
 .byte 10,10
 
 .byte 0

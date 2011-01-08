@@ -22,9 +22,10 @@ all: ip65 drivers  kipperterm2.prg kt2wiz.prg kipperterm2.d64
 
 
 kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ../inc/gopher.i
+	ruby -e "puts '.byte \"' + Time.now.strftime('%Y-%m-%d')+'\"'" > timestamp.i
 	$(AS) $(AFLAGS) -o $@ $<
 
-%.o: %.s $(INCFILES) 
+%.o: %.s $(INCFILES)
 	$(AS) $(AFLAGS) $<
 
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64fullprg.cfg
@@ -33,12 +34,12 @@ kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ..
 
 kt2wiz.prg: kipperterm2.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64fullprg.cfg
 	$(LD) -m  kt2wiz.map -vm -C ../cfg/c64fullprg.cfg -o  kt2wiz.prg  $(AFLAGS) $< $(IP65WIZNETLIB) $(C64WIZNETLIB)  
-	cp kt2wiz.prg ../../server/boot/autoexec.prg
+#	cp kt2wiz.prg ../../server/boot/autoexec.prg
 
 
 kipperterm2.d64: kipperterm2.prg kt2wiz.prg addresses.txt abe.bas
 	ripxplore.rb --init CbmDos $@ -a kipperterm2.prg
-	ripxplore.rb $@ -a 80columns -t C64Prg
+#	ripxplore.rb $@ -a 80columns -t C64Prg
 	ripxplore.rb $@ -a addresses.txt -t C64Seq
 	ripxplore.rb $@ -a abe -t C64Prg
 	cp kipperterm2.d64 ../../server/boot
