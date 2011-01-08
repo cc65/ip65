@@ -157,6 +157,7 @@ io_read_file_with_callback:
   jsr set_drive_id
   lda #$02      ; file number 2
   ldx drive_id
+
   ldy #02       ; secondary address 2
   jsr SETLFS
   jsr OPEN
@@ -334,7 +335,7 @@ set_drive_id:
   clc
   adc #07   ;so 01->08, 02->09 etc
   sta drive_id
-@drive_id_set:  
+@drive_id_set:
   rts
 
 ;routine to write a sector 

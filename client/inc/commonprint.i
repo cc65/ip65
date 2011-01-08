@@ -1,3 +1,8 @@
+.ifndef SCREEN_WIDTH
+  SCREEN_WIDTH = 40
+.endif
+
+
 .ifndef KPR_API_VERSION_NUMBER
   .define EQU     =
   .include "../inc/kipper_constants.i"
@@ -316,6 +321,8 @@ print_errorcode:
 hexdigits:
 .byte "0123456789ABCDEF"
 
+.if SCREEN_WIDTH >=30
+  
 interface_type:
 .byte "Interface   : ",0
 
@@ -339,6 +346,25 @@ dhcp_server_msg:
 
 tftp_server_msg:
 .byte "TFTP Server : ", 0
+.else ;for small width screens e.g. VIC 20
+interface_type:
+.byte "Interface",10,0
+mac_address_msg:
+.byte "MAC Address",10,0
+ip_address_msg:
+.byte "IP Address",10,0
+netmask_msg:
+.byte "Netmask",10,0
+gateway_msg:
+.byte "Gateway",10,0
+dns_server_msg:
+.byte "DNS Server",10,0
+dhcp_server_msg:
+.byte "DHCP Server",10,0
+tftp_server_msg:
+.byte "TFTP Server",10,0
+
+.endif
 
 dhcp_msg:
   .byte "DHCP",0

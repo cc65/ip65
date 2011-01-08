@@ -15,6 +15,7 @@ DRIVERS=\
 	apple2prog.lib \
 	c64rrnet.lib \
 	c64wiznet.lib \
+	vic20rrnet.lib \
 
   
 all: $(DRIVERS)
@@ -27,6 +28,9 @@ c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o c64_disk_ac
 	ar65 a $@ $^
 
 c64wiznet.lib: w5100.o c64print.o c64timer.o  c64kernal.o c64inputs.o c64_disk_access.o c64charconv.o c64_vt100.o 
+	ar65 a $@ $^
+
+vic20rrnet.lib: c64print.o vic20-rr-net.o vic20timer.o c64kernal.o c64inputs.o c64_disk_access.o c64charconv.o cs8900a.o
 	ar65 a $@ $^
 
 

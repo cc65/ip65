@@ -12,6 +12,7 @@ C64RRNETLIB=../drivers/c64rrnet.lib
 C64WIZNETLIB=../drivers/c64wiznet.lib
 IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 APPLE2PROGLIB=../drivers/apple2prog.lib
+VIC20RRNETLIB=../drivers/vic20rrnet.lib
 
 INCFILES=\
   ../inc/common.i\
@@ -27,14 +28,14 @@ all: \
 	test_disk_io.prg \
 	testdns.pg2 \
 	testtftp.prg \
-	testtftp.pg2\
-	test_cart_api.prg\
-	test_vt100.prg\
-	testdottedquad.pg2\
-	testdottedquad.prg\
+	testtftp.pg2 \
+	test_cart_api.prg \
+	test_vt100.prg \
+	testdottedquad.pg2 \
+	testdottedquad.prg \
 	test_tcp.prg \
 	test_xmodem.prg \
-#	test_xmodem.d64 \
+	test_vic20.prg \
 	test_httpd.prg \
 	test_parser.prg \
 	test_ping.prg \
@@ -42,6 +43,7 @@ all: \
 	test_get_url.prg \
 	test_wiznet.prg \
 	test_parse_querystring.prg \
+#	test_xmodem.d64 \
 #	httpd_test.d64 \
 #	ip65test.dsk \
 #	test_disk_io.d64 \
@@ -53,16 +55,12 @@ ip65:
 drivers:
 	make -C ../drivers all
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) $<
-
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
 
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
-
 
 
 test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
@@ -94,6 +92,8 @@ test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65WIZNETLIB) $(INCFILES) ../c
 test_cifs.prg: test_cifs.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
 	$(LD) -m  test_cifs.map -vm -C ../cfg/c64prg.cfg -o  test_cifs.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
+test_vic20.prg: test_vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/vic20prg.cfg
+	$(LD) -m  test_vic20.map -vm -C ../cfg/vic20prg.cfg -o  test_vic20.prg  $(AFLAGS) $< $(IP65TCPLIB) $(VIC20RRNETLIB)  
 
 %.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)

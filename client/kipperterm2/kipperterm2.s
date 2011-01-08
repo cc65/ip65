@@ -102,9 +102,6 @@ init:
   sta $01 ;turn off BASIC
   jsr setup_screen
   
-  lda $ba
-  sta cfg_default_drive
-  
   ldax #menu_header_msg
   jsr print_ascii_as_native
   ldax #init_msg+1
@@ -131,6 +128,9 @@ print_main_menu:
   jmp print_ascii_as_native
 
 init_ok:
+
+  lda $ba
+  sta cfg_default_drive
 
 main_menu:
   jsr print_main_menu
@@ -161,7 +161,7 @@ main_menu:
   jsr cls
   
   clc
-  jsr set_io_device_no  
+  jsr set_io_device_no
   ldax #address_book_filename
   stax io_filename
   ldax #scratch_buffer
