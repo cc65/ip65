@@ -7,7 +7,7 @@
 
 	.export timer_init
 	.export timer_read
-  
+  .export timer_seconds  ; this should return a single BCD byte (00..59) which is a count of seconds
 	.code
   
 ; initialize timers
@@ -28,8 +28,14 @@ timer_init:
 	lda #$c1		; timer B to count timer A underflows
 	sta $dd0f
 
+  lda #0
+  sta $dc08
+  sta $dc09
 	rts
 
+timer_seconds:
+  lda $dc09
+  rts
 
 ; return the current value
 timer_read:

@@ -24,18 +24,14 @@ all: $(DRIVERS)
 apple2prog.lib: a2print.o uthernet.o a2timer.o a2kernal.o a2input.o a2charconv.o cs8900a.o
 	ar65 a $@ $^
 
-c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o c64_disk_access.o c64charconv.o c64_vt100.o cs8900a.o
+c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o cbm_disk_access.o petscii_charconv.o c64_vt100.o cs8900a.o
 	ar65 a $@ $^
 
-c64wiznet.lib: w5100.o c64print.o c64timer.o  c64kernal.o c64inputs.o c64_disk_access.o c64charconv.o c64_vt100.o 
+c64wiznet.lib: w5100.o c64print.o c64timer.o  c64kernal.o c64inputs.o cbm_disk_access.o petscii_charconv.o c64_vt100.o 
 	ar65 a $@ $^
 
-vic20rrnet.lib: c64print.o vic20-rr-net.o vic20timer.o c64kernal.o c64inputs.o c64_disk_access.o c64charconv.o cs8900a.o
+vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o cbm_disk_access.o petscii_charconv.o cs8900a.o
 	ar65 a $@ $^
-
-
-#	ar65 a $@ $^
-
 
 clean:
 	rm -f *.o

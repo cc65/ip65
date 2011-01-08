@@ -9,6 +9,7 @@
 
 	.export timer_init
 	.export timer_read
+  .export timer_seconds
   
   IRQ_VECTOR=$314
 
@@ -51,7 +52,6 @@ timer_read:
 timer_vbl_handler:
   pha
   lda #$11  ; 60 HZ =~ 17 ms per 'tick' 
-: 
   adc current_time_value
   sta current_time_value
   bcc :+
@@ -60,6 +60,9 @@ timer_vbl_handler:
   pla
   jmp jmp_old_handler
 
+timer_seconds:
+  lda #0
+  rts
 
 ;-- LICENSE FOR c64timer_nb65.s --
 ; The contents of this file are subject to the Mozilla Public License
