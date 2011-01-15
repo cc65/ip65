@@ -13,8 +13,9 @@ INCFILES=\
 
 IP65LIB=../ip65/ip65_tcp.lib
 C64RRNETLIB=../drivers/c64rrnet.lib
+VIC20RRNETLIB=../drivers/vic20rrnet.lib
 
-all:  ip65 kipperbas.d64 bails.d64 
+all:  ip65 kipperbas.d64 bails.d64 kipperbasv20.prg
 
 ip65:
 	make -C ../ip65 all
@@ -24,6 +25,9 @@ ip65:
 	
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/kipperbas.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/kipperbas.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
+
+kipperbasv20.prg: kipperbasv20.o $(IP65LIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/kipperbasv20.cfg
+	$(LD) -m  kipperbasv20.map -vm -C ../cfg/kipperbasv20.cfg -o  kipperbasv20.prg  $(AFLAGS) $< $(IP65LIB) $(VIC20RRNETLIB)  
                                       
 
 bails.d64: bails.prg 

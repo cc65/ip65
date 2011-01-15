@@ -41,18 +41,22 @@ init:
   jsr print
   jsr print_ip_config
 
-  jsr beep
-@loop:  
-  jsr timer_seconds
-  cmp last_seconds
-  beq @loop
-  sta last_seconds
-  jsr print_hex
-  jsr check_for_abort_key
-  bcc @loop
-;  jsr get_key_if_available
+;  jsr beep
+;@loop:  
+;  jsr timer_seconds
+;  cmp last_seconds
 ;  beq @loop
+;  sta last_seconds
+;  jsr print_hex
+;  jsr check_for_abort_key
+;  bcc @loop
+@loop2:  
+
+  jsr get_key_if_available
+  beq @loop2
   jsr	print_hex
+  jsr check_for_abort_key
+  bcc @loop2
   rts
   
 

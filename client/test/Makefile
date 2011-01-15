@@ -11,8 +11,10 @@ IP65TCPLIB=../ip65/ip65_tcp.lib
 C64RRNETLIB=../drivers/c64rrnet.lib
 C64WIZNETLIB=../drivers/c64wiznet.lib
 IP65WIZNETLIB=../ip65/ip65_wiznet.lib
-APPLE2PROGLIB=../drivers/apple2prog.lib
+A2UTHERLIB=../drivers/a2uther.lib
+A2LANCEGSLIB=../drivers/a2lancegs.lib
 VIC20RRNETLIB=../drivers/vic20rrnet.lib
+
 
 INCFILES=\
   ../inc/common.i\
@@ -39,10 +41,10 @@ all: \
 	test_httpd.prg \
 	test_parser.prg \
 	test_ping.prg \
-	test_sntp.prg \
 	test_get_url.prg \
 	test_wiznet.prg \
 	test_parse_querystring.prg \
+	test_lancegs.pg2 \
 #	test_xmodem.d64 \
 #	httpd_test.d64 \
 #	ip65test.dsk \
@@ -86,19 +88,21 @@ test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64pr
 
 test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65WIZNETLIB) $(C64WIZNETLIB)
-	cp test_wiznet.prg ../../server/boot/autoexec.prg
 
 
 test_cifs.prg: test_cifs.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
 	$(LD) -m  test_cifs.map -vm -C ../cfg/c64prg.cfg -o  test_cifs.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
 
+
 test_vic20.prg: test_vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/vic20prg.cfg
 	$(LD) -m  test_vic20.map -vm -C ../cfg/vic20prg.cfg -o  test_vic20.prg  $(AFLAGS) $< $(IP65TCPLIB) $(VIC20RRNETLIB)  
 
-%.pg2: %.o $(IP65LIB) $(APPLE2PROGLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(APPLE2PROGLIB)
 
+%.pg2: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(A2UTHERLIB)
 
+test_lancegs.pg2: test_lancegs.o $(IP65LIB) $(A2LANCEGSLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -C ../cfg/a2bin.cfg -o  test_lancegs.pg2  $(AFLAGS) $< $(IP65LIB) $(A2LANCEGSLIB)
 
 
 httpd_test.d64:  test_httpd.prg index.html file1.html

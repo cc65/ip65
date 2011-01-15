@@ -3,6 +3,11 @@ LD=ld65
 AFLAGS=
 
 
+# ip65.lib : minimal IP stack (UDP only)
+# ip65_tcp.lib : full featured TCP/IP stack
+# ip65_wiznet.lib : hybrid stack for use with the w5100 chip : UDP,ICMP & ARP is done on host, TCP is on w5100
+
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
 
@@ -26,7 +31,6 @@ ETHOBJS= \
 	dottedquad.o \
 	output_buffer.o\
 	tftp.o \
-	sntp.o \
 	parser.o \
 	string_utils.o \
 	telnet.o \

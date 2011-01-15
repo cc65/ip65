@@ -1,5 +1,3 @@
-TARGET=c64
-
 
 .PHONY: ip65 drivers test clean distclean kipperterm2  examples carts  basic wiznet
 

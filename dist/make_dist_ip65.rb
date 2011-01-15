@@ -1,14 +1,14 @@
 
 $:.unshift(File.dirname(__FILE__)) unless
 	$:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
-
+require 'RubyGems'
 gem 'archive-zip' 
 require 'archive/zip'
 require 'ftools'
 
 WORKING_DIR=File.expand_path(File.dirname(__FILE__)+"/ip65")
 SRC_DIR=File.expand_path(File.dirname(__FILE__)+"/../")
-["","ip65","doc","cfg","drivers","inc","test","carts","examples"].each do |dir_suffix|
+["","ip65","doc","cfg","drivers","inc","test"].each do |dir_suffix|
   dir_path="#{WORKING_DIR}/#{dir_suffix}"
   Dir.mkdir(dir_path) unless File.exist?(dir_path)
 end
@@ -16,17 +16,6 @@ end
 [
   ["client/ip65/*.[s|i]","ip65/"],
   ["client/ip65/Makefile","ip65/"],
-  ["client/carts/*.[s|i]","carts/"],
-  ["client/carts/Makefile","carts/"],
-  ["client/carts/*.rb","carts/"],
-  ["client/carts/*.obj","carts/"],
-  ["client/carts/*.src","carts/"],
-  ["client/examples/*.[s|i]","examples/"],
-  ["client/examples/Makefile","examples/"],
-  ["client/examples/*.bin","examples/"],
-  ["client/examples/*.spr","examples/"],
-  ["client/examples/*.rb","examples/"],
-  ["client/examples/*.cfg","examples/"],
   ["client/inc/*.i","inc/"],
   ["client/inc/vt100_font.bin","inc/"],
   ["client/test/*.[s|i]","test/"],
@@ -38,7 +27,6 @@ end
    ["doc/ca65-doc*.*","doc/"],
   ["doc/CONTRIBUTORS.txt","doc/"],
   ["doc/LICENSE.txt","doc/"],
-  ["client/Makefile","/"],  
 ].each do |args|
   dest="#{WORKING_DIR}/#{args[1]}"
   Dir["#{SRC_DIR}/#{args[0]}"].each do |src|
@@ -47,9 +35,6 @@ end
   end  
 end
 
-#dummy_makefile=File.new("#{WORKING_DIR}/carts/Makefile","w")
-#dummy_makefile<<"#dummy makefile, so we can reuse the top level Makefile from the netboot65/client directory\nall:\n"
-#dummy_makefile.close
 
 require 'document_ca65_source_as_html.rb'
 codebase_dir=WORKING_DIR

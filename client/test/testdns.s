@@ -111,7 +111,6 @@ overwrite_with_hardcoded_dns_server:
 	.rodata
 
 
-buffer1: .res 256
 hostname_1:
   .byte "SLASHDOT.ORG",0          ;this should be an A record
 
