@@ -104,7 +104,6 @@ test_vic20.prg: test_vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/v
 test_lancegs.pg2: test_lancegs.o $(IP65LIB) $(A2LANCEGSLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -C ../cfg/a2bin.cfg -o  test_lancegs.pg2  $(AFLAGS) $< $(IP65LIB) $(A2LANCEGSLIB)
 
-
 httpd_test.d64:  test_httpd.prg index.html file1.html
 	cp test_httpd.prg autoexec.prg
 	ripxplore.rb --init CbmDos httpd_test.d64 -a autoexec.prg
@@ -112,12 +111,12 @@ httpd_test.d64:  test_httpd.prg index.html file1.html
 	ripxplore.rb httpd_test.d64 -a file1.html -t C64Seq
 
 
-ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 
-		ripxplore.rb --init BeautifulBoot ip65test.dsk -a testdns.pg2 -t AppleBinary
-		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    
-		ripxplore.rb ip65test.dsk -a testtftp.pg2 -t AppleBinary
-		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
-		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary
+ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 test_lancegs.pg2
+		ripxplore.rb --init AppleDos ip65test.dsk -a test_lancegs.pg2 -t AppleBinary
+#		ripxplore.rb --init BeautifulBoot ip65testb.dsk -a test_lancegs.pg2 -t AppleBinary
+#		ripxplore.rb ip65test.dsk -a testtftp.pg2 -t AppleBinary
+#		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
+#		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    
 	
 
 test_disk_io.d64:  test_disk_io.prg 

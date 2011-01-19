@@ -13,6 +13,7 @@
   .import  __CODE_SIZE__
   .import  __RODATA_SIZE__
   .import  __DATA_SIZE__
+  .import  __IP65_DEFAULTS_SIZE__
   
 
 	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
@@ -33,15 +34,26 @@ basicstub:
 
 .segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
         .addr           __CODE_LOAD__-$11                ; Start address
-        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
+        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+__IP65_DEFAULTS_SIZE__+4	; Size
         jmp init
 
 .code
 
 init:
-    
-;  jsr print_cr
+  lda #$0E    ;change to lower case
+  jsr print_a 
+  jsr print_cr
   init_ip_via_dhcp 
+
+;  jsr ip65_init
+  
+  ldx #3
+:  
+  lda static_ip,x
+  sta cfg_ip,x
+  dex
+  bpl :-
+  
   jsr print_ip_config
   
   ldax #hostname_1
@@ -96,6 +108,8 @@ hostname_3:
 cifs_hostname:
   .byte "KIPPERCIFS",0
 
+static_ip:
+  .byte 10,5,1,64
 sample_msg:
 .byte  $ff, $ff, $ff, $ff, $ff, $ff, $f8, $1e, $df, $dc, $47, $a1, $08, $00, $45, $00
 .byte  $00, $4e, $9e, $cf, $00, $00, $40, $11, $c4, $c5, $0a, $05, $01, $02, $0a, $05 

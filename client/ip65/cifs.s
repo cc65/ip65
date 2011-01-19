@@ -11,6 +11,7 @@
 .endif
 
 DEFAULT_CIFS_CMD_BUFFER = $6800
+DEFAULT_SMB_RESPONSE_BUFFER=$6000
 .export cifs_l1_encode
 .export cifs_l1_decode
 .export cifs_start
@@ -30,6 +31,7 @@ DEFAULT_CIFS_CMD_BUFFER = $6800
 .import udp_send_dest_port
 .import udp_send_len
 .importzp ip_src
+.importzp ip_dest
 .import ip_data
 .import ip_inp
 .import tcp_close
@@ -53,8 +55,8 @@ nbns_nscount=8
 nbns_arcount=10
 nbns_question_name=12
 nbns_service_type=43
-nbns_ttl=56
-nbns_additional_record_flags=62
+
+
 nbns_my_ip=64
 nbns_registration_message_length=68
 
@@ -202,6 +204,7 @@ cifs_start:
   jsr tcp_listen  
 
 @loop:
+  inc $d020 ;FIXME
   jsr ip65_process
   lda connection_closed
   beq @loop
@@ -238,7 +241,7 @@ cifs_advertise_hostname:
   ldax #$20
   jsr copymem
 
-  ;copy our encode hostname to the host announcment
+  ;copy our raw hostname to the host announcment
   ldax #raw_local_hostname
   stax  copy_src
   ldax #host_announce_servername
@@ -309,6 +312,18 @@ nbns_callback:
 @name_request:  
 
   ;this is a NB NAME REQUEST.
+  ;is it a unicast message?
+  ldx  #3
+@check_unicast_loop:
+  lda  ip_inp+ip_dest,x
+  cmp  cfg_ip,x
+  bne @not_unicast
+  dex
+  bpl @check_unicast_loop
+
+  jmp @looking_for_us
+  
+@not_unicast:
   ;is it looking for our local hostname?
   ldax  #udp_inp+udp_data+nbns_question_name+1
   stax  copy_src
@@ -320,52 +335,44 @@ nbns_callback:
   iny
   cpy #30
   bne @cmp_loop
-  
+
+@looking_for_us:
   ;this is a request for our name!
-  ;we will overwrite the input message to make our response
+  ;copy the txn id
+  ldax udp_inp+udp_data ;first 2 bytes of data are txn id
+  stax  netbios_name_query_response
   
-  ;set the opcode & flags to make this a response
-  lda #$85
-  ldx #$00
-  sta  udp_inp+udp_data+nbns_opcode
-  stx  udp_inp+udp_data+nbns_opcode+1
-  
-  ;set the question count to 0
-  stx  udp_inp+udp_data+nbns_qdcount+1
-
-  ;set the answer count to 1
-  inx
-  stx  udp_inp+udp_data+nbns_ancount+1
-
-;set the sender & recipients IP address
+ ;set the sender & recipients IP address
   ldx #03
 @copy_address_loop:
   lda  ip_inp+ip_src,x
   sta  udp_send_dest,x
   lda  cfg_ip,x
-  sta udp_inp+udp_data+nbns_my_ip-6,x
+  sta netbios_name_query_response_ip,x
   dex
   bpl @copy_address_loop
-
-
-
-;set the answers
-
-  ldax #nbns_ttl_etc
-  stax copy_src
-  ldax #udp_inp+udp_data+nbns_ttl-6
+  
+  ;copy our encoded hostname
+  ldax #local_hostname
+  stax  copy_src
+  ldax #netbios_name_query_response_hostname
   stax  copy_dest
-  ldax  #08
+  ldax #30
   jsr copymem
+
+  ;copy the service identifier - last 2 bytes in the query hostname
+  .import eth_inp
+  ldax  eth_inp+$55
+  stax netbios_name_query_response_hostname+30
   
   ldax  #137
   stax  udp_send_dest_port
   stax  udp_send_src_port
   
-  ldax  #nbns_registration_message_length-6
+  ldax  #netbios_name_query_response_length
   stax  udp_send_len
     
-  ldax  #udp_inp+udp_data
+  ldax  #netbios_name_query_response
   jmp udp_send
 
   
@@ -453,7 +460,8 @@ nb_session_callback:
   jmp @message_handled
   
   ;this doesn't look like a NBT session message or SMB, so give up
-  @not_session_message:
+  @not_session_message:  
+
   @not_smb:
   
    jsr tcp_close
@@ -471,25 +479,96 @@ nb_session_callback:
   
   
   @not_got_full_message:
-  .import print_hex
-  lda cifs_cmd_length+1 
-  jsr print_hex
-  lda cifs_cmd_length
-  jsr print_hex
   rts
   
 
 smb_handler:
 ;  at this point, copy_src points to an SMB block encapsulated in an NBT session header
-  
+
+  clc
+  lda  copy_src
+  adc #4  
+  sta  smb_ptr    ;skip past the NBT header  
+  lda  copy_src+1
+  adc #00
+  sta  smb_ptr+1    
+
   ldy #8
   lda (copy_src),y  ;get the SMB type
   cmp #$72
-  beq @negotiate_protcol
-;unknown SMB
+  bne @not_negotiate_protocol 
+  jmp @negotiate_protocol
+@not_negotiate_protocol:
+  ;we assume it is an "AndX"   command
   
+  
+  
+  sta andx_opcode
+  lda smb_ptr
+  clc
+  adc #$20     ;skip over SMB header
+  sta andx_ptr
+  
+  lda smb_ptr+1
+  adc #00
+  sta andx_ptr+1
+  
+  jsr start_smb_response
+  
+@parse_andx_block:
+  ldax  andx_ptr
+  stax  copy_src
+  lda andx_opcode
+  
+  cmp #$ff
+  beq @done_all_andx_blocks  
+
+  ldy #0
+@andx_opcode_scan:  
+  lda andx_opcodes,y
+  beq @opcode_not_found
+  cmp andx_opcode
+  beq @opcode_found
+  iny
+  iny
+  iny
+  jmp @andx_opcode_scan
+@opcode_found:
+  lda andx_opcodes+1,y
+  sta andx_handler+1
+  lda andx_opcodes+2,y
+  sta andx_handler+2
+  jsr andx_handler
+  jmp @go_to_next_andx_block
+
+@opcode_not_found:
+  jsr unknown_andx
+  
+@go_to_next_andx_block:  
+  ldy #3
+  lda (copy_src),y  ;get the AndX offset low byte
+  clc
+  adc smb_ptr
+  sta andx_ptr
+  iny
+  lda (copy_src),y  ;get the AndX offset high byte
+  adc smb_ptr+1
+  sta andx_ptr+1
+  ldy #1
+  lda (copy_src),y  ;get the subsequent AndX opcode
+  sta andx_opcode
+  
+  jmp @parse_andx_block
+  
+@done_all_andx_blocks:
+  ldax smb_response_length  
+  inx ;FIXME! this is to force wireshark to dump as SMB even tho packet is incorrect
+  stax tcp_send_data_len
+  ldax smb_response_buffer
+  jsr tcp_send
+
   rts
-@negotiate_protcol:
+@negotiate_protocol:
 ;copy the request TID,PID,UID,MID into the response
   ldy #28 ;offset of TID from start of message
   ldx #0
@@ -559,14 +638,83 @@ smb_handler:
 
   rts
 
+start_smb_response:
+  ldax  smb_response_buffer
+  stax  copy_dest
+  ldy #0
+@copy_header_loop:
+  lda (copy_src),y  ; copy_src should be the SMB request - cloning this will set PID / MID etc
+  sta (copy_dest),y
+  iny
+  cpy #smb_response_header_length
+  bne @copy_header_loop  
+  lda #0
+  sta smb_response_length+1
+  lda #smb_response_header_length
+  sta smb_response_length
+  ldy #3
+  sta (copy_dest),y
+  
+  ;set the flags correctly
+  ldy #smb_response_flags_offset  
+  lda #$82   ;FLAGS byte
+  sta (copy_dest),y
+  iny
+  lda #$01   ;FLAGS2 low byte
+  sta (copy_dest),y
+  iny
+  lda #$00   ;FLAGS2 hi byte
+  sta (copy_dest),y
+  
+  rts
+  
+add_andx_response:
+  rts
+  
+
+.import print_a
+.import print_hex
+session_setup_andx:
+  lda #'S'
+  jsr print_a
+  rts
+  
+tree_connect_andx:
+  lda #'T'
+  jsr print_a
+  rts
+
+unknown_andx:
+  lda andx_opcode
+  jsr print_hex
+  lda #'?'
+  jsr print_a
+  rts
+
+.rodata
+
+andx_opcodes:
+  .byte $73
+  .word session_setup_andx
+  .byte $75
+  .word tree_connect_andx
+  .byte $00
+  
+
+
 .data
 
+andx_handler:
+  jmp $FFFF   ;filled in later
+  
+smb_response_header:
 negotiate_protocol_response_message:
   .byte $00 ;message type = session message
   .byte $00,$00,negotiate_protocol_response_message_length-4  ;NBT header
   .byte $FF,"SMB"  ;SMB header
   .byte $72   ;command = negotiate protocol
   .byte $00,$00,$00,$00 ;status = OK
+smb_response_flags_offset  =*-smb_response_header  
   .byte $82   ;flags : oplocks not supported, paths are case sensitive
   .byte $01,$00 ;flags 2 - long file names allowed
   .byte $00, $00 ;PID HIGH
@@ -577,6 +725,7 @@ negotiate_protocol_response_tid:
   .byte $98,$76  ;PID - to be overwritten
   .byte $65,$64 ;USER ID - to be overwritten
   .byte $ab,$cd ;multiplex ID - to be overwritten
+smb_response_header_length=*-smb_response_header  
   .byte $11 ;word count 
 dialect_index: .res 2 ;index of selected dialect
   .byte $00 ;security mode: share, no encryption
@@ -666,6 +815,27 @@ host_announce_hostname:
   .byte $0    ;host comment
   host_announce_message_length=*-host_announce_message  
 
+
+netbios_name_query_response:
+  .byte $12,$34 ;transaction id
+  .byte $85,$00 ;flags: name query response, no error
+  .byte $00,$00  ;questions = 0
+  .byte $00,$01  ;answers = 1
+  .byte $00,$00  ;authority records = 0
+  .byte $00,$00  ;additional records = 0
+  .byte $20       ;
+netbios_name_query_response_hostname:  
+  .res 30       ;will be replaced with encoded hostname
+  .byte $43,$41   ;
+  .byte $00       ;
+  .byte $00,$20 ; type = NB
+  .byte $00,$01   ;class = IN
+  .byte $00,$00,$01,$40 ; TTL = 64 seconds
+  .byte $00,$06 ;data length
+  .byte $00,$00 ;FLAGS = B-NODE, UNIQUE NAME
+netbios_name_query_response_ip:
+  .res 4            ;filled in with our IP
+  netbios_name_query_response_length=*-netbios_name_query_response
   
 registration_request:
 
@@ -685,7 +855,6 @@ registration_request_servername:
   .byte $c0,$0c   ;additional record name : ptr to string in QUESTION NAME
   .byte $00,$20   ;question_type = NB
   .byte $00,$01   ;question_class = IN
-nbns_ttl_etc:  
   .byte $00,$00,$01,$40 ; TTL = 64 seconds
   .byte $00,$06 ;data length
   .byte $00,$00 ;FLAGS = B-NODE, UNIQUE NAME
@@ -699,6 +868,12 @@ positive_session_response_packet:
   .byte $00     ;flags
   .byte $00, $00  ;message length
 positive_session_response_packet_length=*-positive_session_response_packet
+
+.data 
+
+cifs_cmd_buffer: .word DEFAULT_CIFS_CMD_BUFFER
+
+smb_response_buffer: .word DEFAULT_SMB_RESPONSE_BUFFER
 
 .bss
 hostname_buffer:	.res 33
@@ -716,11 +891,13 @@ connection_closed: .res 1
 cifs_cmd_buffer_ptr: .res 2
 cifs_cmd_length: .res 2
 
-.data 
+andx_opcode: .res 1
+andx_ptr: .res 2          ;pointer to next 'AndX' command
+andx_length: .res 2
+smb_ptr: .res 2
+smb_response_length: .res 2
 
-cifs_cmd_buffer: .word DEFAULT_CIFS_CMD_BUFFER
 
-;-- LICENSE FOR cifs.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

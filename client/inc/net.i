@@ -25,10 +25,12 @@
 :
   
   print_ok
-  
+
   print_dhcp_init
-  
+
+
   jsr dhcp_init
+
 	bcc :+  
 	print_failed
   sec

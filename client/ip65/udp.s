@@ -32,7 +32,6 @@
 	.export udp_send_dest_port
 	.export udp_send_len
 
-
 	.import ip_calc_cksum
 	.import ip_send
 	.import ip_create_packet
