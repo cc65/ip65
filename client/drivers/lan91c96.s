@@ -1,4 +1,7 @@
-                                                                                                                  
+                                                                     
+                                                                     
+                                                                     
+                                             
 ; Ethernet driver for SMC LAN91C96 chip 
 ;
 
@@ -61,7 +64,7 @@ ethercv		:= $c00C	; Early RCV register               R/W (2B)
 
 eth_packet:	.res 2
 
-	.data ;can't be in "code" segment, because that may end up in ROM.
+	.data
 
 ;initialize the ethernet adaptor
 ;inputs: none
@@ -336,6 +339,7 @@ fixlan37:
 ;
 lan_self_modify:
 	lda #$C0	; FIXME - hardcoded to slot 4
+	clc		; We'll be adding later, so clear carry
 	; Make the accumulator contain slot number plus $80
 	;   i.e. Slot 1 = $90
 	;   i.e. Slot 2 = $A0
@@ -456,4 +460,3 @@ eth_driver_name:
 ; Portions created by the Initial Developer is Copyright (C) 2011
 ; All Rights Reserved.  
 ; -- LICENSE END --
-
