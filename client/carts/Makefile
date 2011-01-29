@@ -34,7 +34,6 @@ all:    ip65 drivers\
 	kippergo_rr.bin \
 	kipperdisk.d64 \
 
-
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
 	$(AS) $(AFLAGS) -o $@ $<
 
@@ -50,6 +49,7 @@ kippergo.o: kippergo.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i ../inc/config
 kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kipperkart.bin > kipperkart.prg
 
+
 kkwiz.prg: kkwiz.bin c64_cart_ram_header.prg
 	cat c64_cart_ram_header.prg kkwiz.bin > kkwiz.prg
 
@@ -61,6 +61,7 @@ kippergo.prg: kippergo.bin c64_cart_ram_header.prg
 
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
+
 
 netboot.bin: netboot.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
 	$(LD) -m netboot.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65LIB) $(C64RRNETLIB)  
