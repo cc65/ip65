@@ -34,7 +34,7 @@ kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ..
 
 kt2wiz.prg: kipperterm2.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64fullprg.cfg
 	$(LD) -m  kt2wiz.map -vm -C ../cfg/c64fullprg.cfg -o  kt2wiz.prg  $(AFLAGS) $< $(IP65WIZNETLIB) $(C64WIZNETLIB)  
-#	cp kt2wiz.prg ../../server/boot/autoexec.prg
+	cp kt2wiz.prg ../../server/boot
 
 
 kipperterm2.d64: kipperterm2.prg kt2wiz.prg addresses.txt abe.bas

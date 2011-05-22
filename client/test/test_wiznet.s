@@ -53,6 +53,12 @@ basicstub:
 
 init:
 	
+	ldax #starting
+	jsr	print
+@loop:
+	inc	$d020
+	jmp	@loop
+	
 	
 	ldax #$DE00
 	jsr	probe_for_w5100
@@ -402,6 +408,7 @@ get_next_byte:
 
   
 .rodata
+starting: .byte "STARTING",13,0
 ms: .byte " MS",13,0
 pinging: .byte "PINGING ",0
 connecting: .byte "CONNECTING ",0

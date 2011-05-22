@@ -9,13 +9,16 @@
 	.export cs_tx_cmd
 	.export cs_tx_len
   .export eth_driver_name
-
-rr_ctl		= $de01 ;address of 'control' port on Retro-Replay
-cs_packet_page	= $de02 ;address of 'packet page' port on RR-Net
-cs_packet_data	= $de04;address of 'packet data' port on RR-Net
-cs_rxtx_data	= $de08 ;address of 'recieve/transmit data' port on RR-Net
-cs_tx_cmd	= $de0c;address of 'transmit command' port on RR-Net
-cs_tx_len	= $de0e;address of 'transmission length' port on RR-Net
+  .export eth_driver_io_base
+  
+IO_BASE=$de00
+;IO_BASE=$df00
+rr_ctl		= IO_BASE+1 ;address of 'control' port on Retro-Replay
+cs_packet_page	= IO_BASE+2 ;address of 'packet page' port on RR-Net
+cs_packet_data	= IO_BASE+4;address of 'packet data' port on RR-Net
+cs_rxtx_data	= IO_BASE+8 ;address of 'recieve/transmit data' port on RR-Net
+cs_tx_cmd	= IO_BASE+$0c;address of 'transmit command' port on RR-Net
+cs_tx_len	= IO_BASE+$0e;address of 'transmission length' port on RR-Net
 
 
 .code
@@ -31,8 +34,13 @@ cs_init:
 
 .rodata
 eth_driver_name:
-	.asciiz "RR-NET"
-
+.if IO_BASE=$de00
+.byte "RR-NET",0
+.else
+.byte "64NIC+",0
+.endif
+eth_driver_io_base:
+.word IO_BASE
 
 
 ;-- LICENSE FOR rr-net.s --

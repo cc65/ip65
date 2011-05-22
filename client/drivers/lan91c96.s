@@ -16,7 +16,7 @@
 	.export eth_rx
 	.export eth_tx
 	.export eth_driver_name
-
+	.export eth_driver_io_base
 	.import eth_inp
 	.import eth_inp_len
 	.import eth_outp
@@ -443,7 +443,9 @@ lan_self_modify:
 .rodata
 eth_driver_name:
 	.asciiz "LANceGS (91C96)"
-
+eth_driver_io_base=fixlan01+1
+	
+	
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

@@ -115,9 +115,9 @@ warm_init:
 
   ldax #menu_header_msg
   jsr print_ascii_as_native
-  ldax #init_msg+1
-	jsr print_ascii_as_native
-  
+;  ldax #init_msg+1
+;	jsr print_ascii_as_native
+ print_driver_init 
   jsr ip65_init
   bcs init_failed
   jsr dhcp_init

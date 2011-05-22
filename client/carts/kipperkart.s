@@ -166,7 +166,7 @@ warm_init:
   ldax #menu_header_msg
   jsr print_ascii_as_native
   ldax #init_msg+1
-	jsr print_ascii_as_native
+  jsr print_ascii_as_native
   
   kippercall #KPR_INITIALIZE
   bcc init_ok

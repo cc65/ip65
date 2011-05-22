@@ -8,8 +8,8 @@
 	.export cs_rxtx_data
 	.export cs_tx_cmd
 	.export cs_tx_len
-  .export eth_driver_name
-
+	.export eth_driver_name
+	.export eth_driver_io_base
 
 rr_ctl		= $9801 ;address of 'control' port on Retro-Replay
 cs_packet_page	= $9802 ;address of 'packet page' port on RR-Net
@@ -33,7 +33,8 @@ cs_init:
 .rodata
 eth_driver_name:
 	.asciiz "VIC20 RR-NET"
-
+eth_driver_io_base:
+	.word rr_ctl-1
 
 
 ;-- LICENSE FOR vic20-rr-net.s --

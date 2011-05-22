@@ -10,14 +10,16 @@
 
 .include "w5100.i"
 
-DEFAULT_W5100_BASE = $DF20
+;DEFAULT_W5100_BASE = $DF20
+
+DEFAULT_W5100_BASE = $DE04
 
 ;DEBUG = 1
 	.export eth_init
 	.export eth_rx
 	.export eth_tx
 	.export eth_driver_name
-
+	.export eth_driver_io_base
 	.import eth_inp
 	.import eth_inp_len
 	.import eth_outp
@@ -77,6 +79,8 @@ DEFAULT_W5100_BASE = $DF20
 ;w5100 aware apps can use w5100_init and pass in a different
 ;base address
 eth_init:
+
+
 	ldax	#DEFAULT_W5100_BASE
 
 ;initialize the w5100 ethernet adaptor
@@ -950,6 +954,9 @@ read_reg_and_inc:
 .rodata
 eth_driver_name:
 	.asciiz "WIZNET 5100"
+
+eth_driver_io_base=read_mode_reg+1
+
 w5100_config_data:	
   .byte $00  ;no interrupts 
   .byte $0f  ;400ms retry (default)
@@ -1007,10 +1014,10 @@ inc_hi:
 
 
 read_mode_reg:
-	lda	$FFFF	;WIZNET_BASE
+	lda	DEFAULT_W5100_BASE	;WIZNET_BASE
 	rts
  write_mode_reg:
- 	sta	$FFFF	;WIZNET_BASE
+ 	sta	DEFAULT_W5100_BASE	;WIZNET_BASE
  	rts
 
 next_eth_packet_byte:

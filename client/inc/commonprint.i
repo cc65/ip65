@@ -32,6 +32,7 @@
 
 
 .import eth_driver_name
+.import eth_driver_io_base
 .importzp copy_src
 .import cfg_tftp_server
 ;reuse the copy_src zero page var
@@ -45,8 +46,19 @@ temp_ptr: .res 2
 .macro print_driver_init
   ldax #eth_driver_name
   jsr print_ascii_as_native
+  lda #'('
+  jsr print_a
+  lda #'$'
+  jsr print_a
+  lda eth_driver_io_base+1
+  jsr print_hex
+  lda eth_driver_io_base
+  jsr print_hex
+  lda #')'
+  jsr print_a
+	
   ldax #init_msg
-	jsr print_ascii_as_native
+  jsr print_ascii_as_native
 .endmacro
 
 

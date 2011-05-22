@@ -106,7 +106,16 @@ init:
   jsr print_ascii_as_native
   ldax #init_msg+1
 	jsr print_ascii_as_native
-  
+  ldax #eth_driver_name
+	jsr print_ascii_as_native
+  lda #' '
+   jsr	print_a
+  lda eth_driver_io_base+1
+  jsr	print_hex
+  lda eth_driver_io_base
+  jsr	print_hex
+  lda #' '  
+  jsr	print_a
   jsr ip65_init
   bcs init_failed
   jsr dhcp_init

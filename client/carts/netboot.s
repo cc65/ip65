@@ -68,11 +68,18 @@ get_value_of_axy: ;some more self-modifying code
 .word init  ;cold start vector
 .word $FE47  ;warm start vector
 .byte $C3,$C2,$CD,$38,$30 ; "CBM80"
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+.byte $0,$0,$0             ;reserved for future use
+
 .code
 
   
   
 init:
+  
   
   ;first let the kernal do a normal startup
   sei
@@ -107,22 +114,31 @@ init:
   stax copy_dest
   ldax #__DATA_SIZE__
   jsr copymem
-
+  ldax #__SELF_MODIFIED_CODE_LOAD__
+  stax copy_src
+  ldax #__SELF_MODIFIED_CODE_RUN__
+  stax copy_dest
+  ldax #__SELF_MODIFIED_CODE_SIZE__
+  jsr copymem
 
 
   ldax #netboot_msg
-  jsr print
-  ldax #init_msg+1
-	jsr print
+  jsr print_ascii_as_native
+
+  print_driver_init 
 
   
   jsr ip65_init
+  
+
+  
   bcs @init_failed
   jsr dhcp_init
   bcc init_ok
   jsr ip65_init   ;if DHCP failed, then reinit the IP stack (which will reset IP address etc that DHCP messed with to cartridge default values)
   bcc init_ok
 @init_failed:  
+
   print_failed
   jsr print_errorcode
   jsr wait_for_keypress  
@@ -130,6 +146,9 @@ init:
 
 
 init_ok:
+
+
+
     ldx #$03
 :
   lda cfg_tftp_server,x
@@ -199,7 +218,7 @@ get_tftp_directory_listing:
   stax tftp_load_address
 
   ldax #getting_dir_listing_msg
-	jsr print
+	jsr print_ascii_as_native
 
   jsr tftp_download
 
@@ -253,7 +272,7 @@ get_tftp_directory_listing:
   
 @dir_failed:  
   ldax  #dir_listing_fail_msg
-  jsr print
+  jsr print_ascii_as_native
   jsr print_errorcode
   jsr print_cr
   
@@ -262,7 +281,7 @@ get_tftp_directory_listing:
   
 @no_files_on_server:
   ldax #no_files
-	jsr print
+	jsr print_ascii_as_native
 
   jmp tftp_boot_failed
   
@@ -279,9 +298,9 @@ download: ;AX should point at filename to download
   stax tftp_load_address
 
   ldax #downloading_msg
-	jsr print
+	jsr print_ascii_as_native
   ldax tftp_filename
-  jsr print  
+  jsr print_ascii_as_native  
   jsr print_cr
   
   jsr tftp_download
@@ -289,20 +308,20 @@ download: ;AX should point at filename to download
 	bcc :+
   
 	ldax #tftp_download_fail_msg  
-	jsr print
+	jsr print_ascii_as_native
   jsr print_errorcode
   sec
   rts
   
 :
   ldax #tftp_download_ok_msg
-	jsr print
+	jsr print_ascii_as_native
   clc
   rts
 
 wait_for_keypress:
   ldax  #press_a_key_to_continue
-  jsr print
+  jsr print_ascii_as_native
 @loop:  
   jsr $ffe4
   beq @loop
@@ -318,30 +337,26 @@ get_key:
 .rodata
 
 netboot_msg: 
-.byte 13,"NETBOOT - V"
+.byte 14,10,"NETBOOT - V"
 .include "../inc/version.i"
-.byte 13,0
-downloading_msg:  .byte "DOWN"
-loading_msg:  .asciiz "LOADING "
+.byte 10,0
+downloading_msg:  .byte "down"
+loading_msg:  .asciiz "loading "
 
-getting_dir_listing_msg: .byte "FETCHING DIRECTORY",13,0
+getting_dir_listing_msg: .byte "fetching directory",10,0
 
 dir_listing_fail_msg:
-	.byte "DIR FAILED",13,0
+	.byte "dir failed",10,0
 
 tftp_download_fail_msg:
-	.byte "DOWNLOAD FAILED", 13, 0
+	.byte "download failed", 10, 0
 
 tftp_download_ok_msg:
-	.byte "DOWN"
+	.byte "down"
 load_ok_msg:
-	.byte "LOAD OK", 13, 0
+	.byte "load OK", 10, 0
 
-current:
-.byte "CURRENT ",0
 
-new:
-.byte"NEW ",0
   
 tftp_dir_filemask:  
   .asciiz "$/*.prg"
@@ -350,7 +365,12 @@ tftp_file:
   .asciiz "BOOTC64.PRG"
 
 no_files:
-  .byte "NO FILES",13,0
+  .byte "No files",10,0
+  
+ 
+;we need a 'dummy' segment here - some drivers use this segment (e.g. wiznet), some don't (e.g. rr-net)
+;if we don't declare this, we get an 'undefined segment' error when linking to a driver that doesn't use it.
+.segment "SELF_MODIFIED_CODE"  
 
 ;-- LICENSE FOR netboot.s --
 ; The contents of this file are subject to the Mozilla Public License

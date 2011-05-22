@@ -9,8 +9,9 @@
 	.export cs_rxtx_data
 	.export cs_tx_cmd
 	.export cs_tx_len
-  .export eth_driver_name
-  
+	.export eth_driver_name
+  	.export eth_driver_io_base
+  	
 cs_rxtx_data	= $c0b0 ;address of 'recieve/transmit data' port on Uthernet
 cs_tx_cmd	= $c0b4;address of 'transmit command' port on Uthernet
 cs_tx_len	= $c0b6;address of 'transmission length' port on Uthernet
@@ -27,6 +28,8 @@ cs_init:
 .rodata
 eth_driver_name:
 	.byte "UTHERNET",0
+eth_driver_io_base:
+	.word cs_rxtx_data
 
 
 ;-- LICENSE FOR uthernet.s --
