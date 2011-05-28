@@ -80,6 +80,9 @@ DEFAULT_W5100_BASE = $DE04
 ;base address
 eth_init:
 
+    lda $de01
+    eor #$01
+    sta $de01
 
 	ldax	#DEFAULT_W5100_BASE
 

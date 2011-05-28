@@ -18,10 +18,11 @@
   .export tftp_upload
   .export tftp_data_block_length
   .export tftp_set_callback_vector
+  .export tftp_callback_vector
   .export tftp_clear_callbacks
   .export tftp_filesize
   .export tftp_upload_from_memory
-	.import ip65_process
+  .import ip65_process
   .import ip65_error
   
 
@@ -160,6 +161,7 @@ set_tftp_opcode:
   ldx #$69
   inc tftp_client_port_low_byte    ;each transfer uses a different client port
 	lda tftp_client_port_low_byte    ;so we don't get confused by late replies to a previous call
+	
 	jsr udp_add_listener
   
 	bcc :+      ;bail if we couldn't listen on the port we want
@@ -171,7 +173,7 @@ set_tftp_opcode:
   lda #TFTP_MAX_RESENDS
   sta tftp_resend_counter
 @outer_delay_loop:
-  jsr timer_read
+  jsr timer_read 
   txa
   and #TFTP_TIMER_MASK
   sta tftp_timer            ;we only care about the high byte  
@@ -181,9 +183,11 @@ set_tftp_opcode:
   cmp #tftp_initializing
   bne @not_initializing
   jsr send_request_packet
+
   jmp @inner_delay_loop
   
 @not_initializing:
+
   cmp #tftp_error
   bne @not_error
 
