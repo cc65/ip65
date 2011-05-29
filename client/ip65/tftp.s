@@ -574,7 +574,6 @@ tftp_clear_callbacks:
   
 .data
 tftp_callback_vector:
-    
     jmp copy_tftp_block_to_ram  ;vector for action to take when a data block received (default is to store block in RAM)
 
 tftp_callback_address_set:  .byte 0
