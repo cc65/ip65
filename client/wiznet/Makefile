@@ -21,9 +21,10 @@ IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 all: ip65 drivers\
 	wizboot.bin \
 	wizboot2.prg \
-	bootc64.prg \
 	cartheader.prg \
+	wiztest.prg \
 	wizboot.prg \
+	bootc64.prg \
 	
 %.o: %.s $(INCFILES) 
 	$(AS) $(AFLAGS) $<
@@ -61,4 +62,5 @@ drivers:
 	make -C ../drivers all
 
 bootc64.prg:
-	cp wizboot.prg ../../server/boot/bootc64.prg
+#	cp wizboot.prg ../../server/boot/bootc64.prg
+	cp wiztest.prg ../../server/boot/bootc64.prg
