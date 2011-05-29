@@ -10,9 +10,13 @@
 
 .include "w5100.i"
 
-;DEFAULT_W5100_BASE = $DF20
+WIZNET_BASE=$DE04
 
-DEFAULT_W5100_BASE = $DE04
+WIZNET_MODE_REG = WIZNET_BASE
+WIZNET_ADDR_HI = WIZNET_BASE+1
+WIZNET_ADDR_LO = WIZNET_BASE+2
+WIZNET_DATA_REG = WIZNET_BASE+3
+
 
 ;DEBUG = 1
 	.export eth_init
@@ -37,6 +41,7 @@ DEFAULT_W5100_BASE = $DE04
 	.importzp eth_type
 	.importzp eth_data
 	.importzp copy_src
+	.importzp copy_dest
 
 	.export w5100_ip65_init
 	.export w5100_read_register
@@ -76,78 +81,45 @@ DEFAULT_W5100_BASE = $DE04
 ;outputs: carry flag is set if there was an error, clear otherwise
 ;this implementation uses a default address for the w5100, and can be
 ;called as a 'generic' eth driver init function
-;w5100 aware apps can use w5100_init and pass in a different
-;base address
 eth_init:
-
     lda $de01
     eor #$01
     sta $de01
 
-	ldax	#DEFAULT_W5100_BASE
-
-;initialize the w5100 ethernet adaptor
-;inputs: AX=base address for w5100 i/o 
-;outputs: carry flag is set if there was an error, clear otherwise
-w5100_init:
-	stx	set_hi+2
-	stx	set_lo+2
-	stx	get_hi+2
-	stx	get_lo+2
-	stx	inc_hi+2
-	stx	inc_lo+2
-
-	stx	read_register+2
-	stx	write_register+2
-	stx	read_mode_reg+2
-	stx write_mode_reg+2
-	tax
-	stx read_mode_reg+1
-	stx write_mode_reg+1
-	inx
-	stx	set_hi+1
-	stx	get_hi+1
-	stx	inc_hi+1
-	
-	inx
-	stx	set_lo+1
-	stx	get_lo+1
-	stx	inc_lo+1
-	
-	inx
-	stx	read_register+1
-	stx	write_register+1
 	
 	lda #$80  ;reset
-	jsr	write_mode_reg
-	jsr	read_mode_reg
+	sta WIZNET_MODE_REG
+	lda WIZNET_MODE_REG
 	bne @error	;writing a byte to the MODE register with bit 7 set should reset.
 				;after a reset, mode register is zero
 				;therefore, if there is a real W5100 at the specified address,
 				;we should be able to write a $80 and read back a $00
-	lda #$11  ;set indirect mode, no autoinc, no auto PING
-	jsr	write_mode_reg
-	jsr	read_mode_reg
-	cmp #$11
+	lda #$13  ;set indirect mode, with autoinc, no auto PING
+	sta WIZNET_MODE_REG
+	lda WIZNET_MODE_REG
+	cmp #$13
 	bne @error	;make sure if we write to mode register without bit 7 set,
 				;the value persists.
-	ldax #$0016
-	jsr	w5100_select_register
+	lda #$00
+	sta	WIZNET_ADDR_HI
+	lda #$16
+	sta	WIZNET_ADDR_LO
+	
 	ldx #$00		;start writing to reg $0016 - Interrupt Mask Register
 @loop:
 	lda w5100_config_data,x	
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$06
 	bne @loop
 	
 	lda #$09
-	jsr	set_lo
+	sta	WIZNET_ADDR_LO
 	ldx #$00		;start writing to reg $0009 - MAC address
 	
 @mac_loop:
 	lda cfg_mac,x
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$06
 	bne @mac_loop
@@ -155,25 +127,38 @@ w5100_init:
 	;set up socket 0 for MAC RAW mode 
 
 	ldax #W5100_RMSR	;rx memory size (each socket)
-	ldy	#$0A			;sockets 0 & 1 4KB each, other sockets 0KB
+	stx	WIZNET_ADDR_HI
+	sta	WIZNET_ADDR_LO
+
+	lda	#$0A			;sockets 0 & 1 4KB each, other sockets 0KB
 						;if this is changed, change the mask in eth_rx as well!
 
-	jsr	w5100_write_register
+	sta WIZNET_DATA_REG
 
 	ldax #W5100_TMSR	;rx memory size (each socket)
-	ldy	#$0A			;sockets 0 & 1 4KB each, other sockets 0KB
+	stx	WIZNET_ADDR_HI
+	sta	WIZNET_ADDR_LO
+
+	lda	#$0A			;sockets 0 & 1 4KB each, other sockets 0KB
 						;if this is changed, change the mask in eth_tx as well!
-	jsr	w5100_write_register
+	sta WIZNET_DATA_REG
 
 	ldax #W5100_S0_MR
-	ldy	#W5100_MODE_MAC_RAW
-	jsr	w5100_write_register
+	stx	WIZNET_ADDR_HI
+	sta	WIZNET_ADDR_LO
+	lda	#W5100_MODE_MAC_RAW
+	sta WIZNET_DATA_REG
 	
 	;open socket 0 
-	ldax #W5100_S0_CR
-	ldy	#W5100_CMD_OPEN
+
+	
 	jsr	w5100_write_register
-		
+	ldax #W5100_S0_CR
+	stx	WIZNET_ADDR_HI
+	sta	WIZNET_ADDR_LO
+	lda	#W5100_CMD_OPEN
+	sta WIZNET_DATA_REG
+	
 	lda #0
 	sta tcp_connected
 	
@@ -184,16 +169,12 @@ w5100_init:
 	rts		;
 
 ;initialize the ip65 stack for the w5100 ethernet adaptor
-;inputs: AX=base address for w5100 i/o 
+;inputs: none
 ;outputs: carry flag is set if there was an error, clear otherwise
-;this routine can be called multiple times, with different addresses
-;so a W5100  can be detected at different locations
 
 w5100_ip65_init:
-	stax  w5100_addr
   	jsr cfg_init    ;copy default values (including MAC address) to RAM
-  	ldax  w5100_addr	
-	jsr w5100_init		; initialize ethernet driver
+	jsr eth_init
   
 	bcc @ok
   	lda #KPR_ERROR_DEVICE_FAILURE
@@ -246,8 +227,8 @@ eth_rx:
 	lda #$8D	;opcode for STA
 	sta next_eth_packet_byte
 	ldax #eth_inp
-	sta	eth_ptr_lo
-	stx eth_ptr_hi
+	stax copy_dest
+	
 	lda #2
 	sta  byte_ctr_lo
 	lda	#0
@@ -267,12 +248,28 @@ eth_rx:
 	sta eth_inp_len	;lo byte of frame length
 
 	;now copy the rest of the frame to the eth_inp buffer
+	;we keep our own copy of RX_RD_PTR in sync, rather than read WIZNET_ADDR registers
+	;because of issue where reads to WIZNET_ADDR can cause the autoinc ptr to advance erroneously
+	;when WizNet cart used in a cartridge expander
+	
+	ldy	#0
 @get_next_byte:
-	jsr @inc_rx_rd_ptr
-	ldax rx_rd_ptr
-	jsr	w5100_read_register
-	jsr next_eth_packet_byte
-
+	inc	rx_rd_ptr
+	bne	:+
+	inc	rx_rd_ptr+1
+	lda rx_rd_ptr+1
+	and	#$0F
+	clc
+	adc	#$60
+	sta rx_rd_ptr+1
+	sta WIZNET_ADDR_HI
+:	
+	lda WIZNET_DATA_REG
+	sta (copy_dest),y
+	iny
+	bne	:+
+	inc	copy_dest+1
+:	
 	inc	byte_ctr_lo
 	bne	:+
 	inc	byte_ctr_hi
@@ -434,7 +431,8 @@ advance_eth_ptr:
 ; y is overwritten
 w5100_read_register:	
 	jsr	w5100_select_register
-	jmp	read_register
+	lda WIZNET_DATA_REG
+	rts
 
 ; write to one of the W5100 registers
 ; inputs: AX = register number to write
@@ -443,7 +441,8 @@ w5100_read_register:
 w5100_write_register:
 	jsr	w5100_select_register
 	tya
-	jmp	write_register
+	sta WIZNET_DATA_REG
+	rts
 
 
 
@@ -485,7 +484,7 @@ tcp_listen:
 	jsr	w5100_select_register
 	ldx	#0
 @ip_loop:	
-	jsr	read_reg_and_inc
+	lda WIZNET_DATA_REG
 	sta	tcp_remote_ip,x
 	inx
 	cpx #$04
@@ -493,9 +492,9 @@ tcp_listen:
 	
 	ldax #W5100_S1_DPORT0
 	jsr	w5100_select_register
-	jsr read_reg_and_inc
+	lda WIZNET_DATA_REG
 	sta tcp_connect_remote_port+1
-	jsr read_reg_and_inc
+	lda WIZNET_DATA_REG
 	sta tcp_connect_remote_port
 	
 	clc
@@ -525,7 +524,7 @@ tcp_connect:
 	ldx	#0
 @remote_ip_loop:
 	lda	tcp_connect_ip,x
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$04
 	bne	@remote_ip_loop
@@ -533,9 +532,9 @@ tcp_connect:
 
 ;W5100 register address is now W5100_S1_DPORT0, so set the destination port
 	lda	tcp_remote_port+1
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	lda	tcp_remote_port
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 
 	ldax #W5100_S1_CR
 	ldy	#W5100_CMD_CONNECT
@@ -904,14 +903,14 @@ setup_tcp_socket:
 	ldx	#0
 @gateway_loop:	
 	lda	cfg_gateway,x
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$04
 	bne	@gateway_loop
 	ldx	#0	
 @netmask_loop:	
 	lda	cfg_netmask,x
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$04
 	bne	@netmask_loop
@@ -921,7 +920,7 @@ setup_tcp_socket:
 	ldx	#0
 @ip_loop:	
 	lda	cfg_ip,x
-	jsr	write_reg_and_inc
+	sta WIZNET_DATA_REG
 	inx
 	cpx #$04
 	bne	@ip_loop
@@ -929,9 +928,9 @@ setup_tcp_socket:
 	ldax #W5100_S1_PORT0
 	jsr	w5100_select_register
 	lda tcp_local_port+1
-	jsr write_reg_and_inc
+	sta WIZNET_DATA_REG
 	lda tcp_local_port
-	jsr write_reg_and_inc
+	sta WIZNET_DATA_REG
 	
 	lda #0
 	sta tcp_connected
@@ -946,19 +945,13 @@ setup_tcp_socket:
 	jsr	w5100_write_register	
 	rts
 
-write_reg_and_inc:
-	jsr	write_register
-	jmp inc_register
-
-read_reg_and_inc:
-	jsr	read_register
-	jmp inc_register
 	
 .rodata
 eth_driver_name:
 	.asciiz "WIZNET 5100"
 
-eth_driver_io_base=read_mode_reg+1
+eth_driver_io_base:
+	.word WIZNET_BASE
 
 w5100_config_data:	
   .byte $00  ;no interrupts 
@@ -968,7 +961,6 @@ w5100_config_data:
   .byte $55  ;4 sockets @2K each, tx/rx
   .byte $55
 
-.segment "SELF_MODIFIED_CODE"
 
 ;
 ; select one of the W5100 registers for subsequent read or write
@@ -976,9 +968,9 @@ w5100_config_data:
 ; outputs: none
 w5100_select_register:
 set_hi:
-	stx $FFFF	;WIZNET_ADDR_HI
+	stx WIZNET_ADDR_HI
 set_lo:
-	sta $FFFF	;WIZNET_ADDR_LO
+	sta WIZNET_ADDR_LO
 	rts
 
 ; return which W5100 register the next read or write will access
@@ -986,42 +978,13 @@ set_lo:
 ; outputs: AX = selected register number
 w5100_get_current_register:	
 get_hi:
-	ldx $FFFF	;WIZNET_ADDR_HI
+	ldx WIZNET_ADDR_HI
 get_lo:
-	lda $FFFF	;WIZNET_ADDR_LO
-	rts
-
-; read value from previously selected W5100 register 
-; inputs: none
-; outputs: A = value of selected register number (and register pointer auto incremented)	
-read_register:
-	lda	$FFFF	;WIZNET_DATA
-	rts
-	
-; write value to previously selected W5100 register 
-; inputs: A = value to write to selected register
-; outputs: none (although W5100 register pointer auto incremented)	
-write_register:
-	sta	$FFFF	;WIZNET_DATA
+	lda WIZNET_ADDR_LO
 	rts
 
 
-inc_register:
-inc_lo:
-	inc $FFFF	;WIZNET_ADDR_LO
-	bne	:+
-inc_hi:
-	inc $FFFF	;WIZNET_ADDR_HI
-:	
-	rts
-
-
-read_mode_reg:
-	lda	DEFAULT_W5100_BASE	;WIZNET_BASE
-	rts
- write_mode_reg:
- 	sta	DEFAULT_W5100_BASE	;WIZNET_BASE
- 	rts
+.segment "SELF_MODIFIED_CODE"
 
 next_eth_packet_byte:
 	lda	$FFFF	;eth_packet

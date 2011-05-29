@@ -6,11 +6,12 @@
 ;.include "../drivers/w5100.i"
 
 
-
-WIZNET_MODE_REG = $DE04
-WIZNET_ADDR_HI = $DE05
-WIZNET_ADDR_LO = $DE06
-WIZNET_DATA_REG = $DE07
+WIZNET_BASE=$DE04
+;WIZNET_BASE=$DF20
+WIZNET_MODE_REG = WIZNET_BASE
+WIZNET_ADDR_HI = WIZNET_BASE+1
+WIZNET_ADDR_LO = WIZNET_BASE+2
+WIZNET_DATA_REG = WIZNET_BASE+3
 
 TEST_LOOPS=$1F
 
@@ -110,7 +111,6 @@ init:
 
 	
 	
-;	jmp @exit
 
 	ldax #loop
 	jsr	print
@@ -203,7 +203,6 @@ init:
 	jmp @reset_test_loops
 	
 @exit:	
-
 	jmp	$e37b
 
 @error:

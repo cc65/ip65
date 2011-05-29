@@ -62,5 +62,5 @@ drivers:
 	make -C ../drivers all
 
 bootc64.prg:
-#	cp wizboot.prg ../../server/boot/bootc64.prg
-	cp wiztest.prg ../../server/boot/bootc64.prg
+	cp wizboot.prg ../../server/boot/bootc64.prg
+#	cp wiztest.prg ../../server/boot/bootc64.prg
