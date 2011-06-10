@@ -24,9 +24,12 @@ all: ip65 drivers\
 	cartheader.prg \
 	wiztest.prg \
 	wizboot.prg \
+	telnetd.bin \
+	telnetd.prg \
 	bootc64.prg \
 	
-%.o: %.s $(INCFILES) 
+%.o: %.s $(INCFILES) timestamp.rb
+	ruby timestamp.rb > timestamp.i
 	$(AS) $(AFLAGS) $<
 
 
@@ -34,21 +37,20 @@ all: ip65 drivers\
 	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65WIZNETLIB) $(C64WIZNETLIB)
 
 
-kipperwizdisk.d64: ../carts/kkwiz.prg ../kipperterm2/kt2wiz.prg 
-	ripxplore.rb --init CbmDos $@ -a ../carts/kkwiz.prg
-	ripxplore.rb $@ -a ../kipperterm2/addresses.txt -t C64Seq
-	ripxplore.rb $@ -a ../kipperterm2/abe -t C64Prg
-	ripxplore.rb $@ -a ../kipperterm2/kt2wiz.prg -t C64Prg
-	ripxplore.rb $@ -a ../examples/webnoter.prg -t C64Prg	
-	cp $@ ../../server/boot/
-
 wizboot.bin: wizboot.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
 	$(LD) -m wizboot.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB)  
 	ruby ../carts/fix_cart.rb $@ 8192
 
 wizboot.prg: wizboot.bin cartheader.prg
-	cat cartheader.prg wizboot.bin > wizboot.prg
+	cat cartheader.prg wizboot.bin > $@
 
+telnetd.bin: telnetd.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
+	$(LD) -m telnetd.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB)  
+	ruby ../carts/fix_cart.rb $@ 8192
+
+telnetd.prg: telnetd.bin cartheader.prg
+	cat cartheader.prg telnetd.bin > $@
+	
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64
 
@@ -62,5 +64,6 @@ drivers:
 	make -C ../drivers all
 
 bootc64.prg:
-	cp wizboot.prg ../../server/boot/bootc64.prg
+	cp telnetd.prg ../../server/boot/bootc64.prg
+#	cp wizboot2.prg ../../server/boot/bootc64.prg	
 #	cp wiztest.prg ../../server/boot/bootc64.prg

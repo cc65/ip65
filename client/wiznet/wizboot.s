@@ -14,12 +14,14 @@
   .import tftp_load_address
   .import tftp_download
   .import tftp_callback_vector
-
+  .import w5100_set_ip_config
   .import cls
   .import beep
   .import exit_to_basic
   .import timer_vbl_handler
   .import get_key_ip65   
+  .import cfg_mac
+  .import cfg_size
   .import cfg_ip
   .import cfg_netmask
   .import cfg_gateway
@@ -29,11 +31,10 @@
   .import dns_ip
   .import dns_set_hostname
   .import dns_resolve
-  
-  
+  .import ip65_process
   .import copymem
-	.importzp copy_src
-	.importzp copy_dest
+  .importzp copy_src
+  .importzp copy_dest
   .import get_filtered_input
   .import  __DATA_LOAD__
   .import  __DATA_RUN__
@@ -43,6 +44,8 @@
   .import  __SELF_MODIFIED_CODE_SIZE__
     
   SCNKEY=$FF9F ;Query keyboard - put matrix code into  $00CB & status of shift keys $028D 
+  
+  IP_CONFIG_SNAPSHOT=$200
   
   .bss
 tmp_load_address: .res 2
@@ -142,7 +145,14 @@ flash_forever:
   inc $d020
   jmp flash_forever
 init_ok:
-
+  ;stash the IP config we just got somewhere that other WizNet apps can get it
+  ldax  #cfg_mac
+  stax copy_src
+  ldax #IP_CONFIG_SNAPSHOT
+  stax copy_dest
+  ldax  #cfg_size
+  jsr copymem
+  
   lda shift_pressed_on_bootup
   bne @skip_resolving_tftp_hostname
 
@@ -264,34 +274,39 @@ get_key:
 .rodata
 
 wizboot_msg: 
-.byte 147,14,13,"wiznet cart - v"
+.byte 147	;cls
+;.byte 14	;lower case
+.byte 142	;upper case
+.byte 13,"   WIZNET CART - V"
 .include "../inc/version.i"
-
+.include "timestamp.i"
 .byte 13
-.byte 13," hold c= for basic / shift for lan boot",13,13
+.byte 13," HOLD C= FOR BASIC / SHIFT FOR LAN BOOT",13,13
 .byte 0
-downloading_msg:  .byte 13,"downloading ",0
+downloading_msg:  .byte 13,"DOWNLOADING ",0
 
 tftp_download_fail_msg:
-	.byte "download failed", 13, 0
+	.byte "DOWNLOAD FAILED", 13, 0
 
 tftp_download_ok_msg:
-	.byte 13,"download ok", 13, 0
+	.byte 13,"DOWNLOAD OK", 13, 0
 
 tftp_file:  
-  .asciiz "bootc64.prg"
+  .asciiz "BOOTC64.PRG"
 
 resolving_tftp_hostname:
-	.byte "resolving "
+	.byte "RESOLVING "
 tftp_hostname:
-  .asciiz "jamtronix.com"
+  .asciiz "JAMTRONIX.COM"
   
  .data
  	new_tftp_callback_vector:
  		jsr $ffff
 		lda #'.'
 		jmp	print_a
-		
+
+
+
 ;we need a 'dummy' segment here - some drivers use this segment (e.g. wiznet), some don't (e.g. rr-net)
 ;if we don't declare this, we get an 'undefined segment' error when linking to a driver that doesn't use it.
 .segment "SELF_MODIFIED_CODE"  

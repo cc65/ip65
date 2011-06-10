@@ -7,7 +7,6 @@
 
  .export print_hex
  .export print_ip_config
- .export dhcp_msg
  .export ok_msg
  .export failed_msg
  .export init_msg
@@ -310,54 +309,51 @@ print_errorcode:
 
 .rodata
 hexdigits:
-.byte "0123456789abcdef"
+.byte "0123456789ABCDEF"
 
   
 interface_type:
-.byte "interface   : ",0
+.byte "INTERFACE   : ",0
 
 mac_address_msg:
-.byte "mac address : ", 0
+.byte "MAC ADDRESS : ", 0
 
 ip_address_msg:
-.byte "ip address  : ", 0
+.byte "IP ADDRESS  : ", 0
 
 netmask_msg:
-.byte "netmask     : ", 0
+.byte "NETMASK     : ", 0
 
 gateway_msg:
-.byte "gateway     : ", 0
+.byte "GATEWAY     : ", 0
   
 dns_server_msg:
-.byte "dns server  : ", 0
+.byte "DNS SERVER  : ", 0
 
 dhcp_server_msg:
-.byte "dhcp server : ", 0
+.byte "DHCP SERVER : ", 0
 
 tftp_server_msg:
-.byte "tftp server : ", 0
-
-dhcp_msg:
-  .byte "dhcp",0
+.byte "TFTP SERVER : ", 0
 
 init_msg:
-  .byte " initializing ",0
+  .byte " INITIALIZING ",0
 
 
+dns_lookup_failed_msg:
+	.byte "DNS LOOKUP "
 failed_msg:
-	.byte "failed", 0
+	.byte "FAILED", 0
 
 ok_msg:
-	.byte "ok", 0
+	.byte "OK", 0
  
-dns_lookup_failed_msg:
- .byte "dns lookup failed", 0
-
+ 
 error_code:  
-  .asciiz "error code: "
+  .asciiz "ERROR CODE: "
 
 press_a_key_to_continue:
-  .byte "press a key to continue",10,0
+  .byte "PRESS A KEY TO CONTINUE",13,0
 
 
 

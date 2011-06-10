@@ -45,8 +45,10 @@ WIZNET_DATA_REG = WIZNET_BASE+3
 
 	.export w5100_ip65_init
 	.export w5100_read_register
-	.export w5100_write_register
+	.export w5100_select_register
 
+	.export w5100_write_register
+	.export w5100_set_ip_config
 	.export tcp_connect
 	.export tcp_connect_ip
 	.export tcp_callback
@@ -55,7 +57,7 @@ WIZNET_DATA_REG = WIZNET_BASE+3
 	.export tcp_send
 	.export tcp_send_keep_alive
 	.export	tcp_close
-
+	.export tcp_connected
 
 	.export tcp_connect_remote_port
 	.export tcp_remote_ip
@@ -464,7 +466,7 @@ tcp_listen:
 
 	;now wait for the status to change to 'established'
 @listen_loop:
-	inc $d020
+;	inc $d020
 	jsr	ip65_process
 	jsr check_for_abort_key
 	bcc @no_abort
@@ -897,7 +899,7 @@ jmp_to_callback:
 ;we assume MAC has been configured already via eth_init, but IP
 ;address etc may not be known when the w5100 was initialised (e.g.
 ;if using DHCP).
-setup_tcp_socket:
+w5100_set_ip_config:
 	ldax #W5100_GAR0
 	jsr	w5100_select_register
 	ldx	#0
@@ -924,7 +926,10 @@ setup_tcp_socket:
 	inx
 	cpx #$04
 	bne	@ip_loop
-	
+	rts
+
+setup_tcp_socket:	
+	jsr w5100_set_ip_config
 	ldax #W5100_S1_PORT0
 	jsr	w5100_select_register
 	lda tcp_local_port+1
