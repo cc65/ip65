@@ -84,10 +84,10 @@ WIZNET_DATA_REG = WIZNET_BASE+3
 ;this implementation uses a default address for the w5100, and can be
 ;called as a 'generic' eth driver init function
 eth_init:
-    lda $de01
-    eor #$01
-    sta $de01
-
+  	lda $de01
+	ora #1			;turn on clockport
+	sta $de01
+  
 	
 	lda #$80  ;reset
 	sta WIZNET_MODE_REG
@@ -953,7 +953,7 @@ setup_tcp_socket:
 	
 .rodata
 eth_driver_name:
-	.asciiz "WIZNET 5100"
+	.asciiz "RR-NET MK3 (WIZNET 5100)"
 
 eth_driver_io_base:
 	.word WIZNET_BASE

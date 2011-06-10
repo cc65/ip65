@@ -18,7 +18,7 @@ IP65WIZNETLIB=../ip65/ip65_wiznet.lib
 C64WIZNETLIB=../drivers/c64wiznet.lib
 
 
-all: ip65 drivers  kipperterm2.prg kt2wiz.prg kipperterm2.d64 
+all: ip65 drivers  kipperterm2.prg kt2wiz.prg kipperterm2.d64 kt2wiz.d64
 
 
 kipperterm2.o: kipperterm2.s $(INCFILES) ../inc/telnet.i ../inc/config_menu.i ../inc/gopher.i
@@ -37,13 +37,18 @@ kt2wiz.prg: kipperterm2.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c6
 	cp kt2wiz.prg ../../server/boot
 
 
-kipperterm2.d64: kipperterm2.prg kt2wiz.prg addresses.txt abe.bas
+kipperterm2.d64: kipperterm2.prg addresses.txt abe.bas
 	ripxplore.rb --init CbmDos $@ -a kipperterm2.prg
-#	ripxplore.rb $@ -a 80columns -t C64Prg
 	ripxplore.rb $@ -a addresses.txt -t C64Seq
 	ripxplore.rb $@ -a abe -t C64Prg
 	cp kipperterm2.d64 ../../server/boot
- 
+
+kt2wiz.d64: kt2wiz.prg addresses.txt abe.bas
+	ripxplore.rb --init CbmDos $@ -a kt2wiz.prg
+	ripxplore.rb $@ -a addresses.txt -t C64Seq
+	ripxplore.rb $@ -a abe -t C64Prg
+	cp kt2wiz.d64 ../wiznet/
+ 	
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64
 

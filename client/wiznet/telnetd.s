@@ -51,6 +51,7 @@ TELNET_PORT=6400
    XMAX=$289 ;max keypresses in buffer
    STKEY=$91 ;last key pressed
    
+  INIT_MAGIC_VALUE=$C7	 
 .segment "CARTRIDGE_HEADER"
 .word cold_init  ;cold start vector
 .word warm_init  ;warm start vector
@@ -75,8 +76,18 @@ cold_init:
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
     
-warm_init:  
-  
+warm_init:
+ lda #INIT_MAGIC_VALUE
+ cmp init_flag
+ bne @real_init
+ jmp $fe5e ; contine on to real RESTORE routine
+@real_init:
+ sta init_flag
+ 
+ ;we need to set up BASIC as well  
+  jsr $e453   ;set BASIC vectors
+  jsr $e3bf   ;initialize zero page
+
 ;relocate our r/w data
   ldax #__DATA_LOAD__
   stax copy_src
@@ -97,7 +108,6 @@ warm_init:
 
   ldax #startup_msg
   jsr print
-   	
   jsr ip65_init
   
   bcs init_failed
@@ -107,6 +117,8 @@ init_failed:
 
   jsr print_errorcode
   jsr print_ip_config
+  jsr print_cr
+  
 flash_forever:  
   inc $d020
   jmp flash_forever
@@ -121,10 +133,6 @@ init_ok:
 
 ;install our new STOP handler
   
-  ldax	ISTOP
-  stax	old_stop_handler
-  ldax #stop_handler
-;  stax	ISTOP
 
   cli
   
@@ -138,13 +146,12 @@ start_listening:
   jsr  print_dotted_quad
   ldax #port
   jsr	print
-
-
+ 
    ;we need to copy BASIC as well since swapping KERNAL forces swap of BASIC
-  ldax #$A000
+  ldax #$8000
   stax copy_src
   stax copy_dest
-  ldax #$2000
+  ldax #$4000
   jsr copymem
 
   ldax #$E000
@@ -156,6 +163,7 @@ start_listening:
   ;now intercept calls to $E716
   ;we do this instead of using the $326 vector because the BASIC
   ;'READY' loop calls $E716 directly rather than calling $FFD2 
+
   lda #$4C				;JMP
   sta $e716
   ldax #new_charout
@@ -173,7 +181,6 @@ start_listening:
   sta tcp_send_data_len
   ldax #term_setup_string
   jsr	tcp_send
-
 	
 
   jmp $E397
@@ -257,17 +264,9 @@ new_charout:
 	ldy	temp_y
 	jmp	$e719	;after the code we patched
 	
-stop_handler:
-	lda	break_flag
-	beq	@no_stop
-	lda	#$7f
-	sta STKEY
-	lda #0
-	sta	break_flag
-@no_stop:	
-	jmp	(old_stop_handler)
 
 .bss
+init_flag: .res 1
 old_tick_handler: .res 2
 old_stop_handler: .res 2
 temp_x	: .res 1
@@ -310,6 +309,7 @@ connection_closed:
 .byte 13,"CONNECTION CLOSED",13,0
 
 term_setup_string:
+
 	.byte 142	;upper case
 	.byte 147	;cls
 term_setup_string_length=*-term_setup_string

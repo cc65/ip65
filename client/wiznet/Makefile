@@ -26,6 +26,8 @@ all: ip65 drivers\
 	wizboot.prg \
 	telnetd.bin \
 	telnetd.prg \
+	wizbobcart.prg \
+	kt2wiz.d64	\
 	bootc64.prg \
 	
 %.o: %.s $(INCFILES) timestamp.rb
@@ -50,6 +52,13 @@ telnetd.bin: telnetd.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8
 
 telnetd.prg: telnetd.bin cartheader.prg
 	cat cartheader.prg telnetd.bin > $@
+
+wizbobcart.bin: wizbobcart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
+	$(LD) -m wizbobcart.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB) 
+	ruby ../carts/fix_cart.rb $@ 8192
+
+wizbobcart.prg: wizbobcart.bin cartheader.prg
+	cat cartheader.prg wizbobcart.bin > $@
 	
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64
@@ -63,7 +72,12 @@ ip65:
 drivers:
 	make -C ../drivers all
 
+kt2wiz.d64:
+	make -C ../kipperterm2 kt2wiz.d64
+	
+	
 bootc64.prg:
-	cp telnetd.prg ../../server/boot/bootc64.prg
+	cp wizbobcart.prg ../../server/boot/bootc64.prg
+#	cp telnetd.prg ../../server/boot/bootc64.prg
 #	cp wizboot2.prg ../../server/boot/bootc64.prg	
 #	cp wiztest.prg ../../server/boot/bootc64.prg

@@ -5,7 +5,7 @@ AFLAGS=
 
 INCFILES=\
   ../inc/common.i\
-  commonprint.i\
+  ../inc/commonprint.i\
   ../inc/net.i\
   ../inc/menu.i\
   ../inc/kipper_constants.i\
@@ -32,6 +32,7 @@ all:    ip65 drivers\
 	kipperkart.prg \
 	kippergo.prg \
 	kippergo_rr.bin \
+	kkwiz_rr.bin \
 	kipperdisk.d64 \
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
@@ -114,8 +115,11 @@ kkwiz.bin: kipperkart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_
 	ruby fix_cart.rb $@ 16384
 #	ruby set_ip_config.rb $@ mac auto
 
-
-
+kkwiz_rr.bin: kkwiz.bin 
+	cp crt8040.obj rrnet_header.bin	
+	cat rrnet_header.bin kkwiz.bin > kkwiz_rr.bin
+	ruby fix_cart.rb $@ 32768
+	cp kkwiz_rr.bin ../wiznet/
   		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/

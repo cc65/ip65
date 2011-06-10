@@ -277,7 +277,7 @@ wizboot_msg:
 .byte 147	;cls
 ;.byte 14	;lower case
 .byte 142	;upper case
-.byte 13,"   WIZNET CART - V"
+.byte 13,"   RR-NET MK3 - V"
 .include "../inc/version.i"
 .include "timestamp.i"
 .byte 13
