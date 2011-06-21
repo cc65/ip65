@@ -53,8 +53,8 @@ telnetd.bin: telnetd.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8
 telnetd.prg: telnetd.bin cartheader.prg
 	cat cartheader.prg telnetd.bin > $@
 
-wizbobcart.bin: wizbobcart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
-	$(LD) -m wizbobcart.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB) 
+wizbobcart.bin: wizbobcart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) wizbobcart.cfg
+	$(LD) -m wizbobcart.map -vm -C wizbobcart.cfg -o $@  $< $(IP65WIZNETLIB) $(C64WIZNETLIB) 
 	ruby ../carts/fix_cart.rb $@ 8192
 
 wizbobcart.prg: wizbobcart.bin cartheader.prg

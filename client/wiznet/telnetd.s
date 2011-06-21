@@ -84,6 +84,7 @@ warm_init:
 @real_init:
  sta init_flag
  
+ 
  ;we need to set up BASIC as well  
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
@@ -102,6 +103,14 @@ warm_init:
   ldax #__SELF_MODIFIED_CODE_SIZE__
   jsr copymem
 
+
+;set normal BASIC colour
+  LDA #$0e  ;light blue  
+  STA $D020 ;border
+  LDA #$06	;dark blue
+  STA $D021 ;background
+  lda #$9a
+  jsr	print_a
 
   ;copy KERNAL to RAM so we can patch it
 
@@ -133,6 +142,10 @@ init_ok:
 
 ;install our new STOP handler
   
+  ldax	ISTOP
+  stax	old_stop_handler
+  ldax #stop_handler
+  stax	ISTOP
 
   cli
   
@@ -201,6 +214,8 @@ get_key:
 
 
 tick_handler:	;called at least 60hz via $314
+	lda sending_flag
+	bne @done
 	inc	jiffy_count
 	lda jiffy_count
 	cmp #$06		;about 100ms
@@ -234,10 +249,10 @@ telnet_callback:
   beq	@done
 
   lda	(buffer_ptr),y
-;  cmp	#$03	;is ^C?
-;  bne	@not_ctrl_c
-;  inc	break_flag
-;  jmp	@key_done
+  cmp	#$03	;is ^C?
+  bne	@not_ctrl_c
+  inc	break_flag
+  jmp	@key_done
 @not_ctrl_c: 
   inc	NDX
   sta	KEYD,x
@@ -257,13 +272,26 @@ new_charout:
 	pha
 	ldax #1
 	sta tcp_send_data_len
+	sta	sending_flag
 	ldax #output_buffer
 	jsr	tcp_send
+	dec sending_flag
 	pla
 	ldx	temp_x
 	ldy	temp_y
 	jmp	$e719	;after the code we patched
+
+stop_handler:	
+
+	lda break_flag
+	beq @no_stop
 	
+	lda #$7F
+	sta $91
+	lda #0
+	sta break_flag
+@no_stop:
+	jmp (old_stop_handler)
 
 .bss
 init_flag: .res 1
@@ -276,7 +304,7 @@ output_buffer: .res 64
 .data
 jiffy_count: .byte 0
 break_flag: .byte 0
-
+sending_flag: .byte 0
 .rodata
 
 startup_msg: 

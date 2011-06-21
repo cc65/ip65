@@ -104,13 +104,15 @@ crunched_line      = $0200          ;Input buffer
 .import __SELF_MODIFIED_CODE_SIZE__
 
 temp_ptr =copy_src
-temp=copy_src
-temp2=copy_dest
+;temp=copy_src
+;temp2=copy_dest
 
-;.zeropage
-;temp:	.res 2
-;temp2:	.res 2
-pptr=temp_ptr
+.segment "IP65ZP" : zeropage
+
+pptr:	.res 2
+temp2:	.res 2
+temp=pptr
+
 .segment "CARTRIDGE_HEADER"
 .word cold_init  ;cold start vector
 .word warm_init  ;warm start vector
@@ -140,15 +142,22 @@ warm_init:
  jmp $fe5e ; contine on to real RESTORE routine
 @real_init:
  sta init_flag
+ 
 ;we need to set up BASIC as well  
   jsr $e453   ;set BASIC vectors
   jsr $e3bf   ;initialize zero page
 
-
+;set normal BASIC colour
+  LDA #$0e  ;light blue  
+  STA $D020 ;border
+  LDA #$06	;dark blue
+  STA $D021 ;background
+  lda #$9a
+  jsr	print_a
   
 ;make some room for extra RAM
 
-	ldax #$5800
+	ldax #$7000
 	stax MEMSIZ
   
 	stax http_variables_buffer
@@ -217,6 +226,9 @@ install_new_vectors_loop:
   
   jsr $A644 ;do a "NEW"
 
+
+; jmp $A474 ;"READY" prompt ;FIXME - delete this line to autoload 'INDEX.BAS'
+ 
  ldax #loading_index_bas
  jsr	print
  
@@ -908,6 +920,7 @@ goto:
 
 find_hook:
  jsr calc_hash
+
  ldy #0
  ldx hooks
  beq @done
@@ -953,20 +966,25 @@ calc_hash:
  bne @loop
 @done:
  sta hash
+ 
+; ldax #transfer_buffer
+; jsr	print
+; lda    hash
+; jsr	print_hex
+; jsr	print_cr
  rts 
 
 
 yield_keyword:
   jsr flush_keyword
   jsr tcp_close
-  .ifdef DEBUG
-  dec $d020
-  .endif
   jmp httpd_start
   
 gosub:
+
     
 bang_keyword:
+
   jsr FRMEVL
   bit VALTYP
   bmi	@string_val
@@ -1017,6 +1035,7 @@ got_http_request:
   sta transfer_buffer,y
   sty	param_length
   sty	tmp_length
+  tya
   clc
   lda	#'P'
   sta VARNAM
@@ -1107,9 +1126,6 @@ httpd_start:
   bcs @abort_key_pressed
   
 @connect_ok: 
-.ifdef DEBUG
-  inc $d020
-.endif
   ldax #connection_from
   jsr print
   ldax #tcp_remote_ip
@@ -1156,9 +1172,6 @@ httpd_start:
   lda connection_closed
   beq  @main_polling_loop  
 @connection_timed_out:
-.ifdef DEBUG
-  dec $d020
-.endif
   jmp @listen
   
 @got_eol:
@@ -1397,8 +1410,8 @@ xsend_keyword:
   JSR CHRIN ;(get a byte from file)
   sta error_buffer,y
   iny
-  
-  JMP @error_loop     ; next byte
+  cpy #error_buffer_length-1
+  bne @error_loop	; next byte
 @error_eof:
   lda #0
   sta error_buffer,y
@@ -1711,6 +1724,7 @@ temp_x: .res 1
 sent_header: .res 1
 tmp_a: .res 1
 error_buffer: .res 80
+error_buffer_length=*-error_buffer
 top_of_stack: .res 1
 .segment "TCP_VARS"
 
