@@ -20,7 +20,8 @@ all:  ip65 kipperbas.d64 bails.d64 kipperbasv20.prg
 ip65:
 	make -C ../ip65 all
 
-%.o: %.s $(INCFILES) 
+%.o: %.s $(INCFILES) timestamp.rb
+	ruby timestamp.rb > timestamp.i
 	$(AS) $(AFLAGS) $<
 	
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/kipperbas.cfg
@@ -36,12 +37,13 @@ bails.d64: bails.prg
 #	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
 	ripxplore.rb $@  -a bails.prg
 
-kipperbas.d64: kipperbas.prg 
+kipperbas.d64: kipperbas.prg chat
 #	ripxplore.rb -r -e kbload $@ -o kbload
 #	ripxplore.rb -r -e kbapp $@ -o kbapp
-#	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
-	ripxplore.rb $@  -a kipperbas.prg
-
+	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
+#	ripxplore.rb $@  -a kipperbas.prg
+	cp chat autoexec.bas
+#	ripxplore.rb $@  -a autoexec.bas -t C64Prg
 clean:
 	rm -f *.o *.bin *.map *.prg
 

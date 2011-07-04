@@ -54,6 +54,7 @@ class Netboot65TFTPServer
     
     blocks_to_send=1+(data_to_send.length.to_f/512.0).floor
     log_msg("sending #{filename} to #{client_ip}:#{client_port} (#{blocks_to_send} blocks)")
+    start_time=Time.now
     blocks_to_send.times do |block_number|
       block_data=data_to_send[block_number*512,512]
       packet=[3,block_number+1,block_data].pack("nnA*")
@@ -83,6 +84,9 @@ class Netboot65TFTPServer
         break
       end
     end
+    end_time=Time.now
+    duration=end_time-start_time
+    log_msg "TFTP: transmission time to #{client_ip} = #{duration} seconds"
   end
 
 
@@ -149,7 +153,7 @@ class Netboot65TFTPServer
     log_msg "TFTP: serving #{bootfile_dir} on port #{port}"
     Socket.do_not_reverse_lookup = true
     @server_thread=Thread.start do
-
+	 	
       loop do
         socket=UDPSocket.open
         socket.setsockopt Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1

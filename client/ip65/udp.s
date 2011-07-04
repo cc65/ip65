@@ -135,9 +135,7 @@ udp_process:
 	bpl @checkport
 
 @drop:
-  lda #KPR_ERROR_NO_SUCH_LISTENER
-  sta  ip65_error
-  sec
+    sec
 	rts
 
 @handle:

@@ -211,8 +211,11 @@ install_new_vectors_loop:
   rts
 	
 welcome_banner:
-.incbin "welcome_banner.txt"
-.byte 0
+.byte " *** KIPPER BASIC 1.21"
+.include "timestamp.i"
+.byte " ***"
+
+.byte 13,0
 end:  .res  1
 end_of_loader:
 
@@ -1457,7 +1460,8 @@ tcpblat_keyword:
   jmp @store_error
 
 evaluate:
-  lda $00  
+
+  lda #$00  
   sta $0D ;set string flag to not string
   jsr CHRGET
   cmp #$E3  ; PING keyword

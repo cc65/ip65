@@ -33,6 +33,7 @@ all:    ip65 drivers\
 	kippergo.prg \
 	kippergo_rr.bin \
 	kkwiz_rr.bin \
+	telnetd.prg \
 	kipperdisk.d64 \
 
 kipperkart.o: kipperkart.s $(INCFILES)  ../inc/ping.i ../inc/disk_transfer.i ../inc/sidplay.i   ../inc/config_menu.i
@@ -45,6 +46,7 @@ kippergo.o: kippergo.s $(INCFILES) ../inc/gopher.i ../inc/telnet.i ../inc/config
 	$(AS) $(AFLAGS) -o $@ $<
 
 %.o: %.s $(INCFILES) 
+	ruby timestamp.rb > timestamp.i
 	$(AS) $(AFLAGS) $<
 
 kipperkart.prg: kipperkart.bin c64_cart_ram_header.prg
@@ -120,6 +122,13 @@ kkwiz_rr.bin: kkwiz.bin
 	cat rrnet_header.bin kkwiz.bin > kkwiz_rr.bin
 	ruby fix_cart.rb $@ 32768
 	cp kkwiz_rr.bin ../wiznet/
+
+telnetd.bin: telnetd.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
+	$(LD) -m telnetd.map -vm -C ../cfg/c64_8kcart.cfg -o $@  $< $(IP65TCPLIB) $(C64RRNETLIB)
+	ruby ../carts/fix_cart.rb $@ 8192
+
+telnetd.prg: telnetd.bin cartheader.prg
+	cat cartheader.prg telnetd.bin > $@
   		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/

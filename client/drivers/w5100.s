@@ -57,7 +57,7 @@ WIZNET_DATA_REG = WIZNET_BASE+3
 	.export tcp_send
 	.export tcp_send_keep_alive
 	.export	tcp_close
-	.export tcp_connected
+	.export tcp_state
 
 	.export tcp_connect_remote_port
 	.export tcp_remote_ip
@@ -160,9 +160,9 @@ eth_init:
 	sta	WIZNET_ADDR_LO
 	lda	#W5100_CMD_OPEN
 	sta WIZNET_DATA_REG
-	
-	lda #0
-	sta tcp_connected
+
+	lda #tcp_cxn_state_closed
+	sta tcp_state
 	
 	clc
 	rts
@@ -203,7 +203,7 @@ eth_rx:
 	;we shoe horn a check for data on the TCP socket here
 	;if we do get TCP data, we will call the TCP callback routine
 	;but we hide all of this from the ip65 stack proper.
-	lda tcp_connected	
+	lda tcp_state	
 	beq	@no_tcp
 
 	jsr	tcp_rx
@@ -479,7 +479,9 @@ tcp_listen:
 	jsr w5100_read_register
 	cmp #W5100_STATUS_SOCK_ESTABLISHED
 	bne	@listen_loop
-	inc tcp_connected
+
+	lda #tcp_cxn_state_established
+	sta tcp_state
 
 	;copy the remote IP address & port number
 	ldax #W5100_S1_DIPR0
@@ -557,7 +559,9 @@ tcp_connect:
   	jmp @set_error_and_exit
 
 @ok:
-	inc tcp_connected
+	lda #tcp_cxn_state_established
+	sta tcp_state
+
 	clc
 	rts
 @error:
@@ -751,8 +755,8 @@ tcp_rx:
 	cmp #W5100_STATUS_SOCK_ESTABLISHED
 	beq	@connected_but_no_data
 	;no longer connected
-	lda #0
-	sta tcp_connected
+	lda #tcp_cxn_state_closed
+	sta tcp_state
 	
 	lda #$ff
 	sta tcp_inbound_data_length
@@ -938,7 +942,7 @@ setup_tcp_socket:
 	sta WIZNET_DATA_REG
 	
 	lda #0
-	sta tcp_connected
+	sta tcp_state
 
 	ldax #W5100_S1_MR
 	ldy	#W5100_MODE_TCP
@@ -1011,7 +1015,7 @@ eth_ptr_hi=next_eth_packet_byte+2
  rx_rd_ptr: .res 2
 tcp_local_port: .res 2
 
-tcp_connected: .res 1
+tcp_state: .res 1
 
 tcp_connect_ip: .res 4 ;ip address of remote server to connect to
 tcp_callback: .res 2 ;vector to routine to be called when data is received over tcp connection
@@ -1026,6 +1030,11 @@ tcp_inbound_data_ptr: .res 2
 
 tcp_connect_remote_port: .res 2
 tcp_remote_ip = tcp_connect_ip
+
+tcp_cxn_state_closed      = 0 
+tcp_cxn_state_listening   = 1  ;(waiting for an inbound SYN)
+tcp_cxn_state_syn_sent    = 2  ;(waiting for an inbound SYN/ACK)
+tcp_cxn_state_established = 3  ;  
 
 
 ;-- LICENSE FOR w5100a.s --
