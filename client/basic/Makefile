@@ -43,7 +43,7 @@ kipperbas.d64: kipperbas.prg chat
 	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
 #	ripxplore.rb $@  -a kipperbas.prg
 	cp chat autoexec.bas
-#	ripxplore.rb $@  -a autoexec.bas -t C64Prg
+	ripxplore.rb $@  -a autoexec.bas -t C64Prg
 clean:
 	rm -f *.o *.bin *.map *.prg
 

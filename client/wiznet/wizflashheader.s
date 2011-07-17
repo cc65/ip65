@@ -49,20 +49,41 @@ init:
 	sta	$d011
 	jsr	turn_off_write_protect
 
+
+	ldax #$8000
+	stax eeprom_ptr
+
+@reset_64_bytes:
+	inc $d020	
+	
+	ldy	#0
+@reset_1_byte:
+	lda	#$55
+	sta	(eeprom_ptr),y
+	iny
+	cpy	#64
+	bne @reset_1_byte
+	jsr	poll_till_stable
+
+	clc
+	tya
+	adc eeprom_ptr
+	sta eeprom_ptr
+	bcc	:+
+	inc	eeprom_ptr+1
+:
+	
+	lda eeprom_ptr+1
+	cmp	#$A0
+	bne	@reset_64_bytes			
+
+
 	ldax #cart_data
 	stax cart_data_ptr
 	ldax #$8000
 	stax eeprom_ptr
 
 @copy_64_bytes:
-;	lda	cart_data_ptr+1
-;	jsr	print_hex
-;	lda	cart_data_ptr
-;	jsr	print_hex
-;	lda	eeprom_ptr+1
-;	jsr	print_hex
-;	lda	eeprom_ptr
-;	jsr	print_hex
 	inc $d020	
 	
 	ldy	#0
@@ -94,6 +115,15 @@ init:
 	bne	@copy_64_bytes			
 
 ;now validate the data
+	lda #$0
+	sta	validation_counter
+	lda	old_d011
+	sta	$d011
+
+	ldax #validating
+	jsr	print
+	
+@validation_loop:
 	ldax #cart_data
 	stax cart_data_ptr
 	ldax #$8000
@@ -105,13 +135,22 @@ init:
 	bne	@validation_error
 	iny
 	bne	@compare_loop
+	lda	 #'.'
+	jsr	print_a
+
 	inc	cart_data_ptr+1
 	inc	eeprom_ptr+1
 	lda eeprom_ptr+1
 	cmp	#$A0
 	bne	@compare_loop
+	
+	inc validation_counter
+	lda	validation_counter
+	cmp #$08
+	bne @validation_loop
 	ldax #ok
 	jsr	print
+	
 	ldax #$8000
 	stax eeprom_ptr
 
@@ -274,6 +313,7 @@ banner:
 .byte 13
 .byte 0
 ok: .byte 13,"OK",13,0
+validating: .byte 13,"CHECKING EEPROM DATA ",13,0
 validation_error:
 .byte 13,"VALIDATION ERROR : $",0
 offset: .byte " OFFSET : $",0
@@ -287,3 +327,4 @@ cart_data:	;this should point to where the cart data gets appended.
 error_offset: .res 1
 byte_ptr: .res 1
 old_d011: .res 1
+validation_counter: .res 1

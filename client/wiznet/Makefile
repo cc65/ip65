@@ -93,5 +93,5 @@ bootc64.prg:
 #	cp wizbobcart.prg ../../server/boot/bootc64.prg
 #	cp telnetd.prg ../../server/boot/bootc64.prg
 #	cp wizboot2.prg ../../server/boot/bootc64.prg	
-	cp wiztest.prg	../../server/boot/bootc64.prg
-#	cp wizflash.prg	../../server/boot/bootc64.prg
+#	cp wiztest.prg	../../server/boot/bootc64.prg
+	cp wizflash.prg	../../server/boot/bootc64.prg

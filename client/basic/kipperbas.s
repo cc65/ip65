@@ -211,7 +211,7 @@ install_new_vectors_loop:
   rts
 	
 welcome_banner:
-.byte " *** KIPPER BASIC 1.21"
+.byte " *** KIPPER BASIC 1.22"
 .include "timestamp.i"
 .byte " ***"
 
@@ -1323,18 +1323,24 @@ tcpconnect_callback:
   stax  copy_dest
   ldax  tcp_inbound_data_ptr
   stax  copy_src
+  
+  
   lda   tcp_inbound_data_length
   ldx   tcp_inbound_data_length+1  
-  beq @short_packet
   cpx #$ff
   bne @not_end_packet
+	  
+@end_packet:
   lda #0
   sta connection_state
   rts
 @not_end_packet:
+  jsr copymem
+  ldx   tcp_inbound_data_length+1
+  beq @short_packet
   lda #$ff
 @short_packet:
-
+  lda   tcp_inbound_data_length
 set_input_string:
   pha
   lda #'I'
@@ -1355,10 +1361,31 @@ set_input_string:
   ldx #0
   jsr copymem
 :  
+
+  lda #'I'+$80 
+  ldx #'P'+$80 
+  jsr find_var  
+  lda #<transfer_buffer
+  sta (VARPNT),y  
+  iny
+  lda #>transfer_buffer
+  sta (VARPNT),y
+
+  lda #'I'+$80 
+  ldx #'L'+$80 
+  jsr find_var  
+  lda tcp_inbound_data_length+1
+  sta (VARPNT),y  
+  iny
+  lda tcp_inbound_data_length
+  sta (VARPNT),y
+
   rts
 
 poll_keyword:
   lda #0
+  sta tcp_inbound_data_length
+  sta tcp_inbound_data_length+1
   jsr set_input_string
   jsr set_connection_state
   jsr ip65_process
@@ -1462,7 +1489,7 @@ tcpblat_keyword:
 evaluate:
 
   lda #$00  
-  sta $0D ;set string flag to not string
+  sta $0D ;set string flag to not stringe
   jsr CHRGET
   cmp #$E3  ; PING keyword
   bne @done
@@ -1636,7 +1663,7 @@ gateway_string:  .res 15
 temp_bcd: .res 2
 ping_counter: .res 1
 string_buffer: .res 128
-transfer_buffer: .res 256
+transfer_buffer: .res 1500
 file_opened: .res 1
 connection_state: .res 1
 netcat_timeout: .res 1
