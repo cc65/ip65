@@ -70,10 +70,35 @@ init:
 	
 	ldax #banner
 	jsr	print
+
+	lda #0
+	sta	clockport_mode
+  	lda $de01
+	and #$fe			;turn off clockport
+	sta $de01
+
+	lda #$80  ;reset
+	sta WIZNET_MODE_REG
+	lda WIZNET_MODE_REG
+	bne @try_clockport
+	          	;writing a byte to the MODE register with bit 7 set should reset.
+				;after a reset, mode register is zero
+				;therefore, if there is a real W5100 at the specified address,
+				;we should be able to write a $80 and read back a $00
+				
+	lda #$13  ;set indirect mode, with autoinc, no auto PING
+	sta WIZNET_MODE_REG
+	lda WIZNET_MODE_REG
+	cmp #$13
+	beq	@w5100_found
 	
+@try_clockport:
+	inc	clockport_mode
+	;now try with clockport	on
   	lda $de01
 	ora #1			;turn on clockport
 	sta $de01
+
 
 	lda #$80  ;reset
 	sta WIZNET_MODE_REG
@@ -102,6 +127,9 @@ init:
 	bne	@error
 				;make sure if we write to mode register without bit 7 set,
 				;the value persists.
+	
+
+@w5100_found:
 
 	ldax #w5100_found
 	jsr	print
@@ -109,6 +137,14 @@ init:
 	jsr	print_hex
 	lda #<WIZNET_MODE_REG
 	jsr	print_hex
+	lda clockport_mode
+	bne	@clockport
+	ldax #direct
+	jmp :+
+@clockport:	
+	ldax	#clockport
+:	
+	jsr	print
 	jsr	print_cr	
 
 
@@ -127,6 +163,8 @@ init:
 	ldax #test_duration
 	jsr print
 
+	ldax #test_0
+	jsr	print
 
 	ldax #test_1
 	jsr	print
@@ -148,6 +186,8 @@ main:
 	bne	@not_space
 	jsr reset_clock
 @loop_test:	
+	jsr	do_test_0
+	bcs	main
 	jsr	do_test_1
 	bcs	main
 	jsr	do_test_2
@@ -158,6 +198,12 @@ main:
 	bne	main
 	jmp	@loop_test
 @not_space:
+	cmp #'0'
+	bne	@not_0
+	jsr reset_clock
+	jsr	do_test_0
+	jmp	main
+@not_0:
 	cmp #'1'
 	bne	@not_1
 	jsr reset_clock
@@ -185,17 +231,38 @@ main:
 
 	
 failed:
-	ldax	#FAILED
-	jsr	print
+	lda #$02
+	sta $d020
 	sec
 	rts
+
+
+do_test_0:
+
+	lda	#0
+	sta address_inc_mode
+
+	ldax #test_0
+	jsr	print
+	lda #$11  ;set indirect mode, with no autoinc, no auto PING
+	jmp set_address_mode
 	
 do_test_1:
+
 	lda	#0
 	sta	intersperse_address_reads
+	lda	#1
+	sta address_inc_mode
+
 	ldax #test_1
 do_w5100_test:	
 	jsr	print
+	lda #$13  ;set indirect mode, with autoinc, no auto PING
+set_address_mode:	
+	
+	sta WIZNET_MODE_REG
+	lda #$06  ;
+    sta $D020 ;border
 	
 	jsr	w5100_access_test
 	bcs	failed
@@ -206,13 +273,19 @@ ok:
 	rts
 
 do_test_2:
+
 	lda	#1
 	sta	intersperse_address_reads
+	sta address_inc_mode
+
 	ldax #test_2
 	jmp do_w5100_test
 
 
 do_test_3:
+	lda #$06  ;
+    sta $D020 ;border
+
 	ldax #test_3
 	jsr	print
 	sei
@@ -223,6 +296,9 @@ do_test_3:
 	
 	lda	#1
 	sta	update_clock
+
+	lda #$11  ;set indirect mode, with no autoinc, no auto PING
+	sta WIZNET_MODE_REG
 
 	;set up the W5100 to trigger an interrupt
 	lda #1
@@ -236,6 +312,8 @@ do_test_3:
 	sta	WIZNET_ADDR_LO
 	lda #$00	;retry period high byte
 	sta WIZNET_DATA_REG
+	lda	#$18		;retry period
+	sta	WIZNET_ADDR_LO
 	lda #$01	;retry period low byte
 	sta WIZNET_DATA_REG
 
@@ -345,7 +423,12 @@ w5100_access_test:
 	beq :+
 	lda	WIZNET_ADDR_LO	;see if we can force a glitch!
 :	
-	
+
+	lda address_inc_mode
+	bne :+
+	inc	WIZNET_ADDR_LO	;see if we can force a glitch!
+:	
+
 	inc byte_counter
 	bne	@write_one_byte
 
@@ -365,7 +448,12 @@ w5100_access_test:
 	beq	@ok
 	sec
 	rts	
-@ok:	
+@ok:
+	lda address_inc_mode
+	bne :+
+	inc	WIZNET_ADDR_LO	;see if we can force a glitch!
+:	
+
 	inx
 	bne	@test_one_byte
 
@@ -513,7 +601,7 @@ get_key:
 banner:
 .byte $93 ;CLS
 .byte $9a;
-.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.21"
+.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.23"
 
 .include "timestamp.i"
 .byte $0d
@@ -528,33 +616,37 @@ test_duration:
 
 OK:
 	.byte 157,157,"OK ",0
-FAILED:
-	.byte 157,157,"!!",0
+
+test_0:
+.byte $13	;home
+.byte  $11,$11,$11,$11,$11,$11,$11
+.byte "0) W5100 MEMORY ACCESS 0 :   "
+.byte 0
 
 test_1:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11
 .byte "1) W5100 MEMORY ACCESS 1 :   "
 .byte 0
 test_2:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "2) W5100 MEMORY ACCESS 2 :   "
 .byte 0
 test_3:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "3) NMI TEST              :   "
 .byte 0
 prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
-.byte "PRESS 1..3 TO RUN A SINGLE TEST",13
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte "PRESS 0..3 TO RUN A SINGLE TEST",13
 .byte "SPACE TO CYCLE ALL TESTS",13
 .byte 0
 after_prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte 0
 loop: .byte "TEST $",0
 not_found: .byte "NO "
@@ -562,6 +654,9 @@ w5100_found: .byte "W5100 FOUND AT $",0
 error_offset: .byte 13,"OFFSET $",0
 was: .byte " WAS $",0
 reset_cursor: .byte 157,157,0
+clockport: .byte " [CLOCKPORT]",0
+direct: .byte " [DIRECT]",0
+
 .bss
 last_byte: .res 1
 loop_count: .res 1
@@ -576,3 +671,5 @@ update_clock: .res 1
 tick_counter: .res 1
 timeout_count: .res 1
 got_nmi: .res 1
+clockport_mode: .res 1
+address_inc_mode: .res 1

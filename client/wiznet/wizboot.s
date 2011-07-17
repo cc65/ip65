@@ -72,7 +72,6 @@ call_downloaded_prg:
 .code
 
   
-  
 cold_init:
   
   ;first let the kernal do a normal startup
@@ -82,6 +81,30 @@ cold_init:
   jsr $fd15   ;set vectors for KERNAL
   jsr $ff5B   ;init. VIC
   cli         ;KERNAL init. finished
+  
+  
+  	;do the 'secret knock' to disable writes to the EEPROM
+
+	lda #$55 
+	sta $9c55 
+	lda #$aa 
+	sta $83aa 
+	lda #$05 
+	sta $9c55
+
+@poll_loop:
+	lda	$8000	
+	cmp	$8000	
+	bne	@poll_loop
+	
+	;copy ourselves to the C64 RAM
+	;so if we go into 'SHUTUP' mode, we keep executing from the same address, in C64 RAM
+	ldax #$8000	
+  	stax copy_src
+  	stax copy_dest
+  	ldax #$2000
+  	jsr copymem
+	
     
 warm_init:  
 

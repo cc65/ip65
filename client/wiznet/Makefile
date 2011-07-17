@@ -47,6 +47,9 @@ wizboot.bin: wizboot.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64_8
 wizboot.prg: wizboot.bin cartheader.prg
 	cat cartheader.prg wizboot.bin > $@
 
+wizflash.prg: wizboot.bin wizflashheader.prg
+	cat wizflashheader.prg wizboot.bin > $@
+
 telnetd.o: ../carts/telnetd.s $(INCFILES) timestamp.rb
 	$(AS) $(AFLAGS) ../carts/telnetd.s -o telnetd.o
 
@@ -64,8 +67,11 @@ wizbobcart.bin: wizbobcart.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) wizbob
 wizbobcart.prg: wizbobcart.bin cartheader.prg
 	cat cartheader.prg wizbobcart.bin > $@
 	
-wiztest.d64: wiztest.prg
-	ripxplore.rb -I CbmDos -a wiztest.prg $@
+wiztest.d64: wiztest.prg wizboot.prg wizflash.prg
+	ripxplore.rb -I CbmDos $@
+	ripxplore.rb -a wizboot.prg $@
+	ripxplore.rb -a wiztest.prg $@
+	ripxplore.rb -a	wizflash.prg $@
 	
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64
@@ -88,3 +94,4 @@ bootc64.prg:
 #	cp telnetd.prg ../../server/boot/bootc64.prg
 #	cp wizboot2.prg ../../server/boot/bootc64.prg	
 	cp wiztest.prg	../../server/boot/bootc64.prg
+#	cp wizflash.prg	../../server/boot/bootc64.prg
