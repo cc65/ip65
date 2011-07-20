@@ -601,7 +601,7 @@ get_key:
 banner:
 .byte $93 ;CLS
 .byte $9a;
-.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.23"
+.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.24"
 
 .include "timestamp.i"
 .byte $0d
