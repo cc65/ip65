@@ -8,7 +8,7 @@ print_a = $ffd2
 cart_data_ptr:	.res 2
 eeprom_ptr:	.res 2
 pptr: .res 2
-
+checksum_ptr: .res 2
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
 .word basicstub		; load address
@@ -30,6 +30,54 @@ init:
 	ldax #banner
 	jsr	print
 	cli
+	
+	;check if our data is a KIPPER image (with MAC at offset 0x18)
+	lda  cart_data+9
+	cmp	#'K'
+	bne	@not_kipper
+	lda  cart_data+10
+	cmp	#'I'
+	bne	@not_kipper
+	lda  cart_data+11
+	cmp	#'P'
+	bne	@not_kipper
+@loop:	
+	ldax #found_kip
+	jsr	print
+	lda cart_data+$18
+	sta cart_data+$1FF8
+	lda cart_data+$19
+	sta cart_data+$1FF9
+	lda cart_data+$1A
+	sta cart_data+$1FFA
+	lda cart_data+$1B
+	sta cart_data+$1FFB
+	lda cart_data+$1C
+	sta cart_data+$1FFC
+	lda cart_data+$1D
+	sta cart_data+$1FFD
+
+	lda #0					;flag byte defaults to 0
+	sta cart_data+$1FFE
+	
+	ldax #cart_data+$1FF8
+	stax checksum_ptr
+	
+	clc
+	ldy	#0
+	tya
+@checksum_loop:
+	asl
+	adc	(checksum_ptr),y
+	iny
+	cpy	#7					;6 byte MAC address plus 1 byte flag
+	bne @checksum_loop
+	
+	sta cart_data+$1FFF
+	jsr	print_hex
+	jsr	print_cr
+@not_kipper:	
+
 	
 	ldax #$8000
 	stax eeprom_ptr
@@ -58,7 +106,7 @@ init:
 	
 	ldy	#0
 @reset_1_byte:
-	lda	#$55
+	lda	#0
 	sta	(eeprom_ptr),y
 	iny
 	cpy	#64
@@ -76,6 +124,44 @@ init:
 	lda eeprom_ptr+1
 	cmp	#$A0
 	bne	@reset_64_bytes			
+
+;now validate the reset
+	lda #$0
+	sta	validation_counter
+	lda	old_d011
+	sta	$d011
+
+	ldax #validating_reset
+	jsr	print
+	
+@reset_validation_loop:
+	ldax #$8000
+	stax eeprom_ptr
+	ldy #0
+@reset_compare_loop:
+	lda (eeprom_ptr),y
+	bne	@reset_validation_error
+	iny
+	bne	@reset_compare_loop
+	lda	 #'.'
+	jsr	print_a
+
+	inc	eeprom_ptr+1
+	lda eeprom_ptr+1
+	cmp	#$A0
+	bne	@reset_compare_loop
+	beq	@reset_ok
+	@reset_validation_error:
+	jmp	@validation_error
+	
+@reset_ok:	
+	ldax #OK
+	jsr	print
+		
+
+	lda	$d011
+	and #$ef		;turn off bit 4
+	sta	$d011
 
 
 	ldax #cart_data
@@ -252,13 +338,15 @@ poll_till_stable:
 	ldax eeprom_ptr
 	stax	@offset_1+1
 	stax	@offset_2+1
+	ldx	#$03
 @poll_loop:
 @offset_1:	
 	lda	$8000	;address will get overwritten
 @offset_2:	
 	cmp	$8000	;address will get overwritten
 	bne	poll_till_stable
-	
+	dex
+	bne	@poll_loop
 @done:
 	rts
 
@@ -317,9 +405,14 @@ validating: .byte 13,"CHECKING EEPROM DATA ",13,0
 validation_error:
 .byte 13,"VALIDATION ERROR : $",0
 offset: .byte " OFFSET : $",0
-
+OK: .byte 13,"OK",13,0
+validating_reset: .byte "VALIDATING EEPROM RESET",13,0
 rd: .byte "RD :",0
 wr: .byte "WR :",0
+found_kip:
+.byte 13," KIP HEADER FOUND - RELOCATING MAC",13
+.byte " CHECKSUM : $"
+.byte 0
 .bss
 cart_data:	;this should point to where the cart data gets appended.
 	.res $2000

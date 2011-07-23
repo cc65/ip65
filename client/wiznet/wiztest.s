@@ -16,9 +16,10 @@ TEST_LOOPS=$FF
 
 TX_BUFFER_START_PAGE=$40
 
-TIMER_POSITION_ROW=5
+TIMER_POSITION_ROW=6
 TIMER_POSITION_COL=15
 TIMER_POSITION=$400+TIMER_POSITION_ROW*40+TIMER_POSITION_COL
+LAST_PROMPT_POSITION=$400+15*40+9
 
 ; load A/X macro
 	.macro ldax arg
@@ -58,7 +59,6 @@ basicstub:
 	.word 0
 
 init:
-	
 
 	;set funky colours
 	lda #$06  ;
@@ -66,35 +66,11 @@ init:
     lda #$00	;dark blue
     sta $D021 ;background
 
-	
-	
 	ldax #banner
 	jsr	print
 
 	lda #0
 	sta	clockport_mode
-  	lda $de01
-	and #$fe			;turn off clockport
-	sta $de01
-
-	lda #$80  ;reset
-	sta WIZNET_MODE_REG
-	lda WIZNET_MODE_REG
-	bne @try_clockport
-	          	;writing a byte to the MODE register with bit 7 set should reset.
-				;after a reset, mode register is zero
-				;therefore, if there is a real W5100 at the specified address,
-				;we should be able to write a $80 and read back a $00
-				
-	lda #$13  ;set indirect mode, with autoinc, no auto PING
-	sta WIZNET_MODE_REG
-	lda WIZNET_MODE_REG
-	cmp #$13
-	beq	@w5100_found
-	
-@try_clockport:
-	inc	clockport_mode
-	;now try with clockport	on
   	lda $de01
 	ora #1			;turn on clockport
 	sta $de01
@@ -117,18 +93,18 @@ init:
 	jsr	print_hex
 	jsr	print_cr	
 	
-	jmp	$e37b
+;	jmp	$e37b
+	jmp	@after_mac
 				
 @reset_ok:				
-	lda #$13  ;set indirect mode, with autoinc, no auto PING
+	lda #$11  ;set indirect mode, with no autoinc, no auto PING
 	sta WIZNET_MODE_REG
 	lda WIZNET_MODE_REG
-	cmp #$13
+	cmp #$11
 	bne	@error
 				;make sure if we write to mode register without bit 7 set,
 				;the value persists.
 	
-
 @w5100_found:
 
 	ldax #w5100_found
@@ -137,16 +113,53 @@ init:
 	jsr	print_hex
 	lda #<WIZNET_MODE_REG
 	jsr	print_hex
-	lda clockport_mode
-	bne	@clockport
+	
+	lda	#$77	;selected by random roll of a fairly weighted dice
+	sta $de06
+	cmp	$de02	;do values written to $de06 show up at $de02?
+	beq	@clockport
 	ldax #direct
 	jmp :+
 @clockport:	
+	inc clockport_mode
 	ldax	#clockport
 :	
 	jsr	print
 	jsr	print_cr	
 
+	jsr	copy_mac_to_w5100
+	bcc	@print_mac
+	ldax #invalid_mac_checksum
+	jsr print
+	jmp	@after_mac
+	
+@print_mac:
+	
+	ldax #MAC
+	jsr	print
+	lda #$00
+	sta	WIZNET_ADDR_HI
+	lda	#$09		;00009 = local MAC addres
+	sta	WIZNET_ADDR_LO
+
+  	ldy #0
+@one_mac_digit:
+  	tya   ;just to set the Z flag
+  	pha
+  	beq @dont_print_colon
+  	lda #':'
+  	jsr print_a
+@dont_print_colon:
+  	pla 
+  	tay
+  	lda WIZNET_DATA_REG
+  	jsr print_hex
+  	inc WIZNET_ADDR_LO
+  	iny
+  	cpy #06
+  	bne @one_mac_digit
+
+@after_mac:
 
 	;set up to keep the timer updated
 	lda #0
@@ -175,12 +188,20 @@ init:
 
 	ldax #prompt
 	jsr	print
+	lda	clockport_mode
+	bne	main
+	ldax #test_4
+	jsr	print
+	ldax #test_5
+	jsr	print
+	lda	#$35
+	sta	LAST_PROMPT_POSITION
 main:	
 	lda	#0
 	sta	update_clock
 
 	jsr get_key
-
+	and #$7F		;ignore shift key
 
 	cmp #' '
 	bne	@not_space
@@ -223,10 +244,29 @@ main:
 	jsr	do_test_3
 	jmp	main
 @not_3:
+	ldy clockport_mode
+	bne	@not_valid_key
 
+	cmp #'4'
+	bne	@not_4
+	jsr reset_clock
+	jsr	do_test_4
+	jmp	main
+@not_4:
+
+	cmp #'5'
+	bne	@not_5
+	jsr reset_clock
+	jsr	do_test_5
+	jmp	main
+@not_5:
+
+@not_valid_key:
   	lda $cb ;current key pressed
  	cmp #$3F
-	bne	main
+	beq	:+
+	jmp main
+:	
 	jmp return_to_basic
 
 	
@@ -236,7 +276,7 @@ failed:
 	sec
 	rts
 
-
+	
 do_test_0:
 
 	lda	#0
@@ -376,6 +416,93 @@ nmi_handler:
 	inc got_nmi
 	rti
 	
+do_test_4:
+	
+	lda #$06  ;
+    sta $D020 ;border
+
+	ldax #test_4
+	jsr	print
+	
+	lda	#1
+	sta	update_clock
+
+	ldy	#$0
+@bank_loop:
+	lda	 #$64
+	sta	$de01 ;go to 'shut up' mode
+	sta	$4000	;this should be in RAM
+	
+	sta $de02 ;leave 'shut up' mode
+	sta	$de0e  ;set both banking bits to 0
+	lda	#$00
+	sta	$4000	;this should be bank 0
+	
+	sta	$de0a  ;set banking bit 0 to 1
+	lda	#$01
+	sta	$4000	;this should be bank 1
+
+	sta	$de0e  ;set both banking bits to 0
+	lda	#$02
+	sta	$de0c  ;set banking bit 1 to 0
+	lda	#$02
+	sta	$4000	;this should be bank 2
+	
+	sta	$de0a  ;set banking bit 0 to 1
+	lda	#$03
+	sta	$4000	;this should be bank 3
+
+	lda	 #$64
+	sta	$de01 ;go to 'shut up' mode
+	cmp	$4000	;this should be in RAM
+	bne	@banking_error
+	
+	sta $de02 ;leave 'shut up' mode
+	sta	$de0e  ;set both banking bits to 0
+	lda	#$00
+	cmp	$4000	;this should be in bank 0
+	bne	@banking_error
+	
+	sta	$de0a  ;set banking bit 0 to 1
+	lda	#$01
+	cmp	$4000	;this should be in bank 1
+	bne	@banking_error
+
+	sta	$de0e  ;set both banking bits to 0
+	lda	#$02
+	sta	$de0c  ;set banking bit 1 to 0
+	lda	#$02
+	cmp	$4000	;this should be in bank 2
+	bne	@banking_error
+	
+	sta	$de0a  ;set banking bit 0 to 1
+	lda	#$03
+	cmp	$4000	;this should be in bank 3
+	bne	@banking_error
+	tya
+	pha
+	ldax #reset_cursor
+	jsr	print
+	pla	
+	pha
+	jsr	print_hex
+	pla
+	tay
+	iny
+	bne	@bank_loop
+	jmp ok
+
+		
+@banking_error:
+	pha
+	ldax #reset_cursor
+	jsr	print
+	pla
+	jsr	print_hex
+	sec
+	rts
+do_test_5:
+	;FIXME
 return_to_basic:
 	ldax #after_prompt
 	jsr print
@@ -595,13 +722,98 @@ get_key_if_available=$f142 ;not officially documented - where F13E (GETIN) falls
 get_key:
   jsr get_key_if_available
   beq get_key
-  rts	
+  rts
+
+
+copy_mac_to_w5100:
+	TEMP_BUFFER=$100	;we will execute directly in the bottom part of the stack
+	RELOC_BUFFER=TEMP_BUFFER+08	;reserve 8 bytes of data
+	TEMP_PTR=$39			;somewhere safe-ish in zero page
+	ldy	#reloc_length
+@reloc_one_byte:	
+	lda	reloc_start,y
+	sta	RELOC_BUFFER,y
+	dey
+	bpl	@reloc_one_byte
+	jsr	RELOC_BUFFER
+;MAC + flags + checksum should now be in TEMP_BUFFER
+
+	;validate the checksum
+	clc
+	ldy	#0
+	tya
+@checksum_loop:
+	asl
+	adc	TEMP_BUFFER,y
+	iny
+	cpy	#7					;6 byte MAC address plus 1 byte flag
+	bne @checksum_loop
+	cmp	TEMP_BUFFER+7		
+	beq	@checksum_ok
+	sec
+	rts
+@checksum_ok:	
+	lda #$00
+	sta	$de05	;w5100 address register high byte
+	lda	#$09	;00009 = local MAC addres
+	sta	$de06	;w5100 address register low byte
+  	ldy #0
+@write_one_mac_byte:
+	lda	TEMP_BUFFER,y
+  	sta $de07	;w5100 data register
+  	inc $de06	;w5100 address register low byte
+  	iny
+  	cpy	#6
+  	bne @write_one_mac_byte
+	clc
+	rts
+	
+reloc_start:
+	lda	#$09	;00009 = local MAC addres
+	sta	$de06	;w5100 address register low byte
+	cmp	$de02	;do values written to $de06 show up at $de02?
+	beq	@clockport	
+				;we are in expansion port; so turn on ROM
+	sta $de02 ;leave 'shut up' mode
+	sta $de08  ;enable ROM
+		
+	lda	#$9F
+	sta	TEMP_PTR+1
+	lda	#$F8
+	bne	:+
+
+@clockport:
+	lda	#$DE
+	sta	TEMP_PTR+1
+	lda	#$08
+:	
+	sta	TEMP_PTR
+
+;as soon as we access a W5100 register ($de04..$de07)
+;we disable the ROM if we are in expansion port mode
+;so we have to copy the MAC from the ROM on to the stack 
+;before we start to write it to the W5100
+ 	ldy #7
+@read_one_mac_byte:
+	lda	(TEMP_PTR),y
+	sta	TEMP_BUFFER,y
+  	dey
+  	bpl @read_one_mac_byte
+;	
+;go back to shutup mode	by writing to $de01
+  	lda $de01
+	ora #1			;turn on clockport
+	sta $de01	
+	rts
+reloc_length=*-reloc_start
+
+  
 .data
 
 banner:
 .byte $93 ;CLS
 .byte $9a;
-.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.24"
+.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.27"
 
 .include "timestamp.i"
 .byte $0d
@@ -609,7 +821,7 @@ banner:
 
 test_duration:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11
 .byte "TEST DURATION: 00:00:00"
 .byte $0d
 .byte 0
@@ -619,36 +831,46 @@ OK:
 
 test_0:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11
 .byte "0) W5100 MEMORY ACCESS 0 :   "
 .byte 0
 
 test_1:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "1) W5100 MEMORY ACCESS 1 :   "
 .byte 0
 test_2:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "2) W5100 MEMORY ACCESS 2 :   "
 .byte 0
 test_3:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "3) NMI TEST              :   "
 .byte 0
-prompt:
+test_4:
+.byte $13	;home
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte "4) SRAM BANKING TEST     :   "
+.byte 0
+test_5:
 .byte $13	;home
 .byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte "5) SRAM RD/WR TEST       :   "
+.byte 0
+
+prompt:
+.byte $13	;home
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "PRESS 0..3 TO RUN A SINGLE TEST",13
 .byte "SPACE TO CYCLE ALL TESTS",13
 .byte 0
 after_prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte 0
-loop: .byte "TEST $",0
 not_found: .byte "NO "
 w5100_found: .byte "W5100 FOUND AT $",0
 error_offset: .byte 13,"OFFSET $",0
@@ -656,7 +878,8 @@ was: .byte " WAS $",0
 reset_cursor: .byte 157,157,0
 clockport: .byte " [CLOCKPORT]",0
 direct: .byte " [DIRECT]",0
-
+MAC: .byte "MAC: ",0
+invalid_mac_checksum: .byte"INVALID MAC CHECKSUM",13,0
 .bss
 last_byte: .res 1
 loop_count: .res 1
