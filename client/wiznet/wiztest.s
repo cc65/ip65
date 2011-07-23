@@ -20,6 +20,7 @@ TIMER_POSITION_ROW=6
 TIMER_POSITION_COL=15
 TIMER_POSITION=$400+TIMER_POSITION_ROW*40+TIMER_POSITION_COL
 LAST_PROMPT_POSITION=$400+15*40+9
+RESULTS_1_POS=$400+8*40+27
 
 ; load A/X macro
 	.macro ldax arg
@@ -41,6 +42,7 @@ LAST_PROMPT_POSITION=$400+15*40+9
 
 .zeropage
 pptr: .res 2
+test_ptr: .res 2
 
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
@@ -104,7 +106,8 @@ init:
 	bne	@error
 				;make sure if we write to mode register without bit 7 set,
 				;the value persists.
-	
+
+
 @w5100_found:
 
 	ldax #w5100_found
@@ -202,21 +205,52 @@ main:
 
 	jsr get_key
 	and #$7F		;ignore shift key
+	cmp #$0D
+	bne @not_return
+	lda	#' '
+	sta RESULTS_1_POS
+	sta RESULTS_1_POS+1
+	sta RESULTS_1_POS+40
+	sta RESULTS_1_POS+41
+	sta RESULTS_1_POS+80
+	sta RESULTS_1_POS+81
+	sta RESULTS_1_POS+120
+	sta RESULTS_1_POS+121
+	sta RESULTS_1_POS+160
+	sta RESULTS_1_POS+161
+	sta RESULTS_1_POS+200
+	sta RESULTS_1_POS+201
+	lda #$06  ;
+    sta $D020 ;border
+    lda #$00	;dark blue
+    sta $D021 ;background
 
+	jmp	main
+@not_return:	
 	cmp #' '
 	bne	@not_space
 	jsr reset_clock
 @loop_test:	
 	jsr	do_test_0
 	bcs	main
+	jsr	get_key_if_available
+	bne	main
+	
 	jsr	do_test_1
 	bcs	main
+	jsr	get_key_if_available
+	bne	main
+	
 	jsr	do_test_2
 	bcs	main
+	jsr	get_key_if_available
+	bne	main
+
 	jsr	do_test_3
 	bcs	main
 	jsr	get_key_if_available
 	bne	main
+
 	jmp	@loop_test
 @not_space:
 	cmp #'0'
@@ -272,6 +306,12 @@ main:
 	
 failed:
 	lda #$02
+	sta $d020
+	sec
+	rts
+
+interrupted:
+	lda #$05
 	sta $d020
 	sec
 	rts
@@ -379,6 +419,12 @@ do_test_3:
 	sta	timeout_count
 
 @trigger_one_timeout:
+	ldax #reset_cursor
+	jsr	print
+
+	lda timeout_count	
+	jsr	print_hex
+
 	lda	#0
 	sta	got_nmi
 	;clear interrupt register	
@@ -394,19 +440,20 @@ do_test_3:
 	sta WIZNET_DATA_REG
 
 @loop_till_timeout:
+	jsr	get_key_if_available
+	beq	:+
+	jmp	interrupted
+:	
+
 	lda #$02		;$0602 = interrupt register, socket 2
 	sta	WIZNET_ADDR_LO
 	lda WIZNET_DATA_REG
 	beq	@loop_till_timeout
 	lda got_nmi
 	bne	@ok
+@failed:	
 	jmp	failed
 @ok:	
-	ldax #reset_cursor
-	jsr	print
-
-	lda timeout_count	
-	jsr	print_hex
 	inc timeout_count
 	bne	@trigger_one_timeout
 	jmp ok
@@ -429,6 +476,16 @@ do_test_4:
 
 	ldy	#$0
 @bank_loop:
+	tya
+	pha
+	ldax #reset_cursor
+	jsr	print
+	pla	
+	pha
+	jsr	print_hex
+	pla
+	tay
+
 	lda	 #$64
 	sta	$de01 ;go to 'shut up' mode
 	sta	$4000	;this should be in RAM
@@ -479,30 +536,117 @@ do_test_4:
 	lda	#$03
 	cmp	$4000	;this should be in bank 3
 	bne	@banking_error
-	tya
-	pha
-	ldax #reset_cursor
-	jsr	print
-	pla	
-	pha
-	jsr	print_hex
-	pla
-	tay
 	iny
 	bne	@bank_loop
 	jmp ok
 
 		
 @banking_error:
-	pha
+	jmp failed
+	
+set_sram_bank:
+	and #$03	
+	sta	$de0e  ;set both banking bits to 0
+	cmp #$00
+	beq	@done
+	
+	cmp #$02
+	beq	:+
+	sta	$de0a  ;set banking bit 0 to 1
+:	
+
+	cmp #$01
+	beq	@done
+	
+	sta	$de0c  ;set banking bit 1 to 0
+@done:
+	rts
+	
+do_test_5:
+	lda #$06  ;
+    sta $D020 ;border
+
+	sta $de02 ;leave 'shut up' mode
+	
+	ldax #test_5
+	jsr	print
+
+	lda	#0
+	sta	loop_count
+	
+	lda	#1
+	sta	update_clock
+	
+@test_one_bank:	
 	ldax #reset_cursor
 	jsr	print
-	pla
+	lda	loop_count
 	jsr	print_hex
-	sec
+
+	lda	loop_count
+	jsr	set_sram_bank
+
+
+	lda	#$55
+	sta	test_val
+	jsr @test_one_val
+	bcc	:+
+:	
 	rts
-do_test_5:
-	;FIXME
+	jsr	get_key_if_available
+	beq	:+
+	jmp	interrupted
+:	
+	
+	lda	#$AA
+	sta	test_val
+	jsr @test_one_val
+	bcc	:+
+	rts
+:	
+	jsr	get_key_if_available
+	beq	:+
+	jmp	interrupted
+:	
+	inc loop_count
+	bne	@test_one_bank
+@done:	
+	jmp ok
+
+@test_one_val:
+;write single value to every byte in current bank from $4000..$9FFF
+
+	ldax #$4000
+	stax test_ptr
+
+	lda	test_val	
+@ramtest_loop_1:
+	sta	(test_ptr),y
+	iny
+	bne	@ramtest_loop_1
+	inc	test_ptr+1
+	ldx test_ptr+1
+	cpx	#$C0
+	bne	@ramtest_loop_1
+
+;read every byte in this bank from $4000..$9FFF, confirm it is the byte we just wrote
+	ldax #$4000
+	stax test_ptr	
+@ramtest_loop_2:
+	lda	(test_ptr),y
+	cmp	test_val
+	beq	:+
+	jmp	failed
+:	
+	iny
+	bne	@ramtest_loop_2
+	inc	test_ptr+1
+	ldx test_ptr+1
+	cpx	#$C0
+	bne	@ramtest_loop_2
+	clc
+	rts
+
 return_to_basic:
 	ldax #after_prompt
 	jsr print
@@ -866,10 +1010,12 @@ prompt:
 .byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "PRESS 0..3 TO RUN A SINGLE TEST",13
 .byte "SPACE TO CYCLE ALL TESTS",13
+.byte "RETURN TO CLEAR RESULTS",13
+.byte "RUN/STOP TO EXIT",13
 .byte 0
 after_prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte 0
 not_found: .byte "NO "
 w5100_found: .byte "W5100 FOUND AT $",0
@@ -895,4 +1041,5 @@ tick_counter: .res 1
 timeout_count: .res 1
 got_nmi: .res 1
 clockport_mode: .res 1
+test_val: .res 1
 address_inc_mode: .res 1
