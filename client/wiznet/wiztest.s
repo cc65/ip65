@@ -19,7 +19,7 @@ TX_BUFFER_START_PAGE=$40
 TIMER_POSITION_ROW=6
 TIMER_POSITION_COL=15
 TIMER_POSITION=$400+TIMER_POSITION_ROW*40+TIMER_POSITION_COL
-LAST_PROMPT_POSITION=$400+15*40+9
+LAST_PROMPT_POSITION=$400+16*40+9
 RESULTS_1_POS=$400+8*40+27
 
 ; load A/X macro
@@ -197,7 +197,10 @@ init:
 	jsr	print
 	ldax #test_5
 	jsr	print
-	lda	#$35
+	ldax #test_6
+	jsr	print
+
+	lda	#$36
 	sta	LAST_PROMPT_POSITION
 main:	
 	lda	#0
@@ -220,6 +223,9 @@ main:
 	sta RESULTS_1_POS+161
 	sta RESULTS_1_POS+200
 	sta RESULTS_1_POS+201
+	sta RESULTS_1_POS+240
+	sta RESULTS_1_POS+241
+
 	lda #$06  ;
     sta $D020 ;border
     lda #$00	;dark blue
@@ -250,7 +256,26 @@ main:
 	bcs	main
 	jsr	get_key_if_available
 	bne	main
+	lda clockport_mode
+	bne	@loop_test
+	
+	jsr	do_test_4
+	bcs	main
+	jsr	get_key_if_available
+	bne	@main
+	jsr	do_test_5
+	bcc	:+
+@main:	
+	jmp main
+:	
+	jsr	get_key_if_available
+	bne	@main
 
+	jsr	do_test_6
+	bcs	@main
+	jsr	get_key_if_available
+	bne	@main
+	
 	jmp	@loop_test
 @not_space:
 	cmp #'0'
@@ -294,6 +319,13 @@ main:
 	jsr	do_test_5
 	jmp	main
 @not_5:
+
+	cmp #'6'
+	bne	@not_6
+	jsr reset_clock
+	jsr	do_test_6
+	jmp	main
+@not_6:
 
 @not_valid_key:
   	lda $cb ;current key pressed
@@ -413,6 +445,16 @@ do_test_3:
 	lda #$02		;$0602 = interrupt register, socket 2
 	sta	WIZNET_ADDR_LO
 	lda #$FF
+	sta WIZNET_DATA_REG
+
+	lda #$0C		;$060C = destination address
+	sta	WIZNET_ADDR_LO
+	sta WIZNET_DATA_REG
+	inc	WIZNET_ADDR_LO
+	sta WIZNET_DATA_REG
+	inc	WIZNET_ADDR_LO
+	sta WIZNET_DATA_REG
+	inc	WIZNET_ADDR_LO
 	sta WIZNET_DATA_REG
 
 	lda	#0
@@ -553,22 +595,112 @@ set_sram_bank:
 	cmp #$02
 	beq	:+
 	sta	$de0a  ;set banking bit 0 to 1
+	inc	bank_bit_0
 :	
 
 	cmp #$01
 	beq	@done
 	
 	sta	$de0c  ;set banking bit 1 to 0
-@done:
+	inc	bank_bit_1
+
+@done:	
+
 	rts
-	
+
+
 do_test_5:
+	lda #$06  ;
+    sta $D020 ;border
+	lda	#0
+	sta	 loop_count
+	ldax #test_5
+	jsr	print
+
+@test_one_bank:	
+	ldax #reset_cursor
+	jsr	print
+	lda	loop_count
+	jsr	print_hex
+	
+	lda	loop_count
+	and	#$03	;mask bottom 2 bits
+	bne	:+
+	lda	loop_count
+	sta bank_0_loop_count
+:
+	sta $de02 ;leave 'shut up' mode
+	jsr	set_sram_bank
+	ldy	 #0
+	tya
+@write_loop:	
+	eor	loop_count
+	sta	$bf00,y	;last page of RAM
+	iny
+	bne	@write_loop
+
+
+;try to overwrite $df00
+;these writes should be ignored
+	ldy	 #0
+	tya
+@clobber_trampoline_loop:
+	sta	$df00,y
+	iny
+	bne	@clobber_trampoline_loop
+
+	
+;test that we can access this page from $df00
+;while SRAM is swapped in
+	ldy	 #0
+	tya
+@read_loop_with_ram_in:
+	eor	loop_count
+	cmp	$df00,y	;trampoline area
+	beq	:+	
+	jmp	failed
+:	
+	iny
+	bne	@read_loop_with_ram_in
+
+
+;test that we can access bank 0 page from $df00
+;when in shutup mode
+  	lda $de01
+	ora #1			;turn on clockport
+	sta $de01	
+	ldy	 #0
+	tya
+@read_loop:
+	eor bank_0_loop_count
+	cmp	$df00,y	;trampoline area
+	beq	:+	
+	pha
+	lda	$df00,y	;last page of RAM
+	jsr	print_hex
+	pla
+	jsr	print_hex
+
+	jmp	failed
+:	
+	iny
+	bne	@read_loop
+	
+	
+	inc loop_count
+	bne	@test_one_bank
+	jmp	ok
+	
+	
+	
+	
+do_test_6:
 	lda #$06  ;
     sta $D020 ;border
 
 	sta $de02 ;leave 'shut up' mode
 	
-	ldax #test_5
+	ldax #test_6
 	jsr	print
 
 	lda	#0
@@ -578,25 +710,49 @@ do_test_5:
 	sta	update_clock
 	
 @test_one_bank:	
-	ldax #reset_cursor
-	jsr	print
+	jsr print_loop_count
 	lda	loop_count
-	jsr	print_hex
-
-	lda	loop_count
+	lsr
+	lsr
 	jsr	set_sram_bank
 
 
-	lda	#$55
-	sta	test_val
-	jsr @test_one_val
-	bcc	:+
-:	
+	jsr @test_incrementing_values
+	bcc	:+	
 	rts
+:	
 	jsr	get_key_if_available
 	beq	:+
 	jmp	interrupted
 :	
+
+	inc loop_count
+	jsr print_loop_count
+	jsr @test_page_address_values
+	bcc	:+	
+	rts
+:	
+	jsr	get_key_if_available
+	beq	:+
+	jmp	interrupted
+:	
+
+	inc loop_count
+	jsr print_loop_count
+
+	lda	#$55
+	sta	test_val
+	jsr @test_one_val
+	bcc	:+	
+	rts
+:	
+	jsr	get_key_if_available
+	beq	:+
+	jmp	interrupted
+:	
+
+	inc loop_count
+	jsr print_loop_count
 	
 	lda	#$AA
 	sta	test_val
@@ -613,13 +769,14 @@ do_test_5:
 @done:	
 	jmp ok
 
+
 @test_one_val:
 ;write single value to every byte in current bank from $4000..$9FFF
 
 	ldax #$4000
 	stax test_ptr
 
-	lda	test_val	
+	lda	test_val
 @ramtest_loop_1:
 	sta	(test_ptr),y
 	iny
@@ -647,7 +804,85 @@ do_test_5:
 	clc
 	rts
 
+@test_incrementing_values:
+;write incrementing value to every byte in current bank from $4000..$9FFF
+
+	ldax #$4000
+	stax test_ptr
+
+@ramtest_loop_3:
+	tya
+	sta	(test_ptr),y
+	iny
+	bne	@ramtest_loop_3
+	inc	test_ptr+1
+	ldx test_ptr+1
+	cpx	#$C0
+	bne	@ramtest_loop_3
+
+;read every byte in this bank from $4000..$9FFF, confirm it is the byte we just wrote
+	ldax #$4000
+	stax test_ptr	
+@ramtest_loop_4:
+	tya
+	cmp	(test_ptr),y
+	beq	:+
+	jmp	failed
+:	
+	iny
+	bne	@ramtest_loop_4
+	inc	test_ptr+1
+	ldx test_ptr+1
+	cpx	#$C0
+	bne	@ramtest_loop_4
+	clc
+	rts
+
+@test_page_address_values:
+;write page address value to every byte in current bank from $4000..$9FFF
+
+	ldax #$4000
+	stax test_ptr
+	lda	test_ptr+1
+@ramtest_loop_5:
+	sta	(test_ptr),y
+	iny
+	bne	@ramtest_loop_5
+	inc	test_ptr+1
+	lda test_ptr+1
+	cmp	#$C0
+	bne	@ramtest_loop_5
+
+;read every byte in this bank from $4000..$9FFF, confirm it is the byte we just wrote
+	ldax #$4000
+	stax test_ptr	
+	lda	test_ptr+1
+@ramtest_loop_6:
+	cmp	(test_ptr),y
+	beq	:+
+	jmp	failed
+:	
+	iny
+	bne	@ramtest_loop_6
+	inc	test_ptr+1
+	lda test_ptr+1
+	cmp	#$C0
+	bne	@ramtest_loop_6
+	clc
+	rts
+
+print_loop_count:
+	ldax #reset_cursor
+	jsr	print
+	lda	loop_count
+	jmp	print_hex
+
 return_to_basic:
+	;go to shutup mode	by writing to $de01
+  	lda $de01
+	ora #1			;turn on clockport
+	sta $de01	
+
 	ldax #after_prompt
 	jsr print
 	sei
@@ -957,7 +1192,7 @@ reloc_length=*-reloc_start
 banner:
 .byte $93 ;CLS
 .byte $9a;
-.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.27"
+.byte $0d,"RR-NET MK3 DIAGNOSTICS 0.28"
 
 .include "timestamp.i"
 .byte $0d
@@ -1002,12 +1237,18 @@ test_4:
 test_5:
 .byte $13	;home
 .byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
-.byte "5) SRAM RD/WR TEST       :   "
+.byte "5) TRAMPOLINE TEST       :   "
+.byte 0
+test_6:
+.byte $13	;home
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte "6) SRAM RD/WR TEST       :   "
+
 .byte 0
 
 prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte "PRESS 0..3 TO RUN A SINGLE TEST",13
 .byte "SPACE TO CYCLE ALL TESTS",13
 .byte "RETURN TO CLEAR RESULTS",13
@@ -1015,7 +1256,7 @@ prompt:
 .byte 0
 after_prompt:
 .byte $13	;home
-.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
+.byte  $11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11,$11
 .byte 0
 not_found: .byte "NO "
 w5100_found: .byte "W5100 FOUND AT $",0
@@ -1043,3 +1284,6 @@ got_nmi: .res 1
 clockport_mode: .res 1
 test_val: .res 1
 address_inc_mode: .res 1
+bank_0_loop_count: .res 1
+bank_bit_0: .res 1
+bank_bit_1: .res 1
