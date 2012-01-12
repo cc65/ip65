@@ -119,8 +119,9 @@ are also set to indicate current connection state and error conditions (if any).
 	<td>none</td>
 	<td>POLL</td>
 </tr>
+<tr>
 	<td>TCPSEND</td>
-	<td>Send a string (up to 255 bytes) over a previously opened connection.Integer variables CO% and ER% ae aset to indicate current connection state and any error condition which may occur during the sending of the file. <i>NB - in the current implementation of Kipper BASIC, it is possible for data to arrive during a call to TCPSEND, which may not be passed through to the BASIC program.</i></td>
+	<td>Send a string (up to 255 bytes) over a previously opened connection.Integer variables CO% and ER% are set to indicate current connection state and any error condition which may occur during the sending of the file. <i>NB - in the current implementation of Kipper BASIC, it is possible for data to arrive during a call to TCPSEND, which may not be passed through to the BASIC program.</i></td>
 	<td><li>data (string)</td>
 	<td><li>TCPSEND"HELLO "+"WORLD"</td>
 </tr>
@@ -129,7 +130,17 @@ are also set to indicate current connection state and error conditions (if any).
 	<td>Send a file (of any length) over a previously opened connection. The file will be looked for on the current 'default' device, i.e. which ever drive was last accessed. Integer variables CO% and ER% ae aset to indicate current connection state and any error condition which may occur during the sending of the file. <i>NB - in the current implementation of Kipper BASIC, it is possible for data to arrive during a call to TCPSEND, which may not be passed through to the BASIC program.</i></td>
 	<td><li>filename (string)</td>
 	<td><li>TCPBLAT"GOPHERMAP.TXT"</td>
-
+</tr>
+<tr>
+	<td>UDPSEND</td>
+	<td>Send a string (up to 255 bytes) over UDP . There is no need to connect first </i></td>
+	<td>
+		<li>destination hostname&nbsp;or&nbsp;IP&nbsp;address&nbsp;(string)
+		<li>destination port&nbsp;number&nbsp;(1..65535)
+		<li>local port&nbsp;number&nbsp;(1..65535)
+		<li>data (string)
+	</td>
+	<td><li>UDPSEND"JAMTRONIX.COM",7,6464,"echo test"</td>
 </tr>
 
 </table>

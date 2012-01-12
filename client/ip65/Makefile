@@ -38,6 +38,7 @@ ETHOBJS= \
 	url.o \
 	arithmetic.o\
 	ip.o \
+	sntp.o \
 	icmp.o \
 	cifs.o \
 	udp.o

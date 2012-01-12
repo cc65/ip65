@@ -68,10 +68,7 @@ wizbobcart.prg: wizbobcart.bin cartheader.prg
 	cat cartheader.prg wizbobcart.bin > $@
 	
 wiztest.d64: wiztest.prg wizboot.prg wizflash.prg
-	ripxplore.rb -I CbmDos $@
-	ripxplore.rb -a wizboot.prg $@
-	ripxplore.rb -a wiztest.prg $@
-	ripxplore.rb -a	wizflash.prg $@
+	c1541  -format wiztest,wt d64 $@ -attach $@ -write wizboot.prg -write wiztest.prg -write wizflash.prg
 	
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64

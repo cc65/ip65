@@ -92,6 +92,14 @@ crunched_line      = $0200          ;Input buffer
 .import timer_read
 .import native_to_ascii
 .import ascii_to_native
+.import udp_send_dest
+.import udp_send_dest_port
+.import udp_send_src_port
+.import udp_send_len
+.import udp_send
+.import udp_add_listener
+.import udp_remove_listener
+.import udp_callback
 .zeropage
 temp:	.res 2
 temp2:	.res 2
@@ -1335,12 +1343,16 @@ tcpconnect_callback:
   sta connection_state
   rts
 @not_end_packet:
+
+  stax inbound_data_length
+set_packet_vars:
+
   jsr copymem
-  ldx   tcp_inbound_data_length+1
+  ldx   inbound_data_length+1
   beq @short_packet
   lda #$ff
 @short_packet:
-  lda   tcp_inbound_data_length
+  lda   inbound_data_length
 set_input_string:
   pha
   lda #'I'
@@ -1374,10 +1386,10 @@ set_input_string:
   lda #'I'+$80 
   ldx #'L'+$80 
   jsr find_var  
-  lda tcp_inbound_data_length+1
+  lda inbound_data_length+1
   sta (VARPNT),y  
   iny
-  lda tcp_inbound_data_length
+  lda inbound_data_length
   sta (VARPNT),y
 
   rts
@@ -1461,6 +1473,7 @@ tcpblat_keyword:
 @eof:
   and #$40      ; end of file?
   beq @readerror
+  beq @readerror
   lda #$00
   sty  tcp_send_data_len
   sta  tcp_send_data_len+1
@@ -1486,6 +1499,53 @@ tcpblat_keyword:
   lda #KPR_ERROR_FILE_ACCESS_FAILURE
   jmp @store_error
 
+;send udp packet
+
+udpsend_keyword:
+  ldax  #udp_send_dest
+  jsr get_ip_parameter
+  bcc @no_error
+  rts
+@no_error:  
+  jsr skip_comma_get_integer
+  stax udp_send_dest_port
+  
+  jsr skip_comma_get_integer
+  stax udp_send_src_port
+  jsr CHRGOT
+  jsr CHKCOM  ;make sure next char is a comma (and skip it)
+  jsr extract_string
+  inc $d020
+ 
+  ldy param_length
+  sty udp_send_len
+  ldy #0
+  sty udp_send_len+1
+  ldax #transfer_buffer
+  jsr udp_send
+
+  lda #0
+  sta ip65_error
+  clc
+  rts
+
+udplisten_keyword:
+  ldax	#udp_handler
+  stax udp_callback
+  jsr get_integer ;port number
+  stax port
+  jsr udp_remove_listener
+  ldax port
+  jsr udp_add_listener
+  bcc	@ok
+  ldax #too_many_listeners
+  jmp print_error
+@ok:
+ rts
+
+udp_handler:
+	inc $d020
+	rts
 evaluate:
 
   lda #$00  
@@ -1557,6 +1617,8 @@ dhcp_server_msg:
 tftp_server_msg:
 .byte "TFTP SERVER : ", 0
 
+too_many_listeners: 
+.byte "TOO MANY LISTENERS",0
 address_resolution:
 .byte "ADDRESS RESOLUTION",0
 
@@ -1604,8 +1666,10 @@ keywords:
   .byte "TCP",$A0,$F0  ;TCPLOSE - BASIC will replace CLOSE with $A0
   .byte "TCPBLAT",$F1
   .byte "MAC",$F2
-	.byte $00					;end of list
-HITOKEN=$F3
+  .byte "UDPS",$80,$F3  ;UDPSEND - BASIC will replace END with $80  
+  .byte "UDP",$9B,"EN",$F4 ;UDPLISTEN - BASIC will replace LIST with $9b
+  	.byte $00					;end of list
+HITOKEN=$F5
 
 ;
 ; Table of token locations-1
@@ -1630,6 +1694,8 @@ EF: .word tcpsend_keyword-1
 FO: .word tcpclose_keyword-1
 F1: .word tcpblat_keyword-1
 F2: .word mac_keyword-1
+F3: .word udpsend_keyword-1
+F4: .word udplisten_keyword-1
 
 .segment "SELF_MODIFIED_CODE"
 
@@ -1669,3 +1735,5 @@ connection_state: .res 1
 netcat_timeout: .res 1
 buffer_length: .res 2
 cursor_state: .res 1
+port: .res 2
+inbound_data_length: .res 2

@@ -33,7 +33,7 @@ all: \
 	testtftp.pg2 \
 	test_cart_api.prg \
 	test_vt100.prg \
-	testdottedquad.pg2 \
+	test_sntp.prg \
 	testdottedquad.prg \
 	test_tcp.prg \
 	test_xmodem.prg \
@@ -44,7 +44,8 @@ all: \
 	test_get_url.prg \
 	test_wiznet.prg \
 	test_parse_querystring.prg \
-	test_lancegs.pg2 \
+	test_sntp.prg \
+#	test_lancegs.pg2 \
 #	test_xmodem.d64 \
 #	httpd_test.d64 \
 #	ip65test.dsk \
@@ -70,7 +71,6 @@ test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.
 
 test_xmodem.o: test_xmodem.s ../ip65/xmodem.s
 	$(AS) $(AFLAGS) $<
-
 
 test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
 	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  

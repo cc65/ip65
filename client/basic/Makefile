@@ -32,18 +32,11 @@ kipperbasv20.prg: kipperbasv20.o $(IP65LIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/
                                       
 
 bails.d64: bails.prg 
-#	ripxplore.rb -r -e kbload $@ -o kbload
-#	ripxplore.rb -r -e kbapp $@ -o kbapp
-#	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
-	ripxplore.rb $@  -a bails.prg
+	c1541  -format bails,bb d64 $@ -attach $@ -write bails.prg
 
-kipperbas.d64: kipperbas.prg chat
-#	ripxplore.rb -r -e kbload $@ -o kbload
-#	ripxplore.rb -r -e kbapp $@ -o kbapp
-	ripxplore.rb $@ -I CbmDos -a kipperbas.prg
-#	ripxplore.rb $@  -a kipperbas.prg
-	cp chat autoexec.bas
-	ripxplore.rb $@  -a autoexec.bas -t C64Prg
+kipperbas.d64: kipperbas.prg 
+	c1541  -format kipperbas,kb d64 $@ -attach $@ -write  kipperbas.prg
+	
 clean:
 	rm -f *.o *.bin *.map *.prg
 

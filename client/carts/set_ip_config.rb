@@ -62,13 +62,14 @@ end
   end
   option_offset=start_of_kipper_cart_image+offsets[0]-7
   option_length=offsets[1]
-  
+
   if option_length==6 then
     if value.downcase=="auto" then
       require 'digest/md5'
-      digest = Digest::MD5.digest(Time.now.to_s)
+      digest = Digest::MD5.digest(Time.now.to_s).bytes.to_a
       mac=[0x00,0x80,0x10,digest[0],digest[1],Kernel.rand(255)]
     else
+     
       split_values=value.split(":")
       if (split_values.length!=6) || (split_values[5].nil?) then
         puts "'#{value}' is not a valid MAC address. (e.g. 12:34:56:78:ab:cd)"

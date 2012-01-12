@@ -56,16 +56,12 @@ upnatom.prg: upnatom.o  $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.c
 
 upnatom.d64:  upnatom.prg url.cfg
 	cp upnatom.prg autoexec.prg
-	ripxplore.rb --init CbmDos upnatom.d64 -a autoexec.prg
-	ripxplore.rb  upnatom.d64 -a url.cfg -t C64Seq
-
+	c1541  -format upnatom,up d64 $@ -attach $@  -write ../carts/kipperkart.prg "kipperkart.prg" -write autoexec.prg -write "url.cfg" "url.cfg,s"
 
 
 webnoter.d64:  webnoter.prg 
 	cp webnoter.prg autoexec.prg
-	ripxplore.rb --init CbmDos webnoter.d64 -a ../carts/kipperkart.prg
-	ripxplore.rb webnoter.d64 -a autoexec.prg
-
+	c1541  -format webnoter,wn d64 $@ -attach $@ -write ../carts/kipperkart.prg "kipperkart.prg" -write autoexec.prg 
 
 httpd.prg: httpd.asm
 	$(DA) httpd.asm -ohttpd.prg
@@ -74,9 +70,8 @@ httpd.prg: httpd.asm
 
 %.d64:  %.prg 
 	cp $*.prg autoexec.prg
-	ripxplore.rb --init CbmDos $*.d64 -a autoexec.prg
-
-
+	c1541  -format kipper,kp d64 $@ -attach $@ -write autoexec.prg 
+	
 clean:
 	rm -f *.o *.pg2 *.prg *.map upnatom.d64
 

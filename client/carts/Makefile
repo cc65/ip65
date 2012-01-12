@@ -103,9 +103,7 @@ kipperkart_rr.bin: kipperkart.bin
 	ruby fix_cart.rb $@ 32768
   
 kipperdisk.d64: kipperkart.prg kipperterm.prg kipperkart.prg kippergo.prg
-	ripxplore.rb --init CbmDos $@ -a kipperkart.prg
-	ripxplore.rb $@ -a kipperterm.prg
-	ripxplore.rb $@ -a kippergo.prg
+	c1541  -format kipperdisk,kd d64 $@ -attach $@ -write  kipperkart.prg -write  kipperterm.prg -write kippergo.prg
 	cp $@ ../../server/boot/
 
 bobcart.bin: bobcart.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64_8kcart.cfg
@@ -132,7 +130,7 @@ telnetd.prg: telnetd.bin cartheader.prg
   		
 d64_upload.d64: d64_upload.prg
 	cp d64_upload.prg ../../server/boot/
-	ripxplore.rb --init CbmDos $@ -a d64_upload.prg
+	c1541  -format d64upload,kd d64 $@ -attach $@ -write  d64_upload.prg
   
 clean:
 	rm -f *.o *.bin *.map *.prg *.pg2 *.dsk *.d64
