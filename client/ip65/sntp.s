@@ -14,7 +14,6 @@ MAX_SNTP_MESSAGES_SENT=8
 .import ip65_process
 .import ip65_error
 
-
 .import udp_add_listener
 .import udp_remove_listener
 
