@@ -38,11 +38,11 @@ kt2wiz.prg: kipperterm2.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c6
 
 
 kipperterm2.d64: kipperterm2.prg addresses.txt abe.bas
-	c1541  -format kipperterm2,k2 d64 $@ -attach $@ -write kipperterm2.prg -write "addresses.txt " "addresses.txt,s" -write abe
+	c1541  -format kipperterm2,k2 d64 $@ -attach $@ -write kipperterm2.prg -write "addresses.txt" "addresses.txt,s" -write abe
 	cp kipperterm2.d64 ../../server/boot
 
 kt2wiz.d64: kt2wiz.prg addresses.txt abe.bas
-	c1541  -format kt2wiz,kw d64 $@ -attach $@ -write kt2wiz.prg -write "addresses.txt " "addresses.txt,s" -write abe
+	c1541  -format kt2wiz,kw d64 $@ -attach $@ -write kt2wiz.prg -write "addresses.txt" "addresses.txt,s" -write abe
 	cp kt2wiz.d64 ../wiznet/
  	
 clean:
