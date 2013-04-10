@@ -43,6 +43,14 @@ temp_bin: .res 2
 temp_bcd: .res 3
 temp_ptr: .res 2
 .code
+
+ .macro print_hex_double arg
+	lda #>(.right (.tcount (arg)-1, arg))
+	jsr	print_hex
+	lda #<(.right (.tcount (arg)-1, arg))
+	jsr	print_hex
+.endmacro
+
 .macro print_driver_init
   ldax #eth_driver_name
   jsr print_ascii_as_native

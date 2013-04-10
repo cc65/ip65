@@ -1,8 +1,8 @@
 
-.PHONY: ip65 drivers test clean distclean kipperterm2  examples carts  basic wiznet
+.PHONY: ip65 drivers test clean distclean kipperterm2  examples carts  basic wiznet a2
 
 
-all: ip65 drivers test carts  examples basic kipperterm2 wiznet
+all: ip65 drivers test carts  examples basic kipperterm2 wiznet a2
 
 ip65:
 	make -C ip65 all
@@ -13,7 +13,8 @@ drivers:
 examples:
 	make -C examples all
 
-
+a2:
+	make -C a2 all
 
 test:
 	make -C test TARGET=$(TARGET) all

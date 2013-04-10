@@ -317,7 +317,7 @@ tftp_download_ok_msg:
 
 startup_msg: .byte "UTHERNET NETWORK BOOT CLIENT V"
 
-.include "..\nb65\nb65_version.i"
+.include "../inc/version.i"
 .byte 0
 
 

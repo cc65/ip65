@@ -48,7 +48,7 @@ all: \
 #	test_lancegs.pg2 \
 #	test_xmodem.d64 \
 #	httpd_test.d64 \
-#	ip65test.dsk \
+	ip65test.dsk \
 #	test_disk_io.d64 \
 
 
@@ -111,10 +111,10 @@ httpd_test.d64:  test_httpd.prg index.html file1.html
 	ripxplore.rb httpd_test.d64 -a file1.html -t C64Seq
 
 
-ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 test_lancegs.pg2
-		ripxplore.rb --init AppleDos ip65test.dsk -a test_lancegs.pg2 -t AppleBinary
-#		ripxplore.rb --init BeautifulBoot ip65testb.dsk -a test_lancegs.pg2 -t AppleBinary
-#		ripxplore.rb ip65test.dsk -a testtftp.pg2 -t AppleBinary
+ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 #test_lancegs.pg2
+
+#		ripxplore.rb --init AppleDos ip65test.dsk -a test_lancegs.pg2 -t AppleBinary
+		ripxplore.rb --init BeautifulBoot ip65testb.dsk -a testtftp.pg2 -t AppleBinary
 #		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
 #		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    
 	

@@ -8,12 +8,11 @@ INCFILES=\
   ../inc/commonprint.i\
   ../inc/net.i\
   ../inc/menu.i\
-  ../inc/nb65_constants.i\
-  ../nb65/nb65_version.i\
+  ../inc/kipper_constants.i
 
 IP65LIB=../ip65/ip65.lib
 
-APPLE2PROGLIB=../drivers/apple2prog.lib
+APPLE2PROGLIB=../drivers/a2uther.lib
   
 %.o: %.s $(INCFILES) $(APPLE2PROGLIB) 
 	$(AS) $(AFLAGS) $<
