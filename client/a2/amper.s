@@ -1,6 +1,8 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/a2const.i"
+  .include "../inc/net.i"
+  
   .import exit_to_basic  
   .import cfg_get_configuration_ptr
 
@@ -28,21 +30,51 @@
 
 init:
 
-	
-	ldax #END_OF_BSS
-	stax TXTTAB
-    print_hex_double #END_OF_BSS
-	ldax #start_message
-	jsr	print
+
+  ;BASIC keywords installed, now bring up the ip65 stack
+    
+	jsr ip65_init
+  	bcc @init_ok
+  	ldax #@no_nic
+  	jsr	print
+@reboot:  
+	jmp exit_to_basic
+@no_nic:
+  .byte "NO NETWORK CARD FOUND - UNINSTALLING",0  
+@install_msg:
+  .byte " FOUND",13,"APPLESOFT ON ALES IN $801-$"
+
+  .byte 0
+@init_ok:
+	;print the banner
+  	ldax #eth_driver_name
+  	jsr print_ascii_as_native
+	ldax #@install_msg
+	jsr	print	
+	print_hex_double #END_OF_BSS	
+    jsr	print_cr  
+    
+    ;take over the ampersand vector
+    ldax AMPERSAND_VECTOR+1
+    stax old_amper_handler		
 	ldax #amper_handler
 	stax  AMPERSAND_VECTOR+1
-	jsr	SCRTCH
+
+	ldax #END_OF_BSS
+	stax TXTTAB
+	jsr	SCRTCH		;reset BASIC now we have updated the start address 
+		
 	jmp exit_to_basic
 	
-	
-start_message: .byte "AMPER ON ALES",13,0
-
 amper_handler:
+		
+
+exit_to_old_handler:
+	jmp	$ffff
+old_amper_handler=exit_to_old_handler+1
+	
 	lda #'*'
 	jmp	print_a
+	
+
 	
