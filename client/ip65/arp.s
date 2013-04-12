@@ -30,10 +30,9 @@
 	.import timer_read
 	.import timer_timeout
   
-	.segment "IP65ZP" : zeropage
-
-ap:		.res 2
-
+	.importzp copy_src
+	ap=copy_src
+	
 ARP_TIMEOUT_MS=100
 
 	.bss

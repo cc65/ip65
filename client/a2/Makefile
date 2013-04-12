@@ -35,15 +35,15 @@ drivers:
 	tokenize_asoft < $*.applesoft > $*.bas
 
 %.pg2: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -vm --mapfile $*.map -C ../cfg/a2bin.cfg -o $*.pg2  $(AFLAGS) $< $(IP65LIB) $(A2UTHERLIB)
+	$(LD) -vm --mapfile $*.map -C ../cfg/a2bin.cfg -o $*.pg2  $(AFLAGS) $< $(IP65TCPLIB) $(A2UTHERLIB)
 
-amper.dsk: autoexec.pg2 autoexec.bas amper.pg2
+amper.dsk: autoexec.bas amper.pg2 hello.bas
 		ripxplore.rb amper.dsk --init AppleDos
-		ripxplore.rb amper.dsk -a autoexec.pg2 -t AppleBinary
 		ripxplore.rb amper.dsk -a amper.pg2 -t AppleBinary
-		cp autoexec.bas hello
+		cp hello.bas hello
 		ripxplore.rb amper.dsk -a hello -t Applesoft
 		rm hello
+		ripxplore.rb amper.dsk -a autoexec.bas -t Applesoft
 	
 clean:
 	rm -f *.o *.pg2 *.map *.lst 

@@ -31,7 +31,6 @@ MAX_SNTP_MESSAGES_SENT=8
 .import check_for_abort_key
 .import timer_read
   
-.segment "IP65ZP" : zeropage
 
   
 .data

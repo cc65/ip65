@@ -701,7 +701,7 @@ check_current_connection:
 ; none but if connection was found, an outbound message may be created, overwriting eth_outp
 ; also tcp_state and other tcp variables may be modified
 tcp_process:
-  
+
   lda #tcp_flag_RST
   bit tcp_inp+tcp_flags_field
   beq @not_reset

@@ -2,15 +2,8 @@
 
 
 	.export copymem
-	.exportzp copy_src
-	.exportzp copy_dest
-
-
-	.segment "IP65ZP" : zeropage
-
-; pointers for copying
-copy_src:	.res 2			; source pointer
-copy_dest:	.res 2			; destination pointer
+	.importzp copy_src
+	.importzp copy_dest
 
 
 	.bss

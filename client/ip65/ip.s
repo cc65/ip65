@@ -8,7 +8,6 @@
 	.export ip_inp
 	.export ip_outp
 	.export ip_broadcast
-	.exportzp ip_cksum_ptr
 	.exportzp ip_ver_ihl
 	.exportzp ip_tos
 	.exportzp ip_len
@@ -58,12 +57,11 @@
   .import tcp_process
 .endif
 	.importzp copy_src
+	.importzp copy_dest
+	.exportzp ip_cksum_ptr
+	ip_cksum_ptr=copy_dest
 
 
-	.segment "IP65ZP" : zeropage
-
-; checksum
-ip_cksum_ptr:	.res 2		; pointer to data to be checksummed
 
 
 .bss
@@ -140,6 +138,7 @@ ip_process:
 	jsr verifyheader		; ver, ihl, len, frag, checksum
 	bcc @ok
 @badpacket:
+
 	sec
 	rts
 @ok:
@@ -194,6 +193,22 @@ verifyheader:
 :	lda ip_inp + ip_frag + 1
 	bne @badpacket
 
+
+    ;it is possible that the checksum has not been set in inbound packets
+    ;this is especially likely to happen if we are running in an emulator on a host machine that
+    ;does checksum offloading (i.e. where the NIC calculates the checksum) and then
+    ;try to send traffic from the host to the emulated computer (e.g. ip65 running on AppleWin or VICE)
+    ;in this case the traffic will be seen by the emulated computer BEFORE the host NIC
+    ;has calculated the checksum
+    ;so if the checksum field in the inbound packet is 0000, ignore it
+    lda ip_inp+10
+	bne	@has_cksum
+    lda ip_inp+11
+	bne	@has_cksum
+	clc
+	rts
+
+@has_cksum:
 	ldax #ip_inp			; verify checksum
 	stax ip_cksum_ptr
 	ldax #20
@@ -206,6 +221,7 @@ verifyheader:
 	clc
 	rts
 @badpacket:
+	brk
 	inc bad_header
 	bne :+
 	inc bad_header + 1

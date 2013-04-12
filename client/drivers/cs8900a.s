@@ -33,7 +33,8 @@
 	.import cs_tx_len
 
 	.import cfg_mac
-
+	.importzp eth_packet
+	
   .import ip65_error
 
 	.macro write_page page, value
@@ -44,9 +45,6 @@
 	.endmacro
 
 
-	.segment "IP65ZP" : zeropage
-
-eth_packet:	.res 2
 
 
 	

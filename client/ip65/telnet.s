@@ -45,10 +45,7 @@
 .import telnet_menu
 .import telnet_on_connection
 
-.segment "IP65ZP" : zeropage
-
-; pointer for moving through buffers
-buffer_ptr:	.res 2			; source pointer
+.importzp buffer_ptr
 
 .code
 

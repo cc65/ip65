@@ -23,7 +23,8 @@
 	.import eth_outp_len
 
 	.import cfg_mac
-
+	.importzp eth_packet
+	
 ; LANceGS hardware addresses
 ethbsr		:= $c00E	; Bank select register             R/W (2B)
 
@@ -59,10 +60,6 @@ ethmt		:= $c000	; Multicast table                  R/W (8B)
 ethmgmt		:= $c008	; Management interface             R/W (2B)
 ethrev		:= $c00A	; Revision register                R/W (2B)
 ethercv		:= $c00C	; Early RCV register               R/W (2B)
-
-	.segment "IP65ZP" : zeropage
-
-eth_packet:	.res 2
 
 	.data
 

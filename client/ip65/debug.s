@@ -16,12 +16,7 @@
 	.import eth_outp, eth_outp_len
 	.import ip_outp
 	.import udp_outp
-
-
-	.segment "IP65ZP" : zeropage
-
-cptr:	.res 2
-
+	.importzp copy_src
 
 	.code
 
@@ -113,7 +108,7 @@ console_out	= $ffd2
 ;inputs: AX = address of (null terminated) string to print
 ;outputs: none
 console_strout:
-	stax cptr
+	stax copy_src
 
 	pha
 	txa
@@ -121,7 +116,7 @@ console_strout:
 	tya
 	pha
 	ldy #0
-:	lda (cptr),y
+:	lda (copy_src),y
 	beq @done
 	jsr console_out
 	iny

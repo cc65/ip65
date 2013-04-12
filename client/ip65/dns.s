@@ -37,9 +37,8 @@
   .import check_for_abort_key
   .import timer_read
   
-	.segment "IP65ZP" : zeropage
+  .importzp dns_hostname
 
-  dns_hostname: .res 2
   
 	.bss
 

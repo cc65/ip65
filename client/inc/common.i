@@ -18,6 +18,18 @@ COMMON__I__ = 1
 	.endmacro	
 
 
+; load A/y macro
+	.macro lday arg
+	.if (.match (.left (1, arg), #))	; immediate mode
+	lda #<(.right (.tcount (arg)-1, arg))
+	ldy #>(.right (.tcount (arg)-1, arg))
+	.else					; assume absolute or zero page
+	lda arg
+	ldy 1+(arg)
+	.endif
+	.endmacro
+
+
 .macro phax
   pha
   txa

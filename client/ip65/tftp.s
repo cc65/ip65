@@ -11,7 +11,6 @@
   .include "../inc/kipper_constants.i"
 .endif
 
-  .exportzp tftp_filename
   .export tftp_load_address
   .export tftp_ip
   .export tftp_download
@@ -51,10 +50,7 @@
 
   .import timer_read
   
-	.segment "IP65ZP" : zeropage
-
-tftp_filename: .res 2 ;name of file to d/l or filemask to get directory listing for
-  
+  .importzp tftp_filename
 	.bss
 
 ;packet offsets

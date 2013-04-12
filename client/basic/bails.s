@@ -954,7 +954,6 @@ yield_keyword:
   .endif
   jmp httpd_start
   
-gosub:
     
 bang_keyword:
 	jsr extract_string
