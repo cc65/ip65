@@ -17,6 +17,7 @@
 
   .importzp copy_dest
   .importzp buffer_ptr
+  .importzp scratch_ptr
 
   .import http_parse_request
   .import http_get_value
@@ -264,7 +265,9 @@ httpd_handler:
   stax httpd_port_number
   tsx
   stx top_of_stack
-  
+  ldax #__http_variables_buffer
+  stax http_variables_buffer
+
   ldax #listening
   jsr print
   ldax  #cfg_ip
@@ -392,8 +395,12 @@ http_callback:
   cmp #0
   bne @look_for_eol 
   rts
-  
-  
+        
+send_buffer:    
+  ldax output_buffer_length
+  stax tcp_send_data_len
+  ldax httpd_io_buffer  
+  jsr tcp_send
 
 reset_output_buffer:
   ldax httpd_io_buffer  
@@ -403,21 +410,13 @@ reset_output_buffer:
   sta output_buffer_length
   sta output_buffer_length+1 
   rts
-
-        
-send_buffer:    
-  ldax output_buffer_length
-  stax tcp_send_data_len
-  ldax httpd_io_buffer  
-  jsr tcp_send
-  jmp reset_output_buffer
  
 
 emit_string:
-	stax	copy_src
+	stax	scratch_ptr
 	ldy	#0
 @next_byte:
-	lda	(copy_src),y
+	lda	(scratch_ptr),y
 	beq	@done
 	jsr	xmit_a
 	iny
@@ -426,15 +425,48 @@ emit_string:
 	rts
 
 got_http_request:
+
   jsr http_parse_request  
+ 
   ldax #path
   jsr print
   lda #$02
   jsr http_get_value
-  stax copy_src
+  stax scratch_ptr
   jsr print
   jsr print_cr
+ 
+  ldy #0
+@find_null:  
+  lda (scratch_ptr),y
+  beq	@found_null
+  iny
+  bne	@find_null
+@found_null:
+  sty param_length
+    
+  lda	#'P'
+  sta VARNAM
+  lda	#'A'+$80  
+  sta VARNAM+1
   
+  jsr GETVAR		;find the variable of this name (or else make a blank one)
+  lda param_length
+  jsr GETSPA		;create space in the string table of appropriate length
+  ldy #$00       	;set up string variable pointer
+  sta (VARPNT),Y    ;string length
+  iny 
+  lda  FRESPC		;lo byte of area just reserved
+  sta (VARPNT),Y
+  iny 
+  lda  FRESPC+1		;hi byte of area just reserved
+  sta (VARPNT),Y 
+
+  ldx scratch_ptr
+  ldy scratch_ptr+1
+  lda param_length
+  jsr MOVSTR
+
   ;now restore stack to how it was when &HTTPD was called, and return to BASIC
   ldx top_of_stack	
   txs
@@ -471,7 +503,7 @@ send_header:
 	ldax #content_type_buffer
 	jsr	emit_string  
 	ldax 	#end_of_header
-	jmp	emit_string			
+	jsr	emit_string			
 
 flush_handler:  
 	lda output_buffer_length
@@ -595,7 +627,6 @@ xmit_a_ptr:
 
 .bss 
   
-transfer_buffer: .res 256
 param_length: .res 1
 ping_counter: .res 1
 handler_address: .res 2
@@ -610,5 +641,6 @@ tcp_buffer_ptr: .res 2
 top_of_stack: .res 1
 polling_counter: .res 1
 string_ptr: .res 1
+transfer_buffer: .res 256
+__http_variables_buffer: .res 256; temp buffer for storing variables
 __httpd_io_buffer: .res 1024 ;temp buffer for storing inbound requests.
-
