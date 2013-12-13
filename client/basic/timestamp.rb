@@ -1,1 +1,0 @@
-puts Time.now.strftime(".byte \" (%Y-%m-%d)\"")

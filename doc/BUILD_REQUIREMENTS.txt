@@ -1,9 +1,0 @@
-- ruby
-	http://www.ruby-lang.org/en/downloads/
-	You may also need: [sudo] gem install archive-zip
-- ca65
-	http://www.cc65.org
-- ripxplore.rb >=0.7.0
-	http://rubyforge.org/frs/?group_id=6922
-	To install: [sudo] gem install ripxplore
-- GNU make or similar

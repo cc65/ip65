@@ -1,9 +1,0 @@
-redo directory listing code (not hardcoded to 1541 disk format)
-scrollback buffer
-log session to disk
-punter protocol
-tftp individual files
-allow changing of default drive from telnet menu
-send dos command to current drive
-
-

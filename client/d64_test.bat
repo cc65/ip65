@@ -1,1 +1,0 @@
-start c:\temp\WinVICE-2.1\x64.exe -cart8 nb65\nb65_std_cart.bin nb65\d64_upload.d64
