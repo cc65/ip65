@@ -1,0 +1,6 @@
+CONTRIBUTORS
+
+Jonno Downes - current maintainer of ip65, author of layers 4-7 (dhcp,dns,tcp,telnet, http, gopher)
+Glenn Holmer - icmp enhancements, bugfixes
+Per Olofsson - initial creator of ip65, layers 1-3 (eth,arp,ip,icmp,udp)
+Lars Stollenwerk - vt100 emulation 
