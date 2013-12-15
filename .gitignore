@@ -1,0 +1,7 @@
+*.bin
+*.d64
+*.dsk
+*.lib
+*.map
+*.o
+*.prg
