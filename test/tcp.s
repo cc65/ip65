@@ -72,7 +72,10 @@ get_next_byte:
 .code
 
 init:
-  
+
+  ;switch to lower case charset
+  lda #23
+  sta $d018
 
   ldax  #$1234
   stax acc16
@@ -84,7 +87,6 @@ init:
   ldax  #$28
   jsr  test_sub_16_16
 
-  rts
   ldax  #$ff34
   stax acc16
   ldax  #$1235

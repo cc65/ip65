@@ -4,8 +4,12 @@
   
   .import exit_to_basic  
   
-  .import parse_dotted_quad
-  .import dotted_quad_value
+  .import dns_set_hostname
+  .import dns_resolve
+  .import dns_ip
+  .import dns_status
+  .import cfg_get_configuration_ptr
+  
   
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
@@ -37,84 +41,107 @@ basicstub:
 .code
 
 init:
-    
+
+  ;switch to lower case charset
+  lda #23
+  sta $d018
+
   jsr print_cr
+  jsr print_ip_config
+  init_ip_via_dhcp 
+;  jsr overwrite_with_hardcoded_dns_server
+  jsr print_ip_config
   
-  ldax #dotted_quad_1
-  jsr test_dotted_quad_string  
+  ldax #hostname_1
+  jsr do_dns_query  
 
-  ldax #dotted_quad_2
-  jsr test_dotted_quad_string  
+  ldax #hostname_2
+  jsr do_dns_query  
 
-  ldax #dotted_quad_3
-  jsr test_dotted_quad_string  
+  ldax #hostname_3
+  jsr do_dns_query  
 
-  ldax #dotted_quad_4
-  jsr test_dotted_quad_string  
+  ldax #hostname_4
+  jsr do_dns_query  
 
-  ldax #dotted_quad_5
-  jsr test_dotted_quad_string  
+  ldax #hostname_5
+  jsr do_dns_query  
 
-  ldax #dotted_quad_6
-  jsr test_dotted_quad_string  
-
-  ldax #dotted_quad_7
-  jsr test_dotted_quad_string  
+  ldax #hostname_6
+  jsr do_dns_query  
 
   jmp exit_to_basic
 
-test_dotted_quad_string:
-  stax  temp_ax
+
+do_dns_query:
+  pha
   jsr print
+  lda #' '
+  jsr print_a
   lda #':'
   jsr print_a
   lda #' '
   jsr print_a
-  ldax  temp_ax
-  jsr parse_dotted_quad   
-  bcs @error
-  ldax #dotted_quad_value
+  pla
+  jsr dns_set_hostname
+  jsr dns_resolve
+  bcc :+
+  ldax #dns_lookup_failed_msg
+  jsr print
+  jmp @print_dns_status
+:  
+  ldax #dns_ip
   jsr print_dotted_quad
+@print_dns_status:  
+  jsr print_cr
+  lda dns_status
+  jsr print_hex
+  lda dns_status+1
+  jsr print_hex
   jsr print_cr
   rts
 
-@error:
-  ldax  #failed_msg
-  jsr print
-  jsr print_cr
+overwrite_with_hardcoded_dns_server:
+  ldx #3
+:
+  lda hardcoded_dns_server,x
+  sta cfg_dns,x
+  dex
+  bpl :-
   rts
-  
-  .bss
-  temp_ax: .res 2
-  
+
+
+
 	.rodata
 
 
-dotted_quad_1:
-  .byte "1.1.1.1",0 ;should work
+hostname_1:
+  .byte "SLASHDOT.ORG",0          ;this should be an A record
 
-dotted_quad_2:
-  .byte "GOOBER",0  ;should fail
+hostname_2:
+  .byte "VICTA.JAMTRONIX.COM",0   ;this should be a CNAME
 
-dotted_quad_3:
-  .byte "255.255.255.0",0     ;should work
+hostname_3:
+  .byte "WWW.JAMTRONIX.COM",0     ;this should be another CNAME
 
-dotted_quad_4:
-  .byte "111.222.333.444",0   ;should fail 
+hostname_4:
+  .byte "FOO.BAR.BOGUS",0         ;this should fail
 
-dotted_quad_5:   
-  .byte "111.22.3",0  ; should fail
+hostname_5:                       ;this should work (without hitting dns)
+  .byte "111.22.3.4",0
 
-dotted_quad_6:   
-  .byte "111.22.3.4",0 ; should work
-  
-dotted_quad_7:   
-  .byte "3.4.5.6X",0 ; should fail
+hostname_6:                       ;make sure doesn't get treated as a number
+  .byte "3COM.COM",0
+
+hardcoded_dns_server:
+;.byte 61,9,195,193 
+;.byte 64,127,100,12
+.byte 205,171,3,65
+.byte 69,111,95,106 
 
 
 
-
-;-- LICENSE FOR testdottedquad.s --
+;-- LICENSE FOR testdns.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

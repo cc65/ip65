@@ -54,7 +54,7 @@ init:
   jsr test_url_download
   
   ldax #url_2
-  jsr test_url_download
+;  jsr test_url_download
     
   rts
 

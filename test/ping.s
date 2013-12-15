@@ -37,6 +37,11 @@ basicstub:
 .code
 
 init:
+
+  ;switch to lower case charset
+  lda #23
+  sta $d018
+
   jsr print_cr
   init_ip_via_dhcp 
   jsr print_ip_config

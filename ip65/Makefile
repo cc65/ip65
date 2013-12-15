@@ -2,11 +2,9 @@ AS=ca65
 LD=ld65
 AFLAGS=
 
-
 # ip65.lib : minimal IP stack (UDP only)
 # ip65_tcp.lib : full featured TCP/IP stack
 # ip65_wiznet.lib : hybrid stack for use with the w5100 chip : UDP,ICMP & ARP is done on host, TCP is on w5100
-
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
@@ -14,8 +12,7 @@ AFLAGS=
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-
-ETHOBJS= \
+ETHOBJS=\
 	copymem.o \
 	config.o \
 	timer.o \
@@ -42,7 +39,7 @@ ETHOBJS= \
 	icmp.o \
 	cifs.o \
 	udp.o
-  
+
 all: ip65.lib ip65_tcp.lib ip65_wiznet.lib
 
 ip65.lib: $(ETHOBJS) function_dispatcher.s 
@@ -68,7 +65,6 @@ clean:
 	rm -f ip65.lib
 	rm -f ip65_tcp.lib
 	rm -f ip65_wiznet.lib
-
 
 distclean: clean
 	rm -f *~

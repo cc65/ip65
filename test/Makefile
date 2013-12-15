@@ -4,8 +4,6 @@ LD=ld65
 CFLAGS=-Oirs -t $(TARGET)
 AFLAGS=
 
-
-
 IP65LIB=../ip65/ip65.lib
 IP65TCPLIB=../ip65/ip65_tcp.lib
 C64RRNETLIB=../drivers/c64rrnet.lib
@@ -15,42 +13,43 @@ A2UTHERLIB=../drivers/a2uther.lib
 A2LANCEGSLIB=../drivers/a2lancegs.lib
 VIC20RRNETLIB=../drivers/vic20rrnet.lib
 
-
 INCFILES=\
   ../inc/common.i\
   ../inc/commonprint.i\
   ../inc/net.i\
 
-all: \
+all: prg bin
+
+prg: \
 	ip65 \
 	drivers \
-	test_getc.prg \
-	testdns.prg \
-	test_cifs.prg \
-	test_disk_io.prg \
-	testdns.pg2 \
-	testtftp.prg \
-	testtftp.pg2 \
-	test_cart_api.prg \
-	test_vt100.prg \
-	test_sntp.prg \
-	testdottedquad.prg \
-	test_tcp.prg \
-	test_xmodem.prg \
-	test_vic20.prg \
-	test_httpd.prg \
-	test_parser.prg \
-	test_ping.prg \
-	test_get_url.prg \
-	test_wiznet.prg \
-	test_parse_querystring.prg \
-	test_sntp.prg \
-#	test_lancegs.pg2 \
-#	test_xmodem.d64 \
-#	httpd_test.d64 \
-	ip65test.dsk \
-#	test_disk_io.d64 \
+	cartapi.prg \
+	cifs_tcp.prg \
+	diskio.prg \
+	dns.prg \
+	dottedquad.prg \
+	getc.prg \
+	geturl_tcp.prg \
+	httpd.prg \
+	parsequerystring.prg \
+	parser_tcp.prg \
+	ping_tcp.prg \
+	sntp.prg \
+	tcp_tcp.prg \
+	tftp.prg \
+	vic20.prg \
+	vt100.prg \
+	wiznet.prg \
+	xmodem_tcp.prg
 
+bin: \
+	ip65 \
+	drivers \
+	dns.bin \
+	dottedquad.bin \
+	lancegs.bin \
+	tcp_tcp.bin \
+	tftp.bin
 
 ip65:
 	make -C ../ip65 all
@@ -58,81 +57,55 @@ ip65:
 drivers:
 	make -C ../drivers all
 
+d64: ip65.d64
+
+dsk: ip65.dsk
+
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  $*.map -vm -C ../cfg/c64prg.cfg -o  $*.prg  $(AFLAGS) $< $(IP65LIB) $(C64RRNETLIB)  
+	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64RRNETLIB)
 
+%_tcp.prg: %.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64RRNETLIB)
 
-test_tcp.prg: test_tcp.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_tcp.map -vm -C ../cfg/c64prg.cfg -o  test_tcp.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+%.bin: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2UTHERLIB)
 
-test_xmodem.o: test_xmodem.s ../ip65/xmodem.s
-	$(AS) $(AFLAGS) $<
+%_tcp.bin: %.o $(IP65TCPLIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2UTHERLIB)
 
-test_xmodem.prg: test_xmodem.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
-	$(LD) -m  test_xmodem.map -vm -C ../cfg/c64prg.cfg -o  test_xmodem.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+wiznet.prg: wiznet.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -o wiznet.prg -C ../cfg/c64prg.cfg -m wiznet.map -vm $< $(IP65WIZNETLIB) $(C64WIZNETLIB)
 
-test_parser.prg: test_parser.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_parser.map -vm -C ../cfg/c64prg.cfg -o  test_parser.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+vic20.prg: vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/vic20prg.cfg
+	$(LD) -o vic20.prg -C ../cfg/vic20prg.cfg -m vic20.map -vm $< $(IP65TCPLIB) $(VIC20RRNETLIB)  
 
+lancegs.bin: lancegs.o $(IP65LIB) $(A2LANCEGSLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -o lancegs.bin -C ../cfg/a2bin.cfg -m lancegs.a2.map -vm $< $(IP65LIB) $(A2LANCEGSLIB)
 
-test_get_url.prg: test_get_url.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_get_url.map -vm -C ../cfg/c64prg.cfg -o  test_get_url.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
+ip65.d64: prg
+	$(C1541) -format ip65,00 d64 $@
+	$(C1541) -attach $@ -write dns.prg        dns,p
+	$(C1541) -attach $@ -write dottedquad.prg dottedquad,p
+	$(C1541) -attach $@ -write geturl.prg     geturl,p
+	$(C1541) -attach $@ -write parser.prg     parser,p
+	$(C1541) -attach $@ -write ping.prg       ping,p
+	$(C1541) -attach $@ -write sntp.prg       sntp,p
+	$(C1541) -attach $@ -write tcp.prg        tcp,p
+	$(C1541) -attach $@ -write tftp.prg       tftp,p
 
-
-test_ping.prg: test_ping.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_ping.map -vm -C ../cfg/c64prg.cfg -o  test_ping.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
-
-test_wiznet.prg: test_wiznet.o $(C64WIZNETLIB) $(IP65WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -m  test_wiznet.map -vm -C ../cfg/c64prg.cfg -o test_wiznet.prg  $(AFLAGS) $<  $(IP65WIZNETLIB) $(C64WIZNETLIB)
-
-
-test_cifs.prg: test_cifs.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg 
-	$(LD) -m  test_cifs.map -vm -C ../cfg/c64prg.cfg -o  test_cifs.prg  $(AFLAGS) $< $(IP65TCPLIB) $(C64RRNETLIB)  
-
-
-test_vic20.prg: test_vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/vic20prg.cfg
-	$(LD) -m  test_vic20.map -vm -C ../cfg/vic20prg.cfg -o  test_vic20.prg  $(AFLAGS) $< $(IP65TCPLIB) $(VIC20RRNETLIB)  
-
-
-%.pg2: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -C ../cfg/a2bin.cfg -o  $*.pg2  $(AFLAGS) $< $(IP65LIB) $(A2UTHERLIB)
-
-test_lancegs.pg2: test_lancegs.o $(IP65LIB) $(A2LANCEGSLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -C ../cfg/a2bin.cfg -o  test_lancegs.pg2  $(AFLAGS) $< $(IP65LIB) $(A2LANCEGSLIB)
-
-httpd_test.d64:  test_httpd.prg index.html file1.html
-	cp test_httpd.prg autoexec.prg
-	ripxplore.rb --init CbmDos httpd_test.d64 -a autoexec.prg
-	ripxplore.rb httpd_test.d64 -a index.html -t C64Seq
-	ripxplore.rb httpd_test.d64 -a file1.html -t C64Seq
-
-
-ip65test.dsk: testdns.pg2 testdottedquad.pg2 testtftp.pg2 #test_lancegs.pg2
-
-#		ripxplore.rb --init AppleDos ip65test.dsk -a test_lancegs.pg2 -t AppleBinary
-		ripxplore.rb --init BeautifulBoot ip65testb.dsk -a testtftp.pg2 -t AppleBinary
-#		ripxplore.rb ip65test.dsk -a testdottedquad.pg2 -t AppleBinary
-#		ripxplore.rb ip65test.dsk -a testdns.pg2 -t AppleBinary    
-	
-
-test_disk_io.d64:  test_disk_io.prg 
-
-		ripxplore.rb --init CbmDos test_disk_io.d64 -a test_disk_io.prg
-		cp screen_prg.bin screen.prg
-		ripxplore.rb test_disk_io.d64 -a screen.prg 
-
-
-test_xmodem.d64:  test_xmodem.prg 
-		ripxplore.rb --init CbmDos test_xmodem.d64 -a test_xmodem.prg
+ip65.dsk: bin
+	cp prodos.dsk $@
+	java -jar $(AC) -cc65 $@ dns        bin 0 < dns.bin
+	java -jar $(AC) -cc65 $@ dottedquad bin 0 < dottedquad.bin
+	java -jar $(AC) -cc65 $@ tcp        bin 0 < tcp.bin
+	java -jar $(AC) -cc65 $@ tftp       bin 0 < tftp.bin
 
 clean:
-	rm -f *.o *.pg2 *.prg
-	rm -f ip65test.dsk
+	rm -f *.o *.bin *.prg *.map
+	rm -f ip65.d64 ip65.dsk
 
-  
 distclean: clean
 	rm -f *~
