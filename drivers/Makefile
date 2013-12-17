@@ -29,13 +29,13 @@ a2lancegs.lib: a2print.o lan91c96.o a2timer.o a2kernal.o a2input.o a2charconv.o 
 a2uther.lib: a2print.o uthernet.o a2timer.o a2kernal.o a2input.o a2charconv.o cs8900a.o a2_zero_page.o
 	ar65 a $@ $^
 
-c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o cbm_disk_access.o petscii_charconv.o c64_vt100.o cs8900a.o generic_zero_page.o
+c64rrnet.lib: c64print.o rr-net.o c64timer.o c64kernal.o c64inputs.o petscii_charconv.o cs8900a.o generic_zero_page.o
 	ar65 a $@ $^
 
-c64wiznet.lib: w5100.o c64print.o c64timer.o  c64kernal.o c64inputs.o cbm_disk_access.o petscii_charconv.o c64_vt100.o generic_zero_page.o
+c64wiznet.lib: w5100.o c64print.o c64timer.o c64kernal.o c64inputs.o petscii_charconv.o generic_zero_page.o
 	ar65 a $@ $^
 
-vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o vic20input.o cbm_disk_access.o petscii_charconv.o cs8900a.o generic_zero_page.o
+vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o vic20input.o petscii_charconv.o cs8900a.o generic_zero_page.o
 	ar65 a $@ $^
 
 clean:

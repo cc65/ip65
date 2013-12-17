@@ -31,7 +31,6 @@ ETHOBJS=\
 	parser.o \
 	string_utils.o \
 	telnet.o \
-	xmodem.o \
 	url.o \
 	arithmetic.o\
 	ip.o \

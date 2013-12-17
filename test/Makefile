@@ -23,9 +23,7 @@ all: prg bin
 prg: \
 	ip65 \
 	drivers \
-	cartapi.prg \
 	cifs_tcp.prg \
-	diskio.prg \
 	dns.prg \
 	dottedquad.prg \
 	getc.prg \
@@ -38,9 +36,7 @@ prg: \
 	tcp_tcp.prg \
 	tftp.prg \
 	vic20.prg \
-	vt100.prg \
-	wiznet.prg \
-	xmodem_tcp.prg
+	wiznet.prg
 
 bin: \
 	ip65 \
