@@ -11,25 +11,8 @@
 .import http_get_value
 
 
-.bss
-temp_ax: .res 2
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.word basicstub		; load address
-
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e 
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -39,16 +22,16 @@ init:
   ldax #query_1
   jsr test_querystring
   ldax #query_2
-  jsr test_querystring  
+  jsr test_querystring
   ldax #query_3
   jsr test_querystring
   jsr get_key
   ldax #query_4
   jsr test_querystring
   ldax #query_5
-  jsr test_querystring  
+  jsr test_querystring
   ldax #query_6
-  jsr test_querystring  
+  jsr test_querystring
 
   rts
 
@@ -58,7 +41,7 @@ test_querystring:
   jsr print_cr
   ldax  temp_ax
   jsr http_parse_request
-  
+
   lda #1
   jsr print_var
   lda #2
@@ -92,7 +75,7 @@ print_var:
 @found_var_value:  
   jsr print_ascii_as_native
   jmp print_cr
-  
+
 @print_path:
   ldax #path
   jmp @print_caption
@@ -102,7 +85,16 @@ print_var:
   jsr print_ascii_as_native
   jmp @print_equals
 
-.rodata
+
+  .bss
+
+
+temp_ax: .res 2
+
+
+  .rodata
+
+
 path: .byte "path",0
 method: .byte "method",0
 
@@ -118,7 +110,6 @@ query_5:
 .byte "/this/is/a/gopher_selector",0
 query_6: 
 .byte $0d,$0a,0  ;this should also be a gopher path
-
 
 
 

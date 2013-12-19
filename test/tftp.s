@@ -1,15 +1,14 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
-  
-  .import exit_to_basic  
-  
+
+  .import exit_to_basic
+
   .import cfg_get_configuration_ptr
-	.import copymem
-	.importzp copy_src
-	.importzp copy_dest
-  
-  
+  .import copymem
+  .importzp copy_src
+  .importzp copy_dest
+
   .import  __CODE_LOAD__
   .import  __CODE_SIZE__
   .import  __RODATA_SIZE__
@@ -20,31 +19,10 @@
   .import tftp_ip
   .import tftp_filesize
   .importzp tftp_filename
-  
-	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-	.word basicstub		; load address
 
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
-        .addr           __CODE_LOAD__-$11                ; Start address
-        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
-        jmp init
-
-.code
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -65,17 +43,17 @@ init:
 :
   sta tftp_ip,x
   dex
-  bpl :-  
-  
+  bpl :-
+
   ldax #sending_via_callback
   jsr print
   jsr tftp_upload
   bcs @error
   print_ok
-  
+
   ldax #basic_file
   stax tftp_filename
-  
+
   ldax #$2000
   stax tftp_filesize
   ldax #sending_ram
@@ -85,7 +63,7 @@ init:
   print_ok
 
 rts
-  
+
 @error:
   print_failed
   rts
@@ -103,26 +81,34 @@ upload_callback:
   bne @next_byte
   cmp #7
   beq @last_block
-  ldax #512    
+  ldax #512
   jmp :+
 @last_block:
   ldax #129
-:  
+:
   stax block_length
   jsr copymem
   ldax block_length
   rts
-.rodata
+
+
+  .rodata
+
 
 test_file: .byte  "TESTFILE.BIN",0
 basic_file: .byte  "CBMBASIC.BIN",0
 sending_via_callback: .byte "SENDING VIA CALLBACK...",0
 sending_ram: .byte "SENDING RAM...",0
-.bss
+
+
+  .bss
+
+
 block_number: .res 1
 block_length: .res 2
 buffer1: .res 256
 buffer2: .res 256
+
 
 
 ;-- LICENSE FOR testtftp.s --

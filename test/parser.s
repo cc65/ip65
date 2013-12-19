@@ -10,35 +10,17 @@
 .import parser_skip_next
 .importzp copy_src
 .importzp copy_dest
-.import  url_ip
-.import  url_port
-.import  url_selector
+.import url_ip
+.import url_port
+.import url_selector
 .import url_resource_type
 .import url_parse
+
 temp_buff=copy_dest
 
-.bss
 
-string_offset: .res 1
-selector_ptr: .res 2
-temp_url_ptr: .res 2
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.word basicstub		; load address
-
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e 
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -50,7 +32,6 @@ init:
   ldax #url_1
   jsr test_url_parse 
   jsr wait_key
- 
 
   ldax #url_2
   jsr test_url_parse 
@@ -59,7 +40,7 @@ init:
   ldax #url_4
   jsr test_url_parse 
   jsr wait_key
- 
+
   ldax #url_5
   jsr test_url_parse 
   ldax #url_6
@@ -69,7 +50,7 @@ init:
   ldax #url_8  
   jsr test_url_parse 
   jsr wait_key
-  
+
   ldax #url_9
   jsr test_url_parse 
   ldax #url_a
@@ -78,9 +59,8 @@ init:
   jsr test_url_parse 
   ldax #url_c
   jsr test_url_parse 
-  
+
   jsr wait_key
-  
 
   ldax #atom_file
   jsr parser_init
@@ -89,14 +69,14 @@ init:
 ;  jsr parser_skip_next
 ;  bcs @done
   
-@next_title:  
+@next_title:
   ldax #title
   jsr parser_skip_next
   bcs @done
-  
+
   jsr print_tag_contents
   jsr print_cr
-  
+
   jmp @next_title
 @done:
   rts
@@ -157,8 +137,18 @@ wait_key:
   ldax #press_a_key
   jsr print
   jmp get_key
-  
+
+
+.bss
+
+
+string_offset: .res 1
+selector_ptr: .res 2
+temp_url_ptr: .res 2
+
+
 .data
+
 
 entry: 
 .byte "<entry>",0
@@ -212,8 +202,8 @@ press_a_key: .byte "PRESS ANY KEY TO CONTINUE",13,0
 atom_file:
 ;.incbin "atom_test.xml"
 
-
 .byte 0
+
 
 
 ;-- LICENSE FOR test_parser.s --

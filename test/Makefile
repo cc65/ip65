@@ -26,26 +26,30 @@ prg: \
 	cifs_tcp.prg \
 	dns.prg \
 	dottedquad.prg \
-	getc.prg \
 	geturl_tcp.prg \
-	httpd.prg \
 	parsequerystring.prg \
 	parser_tcp.prg \
 	ping_tcp.prg \
 	sntp.prg \
 	tcp_tcp.prg \
 	tftp.prg \
-	vic20.prg \
+#	vic20.prg \
 	wiznet.prg
 
 bin: \
 	ip65 \
 	drivers \
+	cifs_tcp.bin \
 	dns.bin \
 	dottedquad.bin \
-	lancegs.bin \
+	geturl_tcp.bin \
+	parsequerystring.bin \
+	parser_tcp.bin \
+	ping_tcp.bin \
+	sntp.bin \
 	tcp_tcp.bin \
-	tftp.bin
+	tftp.bin \
+#	lancegs.bin
 
 ip65:
 	make -C ../ip65 all
@@ -61,16 +65,16 @@ dsk: ip65.dsk
 	$(AS) $(AFLAGS) $<
 
 %.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64RRNETLIB)
+	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64RRNETLIB) c64.lib
 
 %_tcp.prg: %.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64RRNETLIB)
+	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64RRNETLIB) c64.lib
 
 %.bin: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2UTHERLIB)
+	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2UTHERLIB) apple2.lib
 
 %_tcp.bin: %.o $(IP65TCPLIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2UTHERLIB)
+	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2UTHERLIB) apple2.lib
 
 wiznet.prg: wiznet.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
 	$(LD) -o wiznet.prg -C ../cfg/c64prg.cfg -m wiznet.map -vm $< $(IP65WIZNETLIB) $(C64WIZNETLIB)
@@ -96,6 +100,10 @@ ip65.dsk: bin
 	cp prodos.dsk $@
 	java -jar $(AC) -cc65 $@ dns        bin 0 < dns.bin
 	java -jar $(AC) -cc65 $@ dottedquad bin 0 < dottedquad.bin
+	java -jar $(AC) -cc65 $@ geturl     bin 0 < geturl.bin
+	java -jar $(AC) -cc65 $@ parser     bin 0 < parser.bin
+	java -jar $(AC) -cc65 $@ ping       bin 0 < ping.bin
+	java -jar $(AC) -cc65 $@ sntp       bin 0 < sntp.bin
 	java -jar $(AC) -cc65 $@ tcp        bin 0 < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp       bin 0 < tftp.bin
 

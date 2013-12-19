@@ -9,38 +9,10 @@
   .import dns_ip
   .import dns_status
   .import cfg_get_configuration_ptr
-  
-  
-  .import  __CODE_LOAD__
-  .import  __CODE_SIZE__
-  .import  __RODATA_SIZE__
-  .import  __DATA_SIZE__
-  
 
-	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-	.word basicstub		; load address
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-.segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
-        .addr           __CODE_LOAD__-$11                ; Start address
-        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
-        jmp init
-
-.code
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -51,7 +23,7 @@ init:
   init_ip_via_dhcp 
 ;  jsr overwrite_with_hardcoded_dns_server
   jsr print_ip_config
-  
+
   ldax #hostname_1
   jsr do_dns_query  
 
@@ -72,7 +44,6 @@ init:
 
   jmp exit_to_basic
 
-
 do_dns_query:
   pha
   jsr print
@@ -89,7 +60,7 @@ do_dns_query:
   ldax #dns_lookup_failed_msg
   jsr print
   jmp @print_dns_status
-:  
+:
   ldax #dns_ip
   jsr print_dotted_quad
 @print_dns_status:  
@@ -111,8 +82,7 @@ overwrite_with_hardcoded_dns_server:
   rts
 
 
-
-	.rodata
+  .rodata
 
 
 hostname_1:

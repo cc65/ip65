@@ -21,25 +21,31 @@
 .macro stax arg
 	sta arg
 	stx 1+(arg)
-.endmacro	
+.endmacro
 
 print_a = $ffd2
 
 .macro cout arg
   lda arg
   jsr print_a
-.endmacro   
-    
+.endmacro
+
+
   .zeropage
+
+
   temp_ptr:		.res 2
-  
+
+
   .bss
-  kipper_param_buffer: .res $20  
+
+
+  kipper_param_buffer: .res $20
   block_number: .res $0
-  
+
+
 .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.word basicstub		; load address
 
 .macro print arg
   ldax arg
@@ -57,37 +63,23 @@ print_a = $ffd2
   jsr KPR_DISPATCH_VECTOR   
 .endmacro
 
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e 
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-
 ;look for KIPPER signature at location pointed at by AX
-look_for_signature: 
+look_for_signature:
   stax temp_ptr
   ldy #5
 @check_one_byte:
   lda (temp_ptr),y
   cmp kipper_signature,y
-  bne @bad_match  
-  dey 
-  bpl@check_one_byte  
+  bne @bad_match
+  dey
+  bpl@check_one_byte
   clc
   rts
 @bad_match:
   sec
   rts
-  
+
 init:
-  
 
   ldax #KPR_CART_SIGNATURE  ;where signature should be in cartridge
   jsr  look_for_signature
@@ -105,19 +97,18 @@ init:
   sta $4000
   ldax #print_vars
   stax $4001
-  
-  
+
   ldy #KPR_INITIALIZE
-  jsr KPR_DISPATCH_VECTOR 
-	bcc :+  
+  jsr KPR_DISPATCH_VECTOR
+  bcc :+
   print #failed
   jsr print_errorcode
-  jmp bad_boot    
-:  
+  jmp bad_boot
+:
 
   print #ok
   print_cr
-  
+
   call #KPR_PRINT_IP_CONFIG
   print #listening
   ldax #httpd_callback
@@ -125,10 +116,9 @@ init:
   call #KPR_HTTPD_START
   jsr print_errorcode
   rts
- 
- 
+
 print_vars:
-  
+
   lda #'h'
   call #KPR_HTTPD_GET_VAR_VALUE
   bcs :+
@@ -139,14 +129,13 @@ print_vars:
   bcs :+
   call #KPR_PRINT_ASCIIZ
   print_cr
-:  
+:
   rts
 bad_boot:
   print  #press_a_key_to_continue
 restart:    
   jsr get_key
   jmp $fce2   ;do a cold start
-
 
 print_errorcode:
   print #error_code
@@ -163,7 +152,7 @@ get_key:
   cmp #0
   beq get_key
   rts
-  
+
 kipper_signature_not_found:
 
   ldy #0
@@ -180,9 +169,10 @@ httpd_callback:
   ldy #2 ;text/html
   clc
   rts
-  
 
-.rodata
+
+  .rodata
+
 
 kipper_signature:
   .byte "KIPPER" ; API signature
@@ -206,6 +196,8 @@ said:
   .byte ":",0
 html:
   .byte "<h1>hello world</h1>%?mMessage recorded as '%$h:%$m'%.<form>Your Handle:<input name=h type=text length=20 value='%$h'><br>Your Message: <input type=text lengh=60 name='m'><br><input type=submit></form><br>",0
+
+
 
 ;-- LICENSE FOR test_httpd.s --
 ; The contents of this file are subject to the Mozilla Public License

@@ -1,7 +1,7 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
-  
+
   .import exit_to_basic  
   .import cfg_get_configuration_ptr
   .import dns_set_hostname
@@ -11,36 +11,17 @@
   .import sntp_ip
   .import sntp_utc_timestamp
   .import sntp_get_time
-  
-  .import  __CODE_LOAD__
-  .import  __CODE_SIZE__
-  .import  __RODATA_SIZE__
-  .import  __DATA_SIZE__
-  
 
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.word basicstub		; load address
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e 
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
 
-init:
   lda #14
   jsr print_a ;switch to lower case 
   jsr print_cr
   init_ip_via_dhcp 
   jsr print_ip_config
-  
+
   ldax #time_server_msg
   jsr print 
   ldax #time_server_host  
@@ -53,11 +34,10 @@ init:
   bcs @dns_error
   ldx #3				; set destination address
 : lda dns_ip,x
-	sta sntp_ip,x
-	dex
-	bpl :-
-  
-  
+  sta sntp_ip,x
+  dex
+  bpl :-
+
   ldax #sending_query
   jsr print
   ldax #sntp_ip
@@ -69,23 +49,22 @@ init:
   jmp @print_error
 @ok:
   ldy #3
-:  
+:
   lda sntp_utc_timestamp,y
   jsr print_hex
   dey
   bpl :-
   jmp exit_to_basic
 
-@dns_error:  
+@dns_error:
   ldax #dns_error
-@print_error:  
+@print_error:
   jsr print
   jsr print_errorcode
   jmp exit_to_basic
 
 
-.data  
-  
+.data
 
 
 time_server_msg:
@@ -95,20 +74,18 @@ time_server_host:
   .byte "jamtronix.com",0
 ;  .byte "150.101.112.134",0
   .byte "0.POOL.SNTP.ORG",0
-  
+
 sending_query:
   .byte "SENDING SNTP QUERY TO ",0 
 sntp_error:
   .byte "ERROR DURING SNTP QUERY",13,0
-  
 dns_error:
   .byte "ERROR RESOLVING HOSTNAME",13,0
-  
+
  divs:
   .byte $02,$30,$00,$00
   .byte $05,$00,$00,$00
-  
-  
+
 
 
 ;-- LICENSE FOR test_sntp.s --

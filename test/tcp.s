@@ -1,12 +1,12 @@
   .include "../inc/common.i"
   .include "../inc/commonprint.i"
   .include "../inc/net.i"
-  
+
   .import exit_to_basic  
   .import ascii_to_native  
   .import parse_dotted_quad
   .import dotted_quad_value
-  
+
   .import tcp_listen
   .import tcp_callback
   .import ip65_random_word
@@ -20,12 +20,6 @@
 
   .import tcp_send
   .import tcp_send_data_len
-  
-  .import  __CODE_LOAD__
-  .import  __CODE_SIZE__
-  .import  __RODATA_SIZE__
-  .import  __DATA_SIZE__
-  
 
   .importzp acc32
   .importzp op32
@@ -39,39 +33,9 @@
 
   .import sub_16_16
 
-	.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-	.word basicstub		; load address
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-.segment "EXEHDR"  ;this is what gets put an the start of the file on the Apple 2
-        .addr           __CODE_LOAD__-$11                ; Start address
-        .word           __CODE_SIZE__+__RODATA_SIZE__+__DATA_SIZE__+4	; Size
-        jmp init
-
-.bss 
-cxn_closed: .res 1
-byte_counter: .res 1
-
-.data
-get_next_byte: 
-  lda $ffff
-  rts
-
-.code
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -101,8 +65,7 @@ init:
   stax acc16
   ldax  #$100
   jsr  test_sub_16_16
-  
-  
+
   ldax  #number1
   stax acc32
   stax op32
@@ -133,12 +96,10 @@ init:
   ldax  #$1235
   jsr  test_cmp_16_16
 
-
   ldax  #$1234
   stax acc16
   ldax  #$2234
   jsr  test_cmp_16_16
-  
 
   ldax  #$0000
   stax acc16
@@ -148,16 +109,12 @@ init:
   stax acc16
   jsr  test_cmp_16_16
 
-
-
   ldax  #number1
   stax acc32
   ldax  #number2
   stax op32
   jsr test_add_32_32
 
-  
-  
   ldax  #number3
   stax acc32
   ldax  #number4
@@ -188,7 +145,6 @@ init:
   stax op32
   jsr test_add_32_32
 
-
   ldax  #number13
   stax acc32
   ldax  #$1234
@@ -214,16 +170,14 @@ init:
   ldax  #$158
   jsr test_add_16_32
 
-    
   jsr print_cr
-  init_ip_via_dhcp 
+  init_ip_via_dhcp
   jsr print_ip_config
 
   jsr print_cr
 
-  
-  jsr print_random_number  
- 
+  jsr print_random_number
+
   ;connect to port 81 - should be rejected
 
   ldax  #tcp_callback_routine
@@ -232,7 +186,7 @@ init:
   stax  tcp_connect_ip
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2
-    
+
   ldax  #81
   jsr tcp_connect
   jsr check_for_error
@@ -242,7 +196,7 @@ init:
   ldax  #http_get_msg
   jsr   tcp_send
   jsr check_for_error
-  
+
   ;now try to connect to port 80 - should be accepted
 
   ldax  #tcp_callback_routine
@@ -251,8 +205,7 @@ init:
   stax  tcp_connect_ip
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2  
- 
-  
+
   ldax  #80
   jsr tcp_connect
   jsr check_for_error
@@ -272,9 +225,8 @@ init:
   cmp cxn_closed
 
   beq @loop_till_end
-  
-  rts
 
+  rts
 
   ldax  #tcp_callback_routine
   stax  tcp_callback
@@ -282,13 +234,11 @@ init:
   stax  tcp_connect_ip
   ldax  tcp_dest_ip+2
   stax  tcp_connect_ip+2  
- 
-
 
   ldax  #80
   jsr tcp_connect
   jsr check_for_error
-  
+
   ldax  #4
   stax  tcp_send_data_len
   ldax  #http_get_msg
@@ -300,41 +250,36 @@ init:
   jsr   tcp_send
   jsr check_for_error
 
-
   ldax  #looping
   jsr print
 @loop_forever:
   jsr ip65_process
-  jmp @loop_forever  
+  jmp @loop_forever
   rts
 
 tcp_callback_routine:
-
-
-  
   lda tcp_inbound_data_length
   cmp #$ff
   bne @not_end_of_file
   lda #1
   sta cxn_closed
   rts
-  
+
 @not_end_of_file:
   lda #14
   jsr print_a ;switch to lower case
 
- 
   ldax tcp_inbound_data_ptr
   stax get_next_byte+1
-    
+
   lda #0
   sta byte_counter
   sta byte_counter+1
-  
+
 @print_one_byte:
   jsr get_next_byte  
   jsr ascii_to_native
-  
+
   jsr print_a
   inc get_next_byte+1
   bne :+
@@ -350,10 +295,8 @@ tcp_callback_routine:
   ldax tcp_inbound_data_length
   jsr cmp_16_16
   bne @print_one_byte
-  
-  rts
-  
 
+  rts
 
 check_for_error:
   lda ip65_error
@@ -365,7 +308,7 @@ check_for_error:
   jsr print_cr
   lda #0
   sta ip65_error
-@exit:  
+@exit:
   rts
 
 print_random_number:
@@ -385,7 +328,7 @@ test_add_32_32:
   jsr  print_hex
   dey
   bpl :-
-  
+
   lda #'+'
   jsr print_a
   ldy #3  
@@ -394,12 +337,12 @@ test_add_32_32:
   jsr  print_hex
   dey
   bpl :-
-  
+
   lda #'='
   jsr print_a
   jsr add_32_32
-  
-  ldy #3  
+
+  ldy #3
 :
   lda  (acc32),y
   jsr  print_hex
@@ -407,8 +350,6 @@ test_add_32_32:
   bpl :-
   jsr print_cr
   rts
-
-
 
 ;assumes acc32 & op32 already set
 test_cmp_32_32:
@@ -448,14 +389,14 @@ test_cmp_16_16:
   jsr print_hex
   lda acc16
   jsr print_hex
-  
+
   lda #'='
   jsr print_a
   lda temp_ax+1
   jsr print_hex
   lda temp_ax
   jsr print_hex
-    
+
   lda #':'
   jsr print_a
   ldax  temp_ax
@@ -470,17 +411,16 @@ test_cmp_16_16:
   jsr print_cr
   rts
 
-
 ;assumes acc32 & AX already set
 test_add_16_32:
   stax  temp_ax
-  ldy #3  
+  ldy #3
 :
   lda  (acc32),y
   jsr  print_hex
   dey
   bpl :-
-  
+
   lda #'+'
   jsr print_a
 
@@ -494,7 +434,7 @@ test_add_16_32:
   ldax  temp_ax
   jsr add_16_32
   
-  ldy #3  
+  ldy #3
 :
   lda  (acc32),y
   jsr  print_hex
@@ -510,12 +450,12 @@ test_mul_8_16:
   jsr print_hex
   lda acc16
   jsr print_hex
-  
+
   lda #'*'
   jsr print_a
   lda temp_ax
   jsr print_hex
-    
+
   lda #'='
   jsr print_a
   lda  temp_ax
@@ -526,7 +466,6 @@ test_mul_8_16:
   jsr print_hex
   jsr print_cr
   rts
-
 
 ;assumes acc16 & AX already set
 test_sub_16_16:
@@ -544,12 +483,12 @@ test_sub_16_16:
   jsr print_hex
   lda temp_ax
   jsr print_hex
-  
+
   lda #'='
   jsr print_a
   ldax  temp_ax
   jsr sub_16_16
-  
+
   lda acc16+1
   jsr print_hex
   lda acc16
@@ -558,58 +497,56 @@ test_sub_16_16:
   jsr print_cr
   rts
 
-
 @error:
   ldax  #failed_msg
   jsr print
   jsr print_cr
   rts
-  
+
+
   .bss
-  temp_ax: .res 2
-  
-	.rodata
 
 
-.data
+temp_ax: .res 2
+cxn_closed: .res 1
+byte_counter: .res 1
+
+
+  .data
+
+
 number1:
   .byte $1,$2,$3,$f
 number2:
 .byte $10,$20,$30,$f0
 number3:
-  .byte $ff,$ff,$ff,$ff  
+  .byte $ff,$ff,$ff,$ff
 number4:
   .byte $1,$0,$0,$0
-  
 number5:
-  .byte $ff,$ff,$ff,$ff  
+  .byte $ff,$ff,$ff,$ff
 number6:
   .byte $0,$0,$0,$0
 number7:
-  .byte $ff,$ff,$ff,$fe  
+  .byte $ff,$ff,$ff,$fe
 number8:
   .byte $1,$0,$0,$0
 number9:
-  .byte $ff,$ff,$ff,$fe  
+  .byte $ff,$ff,$ff,$fe
 number10:
   .byte $5,$0,$0,$0
 number11:
   .byte $ff,$0,$0,$e
 number12:
   .byte $5,$0,$0,$0
-    
 number13:
   .byte $1,$2,$3,$4
-  
 number14:
   .byte $ff,$ff,$ff,$ff
-
 number15:
   .byte $ff,$ff,$00,$00
-
 number16:
   .byte $00,$00,$00,$00
-
 number17:
   .byte $5b,$bc,$08,$a9
 
@@ -618,13 +555,16 @@ tcp_dest_ip:
   .byte 74,207,242,229
 looping:
   .asciiz "LOOPING..."
-  
+
 http_get_msg:
   .byte "GET /blogx/ HTTP/1.0",13,10,13,10
 http_get_msg_end:  
  http_get_length=http_get_msg_end-http_get_msg
- 
- 
+
+get_next_byte: 
+  lda $ffff
+  rts
+
 
 
 ;-- LICENSE FOR test_tcp.s --

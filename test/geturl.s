@@ -10,38 +10,20 @@
 .import parser_skip_next
 .importzp copy_src
 .importzp copy_dest
-.import  url_ip
-.import  url_port
-.import  url_selector
+.import url_ip
+.import url_port
+.import url_selector
 .import url_resource_type
 .import url_parse
 .import url_download
 .import url_download_buffer
 .import url_download_buffer_length
+
 temp_buff=copy_dest
 
-.bss
 
-string_offset: .res 1
-selector_ptr: .res 2
-temp_url_ptr: .res 2
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
+  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
 
-.word basicstub		; load address
-
-basicstub:
-	.word @nextline
-	.word 2003
-	.byte $9e 
-	.byte <(((init / 1000) .mod 10) + $30)
-	.byte <(((init / 100 ) .mod 10) + $30)
-	.byte <(((init / 10  ) .mod 10) + $30)
-	.byte <(((init       ) .mod 10) + $30)
-	.byte 0
-@nextline:
-	.word 0
-
-init:
 
   ;switch to lower case charset
   lda #23
@@ -55,7 +37,7 @@ init:
   
   ldax #url_2
 ;  jsr test_url_download
-    
+
   rts
 
 test_url_download:
@@ -89,12 +71,11 @@ test_url_download:
 @done:
 
   rts
-  
+
 wait_key:
   ldax #press_a_key
   jsr print
   jmp get_key
-
 
 print_tag_contents:
   stax temp_buff
@@ -114,7 +95,10 @@ print_tag_contents:
 @done:
   rts
 
-.data
+
+  .data
+
+
 title: 
 .byte "<title>",0
 
@@ -126,7 +110,13 @@ url_2:
 downloading: .asciiz "DOWNLOADING "
 press_a_key: .byte "PRESS ANY KEY TO CONTINUE",13,0
 
-.bss
+
+  .bss
+
+string_offset: .res 1
+selector_ptr: .res 2
+temp_url_ptr: .res 2
+
 dl_buffer_length=8092
 dl_buffer: .res dl_buffer_length
 
