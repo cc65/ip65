@@ -8,10 +8,10 @@ typedef unsigned char u8;
 typedef unsigned char libnet_err_t;
 
 typedef struct ip_config {
-	u8 ip_addr[4];
-	u8 netmask[4];
-	u8 gateway_addr[4];
-	u8 dns_server_addr[4];		
+  u8 ip_addr[4];
+  u8 netmask[4];
+  u8 gateway_addr[4];
+  u8 dns_server_addr[4];    
 } IP_CONFIG;
 
 
@@ -24,7 +24,7 @@ extern char libnet_MAC[6];
 
 
 
-#define LIBNET_OK				                    0x00
+#define LIBNET_OK                           0x00
 #define LIBNET_ERROR_PORT_IN_USE                    0x80
 #define LIBNET_ERROR_TIMEOUT_ON_RECEIVE             0x81
 #define LIBNET_ERROR_TRANSMIT_FAILED                0x82

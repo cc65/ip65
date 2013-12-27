@@ -1,26 +1,27 @@
-;test the "Kipper Kartridge API"
+; test the "Kipper Kartridge API"
+
 .ifndef KPR_API_VERSION_NUMBER
-  .define EQU     =
+  .define EQU =
   .include "../inc/kipper_constants.i"
 .endif
 
 .include "../ip65/copymem.s"
 
 ; load A/X macro
-	.macro ldax arg
-	.if (.match (.left (1, arg), #))	; immediate mode
-	lda #<(.right (.tcount (arg)-1, arg))
-	ldx #>(.right (.tcount (arg)-1, arg))
-	.else					; assume absolute or zero page
-	lda arg
-	ldx 1+(arg)
-	.endif
-	.endmacro
+.macro ldax arg
+.if (.match (.left (1, arg), #))        ; immediate mode
+    lda #<(.right (.tcount (arg)-1, arg))
+    ldx #>(.right (.tcount (arg)-1, arg))
+.else                                   ; assume absolute or zero page
+    lda arg
+    ldx 1+(arg)
+.endif
+.endmacro
 
 ; store A/X macro
 .macro stax arg
-	sta arg
-	stx 1+(arg)
+  sta arg
+  stx 1+(arg)
 .endmacro
 
 print_a = $ffd2
@@ -31,39 +32,36 @@ print_a = $ffd2
 .endmacro
 
 
-  .zeropage
+.zeropage
+
+temp_ptr: .res 2
 
 
-  temp_ptr:		.res 2
+.bss
+
+kipper_param_buffer: .res $20
+block_number:        .res $0
 
 
-  .bss
-
-
-  kipper_param_buffer: .res $20
-  block_number: .res $0
-
-
-.segment "STARTUP"    ;this is what gets put at the start of the file on the C64
-
+.segment "STARTUP"
 
 .macro print arg
   ldax arg
-	ldy #KPR_PRINT_ASCIIZ
-  jsr KPR_DISPATCH_VECTOR 
-.endmacro 
+  ldy #KPR_PRINT_ASCIIZ
+  jsr KPR_DISPATCH_VECTOR
+.endmacro
 
 .macro print_cr
   lda #13
-	jsr print_a
+  jsr print_a
 .endmacro
 
 .macro call arg
-	ldy arg
-  jsr KPR_DISPATCH_VECTOR   
+  ldy arg
+  jsr KPR_DISPATCH_VECTOR
 .endmacro
 
-;look for KIPPER signature at location pointed at by AX
+; look for KIPPER signature at location pointed at by AX
 look_for_signature:
   stax temp_ptr
   ldy #5
@@ -80,16 +78,14 @@ look_for_signature:
   rts
 
 init:
-
-  ldax #KPR_CART_SIGNATURE  ;where signature should be in cartridge
-  jsr  look_for_signature
+  ldax #KPR_CART_SIGNATURE      ; where signature should be in cartridge
+  jsr look_for_signature
   bcc @found_kipper_signature
   jmp kipper_signature_not_found
-  
-@found_kipper_signature:
 
+@found_kipper_signature:
   lda #14
-  jsr print_a ;switch to lower case
+  jsr print_a                   ; switch to lower case
 
   print #initializing
 
@@ -104,21 +100,18 @@ init:
   print #failed
   jsr print_errorcode
   jmp bad_boot
-:
-
-  print #ok
+: print #ok
   print_cr
 
   call #KPR_PRINT_IP_CONFIG
   print #listening
   ldax #httpd_callback
-;  ldax #$0000
+; ldax #$0000
   call #KPR_HTTPD_START
   jsr print_errorcode
   rts
 
 print_vars:
-
   lda #'h'
   call #KPR_HTTPD_GET_VAR_VALUE
   bcs :+
@@ -129,13 +122,13 @@ print_vars:
   bcs :+
   call #KPR_PRINT_ASCIIZ
   print_cr
-:
-  rts
+: rts
+
 bad_boot:
   print  #press_a_key_to_continue
-restart:    
+restart:
   jsr get_key
-  jmp $fce2   ;do a cold start
+  jmp $fce2                     ; do a cold start
 
 print_errorcode:
   print #error_code
@@ -144,9 +137,9 @@ print_errorcode:
   print_cr
   rts
 
-;use C64 Kernel ROM function to read a key
-;inputs: none
-;outputs: A contains ASCII value of key just pressed
+; use C64 Kernel ROM function to read a key
+; inputs: none
+; outputs: A contains ASCII value of key just pressed
 get_key:
   jsr $ffe4
   cmp #0
@@ -154,10 +147,8 @@ get_key:
   rts
 
 kipper_signature_not_found:
-
   ldy #0
-:
-  lda kipper_signature_not_found_message,y
+: lda kipper_signature_not_found_message,y
   beq restart
   jsr print_a
   iny
@@ -166,29 +157,26 @@ kipper_signature_not_found:
 httpd_callback:
   jsr print_vars
   ldax #html
-  ldy #2 ;text/html
+  ldy #2 ; text/html
   clc
   rts
 
 
-  .rodata
-
+.rodata
 
 kipper_signature:
   .byte "KIPPER" ; API signature
- error_code:  
+ error_code:
   .asciiz "ERROR CODE: $"
 press_a_key_to_continue:
   .byte "PRESS A KEY TO CONTINUE",13,0
 failed:
-	.byte "FAILED ", 0
-
+  .byte "FAILED ",0
 ok:
-	.byte "OK ", 0
- 
- kipper_signature_not_found_message:
- .byte "NO KIPPER API FOUND",13,"PRESS ANY KEY TO RESET", 0
-initializing:  
+  .byte "OK ",0
+kipper_signature_not_found_message:
+  .byte "NO KIPPER API FOUND",13,"PRESS ANY KEY TO RESET",0
+initializing:
   .byte "INITIALIZING ",0
 listening:
   .byte "LISTENING",0
@@ -199,21 +187,21 @@ html:
 
 
 
-;-- LICENSE FOR test_httpd.s --
+; -- LICENSE FOR test_httpd.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at
 ; http://www.mozilla.org/MPL/
-; 
+;
 ; Software distributed under the License is distributed on an "AS IS"
 ; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
 ; License for the specific language governing rights and limitations
 ; under the License.
-; 
+;
 ; The Original Code is ip65.
-; 
+;
 ; The Initial Developer of the Original Code is Jonno Downes,
 ; jonno@jamtronix.com.
 ; Portions created by the Initial Developer are Copyright (C) 2009
-; Jonno Downes. All Rights Reserved.  
+; Jonno Downes. All Rights Reserved.
 ; -- LICENSE END --

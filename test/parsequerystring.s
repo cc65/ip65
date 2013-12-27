@@ -11,13 +11,11 @@
 .import http_get_value
 
 
-  .segment "STARTUP"    ;this is what gets put at the start of the file on the C64
+.segment "STARTUP"
 
-
-  ;switch to lower case charset
+  ; switch to lower case charset
   lda #23
   sta $d018
-
 
   ldax #query_1
   jsr test_querystring
@@ -32,14 +30,13 @@
   jsr test_querystring
   ldax #query_6
   jsr test_querystring
-
   rts
 
 test_querystring:
-  stax  temp_ax
+  stax temp_ax
   jsr print_ascii_as_native
   jsr print_cr
-  ldax  temp_ax
+  ldax temp_ax
   jsr http_parse_request
 
   lda #1
@@ -51,14 +48,14 @@ test_querystring:
   lda #'m'
   jsr print_var
   lda #'q'
-  jsr print_var  
+  jsr print_var
   rts
 
 print_var:
   pha
   cmp #1
   beq @print_method
-  cmp #2  
+  cmp #2
   beq @print_path
   jsr ascii_to_native
 
@@ -72,7 +69,7 @@ print_var:
   lda #'?'
   jsr print_a
   jmp print_cr
-@found_var_value:  
+@found_var_value:
   jsr print_ascii_as_native
   jmp print_cr
 
@@ -86,48 +83,48 @@ print_var:
   jmp @print_equals
 
 
-  .bss
-
+.bss
 
 temp_ax: .res 2
 
 
-  .rodata
+.rodata
+
+path:
+  .byte "path",0
+method:
+  .byte "method",0
+
+query_1:
+  .byte "GET /?h=slack&m=goober+woober+woo%21+%3B+i+am+text HTTP/1.1",0
+query_2:
+  .byte "POST /?h=slack&m=goober+woober+woo!+%3b+i+am+text",0
+query_3:
+  .byte "GET /?handle=slack&message=goober+woober+woo%21+%3B+i+am+text+%0d%0a%21%40%23%24%25%5E%26%25%5D%5B%7B%7D& HTTP/1.1",0
+query_4:
+  .byte "GET /this/is/a/long/q/path.html?q=foo",0
+query_5:
+  .byte "/this/is/a/gopher_selector",0
+query_6:
+  .byte $0d,$0a,0               ; this should also be a gopher path
 
 
-path: .byte "path",0
-method: .byte "method",0
 
-query_1: 
-.byte "GET /?h=slack&m=goober+woober+woo%21+%3B+i+am+text HTTP/1.1",0
-query_2: 
-.byte "POST /?h=slack&m=goober+woober+woo!+%3b+i+am+text",0
-query_3: 
-.byte "GET /?handle=slack&message=goober+woober+woo%21+%3B+i+am+text+%0d%0a%21%40%23%24%25%5E%26%25%5D%5B%7B%7D& HTTP/1.1",0
-query_4: 
-.byte "GET /this/is/a/long/q/path.html?q=foo",0
-query_5: 
-.byte "/this/is/a/gopher_selector",0
-query_6: 
-.byte $0d,$0a,0  ;this should also be a gopher path
-
-
-
-;-- LICENSE FOR test_parse_querystring.s --
+; -- LICENSE FOR test_parse_querystring.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at
 ; http://www.mozilla.org/MPL/
-; 
+;
 ; Software distributed under the License is distributed on an "AS IS"
 ; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
 ; License for the specific language governing rights and limitations
 ; under the License.
-; 
+;
 ; The Original Code is ip65.
-; 
+;
 ; The Initial Developer of the Original Code is Jonno Downes,
 ; jonno@jamtronix.com.
 ; Portions created by the Initial Developer are Copyright (C) 2009
-; Jonno Downes. All Rights Reserved.  
+; Jonno Downes. All Rights Reserved.
 ; -- LICENSE END --
