@@ -39,8 +39,8 @@ vic20rrnet.lib: vic20print.o vic20-rr-net.o vic20timer.o vic20input.o petscii_ch
 	ar65 a $@ $^
 
 clean:
-	rm -f *.o
-	rm -f *.lib
+	-rm -f *.o
+	-rm -f *.lib
 
 distclean: clean
-	rm -f *~
+	-rm -f *~

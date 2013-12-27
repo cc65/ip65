@@ -44,9 +44,9 @@ test_sntp.prg: test_sntp.c $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) $(LIBNET)
 
 
 clean:
-	rm -f *.o *.pg2 *.prg *.map
-	rm -f ip65test.dsk
+	-rm -f *.o *.pg2 *.prg *.map
+	-rm -f ip65test.dsk
 
   
 distclean: clean
-	rm -f *~
+	-rm -f *~

@@ -48,8 +48,7 @@ bin: \
 	ping_tcp.bin \
 	sntp.bin \
 	tcp_tcp.bin \
-	tftp.bin \
-#	lancegs.bin
+	tftp.bin
 
 ip65:
 	make -C ../ip65 all
@@ -76,15 +75,6 @@ dsk: ip65.dsk
 %_tcp.bin: %.o $(IP65TCPLIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
 	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2UTHERLIB) apple2.lib
 
-wiznet.prg: wiznet.o $(IP65WIZNETLIB) $(C64WIZNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o wiznet.prg -C ../cfg/c64prg.cfg -m wiznet.map -vm $< $(IP65WIZNETLIB) $(C64WIZNETLIB)
-
-vic20.prg: vic20.o $(IP65TCPLIB) $(VIC20RRNETLIB) $(INCFILES) ../cfg/vic20prg.cfg
-	$(LD) -o vic20.prg -C ../cfg/vic20prg.cfg -m vic20.map -vm $< $(IP65TCPLIB) $(VIC20RRNETLIB)  
-
-lancegs.bin: lancegs.o $(IP65LIB) $(A2LANCEGSLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o lancegs.bin -C ../cfg/a2bin.cfg -m lancegs.a2.map -vm $< $(IP65LIB) $(A2LANCEGSLIB)
-
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -108,8 +98,8 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ tftp       bin 0 < tftp.bin
 
 clean:
-	rm -f *.o *.bin *.prg *.map
-	rm -f ip65.d64 ip65.dsk
+	-rm -f *.o *.bin *.prg *.map
+	-rm -f ip65.d64 ip65.dsk
 
 distclean: clean
-	rm -f *~
+	-rm -f *~

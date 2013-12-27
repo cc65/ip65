@@ -60,10 +60,10 @@ ip65_wiznet.lib: $(ETHOBJS) function_dispatcher.s
 	ar65 a ip65_wiznet.lib $(ETHOBJS) function_dispatcher.o 
 
 clean:
-	rm -f *.o
-	rm -f ip65.lib
-	rm -f ip65_tcp.lib
-	rm -f ip65_wiznet.lib
+	-rm -f *.o
+	-rm -f ip65.lib
+	-rm -f ip65_tcp.lib
+	-rm -f ip65_wiznet.lib
 
 distclean: clean
-	rm -f *~
+	-rm -f *~
