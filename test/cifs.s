@@ -12,8 +12,10 @@
 
 .segment "STARTUP"
 
-  lda #$0E                      ; change to lower case
+  ; switch to lower case charset
+  lda #14
   jsr print_a
+
   jsr print_cr
   init_ip_via_dhcp
 

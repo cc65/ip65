@@ -1,19 +1,31 @@
-CC=cl65
-AS=ca65
-LD=ld65
-CFLAGS=-Oirs -t $(TARGET)
-AFLAGS=
+# Build for Cirrus Logic CS8900A based devices:
+# make
 
-IP65LIB=../ip65/ip65.lib
-IP65TCPLIB=../ip65/ip65_tcp.lib
-C64RRNETLIB=../drivers/c64rrnet.lib
-C64WIZNETLIB=../drivers/c64wiznet.lib
-IP65WIZNETLIB=../ip65/ip65_wiznet.lib
-A2UTHERLIB=../drivers/a2uther.lib
-A2LANCEGSLIB=../drivers/a2lancegs.lib
-VIC20RRNETLIB=../drivers/vic20rrnet.lib
+# Build for Standard Microsystems LAN91C96 based devices:
+# make eth=sm
 
-INCFILES=\
+# Build for WIZnet W5100 based devices:
+# make eth=wn
+
+CC     = cl65
+AS     = ca65
+LD     = ld65
+CFLAGS = -Oirs -t $(TARGET)
+AFLAGS =
+
+ifeq ($(eth),sm)
+  A2DRIVERLIB  = ../drivers/a2lancegs.lib
+else ifeq ($(eth),wn)
+else
+  C64DRIVERLIB = ../drivers/c64rrnet.lib
+  A2DRIVERLIB  = ../drivers/a2uther.lib
+  VICDRIVERLIB = ../drivers/vic20rrnet.lib
+endif
+
+IP65LIB    = ../ip65/ip65.lib
+IP65TCPLIB = ../ip65/ip65_tcp.lib
+
+INCFILES = \
   ../inc/common.i\
   ../inc/commonprint.i\
   ../inc/net.i\
@@ -32,9 +44,7 @@ prg: \
 	ping_tcp.prg \
 	sntp.prg \
 	tcp_tcp.prg \
-	tftp.prg \
-#	vic20.prg \
-	wiznet.prg
+	tftp.prg
 
 bin: \
 	ip65 \
@@ -50,6 +60,20 @@ bin: \
 	tcp_tcp.bin \
 	tftp.bin
 
+vicprg: \
+	ip65 \
+	drivers \
+	cifs_tcp.vicprg \
+	dns.vicprg \
+	dottedquad.vicprg \
+	geturl_tcp.vicprg \
+	parsequerystring.vicprg \
+	parser_tcp.vicprg \
+	ping_tcp.vicprg \
+	sntp.vicprg \
+	tcp_tcp.vicprg \
+	tftp.vicprg
+
 ip65:
 	make -C ../ip65 all
 
@@ -63,17 +87,23 @@ dsk: ip65.dsk
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-%.prg: %.o $(IP65LIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64RRNETLIB) c64.lib
+%.prg: %.o $(IP65LIB) $(C64DRIVERLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
-%_tcp.prg: %.o $(IP65TCPLIB) $(C64RRNETLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64RRNETLIB) c64.lib
+%_tcp.prg: %.o $(IP65TCPLIB) $(C64DRIVERLIB) $(INCFILES) ../cfg/c64prg.cfg
+	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64DRIVERLIB) c64.lib
 
-%.bin: %.o $(IP65LIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2UTHERLIB) apple2.lib
+%.bin: %.o $(IP65LIB) $(A2DRIVERLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
-%_tcp.bin: %.o $(IP65TCPLIB) $(A2UTHERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2UTHERLIB) apple2.lib
+%_tcp.bin: %.o $(IP65TCPLIB) $(A2DRIVERLIB) $(INCFILES) ../cfg/a2bin.cfg
+	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2DRIVERLIB) apple2.lib
+
+%.vicprg: %.o $(IP65LIB) $(VICDRIVERLIB) $(INCFILES) ../cfg/vic20prg.cfg
+	$(LD) -o $*.vicprg -C ../cfg/vic20prg.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
+
+%_tcp.vicprg: %.o $(IP65TCPLIB) $(VICDRIVERLIB) $(INCFILES) ../cfg/vic20prg.cfg
+	$(LD) -o $(subst _tcp,,$*).vicprg -C ../cfg/vic20prg.cfg -m $(subst _tcp,,$*).vic.map -vm $< $(IP65TCPLIB) $(VICDRIVERLIB) vic20.lib
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
@@ -98,7 +128,7 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ tftp       bin 0 < tftp.bin
 
 clean:
-	-rm -f *.o *.bin *.prg *.map
+	-rm -f *.o *.prg *.bin *.vicprg *.map
 	-rm -f ip65.d64 ip65.dsk
 
 distclean: clean

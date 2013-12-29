@@ -14,8 +14,8 @@
 .segment "STARTUP"
 
   ; switch to lower case charset
-  lda #23
-  sta $d018
+  lda #14
+  jsr print_a
 
   ldax #query_1
   jsr test_querystring

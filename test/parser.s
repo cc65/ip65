@@ -22,8 +22,8 @@ temp_buff = copy_dest
 .segment "STARTUP"
 
   ; switch to lower case charset
-  lda #23
-  sta $d018
+  lda #14
+  jsr print_a
 
   init_ip_via_dhcp
   jsr print_ip_config

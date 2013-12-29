@@ -20,8 +20,8 @@
 .segment "STARTUP"
 
   ; switch to lower case charset
-  lda #23
-  sta $d018
+  lda #14
+  jsr print_a
 
   jsr print_cr
   init_ip_via_dhcp
