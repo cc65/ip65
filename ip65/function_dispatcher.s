@@ -450,8 +450,7 @@ ip_configured:
 .import httpd_start
 
   jmp httpd_start
-:
-cpy #KPR_HTTPD_GET_VAR_VALUE
+: cpy #KPR_HTTPD_GET_VAR_VALUE
   bne :+
 
 .import http_get_value
