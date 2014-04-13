@@ -10,6 +10,7 @@
 
 .export timer_init
 .export timer_read
+.export timer_seconds
 
 
 .bss
@@ -42,6 +43,10 @@ timer_read:
   bcc :+
   inc current_time_value+1
 : ldax current_time_value
+  rts
+
+timer_seconds:
+  lda #0
   rts
 
 
