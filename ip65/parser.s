@@ -32,7 +32,7 @@ current_string_ptr=get_next_byte+1
   bne :+
   inc current_string_ptr+1
 : pha
-  pla ; reload A so flags are set correctly
+  pla                           ; reload A so flags are set correctly
   rts
 
 
