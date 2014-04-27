@@ -41,23 +41,20 @@ ETHOBJS=\
 
 all: ip65.lib ip65_tcp.lib ip65_wiznet.lib
 
-ip65.lib: $(ETHOBJS) function_dispatcher.s 
-	$(AS) $(AFLAGS) function_dispatcher.s
+ip65.lib: $(ETHOBJS)
 	$(AS) $(AFLAGS) ip.s
 	$(AS) $(AFLAGS) icmp.s
-	ar65 a ip65.lib $(ETHOBJS) function_dispatcher.o 
+	ar65 a ip65.lib $(ETHOBJS)
 
-ip65_tcp.lib: tcp.o $(ETHOBJS) function_dispatcher.s tcp.s
-	$(AS) $(AFLAGS) function_dispatcher.s -DTCP -DAPI_VERSION=2
+ip65_tcp.lib: tcp.o $(ETHOBJS) tcp.s
 	$(AS) $(AFLAGS) ip.s -DTCP
 	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_tcp.lib $(ETHOBJS) function_dispatcher.o tcp.o
+	ar65 a ip65_tcp.lib $(ETHOBJS) tcp.o
 
-ip65_wiznet.lib: $(ETHOBJS) function_dispatcher.s
-	$(AS) $(AFLAGS) function_dispatcher.s 
+ip65_wiznet.lib: $(ETHOBJS)
 	$(AS) $(AFLAGS) ip.s 
 	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_wiznet.lib $(ETHOBJS) function_dispatcher.o 
+	ar65 a ip65_wiznet.lib $(ETHOBJS)
 
 clean:
 	-rm -f *.o
