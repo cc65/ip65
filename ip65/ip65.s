@@ -16,8 +16,6 @@
 
 .export ip65_error
 
-.import cfg_init
-
 .import eth_init
 .import timer_init
 .import arp_init
@@ -77,7 +75,6 @@ ip65_random_word:
 ; inputs: none
 ; outputs: none
 ip65_init:
-  jsr cfg_init                  ; copy default values (including MAC address) to RAM
   jsr eth_init                  ; initialize ethernet driver
 
   bcc @ok

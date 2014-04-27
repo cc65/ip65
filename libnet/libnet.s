@@ -1,6 +1,5 @@
 .export _libnet_init
 .export _libnet_get_config
-.export _libnet_MAC
 
 .import cfg_init
 .import cfg_ip
@@ -8,11 +7,7 @@
 .import ip65_init
 .import dhcp_init
 .import ip65_error
-.import cfg_mac_default
 .import cfg_mac
-.import cfg_size
-
-_libnet_MAC = cfg_mac_default
 
 ; load A/X macro
 .macro ldax arg

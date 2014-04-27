@@ -32,7 +32,6 @@ WIZNET_DATA_REG = WIZNET_BASE+3
 
 .import arp_init
 .import ip_init
-.import cfg_init
 
 .importzp eth_dest
 .importzp eth_src
@@ -168,7 +167,6 @@ eth_init:
 ; inputs: none
 ; outputs: carry flag is set if there was an error, clear otherwise
 w5100_ip65_init:
-  jsr cfg_init                  ; copy default values (including MAC address) to RAM
   jsr eth_init
 
   bcc @ok
