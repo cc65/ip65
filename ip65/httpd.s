@@ -11,6 +11,7 @@
 HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be open for?
 
 .export httpd_start
+.export httpd_port_number
 
 .import http_parse_request
 .import http_get_value
@@ -37,6 +38,7 @@ temp_ptr = copy_src
 
 .bss
 
+io_buf:                         .res $800
 found_eol:                      .res 1
 connection_closed:              .res 1
 output_buffer_length:           .res 2
@@ -48,10 +50,8 @@ skip_mode:                      .res 1
 temp_x:                         .res 1
 
 
-.segment "HTTP_VARS"
+.data
 
-httpd_io_buffer:        .addr $4000     ; by default, use a 3k buffer at $4000 for storing inbound requests.
-httpd_scratch_buffer:   .addr $4B00     ; by default, use a 1k buffer at $4B00 as a scratchpad
 httpd_port_number:      .word 80
 
 jump_to_callback:
@@ -104,7 +104,7 @@ httpd_start:
 
 @listen:
   jsr tcp_close
-  ldax httpd_io_buffer
+  ldax io_buf
   stax tcp_buffer_ptr
   ldax #http_callback
   stax tcp_callback
@@ -151,7 +151,7 @@ httpd_start:
   jmp @listen
 
 @got_eol:
-  ldax httpd_io_buffer
+  ldax io_buf
   jsr http_parse_request
   jsr jump_to_callback          ; call the handler to generate the response for this request.
   ; AX should now point at data to be sent
@@ -197,7 +197,7 @@ http_callback:
 
   ; look for CR or LF in input
   sta found_eol
-  ldax httpd_io_buffer
+  ldax io_buf
   stax get_next_byte+1
 
 @look_for_eol:
@@ -215,7 +215,7 @@ http_callback:
   rts
 
 reset_output_buffer:
-  ldax httpd_io_buffer
+  ldax io_buf
   sta emit_a_ptr+1
   stx emit_a_ptr+2
   lda #0
@@ -310,7 +310,7 @@ send_response:
 send_buffer:
   ldax output_buffer_length
   stax tcp_send_data_len
-  ldax httpd_io_buffer
+  ldax io_buf
   jsr tcp_send
   jmp reset_output_buffer
 
