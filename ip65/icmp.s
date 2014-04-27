@@ -102,9 +102,10 @@ icmp_msg_type_information_reply       = 16
 ping_state_request_sent      = 0
 ping_state_response_received = 1
 
+
 .ifdef TCP
 
-.segment "TCP_VARS"
+.bss
 
 icmp_echo_ip:  .res 4           ; destination IP address for echo request ("ping")
 icmp_echo_cnt: .res 1           ; ping sequence counter

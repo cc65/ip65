@@ -928,7 +928,7 @@ get_lo:
   rts
 
 
-.segment "SELF_MODIFIED_CODE"
+.data
 
 next_eth_packet_byte:
   lda $FFFF                     ; eth_packet

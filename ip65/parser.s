@@ -23,7 +23,7 @@ search_string = copy_dest
 temp_ptr: .res 2
 
 
-.segment "SELF_MODIFIED_CODE"
+.data
 
 get_next_byte:
 current_string_ptr=get_next_byte+1

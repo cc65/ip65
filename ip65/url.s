@@ -46,7 +46,7 @@ search_string   = copy_dest
 selector_buffer = output_buffer
 
 
-.segment "TCP_VARS"
+.bss
 
   url_string:           .res 2
   url_ip:               .res 4  ; will be set with ip address of host in url

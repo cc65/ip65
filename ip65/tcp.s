@@ -105,7 +105,7 @@ tcp_flag_ACK = 16
 tcp_flag_URG = 32
 
 
-.segment "TCP_VARS"
+.bss
 
 tcp_state:              .res 1
 tcp_local_port:         .res 2
