@@ -32,7 +32,7 @@ hex_digit: .res 1
 
 .data
 
-http_variables_buffer: .addr $2800      ; work area for storing variables extracted from query string
+http_variables_buffer: .addr $4800      ; work area for storing variables extracted from query string
 
 
 .code
