@@ -39,6 +39,7 @@ prg: \
 	dns.prg \
 	dottedquad.prg \
 	geturl_tcp.prg \
+	httpd_tcp.prg \
 	parsequerystring.prg \
 	parser_tcp.prg \
 	ping_tcp.prg \
@@ -53,6 +54,7 @@ bin: \
 	dns.bin \
 	dottedquad.bin \
 	geturl_tcp.bin \
+	httpd_tcp.bin \
 	parsequerystring.bin \
 	parser_tcp.bin \
 	ping_tcp.bin \
@@ -67,6 +69,7 @@ vicprg: \
 	dns.vicprg \
 	dottedquad.vicprg \
 	geturl_tcp.vicprg \
+	httpd_tcp.vicprg \
 	parsequerystring.vicprg \
 	parser_tcp.vicprg \
 	ping_tcp.vicprg \
@@ -110,6 +113,7 @@ ip65.d64: prg
 	$(C1541) -attach $@ -write dns.prg        dns,p
 	$(C1541) -attach $@ -write dottedquad.prg dottedquad,p
 	$(C1541) -attach $@ -write geturl.prg     geturl,p
+	$(C1541) -attach $@ -write httpd.prg      httpd,p
 	$(C1541) -attach $@ -write parser.prg     parser,p
 	$(C1541) -attach $@ -write ping.prg       ping,p
 	$(C1541) -attach $@ -write sntp.prg       sntp,p
@@ -121,6 +125,7 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ dns        bin 0 < dns.bin
 	java -jar $(AC) -cc65 $@ dottedquad bin 0 < dottedquad.bin
 	java -jar $(AC) -cc65 $@ geturl     bin 0 < geturl.bin
+	java -jar $(AC) -cc65 $@ httpd      bin 0 < httpd.bin
 	java -jar $(AC) -cc65 $@ parser     bin 0 < parser.bin
 	java -jar $(AC) -cc65 $@ ping       bin 0 < ping.bin
 	java -jar $(AC) -cc65 $@ sntp       bin 0 < sntp.bin
