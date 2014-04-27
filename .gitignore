@@ -5,3 +5,5 @@
 *.map
 *.o
 *.prg
+*.bin
+*.vicprg
