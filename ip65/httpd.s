@@ -104,7 +104,7 @@ httpd_start:
 
 @listen:
   jsr tcp_close
-  ldax io_buf
+  ldax #io_buf
   stax tcp_buffer_ptr
   ldax #http_callback
   stax tcp_callback
@@ -151,7 +151,7 @@ httpd_start:
   jmp @listen
 
 @got_eol:
-  ldax io_buf
+  ldax #io_buf
   jsr http_parse_request
   jsr jump_to_callback          ; call the handler to generate the response for this request.
   ; AX should now point at data to be sent
@@ -197,7 +197,7 @@ http_callback:
 
   ; look for CR or LF in input
   sta found_eol
-  ldax io_buf
+  ldax #io_buf
   stax get_next_byte+1
 
 @look_for_eol:
@@ -215,7 +215,7 @@ http_callback:
   rts
 
 reset_output_buffer:
-  ldax io_buf
+  ldax #io_buf
   sta emit_a_ptr+1
   stx emit_a_ptr+2
   lda #0
@@ -310,7 +310,7 @@ send_response:
 send_buffer:
   ldax output_buffer_length
   stax tcp_send_data_len
-  ldax io_buf
+  ldax #io_buf
   jsr tcp_send
   jmp reset_output_buffer
 

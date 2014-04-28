@@ -49,7 +49,7 @@ hex_digit: .res 1
 http_parse_request:
   stax string_ptr
 
-  ldax var_buf
+  ldax #var_buf
   stax table_ptr
 
   lda #1                        ; start of method
@@ -186,7 +186,7 @@ put_byte:
 ; if variable did not exist, carry flag will be set.
 http_get_value:
   sta var_name
-  ldax var_buf
+  ldax #var_buf
   stax string_ptr
   ldy #0
 
