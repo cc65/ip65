@@ -13,6 +13,10 @@
 .import sntp_get_time
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   lda #14

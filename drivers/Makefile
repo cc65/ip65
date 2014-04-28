@@ -23,10 +23,10 @@ DRIVERS=\
 
 all: $(DRIVERS)
 
-c64rrnet.lib: rr-net.o cs8900a.o c64print.o c64timer.o c64kernal.o c64input.o petscii_charconv.o generic_zero_page.o
+c64rrnet.lib: rr-net.o cs8900a.o c64zeropage.o c64print.o c64timer.o c64kernal.o c64input.o petscii_charconv.o
 	ar65 a $@ $^
 
-c64wiznet.lib: w5100.o c64print.o c64timer.o c64kernal.o c64input.o petscii_charconv.o generic_zero_page.o
+c64wiznet.lib: w5100.o c64zeropage.o c64print.o c64timer.o c64kernal.o c64input.o petscii_charconv.o
 	ar65 a $@ $^
 
 a2lancegs.lib: lan91c96.o a2print.o a2timer.o a2kernal.o a2input.o a2charconv.o a2_zero_page.o
@@ -35,7 +35,7 @@ a2lancegs.lib: lan91c96.o a2print.o a2timer.o a2kernal.o a2input.o a2charconv.o 
 a2uther.lib: uthernet.o cs8900a.o a2print.o a2timer.o a2kernal.o a2input.o a2charconv.o a2_zero_page.o
 	ar65 a $@ $^
 
-vic20rrnet.lib: vic20-rr-net.o cs8900a.o vic20print.o vic20timer.o vic20kernal.o vic20input.o petscii_charconv.o generic_zero_page.o
+vic20rrnet.lib: vic20-rr-net.o cs8900a.o vic20zeropage.o vic20print.o vic20timer.o vic20kernal.o vic20input.o petscii_charconv.o
 	ar65 a $@ $^
 
 clean:

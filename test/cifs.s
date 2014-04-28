@@ -10,6 +10,10 @@
 .import cifs_start
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset

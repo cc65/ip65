@@ -34,6 +34,10 @@
 .import sub_16_16
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset

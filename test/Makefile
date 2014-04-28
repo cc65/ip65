@@ -90,23 +90,23 @@ dsk: ip65.dsk
 %.o: %.s
 	$(AS) $(AFLAGS) $<
 
-%.prg: %.o $(IP65LIB) $(C64DRIVERLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $*.prg -C ../cfg/c64prg.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
+%.prg: %.o $(IP65LIB) $(C64DRIVERLIB) $(INCFILES)
+	$(LD) -o $*.prg -t c64 -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
-%_tcp.prg: %.o $(IP65TCPLIB) $(C64DRIVERLIB) $(INCFILES) ../cfg/c64prg.cfg
-	$(LD) -o $(subst _tcp,,$*).prg -C ../cfg/c64prg.cfg -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64DRIVERLIB) c64.lib
+%_tcp.prg: %.o $(IP65TCPLIB) $(C64DRIVERLIB) $(INCFILES)
+	$(LD) -o $(subst _tcp,,$*).prg -t c64 -m $(subst _tcp,,$*).c64.map -vm $< $(IP65TCPLIB) $(C64DRIVERLIB) c64.lib
 
-%.bin: %.o $(IP65LIB) $(A2DRIVERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $*.bin -C ../cfg/a2bin.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
+%.bin: %.o $(IP65LIB) $(A2DRIVERLIB) $(INCFILES)
+	$(LD) -o $*.bin -t apple2 -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
-%_tcp.bin: %.o $(IP65TCPLIB) $(A2DRIVERLIB) $(INCFILES) ../cfg/a2bin.cfg
-	$(LD) -o $(subst _tcp,,$*).bin -C ../cfg/a2bin.cfg -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2DRIVERLIB) apple2.lib
+%_tcp.bin: %.o $(IP65TCPLIB) $(A2DRIVERLIB) $(INCFILES)
+	$(LD) -o $(subst _tcp,,$*).bin -t apple2 -m $(subst _tcp,,$*).a2.map -vm $< $(IP65TCPLIB) $(A2DRIVERLIB) apple2.lib
 
-%.vicprg: %.o $(IP65LIB) $(VICDRIVERLIB) $(INCFILES) ../cfg/vic20prg.cfg
-	$(LD) -o $*.vicprg -C ../cfg/vic20prg.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
+%.vicprg: %.o $(IP65LIB) $(VICDRIVERLIB) $(INCFILES)
+	$(LD) -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
-%_tcp.vicprg: %.o $(IP65TCPLIB) $(VICDRIVERLIB) $(INCFILES) ../cfg/vic20prg.cfg
-	$(LD) -o $(subst _tcp,,$*).vicprg -C ../cfg/vic20prg.cfg -m $(subst _tcp,,$*).vic.map -vm $< $(IP65TCPLIB) $(VICDRIVERLIB) vic20.lib
+%_tcp.vicprg: %.o $(IP65TCPLIB) $(VICDRIVERLIB) $(INCFILES)
+	$(LD) -o $(subst _tcp,,$*).vicprg -C vic20-32k.cfg -m $(subst _tcp,,$*).vic.map -vm $< $(IP65TCPLIB) $(VICDRIVERLIB) vic20.lib
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@

@@ -17,6 +17,10 @@
 .importzp tftp_filename
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset

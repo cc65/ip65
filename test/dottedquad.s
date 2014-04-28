@@ -8,6 +8,10 @@
 .import dotted_quad_value
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset

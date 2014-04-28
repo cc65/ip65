@@ -1,8 +1,4 @@
 ; zero page definitions
-; this 'generic' file just puts everything into a ZP segment
-; and lets LD65 in conjunction with cfg files assign zero page locations
-; however this can be overridden in the case that all necessary zp variables
-; cant be crammed into a contiguous segment, e.g. on the Apple ][
 
 .exportzp copy_src
 .exportzp copy_dest
@@ -11,15 +7,12 @@
 .exportzp buffer_ptr
 .exportzp eth_packet
 
-
-.segment "IP65ZP" : zeropage
-
-copy_src:      .res 2           ; source pointer
-copy_dest:     .res 2           ; destination pointer
-dns_hostname:  .res 2
-tftp_filename: .res 2           ; name of file to d/l or filemask to get directory listing for
-buffer_ptr:    .res 2           ; source pointer
-eth_packet:    .res 2
+copy_src      = $5F             ; also $60 - source pointer
+copy_dest     = $61             ; also $62 - destination pointer
+dns_hostname  = $63             ; also $64
+tftp_filename = $65             ; also $66 - name of file to d/l or filemask to get directory listing for
+buffer_ptr    = $67             ; also $68 - source pointer
+eth_packet    = $69             ; also $6A
 
 
 

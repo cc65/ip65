@@ -19,6 +19,10 @@
 temp_buff = copy_dest
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset

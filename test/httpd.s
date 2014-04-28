@@ -8,6 +8,10 @@
 .import http_get_value
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   lda #14

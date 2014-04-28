@@ -11,6 +11,10 @@
 .import cfg_get_configuration_ptr
 
 
+; keep LD65 happy
+.segment "ZPSAVE"
+
+
 .segment "STARTUP"
 
   ; switch to lower case charset
