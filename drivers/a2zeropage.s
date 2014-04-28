@@ -1,7 +1,4 @@
 ; zero page definitions
-; On the Apple ][ with AppleSoft running there are not enough contiguous zero page locations
-; to allow LD65 to handle assignment
-; so we need to manually assign ZP pointers to known free locations
 
 .exportzp copy_src
 .exportzp copy_dest
@@ -10,11 +7,11 @@
 .exportzp buffer_ptr
 .exportzp eth_packet
 
-copy_src      = $06             ; also $07
-copy_dest     = $08             ; also $09
+copy_src      = $06             ; also $07 - source pointer
+copy_dest     = $08             ; also $09 - destination pointer
 dns_hostname  = $18             ; also $19
-tftp_filename = $1D             ; also $1E
-buffer_ptr    = $EB             ; also $EC
+tftp_filename = $1D             ; also $1E - name of file to d/l or filemask to get directory listing for
+buffer_ptr    = $EB             ; also $EC - source pointer
 eth_packet    = $ED             ; also $EE
 
 
