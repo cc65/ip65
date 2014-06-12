@@ -8,13 +8,10 @@
 .export cfg_netmask
 .export cfg_gateway
 .export cfg_dns
-.export cfg_tftp_server
-.export cfg_get_configuration_ptr
-
 .export dhcp_server
-.import copymem
-.importzp copy_src
-.importzp copy_dest
+.export cfg_tftp_server
+
+.export cfg_get_configuration_ptr
 
 
 .data

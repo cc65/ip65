@@ -1,14 +1,26 @@
-; originally from Per Olofsson's IP65 library - http://www.paradroid.net/ip65
+; LANceGS driver
 
-pp_rx_ctl     = $0104
-pp_line_ctl   = $0112
-pp_self_ctl   = $0114
-pp_bus_status = $0138
-pp_ia         = $0158
+.import _lan91c96
+
+.export eth = _lan91c96
+.export eth_driver_name
+.export eth_driver_io_base
+
+
+.rodata
+
+eth_driver_name:
+  .byte "LANceGS",0
+
+
+.data
+
+eth_driver_io_base:
+  .word $c0b0
 
 
 
-; -- LICENSE FOR cs8900a.i --
+; -- LICENSE FOR lancegs.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

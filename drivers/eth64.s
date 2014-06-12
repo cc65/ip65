@@ -1,8 +1,8 @@
-; RR-Net driver, as seen on a VIC-20 (i.e. using a Masquerade adapter)
+; ETH64 driver
 
-.import _cs8900a
+.import _lan91c96
 
-.export eth = _cs8900a
+.export eth = _lan91c96
 .export eth_driver_name
 .export eth_driver_io_base
 
@@ -10,17 +10,17 @@
 .rodata
 
 eth_driver_name:
-  .asciiz "VIC20 RR-Net"
+  .byte "ETH64",0
 
 
 .data
 
 eth_driver_io_base:
-  .word $9808
+  .word $de00
 
 
 
-; -- LICENSE FOR vic20-rr-net.s --
+; -- LICENSE FOR eth64.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

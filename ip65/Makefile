@@ -1,66 +1,45 @@
-AS=ca65
-LD=ld65
-AFLAGS=
-
 # ip65.lib : minimal IP stack (UDP only)
 # ip65_tcp.lib : full featured TCP/IP stack
-# ip65_wiznet.lib : hybrid stack for use with the w5100 chip : UDP,ICMP & ARP is done on host, TCP is on w5100
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) $<
+all: ip65.lib ip65_tcp.lib
 
 %.o: %.s
-	$(AS) $(AFLAGS) $<
+	ca65 $<
 
-ETHOBJS=\
-	copymem.o \
-	config.o \
-	timer.o \
-	eth.o \
+%_tcp.o: %.s
+	ca65 -DTCP -o $@ $<
+
+IP65OBJS=\
+	arithmetic.o\
 	arp.o \
-	ip65.o \
-	printf.o \
+	cifs.o \
+	config.o \
+	copymem.o \
 	debug.o \
-	http.o \
-	httpd.o \
 	dhcp.o \
 	dns.o \
 	dottedquad.o \
-	output_buffer.o\
+	eth.o \
+	http.o \
+	httpd.o \
+	ip65.o \
 	tftp.o \
+	timer.o \
+	output_buffer.o\
 	parser.o \
+	printf.o \
+	sntp.o \
 	string_utils.o \
 	telnet.o \
-	url.o \
-	arithmetic.o\
-	ip.o \
-	sntp.o \
-	icmp.o \
-	cifs.o \
-	udp.o
+	udp.o \
+	url.o
 
-all: ip65.lib ip65_tcp.lib ip65_wiznet.lib
+ip65.lib: $(IP65OBJS) ip.o icmp.o
+	ar65 a $@ $^
 
-ip65.lib: $(ETHOBJS)
-	$(AS) $(AFLAGS) ip.s
-	$(AS) $(AFLAGS) icmp.s
-	ar65 a ip65.lib $(ETHOBJS)
-
-ip65_tcp.lib: tcp.o $(ETHOBJS) tcp.s
-	$(AS) $(AFLAGS) ip.s -DTCP
-	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_tcp.lib $(ETHOBJS) tcp.o
-
-ip65_wiznet.lib: $(ETHOBJS)
-	$(AS) $(AFLAGS) ip.s 
-	$(AS) $(AFLAGS) icmp.s -DTCP
-	ar65 a ip65_wiznet.lib $(ETHOBJS)
+ip65_tcp.lib: $(IP65OBJS) ip_tcp.o icmp_tcp.o tcp.o
+	ar65 a $@ $^
 
 clean:
 	-rm -f *.o
-	-rm -f ip65.lib
-	-rm -f ip65_tcp.lib
-	-rm -f ip65_wiznet.lib
-
-distclean: clean
-	-rm -f *~
+	-rm -f *.lib

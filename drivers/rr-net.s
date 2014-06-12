@@ -1,47 +1,22 @@
 ; RR-Net driver
 
-.export cs_init
+.import _cs8900a
 
-.export cs_packet_page
-.export cs_packet_data
-.export cs_rxtx_data
-.export cs_tx_cmd
-.export cs_tx_len
+.export eth = _cs8900a
 .export eth_driver_name
 .export eth_driver_io_base
-
-IO_BASE        = $de00
-rr_ctl         = IO_BASE+$01    ; address of 'control' port on Retro-Replay
-cs_packet_page = IO_BASE+$02    ; address of 'packet page' port on RR-Net
-cs_packet_data = IO_BASE+$04    ; address of 'packet data' port on RR-Net
-cs_rxtx_data   = IO_BASE+$08    ; address of 'recieve/transmit data' port on RR-Net
-cs_tx_cmd      = IO_BASE+$0c    ; address of 'transmit command' port on RR-Net
-cs_tx_len      = IO_BASE+$0e    ; address of 'transmission length' port on RR-Net
-
-
-.code
-
-; initialise Retro Replay so we can access the network adapter
-; inputs: none
-; outputs: none
-cs_init:
-  lda rr_ctl
-  ora #1
-  sta rr_ctl
-  rts
 
 
 .rodata
 
 eth_driver_name:
-.if IO_BASE=$de00
-    .byte "RR-NET",0
-.else
-    .byte "64NIC+",0
-.endif
+  .byte "RR-Net",0
+
+
+.data
 
 eth_driver_io_base:
-  .word IO_BASE
+  .word $de08
 
 
 

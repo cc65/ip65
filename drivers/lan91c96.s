@@ -1,458 +1,427 @@
-; Ethernet driver for SMC LAN91C96 chip
 ;
+; Copyright (c) 2003-2007, Adam Dunkels, Josef Soucek and Oliver Schmidt
+; All rights reserved. 
+;
+; Redistribution and use in source and binary forms, with or without 
+; modification, are permitted provided that the following conditions 
+; are met: 
+; 1. Redistributions of source code must retain the above copyright 
+;    notice, this list of conditions and the following disclaimer. 
+; 2. Redistributions in binary form must reproduce the above copyright 
+;    notice, this list of conditions and the following disclaimer in the 
+;    documentation and/or other materials provided with the distribution. 
+; 3. Neither the name of the Institute nor the names of its contributors 
+;    may be used to endorse or promote products derived from this software 
+;    without specific prior written permission. 
+;
+; THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+; ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+; FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+; DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+; OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+; HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+; OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+; SUCH DAMAGE. 
+;
+; This file is part of the Contiki operating system.
+; 
+; Author: Adam Dunkels <adam@sics.se>, Josef Soucek <josef.soucek@ide64.org>,
+;         Oliver Schmidt <ol.sc@web.de>
+;
+;---------------------------------------------------------------------
 
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+	.macpack	module
+	module_header	_lan91c96
 
-.include "../inc/common.i"
+	; Driver signature
+	.byte	$65, $74, $68	; "eth"
+	.byte	$01		; Ethernet driver API version number
 
-.export eth_init
-.export eth_rx
-.export eth_tx
-.export eth_driver_name
-.export eth_driver_io_base
-.import eth_inp
-.import eth_inp_len
-.import eth_outp
-.import eth_outp_len
+	; Ethernet address
+mac:	.byte	$00, $80, $0F	; OUI of Standard Microsystems
+	.byte	$11, $11, $11
 
-.import cfg_mac
-.importzp eth_packet
+	; Buffer attributes
+bufaddr:.res	2		; Address
+bufsize:.res	2		; Size
 
-; LANceGS hardware addresses
-ethbsr    := $c00E              ; Bank select register             R/W (2B)
+	; Jump table.
+	jmp init
+	jmp poll
+	jmp send
+	jmp exit
+
+;---------------------------------------------------------------------
+
+	.if DYN_DRV
+
+	.zeropage
+sp:	.res	2		; Stack pointer (Do not trash !)
+reg:	.res	2		; Address of register base
+ptr:	.res	2		; Indirect addressing pointer
+len:	.res	2		; Frame length
+
+	.else
+
+	.include "zeropage.inc"
+reg	:=	ptr1		;  Address of register base
+ptr	:=	ptr2		; Indirect addressing pointer
+len	:=	ptr3		; Frame length
+
+	.endif
+
+;---------------------------------------------------------------------
+
+	.rodata
+
+fixup:	.byte	fixup02-fixup01, fixup03-fixup02, fixup04-fixup03
+	.byte	fixup05-fixup04, fixup06-fixup05, fixup07-fixup06
+	.byte	fixup08-fixup07, fixup09-fixup08, fixup10-fixup09
+	.byte	fixup11-fixup10, fixup12-fixup11, fixup13-fixup12
+	.byte	fixup14-fixup13, fixup15-fixup14, fixup16-fixup15
+	.byte	fixup17-fixup16, fixup18-fixup17, fixup19-fixup18
+	.byte	fixup20-fixup19, fixup21-fixup20, fixup22-fixup21
+	.byte	fixup23-fixup22, fixup24-fixup23, fixup25-fixup24
+	.byte	fixup26-fixup25, fixup27-fixup26, fixup28-fixup27
+	.byte	fixup29-fixup28, fixup30-fixup29, fixup31-fixup30
+	.byte	fixup32-fixup31, fixup33-fixup32, fixup34-fixup33
+	.byte	fixup35-fixup34, fixup36-fixup35, fixup37-fixup36
+	.byte	fixup38-fixup37, fixup39-fixup38, fixup40-fixup39
+
+fixups	= * - fixup
+
+;---------------------------------------------------------------------
+
+ethbsr		:= $FF0E	; Bank select register             R/W (2B)
 
 ; Register bank 0
-ethtcr    := $c000              ; Transmission control register    R/W (2B)
-ethephsr  := $c002              ; EPH status register              R/O (2B)
-ethrcr    := $c004              ; Receive control register         R/W (2B)
-ethecr    := $c006              ; Counter register                 R/O (2B)
-ethmir    := $c008              ; Memory information register      R/O (2B)
-ethmcr    := $c00A              ; Memory Config. reg.    +0 R/W +1 R/O (2B)
+ethtcr		:= $FF00	; Transmition control register     R/W (2B)
+ethephsr	:= $FF02	; EPH status register              R/O (2B)
+ethrcr		:= $FF04	; Receive control register         R/W (2B)
+ethecr		:= $FF06	; Counter register                 R/O (2B)
+ethmir		:= $FF08	; Memory information register      R/O (2B)
+ethmcr		:= $FF0A	; Memory Config. reg.    +0 R/W +1 R/O (2B)
 
 ; Register bank 1
-ethcr     := $c000              ; Configuration register           R/W (2B)
-ethbar    := $c002              ; Base address register            R/W (2B)
-ethiar    := $c004              ; Individual address register      R/W (6B)
-ethgpr    := $c00A              ; General address register         R/W (2B)
-ethctr    := $c00C              ; Control register                 R/W (2B)
+ethcr		:= $FF00	; Configuration register           R/W (2B)
+ethbar		:= $FF02	; Base address register            R/W (2B)
+ethiar		:= $FF04	; Individual address register      R/W (6B)
+ethgpr		:= $FF0A	; General address register         R/W (2B)
+ethctr		:= $FF0C	; Control register                 R/W (2B)
 
 ; Register bank 2
-ethmmucr  := $c000              ; MMU command register             W/O (1B)
-ethautotx := $c001              ; AUTO TX start register           R/W (1B)
-ethpnr    := $c002              ; Packet number register           R/W (1B)
-etharr    := $c003              ; Allocation result register       R/O (1B)
-ethfifo   := $c004              ; FIFO ports register              R/O (2B)
-ethptr    := $c006              ; Pointer register                 R/W (2B)
-ethdata   := $c008              ; Data register                    R/W (4B)
-ethist    := $c00C              ; Interrupt status register        R/O (1B)
-ethack    := $c00C              ; Interrupt acknowledge register   W/O (1B)
-ethmsk    := $c00D              ; Interrupt mask register          R/W (1B)
+ethmmucr	:= $FF00	; MMU command register             W/O (1B)
+ethautotx	:= $FF01	; AUTO TX start register           R/W (1B)
+ethpnr		:= $FF02	; Packet number register           R/W (1B)
+etharr		:= $FF03	; Allocation result register       R/O (1B)
+ethfifo		:= $FF04	; FIFO ports register              R/O (2B)
+ethptr		:= $FF06	; Pointer register                 R/W (2B)
+ethdata		:= $FF08	; Data register                    R/W (4B)
+ethist		:= $FF0C	; Interrupt status register        R/O (1B)
+ethack		:= $FF0C	; Interrupt acknowledge register   W/O (1B)
+ethmsk		:= $FF0D	; Interrupt mask register          R/W (1B)
 
 ; Register bank 3
-ethmt     := $c000              ; Multicast table                  R/W (8B)
-ethmgmt   := $c008              ; Management interface             R/W (2B)
-ethrev    := $c00A              ; Revision register                R/W (2B)
-ethercv   := $c00C              ; Early RCV register               R/W (2B)
+ethmt		:= $FF00	; Multicast table                  R/W (8B)
+ethmgmt		:= $FF08	; Management interface             R/W (2B)
+ethrev		:= $FF0A	; Revision register                R/W (2B)
+ethercv		:= $FF0C	; Early RCV register               R/W (2B)
 
+	.data
 
-.data
+;---------------------------------------------------------------------
 
-; initialize the ethernet adaptor
-; inputs: none
-; outputs: carry flag is set if there was an error, clear otherwise
-eth_init:
-  jsr lan_self_modify
-  lda #$01
-fixlan00:
-  sta ethbsr                    ; Select register bank 1
-fixlan01:
-  lda ethcr                     ; Read first four bytes - $31, $20, $67, $18
-  cmp #$31
-  bne lanerror
-fixlan03:
-  lda ethbar
-  cmp #$67
-  bne lanerror
-fixlan04:
-  lda ethbar+1
-  cmp #$18
-  bne lanerror
-  ; we have the magic signature
+init:
+	; Save address of register base
+	sta reg
+	stx reg+1
 
-  ; Reset ETH card
-  lda #$00                      ; Bank 0
-fixlan05:
-  sta ethbsr
-  lda #%10000000                ; Software reset
-fixlan06:
-  sta ethrcr+1
+	; Start with first fixup location
+	lda #<(fixup01+1)
+	ldx #>(fixup01+1)
+	sta ptr
+	stx ptr+1
+	ldx #$FF
+	ldy #$00
 
-  ldy #$00
-fixlan07:
-  sty ethrcr
-fixlan08:
-  sty ethrcr+1
+	; Fixup address at location
+:	lda reg
+	ora (ptr),y
+	sta (ptr),y
+	iny
+	lda reg+1
+	sta (ptr),y
+	dey
 
-  ; Delay
-: cmp ($FF,x)                   ; 6 cycles
-  cmp ($FF,x)                   ; 6 cycles
-  iny                           ; 2 cycles
-  bne :-                        ; 3 cycles
-                                ; 17 * 256 = 4352 -> 4,4 ms
+	; Advance to next fixup location
+	inx
+	cpx #fixups
+	bcs :+
+	lda ptr
+	clc
+	adc fixup,x
+	sta ptr
+	bcc :-
+	inc ptr+1
+	bcs :-			; Always
 
-  ; Enable transmit and receive
-  lda #%10000001                ; Enable transmit TXENA, PAD_EN
-  ldx #%00000011                ; Enable receive, strip CRC ???
-fixlan09:
-  sta ethtcr
-fixlan10:
-  stx ethrcr+1
+	; Reset ETH card
+:	lda #$00		; Bank 0
+fixup01:sta ethbsr
 
-  lda #$01                      ; Bank 1
-fixlan11:
-  sta ethbsr
+	lda #%10000000		; Software reset
+fixup02:sta ethrcr+1
 
-fixlan12:
-  lda ethcr+1
-  ora #%00010000                ; No wait (IOCHRDY)
-fixlan13:
-  sta ethcr+1
+	ldy #$00
+fixup03:sty ethrcr
+fixup04:sty ethrcr+1
 
-  lda #%00001001                ; Auto release
-fixlan14:
-  sta ethctr+1
+	; Delay
+:	cmp ($FF,x)		; 6 cycles
+	cmp ($FF,x)		; 6 cycles
+	iny			; 2 cycles
+	bne :-			; 3 cycles
+				; 17 * 256 = 4352 -> 4,4 ms
 
-  ; Set MAC address
-  lda cfg_mac
-  ldx cfg_mac + 1
-fixlan15:
-  sta ethiar
-fixlan16:
-  stx ethiar + 1
-  lda cfg_mac + 2
-  ldx cfg_mac + 3
-fixlan17:
-  sta ethiar + 2
-fixlan18:
-  stx ethiar + 3
-  lda cfg_mac + 4
-  ldx cfg_mac + 5
-fixlan19:
-  sta ethiar + 4
-fixlan20:
-  stx ethiar + 5
+	; Enable transmit and receive
+	lda #%10000001		; Enable transmit TXENA, PAD_EN
+	ldx #%00000011		; Enable receive, strip CRC ???
+fixup05:sta ethtcr
+fixup06:stx ethrcr+1
 
-  ; Set interrupt mask
-  lda #$02                      ; Bank 2
-fixlan21:
-  sta ethbsr
+	lda #$01		; Bank 1
+fixup07:sta ethbsr
 
-  lda #%00000000                ; No interrupts
-fixlan22:
-  sta ethmsk
-  clc
-  rts
+	; Check ISA mode base address register for reset values
+	lda #$18^67		; I/O base $300 + ROM $CC000
+fixup08:eor ethbar
+fixup09:eor ethbar+1
+	beq :+
+	sec
+	rts
 
-lanerror:
-  sec
-  rts
+:
+fixup10:lda ethcr+1
+	ora #%00010000		; No wait (IOCHRDY)
+fixup11:sta ethcr+1
 
-; receive a packet
-; inputs: none
-; outputs:
-; if there was an error receiving the packet (or no packet was ready) then carry flag is set
-; if packet was received correctly then carry flag is clear,
-; eth_inp contains the received packet,
-; and eth_inp_len contains the length of the packet
-eth_rx:
-fixlan38:
-  lda ethist
-  and #%00000001                ; Check receive interrupt
-  bne :+
-  sec                           ; No packet available
-  rts
+	lda #%00001001		; Auto release
+fixup12:sta ethctr+1
 
-: lda #$00
-  ldx #%11100000                ; Receive, Auto Increment, Read
-fixlan39:
-  sta ethptr
-fixlan40:
-  stx ethptr + 1
+	; Set MAC address
+	ldy #$00
+:	lda mac,y
+fixup13:sta ethiar,y
+	iny
+	cpy #$06
+	bcc :-
 
-  ; Last word contains 'last data byte' and $60 or 'fill byte' and $40
-fixlan41:
-  lda ethdata                   ; Status word
-fixlan42:
-  lda ethdata                   ; Only need high byte
+	; Set interrupt mask
+	lda #$02		; Bank 2
+fixup14:sta ethbsr
 
-  ; Move ODDFRM bit into carry:
-  ; - Even packet length -> carry clear -> subtract 6 bytes
-  ; - Odd packet length  -> carry set   -> subtract 5 bytes
-  lsr
-  lsr
-  lsr
-  lsr
-  lsr
+	lda #%00000000		; No interrupts
+fixup15:sta ethmsk
+	tax
+	clc
+	rts
 
-  ; The packet contains 3 extra words
-fixlan43:
-  lda ethdata                   ; Total number of bytes
-  sbc #$05                      ; Actually 5 or 6 depending on carry
-  sta eth_inp_len
-fixlan44:
-  lda ethdata
-  sbc #$00
-  sta eth_inp_len+1
+;---------------------------------------------------------------------
 
-  ; Read bytes into buffer
-  lda #<eth_inp
-  ldx #>eth_inp
-  sta eth_packet
-  stx eth_packet+1
-  ldx eth_inp_len+1
-  ldy #$00
-lanread:
-fixlan46:
-  lda ethdata
-  sta (eth_packet),y
-  iny
-  bne :+
-  inc eth_packet+1
-: cpy eth_inp_len
-  bne lanread
-  dex
-  bpl lanread
+poll:
+fixup16:lda ethist
+	and #%00000001		; RCV INT
+	beq :+
 
-  ; Remove and release RX packet from the FIFO
-  lda #%10000000
-fixlan47:
-  sta ethmmucr
+	; Process the incoming packet
+	; ---------------------------
+	
+	lda #$00
+	ldx #%11100000		; RCV, AUTO INCR., READ
+fixup17:sta ethptr
+fixup18:stx ethptr+1
 
-  clc
-  rts
+	; Last word contains 'last data byte' and $60 or 'fill byte' and $40
+fixup19:lda ethdata		; Status word
+fixup20:lda ethdata		; Need high byte only
 
-; send a packet
-; inputs:
-; eth_outp: packet to send
-; eth_outp_len: length of packet to send
-; outputs:
-; if there was an error sending the packet then carry flag is set
-; otherwise carry flag is cleared
-eth_tx:
-  lda eth_outp_len + 1
-  ora #%00100000
-fixlan23:
-  sta ethmmucr                  ; Allocate memory for transmission
-fixlan24:
-  lda ethist
-  and #%00001000                ; Allocation interrupt
-  bne :+
-  sec
-  rts                           ; Not able to allocate; bail
+	; Move ODDFRM bit into carry:
+	; - Even packet length -> carry clear -> subtract 6 bytes
+	; - Odd packet length  -> carry set   -> subtract 5 bytes
+	lsr
+	lsr
+	lsr
+	lsr
+	lsr
 
-: lda #%00001000
-fixlan25:
-  sta ethack                    ; Acknowledge interrupt
+	; The packet contains 3 extra words
+fixup21:lda ethdata		; Total number of bytes
+	sbc #$05		; Actually 5 or 6 depending on carry
+	sta len
+fixup22:lda ethdata
+	sbc #$00
+	sta len+1
 
-fixlan26:
-  lda etharr
-fixlan27:
-  sta ethpnr                    ; Set packet number
+	; Is bufsize < len ?
+	lda bufsize
+	cmp len
+	lda bufsize+1
+	sbc len+1
+	bcs :++
 
-  lda #$00
-  ldx #%01000000                ; Auto increment
-fixlan28:
-  sta ethptr
-fixlan29:
-  stx ethptr + 1
+	; Yes, skip packet
+	; Remove and release RX packet from the FIFO
+	lda #%10000000
+fixup23:sta ethmmucr
 
-  lda #$00                      ; Status written by CSMA
-fixlan30:
-  sta ethdata
-fixlan31:
-  sta ethdata
+	; No packet available
+	lda #$00
+:	tax
+	sec
+	rts
 
-  lda eth_outp_len
-  eor #$01
-  lsr
-  lda eth_outp_len
-  adc #$05                      ; Actually will be 5 or 6 depending on carry
-fixlan32:
-  sta ethdata
-  lda eth_outp_len + 1
-  adc #$00
-fixlan33:
-  sta ethdata
+	; Read bytes into buffer
+:	jsr adjustptr
+:
+fixup24:lda ethdata
+	sta (ptr),y
+	iny
+	bne :-
+	inc ptr+1
+	dex
+	bpl :-
 
-  lda #<eth_outp                ; Send the packet
-  ldx #>eth_outp
-  sta eth_packet
-  stx eth_packet + 1
-  ldx eth_outp_len + 1
-  ldy #$00
-lanwrite:
-  lda (eth_packet),y
-fixlan34:
-  sta ethdata
-  iny
-  bne :+
-  inc eth_packet + 1
-: cpy eth_outp_len
-  bne lanwrite
-  dex
-  bpl lanwrite
+	; Remove and release RX packet from the FIFO
+	lda #%10000000
+fixup25:sta ethmmucr
 
-  lda eth_outp_len              ; Odd packet length?
-  lsr
-  bcc :+
+	; Return packet length
+	lda len
+	ldx len+1
+	clc
+	rts
 
-  lda #%001000000               ; Yes, Odd
-  bne fixlan36                  ; Always
+;---------------------------------------------------------------------
 
-: lda #$00                      ; No
-fixlan35:
-  sta ethdata                   ; Fill byte
-fixlan36:
-  sta ethdata                   ; Control byte
-  lda #%11000000                ; Enqueue packet - transmit
-fixlan37:
-  sta ethmmucr
+send:
+	; Save packet length
+	sta len
+	stx len+1
 
-  clc
-  rts
+	; Allocate memory for TX
+	txa
+	ora #%00100000
+fixup26:sta ethmmucr
 
-;
-; lan_self_modify - make all entry points variable so we can move the
-;   LANceGS card around in the Apple
-;
-lan_self_modify:
-  lda #$C0                      ; FIXME - hardcoded to slot 4
-  clc                           ; We'll be adding later, so clear carry
-  ; Make the accumulator contain slot number plus $80
-  ;   i.e. Slot 1 = $90
-  ;   i.e. Slot 2 = $A0
-  ;   i.e. Slot 3 = $B0
-  ;   i.e. Slot 4 = $C0
-  ;   i.e. Slot 5 = $D0
-  ;   i.e. Slot 6 = $E0
-  ;   i.e. Slot 7 = $F0
-; $C0s0: Save off all ethtcr, ethcr, ethmmucr, and ethmt mods
-  sta fixlan01 + 1
-  sta fixlan09 + 1
-  sta fixlan23 + 1
-  sta fixlan37 + 1
-; sta fixlan45 + 1              ; Removed
-  sta fixlan47 + 1
+	; 8 retries
+	ldy #$08
 
-; $C0s1: Save off all ethtcr+1, ethcr+1, ethmmucr+1, and ethmt+1 mods
-  adc #$01
-; sta fixlan02 + 1              ; Removed
-  sta fixlan12 + 1
-  sta fixlan13 + 1
+	; Wait for allocation ready
+:
+fixup27:lda ethist
+	and #%00001000		; ALLOC INT
+	bne :+
 
-; $C0s2: Save off all ethephsr, ethbar, and ethpnr mods
-  adc #$01
-  sta fixlan03 + 1
-  sta fixlan27 + 1
+	; Shouldn't we do something here to actively free memory,
+	; maybe removing and releasing an RX packet from the FIFO ???
 
-; $C0s3: Save off all ethephsr+1, ethbar+1, ethpnr+1, and etharr mods
-  adc #$01
-  sta fixlan04 + 1
-  sta fixlan26 + 1
+	; And try again
+	dey
+	bne :-
+	sec
+	rts
 
-; $C0s4: Save off all ethrcr, ethiar, and ethfifo mods
-  adc #$01
-  sta fixlan07 + 1
-  sta fixlan15 + 1
+	; Acknowledge interrupt, is it necessary ???
+:	lda #%00001000
+fixup28:sta ethack
 
-; $C0s5: Save off all ethrcr+1, ethiar+1, and ethfifo+1 mods
-  adc #$01
-  sta fixlan06 + 1
-  sta fixlan08 + 1
-  sta fixlan10 + 1
-  sta fixlan16 + 1
+	; Set packet address
+fixup29:lda etharr
+fixup30:sta ethpnr
 
-; $C0s6: Save off all ethecr, ethptr, and ethiar+2 mods
-  adc #$01
-  sta fixlan17 + 1
-  sta fixlan28 + 1
-  sta fixlan39 + 1
+	lda #$00
+	ldx #%01000000		; AUTO INCR.
+fixup31:sta ethptr
+fixup32:stx ethptr+1
 
-; $C0s7: Save off all ethecr+1, ethptr+1, and ethiar+3 mods
-  adc #$01
-  sta fixlan18 + 1
-  sta fixlan29 + 1
-  sta fixlan40 + 1
+	; Status written by CSMA
+	lda #$00
+fixup33:sta ethdata
+fixup34:sta ethdata
 
-; $C0s8: Save off all ethmir, ethdata, ethmgmt, and ethiar+4 mods
-  adc #$01
-  sta fixlan19 + 1
-  sta fixlan30 + 1
-  sta fixlan31 + 1
-  sta fixlan32 + 1
-  sta fixlan33 + 1
-  sta fixlan34 + 1
-  sta fixlan35 + 1
-  sta fixlan36 + 1
-  sta fixlan41 + 1
-  sta fixlan42 + 1
-  sta fixlan43 + 1
-  sta fixlan44 + 1
-  sta fixlan46 + 1
+	; Check packet length parity:
+	; - Even packet length -> carry set   -> add 6 bytes
+	; - Odd packet length  -> carry clear -> add 5 bytes
+	lda len
+	eor #$01
+	lsr
+	
+	; The packet contains 3 extra words
+	lda len
+	adc #$05		; Actually 5 or 6 depending on carry
+fixup35:sta ethdata
+	lda len+1
+	adc #$00
+fixup36:sta ethdata
 
-; $C0s9: Save off all ethmir+1, ethdata+1, ethmgmt+1, and ethiar+5 mods
-  adc #$01
-  sta fixlan20 + 1
+	; Send the packet
+	; ---------------
 
-; $C0sA: Save off all ethmcr, ethgpr, and ethrev mods
-; $C0sB: Save off all ethmcr+1, ethgpr+1, and ethrev+1 mods
-  ; None
+	; Write bytes from buffer
+	jsr adjustptr
+:	lda (ptr),y
+fixup37:sta ethdata
+	iny
+	bne :-
+	inc ptr+1
+	dex
+	bpl :-
 
-; $C0sC: Save off all ethctr, ethist, ethack, and ethercv mods
-  adc #$03                      ; Because there were no a or b mods
-  sta fixlan24 + 1
-  sta fixlan25 + 1
-  sta fixlan38 + 1
+	; Odd packet length ?
+	lda len
+	lsr
+	bcc :+
 
-; $C0sD: Save off all ethmsk, ethctr+1 mods
-  adc #$01
-  sta fixlan14 + 1
-  sta fixlan22 + 1
+	; Yes
+	lda #%00100000		; ODD
+	bne :++			; Always
 
-; $C0sE: Save off all ethbsr mods
-  adc #$01
-  sta fixlan00 + 1
-  sta fixlan05 + 1
-  sta fixlan11 + 1
-  sta fixlan21 + 1
-  rts
+	; No
+:	lda #$00
+fixup38:sta ethdata		; Fill byte
+:	
+fixup39:sta ethdata		; Control byte
 
+	; Add packet to FIFO
+	lda #%11000000		; ENQUEUE PACKET - transmit packet
+fixup40:sta ethmmucr
+	clc
+	rts
 
-.rodata
+;---------------------------------------------------------------------
 
-eth_driver_name:
-  .asciiz "LANceGS (91C96)"
+exit:
+	rts
 
-eth_driver_io_base = fixlan01+1
+;---------------------------------------------------------------------
 
+adjustptr:
+	lda len
+	ldx len+1
+	eor #$FF		; Two's complement part 1
+	tay
+	iny			; Two's complement part 2
+	sty reg
+	sec
+	lda bufaddr
+	sbc reg
+	sta ptr
+	lda bufaddr+1
+	sbc #$00
+	sta ptr+1
+	rts
 
-
-; The contents of this file are subject to the Mozilla Public License
-; Version 1.1 (the "License"); you may not use this file except in
-; compliance with the License. You may obtain a copy of the License at
-; http://www.mozilla.org/MPL/
-;
-; Software distributed under the License is distributed on an "AS IS"
-; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
-; License for the specific language governing rights and limitations
-; under the License.
-;
-; The Original Code is ip65.
-;
-; The Initial Developer of the Original Code is David Schmidt
-; Portions created by the Initial Developer is Copyright (C) 2011
-; All Rights Reserved.
-; -- LICENSE END --
+;---------------------------------------------------------------------
