@@ -213,7 +213,6 @@ verifyheader:
   rts
 
 @badpacket:
-  brk
   inc bad_header
   bne :+
   inc bad_header + 1
