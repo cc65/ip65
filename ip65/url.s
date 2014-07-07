@@ -1,5 +1,6 @@
 ; routines for parsing a URL, and downloading an URL
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -41,8 +42,8 @@ TIMEOUT_SECONDS = 15
 .export url_download_buffer_length
 .export resource_download
 
-target_string   = copy_src
-search_string   = copy_dest
+target_string   = ptr1
+search_string   = ptr2
 selector_buffer = output_buffer
 
 
@@ -155,9 +156,9 @@ lda #url_type_gopher
   ldax #slash
   jsr parser_skip_next
   ; AX now pointing at selector
-  stax copy_src
+  stax ptr1
   ldax #selector_buffer
-  stax copy_dest
+  stax ptr2
   lda #0
   sta src_ptr
   sta dest_ptr
@@ -167,7 +168,7 @@ lda #url_type_gopher
   bne @not_gopher
   ; first byte after / in a gopher url is the resource type
   ldy src_ptr
-  lda (copy_src),y
+  lda (ptr1),y
   beq @start_of_selector
   sta url_resource_type
   inc src_ptr
@@ -180,7 +181,7 @@ lda #url_type_gopher
   ldy #get_length-1
   sty dest_ptr
 : lda get,y
-  sta (copy_dest),y
+  sta (ptr2),y
   dey
   bpl :-
 
@@ -190,13 +191,13 @@ lda #url_type_gopher
   jmp @save_first_byte_of_selector
 @copy_one_byte:
   ldy src_ptr
-  lda (copy_src),y
+  lda (ptr1),y
   cmp #$20
   bcc @end_of_selector          ; any control char (including CR,LF, and $00) should be treated as end of URL
   inc src_ptr
 @save_first_byte_of_selector:
   ldy dest_ptr
-  sta (copy_dest),y
+  sta (ptr2),y
   inc dest_ptr
   bne @copy_one_byte
 @end_of_selector:
@@ -212,22 +213,22 @@ lda #url_type_gopher
   beq :+
   ldy dest_ptr
   inc dest_ptr
-  sta (copy_dest),y
+  sta (ptr2),y
   inx
   bne :-
 : ; now copy the host field
   jsr skip_to_hostname
   ; AX now pointing at hostname
-  stax copy_src
+  stax ptr1
   ldax #selector_buffer
-  stax copy_dest
+  stax ptr2
 
   lda #0
   sta src_ptr
 
 @copy_one_byte_of_hostname:
   ldy src_ptr
-  lda (copy_src),y
+  lda (ptr1),y
   beq @end_of_hostname
   cmp #':'
   beq @end_of_hostname
@@ -235,7 +236,7 @@ lda #url_type_gopher
   beq @end_of_hostname
   inc src_ptr
   ldy dest_ptr
-  sta (copy_dest),y
+  sta (ptr2),y
   inc dest_ptr
   bne @copy_one_byte_of_hostname
 @end_of_hostname:
@@ -244,10 +245,10 @@ lda #url_type_gopher
 @final_crlf:
   ldy dest_ptr
   lda #$0d
-  sta (copy_dest),y
+  sta (ptr2),y
   iny
   lda #$0a
-  sta (copy_dest),y
+  sta (ptr2),y
   iny
   sty dest_ptr
   dex
@@ -255,7 +256,7 @@ lda #url_type_gopher
 
 @done:
   lda #$00
-  sta (copy_dest),y
+  sta (ptr2),y
   ldax #selector_buffer
   stax url_selector
   clc
@@ -351,10 +352,10 @@ resource_download:
 put_zero_at_end_of_dl_buffer:
   ; put a zero byte at the end of the file
   ldax temp_buffer
-  stax copy_dest
+  stax ptr2
   lda #0
   tay
-  sta (copy_dest),y
+  sta (ptr2),y
   rts
 
 not_end_of_file:

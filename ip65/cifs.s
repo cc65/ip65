@@ -3,6 +3,7 @@
 ;
 ; refs: RFC1001, RFC1002, "Implementing CIFS" - http://ubiqx.org/cifs/
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -69,7 +70,7 @@ nbns_registration_message_length = 68
 ; outputs:
 ; AX: pointer to decoded hostname
 cifs_l1_encode:
-  stax copy_src
+  stax ptr1
   lda #0
   tax
   sta hostname_buffer+32
@@ -85,7 +86,7 @@ cifs_l1_encode:
   ldy #0
   ldx #0
 @copy_loop:
-  lda (copy_src),y
+  lda (ptr1),y
   beq @done
   lsr
   lsr
@@ -95,7 +96,7 @@ cifs_l1_encode:
   adc #$41
   sta hostname_buffer,x
   inx
-  lda (copy_src),y
+  lda (ptr1),y
   and #$0F
   clc
   adc #$41
@@ -115,11 +116,11 @@ cifs_l1_encode:
 ; outputs:
 ; AX: pointer to decoded hostname (will be 16 byte hostname, right padded with spaces, nul terminated)
 cifs_l1_decode:
-  stax copy_src
+  stax ptr1
   ldy #0
   ldx #0
 @decode_loop:
-  lda (copy_src),y
+  lda (ptr1),y
   sec
   sbc #$41
   asl
@@ -128,7 +129,7 @@ cifs_l1_decode:
   asl
   sta hi_nibble
   iny
-  lda (copy_src),y
+  lda (ptr1),y
   sec
   sbc #$41
   clc
@@ -306,10 +307,10 @@ nbns_callback:
 @not_unicast:
   ; is it looking for our local hostname?
   ldax #udp_inp+udp_data+nbns_question_name+1
-  stax copy_src
+  stax ptr1
   ldy #0
 @cmp_loop:
-  lda (copy_src),y
+  lda (ptr1),y
   cmp local_hostname,y
   bne @not_us
   iny
@@ -396,19 +397,19 @@ nb_session_callback:
 
   ; have we got a complete message?
   ldax cifs_cmd_buffer
-  stax copy_src
+  stax ptr1
   ldy #3
-  lda (copy_src),y
+  lda (ptr1),y
   cmp cifs_cmd_length
   bne @not_got_full_message
   dey
-  lda (copy_src),y
+  lda (ptr1),y
   cmp cifs_cmd_length+1
   bne @not_got_full_message
 
   ; we have a complete message!
   ldy #0
-  lda (copy_src),y              ; get the message type
+  lda (ptr1),y                  ; get the message type
   cmp #$81                      ; is it a session request?
   bne @not_session_request
   ldax #positive_session_response_packet_length
@@ -423,11 +424,11 @@ nb_session_callback:
 
   ; this SHOULD be a SMB - best check the header
   ldy #4
-  lda (copy_src),y              ; get the message data
+  lda (ptr1),y                  ; get the message data
   cmp #$FF                      ; start of SMB header
   bne @not_smb
   iny
-  lda (copy_src),y              ; get the message data
+  lda (ptr1),y                  ; get the message data
   cmp #'S'                      ; start of SMB header
   bne @not_smb
 
@@ -453,17 +454,17 @@ nb_session_callback:
   rts
 
 smb_handler:
-  ; at this point, copy_src points to an SMB block encapsulated in an NBT session header
+  ; at this point, ptr1 points to an SMB block encapsulated in an NBT session header
   clc
-  lda copy_src
+  lda ptr1
   adc #4
   sta smb_ptr                   ; skip past the NBT header
-  lda copy_src+1
+  lda ptr1+1
   adc #00
   sta smb_ptr+1
 
   ldy #8
-  lda (copy_src),y              ; get the SMB type
+  lda (ptr1),y                  ; get the SMB type
   cmp #$72
   bne @not_negotiate_protocol
   jmp @negotiate_protocol
@@ -484,7 +485,7 @@ smb_handler:
 
 @parse_andx_block:
   ldax andx_ptr
-  stax copy_src
+  stax ptr1
   lda andx_opcode
 
   cmp #$ff
@@ -513,16 +514,16 @@ smb_handler:
 
 @go_to_next_andx_block:
   ldy #3
-  lda (copy_src),y              ; get the AndX offset low byte
+  lda (ptr1),y                  ; get the AndX offset low byte
   clc
   adc smb_ptr
   sta andx_ptr
   iny
-  lda (copy_src),y              ; get the AndX offset high byte
+  lda (ptr1),y                  ; get the AndX offset high byte
   adc smb_ptr+1
   sta andx_ptr+1
   ldy #1
-  lda (copy_src),y              ; get the subsequent AndX opcode
+  lda (ptr1),y                  ; get the subsequent AndX opcode
   sta andx_opcode
 
   jmp @parse_andx_block
@@ -539,7 +540,7 @@ smb_handler:
   ; copy the request TID,PID,UID,MID into the response
   ldy #28                       ; offset of TID from start of message
   ldx #0
-: lda (copy_src),y
+: lda (ptr1),y
   sta negotiate_protocol_response_tid,x
   inx
   iny
@@ -552,10 +553,10 @@ smb_handler:
   clc
   lda cifs_cmd_buffer
   adc #$26
-  sta copy_src
+  sta ptr1
   lda cifs_cmd_buffer+1
   adc #$00
-  sta copy_src+1
+  sta ptr1+1
 
   ldy #$0
 @dialect_scan_loop:
@@ -564,7 +565,7 @@ smb_handler:
   lda dialect_index
   cmp #$10                      ; if we've scanned more than $10 dialects, something is wrong
   beq @end_of_dialects
-  lda (copy_src),y
+  lda (ptr1),y
   cmp #$02
   bne @test_dialect
   inc dialect_index
@@ -572,14 +573,14 @@ smb_handler:
 @test_dialect:
   tya
   clc
-  adc copy_src
-  sta copy_src
+  adc ptr1
+  sta ptr1
   bcc :+
-  inc copy_src+1
+  inc ptr1+1
 : ldy #0
 
 @test_dialect_loop:
-  lda (copy_src),y
+  lda (ptr1),y
   cmp preferred_dialect_id,y
   bne @dialect_scan_loop
   iny
@@ -601,11 +602,11 @@ smb_handler:
 
 start_smb_response:
   ldax smb_response_buffer
-  stax copy_dest
+  stax ptr2
   ldy #0
 @copy_header_loop:
-  lda (copy_src),y              ; copy_src should be the SMB request - cloning this will set PID / MID etc
-  sta (copy_dest),y
+  lda (ptr1),y                  ; copy_src should be the SMB request - cloning this will set PID / MID etc
+  sta (ptr2),y
   iny
   cpy #smb_response_header_length
   bne @copy_header_loop
@@ -614,18 +615,18 @@ start_smb_response:
   lda #smb_response_header_length
   sta smb_response_length
   ldy #3
-  sta (copy_dest),y
+  sta (ptr2),y
 
   ; set the flags correctly
   ldy #smb_response_flags_offset
   lda #$82                      ; FLAGS byte
-  sta (copy_dest),y
+  sta (ptr2),y
   iny
   lda #$01                      ; FLAGS2 low byte
-  sta (copy_dest),y
+  sta (ptr2),y
   iny
   lda #$00                      ; FLAGS2 hi byte
-  sta (copy_dest),y
+  sta (ptr2),y
   rts
 
 add_andx_response:

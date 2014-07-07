@@ -1,5 +1,6 @@
 ; ARP address resolution
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .export arp_init
@@ -30,9 +31,7 @@
 .import timer_read
 .import timer_timeout
 
-.importzp copy_src
-
-ap = copy_src
+ap = ptr1
 
 ARP_TIMEOUT_MS = 100
 

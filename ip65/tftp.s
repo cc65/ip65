@@ -4,6 +4,7 @@
 TFTP_MAX_RESENDS = 10
 TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 seconds
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -48,7 +49,7 @@ TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 
 
 .import timer_read
 
-.importzp tftp_filename
+.exportzp tftp_filename = ptr3
 
 
 .bss

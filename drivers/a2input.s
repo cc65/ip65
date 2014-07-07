@@ -12,11 +12,10 @@
 .import print_a
 .import print_hex
 
-.importzp copy_src
-
+.include "zeropage.inc"
 .include "../inc/common.i"
 
-allowed_ptr = copy_src          ; reuse zero page
+allowed_ptr = ptr1
 
 
 .code

@@ -1,14 +1,7 @@
 ; helper routines for arithmetic on 32 bit numbers
 
+.include "zeropage.inc"
 .include "../inc/common.i"
-
-; reuse the copy_* zero page locations as pointers for 32bit addition
-.importzp copy_src
-.importzp copy_dest
-
-acc32 = copy_src                ; 32bit accumulater (pointer)
-op32  = copy_dest               ; 32 bit operand (pointer)
-acc16 = acc32                   ; 16bit accumulater (value, NOT pointer)
 
 
 .bss
@@ -19,9 +12,9 @@ temp_ax: .res 2
 .code
 
 ; no 16bit operand as can just use AX
-.exportzp acc32
-.exportzp op32
-.exportzp acc16
+.exportzp acc32 = ptr1          ; 32bit accumulater (pointer)
+.exportzp op32  = ptr2          ; 32 bit operand (pointer)
+.exportzp acc16 = acc32         ; 16bit accumulater (value, NOT pointer)
 
 .export add_32_32
 .export add_16_32

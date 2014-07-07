@@ -1,3 +1,4 @@
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .export ip_init
@@ -56,11 +57,7 @@
   .import tcp_process
 .endif
 
-.importzp copy_src
-.importzp copy_dest
-.exportzp ip_cksum_ptr
-
-ip_cksum_ptr=copy_dest
+.exportzp ip_cksum_ptr = ptr2
 
 
 .bss
@@ -347,13 +344,13 @@ ip_send:
   rol                           ; pad with 0
 ; clc
   adc #<ip_outp
-  sta copy_src                  ; borrow copymem zp...
+  sta ptr1
   lda ip_outp + ip_len
   adc #>ip_outp
-  sta copy_src + 1
+  sta ptr1 + 1
   ldy #0
   tya
-  sta (copy_src),y
+  sta (ptr1),y
   sec                           ; round up to even number
 @dontpad:
   lda ip_outp + ip_len + 1

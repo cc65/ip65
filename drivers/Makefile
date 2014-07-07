@@ -20,7 +20,6 @@ all: $(DRIVERS)
 
 C64OBJS=\
 	contiki.o \
-	c64zeropage.o \
 	c64print.o \
 	c64timer.o \
 	c64kernal.o \
@@ -29,7 +28,6 @@ C64OBJS=\
 
 A2OBJS=\
 	contiki.o \
-	a2zeropage.o \
 	a2print.o \
 	a2timer.o \
 	a2kernal.o \
@@ -38,7 +36,6 @@ A2OBJS=\
 
 VIC20OBJS=\
 	contiki.o \
-	vic20zeropage.o \
 	vic20print.o \
 	vic20timer.o \
 	vic20kernal.o \

@@ -1,7 +1,8 @@
 ; minimal dns implementation - requires a DNS server that supports recursion
 
-  MAX_DNS_MESSAGES_SENT = 8     ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
+MAX_DNS_MESSAGES_SENT = 8       ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -38,7 +39,7 @@
 .import check_for_abort_key
 .import timer_read
 
-.importzp dns_hostname
+dns_hostname = ptr1
 
 
 .bss

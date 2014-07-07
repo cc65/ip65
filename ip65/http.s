@@ -3,6 +3,7 @@
 ; NB - this routine uses the same buffer space and zero page locations as many other ip65 routines. so do not call
 ; other ip65 routines between the http_parse_request & http_get_value else odd things will happen.
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -13,14 +14,11 @@
 .export http_parse_request
 .export http_get_value
 
-.importzp copy_src
-.importzp copy_dest
 .import output_buffer
 .import parse_hex_digits
 
-; reuse the copy_src zero page var
-string_ptr = copy_src
-table_ptr  = copy_dest
+string_ptr = ptr1
+table_ptr  = ptr2
 
 
 .bss

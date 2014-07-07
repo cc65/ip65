@@ -1,8 +1,10 @@
 ; utility routine to copy memory
 
+.include "zeropage.inc"
+
 .export copymem
-.importzp copy_src
-.importzp copy_dest
+.exportzp copy_src  = ptr1
+.exportzp copy_dest = ptr2
 
 
 .bss

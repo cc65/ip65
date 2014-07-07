@@ -8,16 +8,16 @@
 .export check_for_abort_key
 .export get_key_if_available
 .export get_key_ip65
-.importzp copy_src
 
 .import ip65_process
 
+.include "zeropage.inc"
 .include "../inc/common.i"
+
+allowed_ptr = ptr1
 
 
 .code
-
-allowed_ptr = copy_src          ; reuse zero page
 
 ; use C64 Kernel ROM function to read a key
 ; inputs: none

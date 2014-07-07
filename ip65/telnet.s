@@ -6,6 +6,7 @@
 ; telnet_menu - called whenever the F1 key is pressed.
 ; telnet_on_connection - called after succesful connection
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .import tcp_connect
@@ -45,7 +46,7 @@
 .import telnet_menu
 .import telnet_on_connection
 
-.importzp buffer_ptr
+buffer_ptr = ptr4
 
 
 .code

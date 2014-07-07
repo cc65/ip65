@@ -3,14 +3,13 @@
 .export parse_integer
 .export parse_hex_digits
 
-.importzp copy_dest
-
 .import mul_8_16
 .importzp acc16
 
-target_string = copy_dest
-
+.include "zeropage.inc"
 .include "../inc/common.i"
+
+target_string = ptr2
 
 
 .bss

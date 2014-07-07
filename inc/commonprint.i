@@ -4,6 +4,7 @@
 
 .ifndef KPR_API_VERSION_NUMBER
   .define EQU =
+  .include "zeropage.inc"
   .include "../inc/kipper_constants.i"
 .endif
 
@@ -34,8 +35,7 @@
 .importzp copy_src
 .import cfg_tftp_server
 
-; reuse the copy_src zero page var
-pptr = copy_src
+pptr = ptr1
 
 
 .bss

@@ -7,6 +7,7 @@
 
 MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -378,16 +379,16 @@ tcp_close:
 ; carry flag is set if an error occured, clear otherwise
 tcp_send_string:
   stax tcp_send_data_ptr
-  stax copy_src
+  stax ptr1
   lda #0
   tay
   sta tcp_send_data_len
   sta tcp_send_data_len+1
-  lda (copy_src),y
+  lda (ptr1),y
   bne @find_end_of_string
   rts                           ; if the string is empty, don't send anything!
 @find_end_of_string:
-  lda (copy_src),y
+  lda (ptr1),y
   beq @done
   inc tcp_send_data_len
   iny

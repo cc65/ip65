@@ -1,6 +1,7 @@
 ; a simple HTTP server
 ; to use - call httpd_start with AX pointing at routine to call for each inbound page
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
@@ -33,7 +34,7 @@ HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be
 .import native_to_ascii
 .import timer_seconds
 
-temp_ptr = copy_src
+temp_ptr = ptr1
 
 
 .bss

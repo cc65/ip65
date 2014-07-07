@@ -1,5 +1,6 @@
 ; routines for dumping debug information
 
+.include "zeropage.inc"
 .include "../inc/common.i"
 .include "../inc/printf.i"
 
@@ -14,7 +15,6 @@
 .import eth_outp, eth_outp_len
 .import ip_outp
 .import udp_outp
-.importzp copy_src
 
 
 .code
@@ -105,7 +105,7 @@ console_out = $ffd2
 ; inputs: AX = address of (null terminated) string to print
 ; outputs: none
 console_strout:
-  stax copy_src
+  stax ptr1
 
   pha
   txa
@@ -113,7 +113,7 @@ console_strout:
   tya
   pha
   ldy #0
-: lda (copy_src),y
+: lda (ptr1),y
   beq @done
   jsr console_out
   iny

@@ -4,18 +4,17 @@
 
 .export parser_init
 .export parser_skip_next
-.importzp copy_src
-.importzp copy_dest
 
-target_string = copy_src
-search_string = copy_dest
-
+.include "zeropage.inc"
 .include "../inc/common.i"
 
 .ifndef KPR_API_VERSION_NUMBER
   .define EQU =
   .include "../inc/kipper_constants.i"
 .endif
+
+target_string = ptr1
+search_string = ptr2
 
 
 .bss
