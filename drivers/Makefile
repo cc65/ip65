@@ -24,6 +24,7 @@ C64OBJS=\
 	c64timer.o \
 	c64kernal.o \
 	c64input.o \
+	c64filteredinput.o \
 	cbmcharconv.o
 
 A2OBJS=\
@@ -32,6 +33,7 @@ A2OBJS=\
 	a2timer.o \
 	a2kernal.o \
 	a2input.o \
+	a2filteredinput.o \
 	a2charconv.o
 
 VIC20OBJS=\
@@ -40,6 +42,7 @@ VIC20OBJS=\
 	vic20timer.o \
 	vic20kernal.o \
 	vic20input.o \
+	vic20filteredinput.o \
 	cbmcharconv.o
 
 c64rrnet.lib: rr-net.o cs8900a.o $(C64OBJS)
