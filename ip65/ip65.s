@@ -74,7 +74,7 @@ ip65_random_word:
 ; except for dhcp_init which must also be called if the application
 ; is using dhcp rather than hardcoded ip configuration
 ; inputs: none
-; outputs: none
+; outputs: carry flag is set if there was an error, clear otherwise
 ip65_init:
   jsr eth_init                  ; initialize ethernet driver
 
