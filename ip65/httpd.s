@@ -31,7 +31,6 @@ HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be
 .import tcp_send_data_len
 .import tcp_send
 .import tcp_close
-.import native_to_ascii
 .import timer_seconds
 
 temp_ptr = ptr1

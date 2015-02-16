@@ -35,8 +35,6 @@
 .import failed_msg
 .import print
 .import print_errorcode
-.import native_to_ascii
-.import ascii_to_native
 
 .export telnet_connect
 .export telnet_use_native_charset
