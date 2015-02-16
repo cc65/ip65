@@ -17,13 +17,16 @@ screen_current_row = $25        ; CV - Vertical cursor-position (0-23)
 ; outputs: none
 print_a:
   ora #$80                      ; turn ASCII into Apple 2 screen codes
-  cmp #$8A                      ; is it a line feed?
+  cmp #$e0                      ; is it lower case?
+  bcc @check_line_feed
+  ldx $fbb3                     ; check machine version
+  cpx #$06                      ; is it at least an //e?
+  beq @check_line_feed
+  and #$df                      ; convert to upper case
+@check_line_feed:
+  cmp #$8a                      ; is it a line feed?
   bne @not_line_feed
-; jmp print_cr
-  pha
-  lda #$0
-  sta screen_current_col
-  pla
+  lda #$8d                      ; replace with a carriage return
 @not_line_feed:
   jmp $fded
 
