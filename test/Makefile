@@ -94,15 +94,15 @@ ip65.d64: prg
 
 ip65.dsk: bin
 	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ dns        bin 0 < dns.bin
-	java -jar $(AC) -cc65 $@ dottedquad bin 0 < dottedquad.bin
-	java -jar $(AC) -cc65 $@ geturl     bin 0 < geturl.bin
-	java -jar $(AC) -cc65 $@ httpd      bin 0 < httpd.bin
-	java -jar $(AC) -cc65 $@ parser     bin 0 < parser.bin
-	java -jar $(AC) -cc65 $@ ping       bin 0 < ping.bin
-	java -jar $(AC) -cc65 $@ sntp       bin 0 < sntp.bin
-	java -jar $(AC) -cc65 $@ tcp        bin 0 < tcp.bin
-	java -jar $(AC) -cc65 $@ tftp       bin 0 < tftp.bin
+	java -jar $(AC) -cc65 $@ dns        bin < dns.bin
+	java -jar $(AC) -cc65 $@ dottedquad bin < dottedquad.bin
+	java -jar $(AC) -cc65 $@ geturl     bin < geturl.bin
+	java -jar $(AC) -cc65 $@ httpd      bin < httpd.bin
+	java -jar $(AC) -cc65 $@ parser     bin < parser.bin
+	java -jar $(AC) -cc65 $@ ping       bin < ping.bin
+	java -jar $(AC) -cc65 $@ sntp       bin < sntp.bin
+	java -jar $(AC) -cc65 $@ tcp        bin < tcp.bin
+	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
 
 clean:
 	make -C ../ip65 clean
