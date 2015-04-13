@@ -14,6 +14,7 @@ MAX_DNS_MESSAGES_SENT = 8       ; timeout after sending 8 messages will be about
 .export dns_resolve
 .export dns_ip
 .export dns_status
+.export dns_hostname_is_dotted_quad
 .import ip65_error
 .import cfg_dns
 
@@ -84,7 +85,7 @@ hostname_copied:  .res 1
 
 questions_in_response: .res 1
 
-hostname_was_dotted_quad: .res 1
+dns_hostname_is_dotted_quad: .res 1
 
 
 .code
@@ -96,6 +97,8 @@ hostname_was_dotted_quad: .res 1
 ; (e.g. "192.168.1.0",0)
 ; outputs:
 ; carry flag is set on error (i.e. hostname too long), clear otherwise
+; dns_hostname_is_dotted_quad: 1 if the hostname is an address in "dotted quad" format, 0 otherwise
+; dns_ip: set to the ip address of the hostname (if dns_hostname_is_dotted_quad is 1)
 dns_set_hostname:
   stax dns_hostname
   ; copy the hostname into  a buffer suitable to copy directly into the qname field
@@ -104,7 +107,7 @@ dns_set_hostname:
   bcs @wasnt_dotted_quad
   ; if the string was a dotted quad, then copy the parsed 4 bytes in to dns_ip
   lda #1
-  sta hostname_was_dotted_quad
+  sta dns_hostname_is_dotted_quad
   ldx #3                        ; set destination address
 : lda dotted_quad_value,x
   sta dns_ip,x
@@ -116,7 +119,7 @@ dns_set_hostname:
   ldy #0                        ; input pointer
   ldx #1                        ; output pointer (start at 1, to skip first length offset, which will be filled in later)
 
-  sty hostname_was_dotted_quad
+  sty dns_hostname_is_dotted_quad
   sty dns_current_label_length
   sty dns_current_label_offset
   sty hostname_copied
@@ -178,9 +181,9 @@ dns_set_hostname:
 ; dns_set_hostname must have been called to load the string to be resolved
 ; outputs:
 ; carry flag is set if there was an error, clear otherwise
-; dns_ip: set to the  ip address of the hostname (if no error)
+; dns_ip: set to the ip address of the hostname (if no error)
 dns_resolve:
-  lda hostname_was_dotted_quad
+  lda dns_hostname_is_dotted_quad
   beq @hostname_not_dotted_quad
   clc
   rts                           ; we already set dns_ip when copying the hostname
