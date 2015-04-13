@@ -55,9 +55,9 @@ httpd_callback:
 .rodata
 
 initializing:
-  .byte "INITIALIZING ",0
+  .byte 13,"INITIALIZING ",0
 listening:
-  .byte "LISTENING",0
+  .byte "LISTENING",13,0
 said:
   .byte ":",0
 html:

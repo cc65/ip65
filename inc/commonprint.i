@@ -379,7 +379,7 @@ dhcp_msg:
   .byte "DHCP",0
 
 init_msg:
-  .byte " Initializing ",0
+  .byte 10,"Initializing ",0
 
 failed_msg:
   .byte "failed",0
