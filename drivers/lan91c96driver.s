@@ -1,23 +1,16 @@
-; RR-Net driver
+; Standard Microsystems LAN91C96 driver
 
-.export _cs8900a_driver_name
-.export _cs8900a_driver_io_base
+.import _lan91c96
+.import _lan91c96_driver_name
+.import _lan91c96_driver_io_base
 
-
-.rodata
-
-_cs8900a_driver_name:
-  .byte "RR-Net",0
-
-
-.data
-
-_cs8900a_driver_io_base:
-  .word $de08
+.export eth                = _lan91c96
+.export eth_driver_name    = _lan91c96_driver_name
+.export eth_driver_io_base = _lan91c96_driver_io_base
 
 
 
-; -- LICENSE FOR rr-net.s --
+; -- LICENSE FOR lan91c96driver.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

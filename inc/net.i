@@ -14,8 +14,10 @@
 .import cfg_get_configuration_ptr
 
 .macro init_ip_via_dhcp
-  print_driver_init
   jsr ip65_init
+  php
+  print_driver_init
+  plp
   bcc :+
   print_failed
   sec

@@ -22,7 +22,6 @@
   jsr print_a
 
   jsr print_cr
-  jsr print_ip_config
   init_ip_via_dhcp
 ; jsr overwrite_with_hardcoded_dns_server
   jsr print_ip_config

@@ -1,4 +1,4 @@
-; Contiki driver wrapper
+; Wrapper for Contiki ethernet driver
 
 .include "../inc/common.i"
 
@@ -11,11 +11,10 @@
 .import eth_outp
 .import eth_outp_len
 
+.import eth
 .import eth_driver_io_base
 
 .import cfg_mac
-
-.import eth
 
 .struct driver
   drvtype .byte 3
@@ -36,8 +35,6 @@
 ; inputs: none
 ; outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
-  ldax #1518
-  stax eth+driver::bufsize
   ldax eth_driver_io_base
   jsr eth+driver::init
   ldx #5
@@ -45,6 +42,8 @@ eth_init:
   sta cfg_mac,x
   dex
   bpl :-
+  ldax #1518
+  stax eth+driver::bufsize
   rts
 
 ; receive a packet
@@ -76,7 +75,7 @@ eth_tx:
 
 
 
-; -- LICENSE FOR contiki.s --
+; -- LICENSE FOR ethernet.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

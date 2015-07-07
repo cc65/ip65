@@ -1,5 +1,5 @@
 # Build for Cirrus Logic CS8900A based devices:
-# make
+# make eth=cl
 
 # Build for Standard Microsystems LAN91C96 based devices:
 # make eth=sm
@@ -7,16 +7,20 @@
 # Build for WIZnet W5100 based devices:
 # make eth=wn
 
-ifeq ($(eth),sm)
+ifeq ($(eth),cl)
+  C64DRIVERLIB = ../drivers/c64rrnet.lib
+  A2DRIVERLIB  = ../drivers/a2uther.lib
+else ifeq ($(eth),sm)
   C64DRIVERLIB = ../drivers/c64eth64.lib
   A2DRIVERLIB  = ../drivers/a2lancegs.lib
 else ifeq ($(eth),wn)
+  C64DRIVERLIB = ../drivers/c64wiz811.lib
   A2DRIVERLIB  = ../drivers/a2uther2.lib
 else
-  C64DRIVERLIB = ../drivers/c64rrnet.lib
-  A2DRIVERLIB  = ../drivers/a2uther.lib
-  VICDRIVERLIB = ../drivers/vic20rrnet.lib
+  C64DRIVERLIB = ../drivers/c64combo.lib
+  A2DRIVERLIB  = ../drivers/a2combo.lib
 endif
+VICDRIVERLIB = ../drivers/vic20rrnet.lib
 
 UDP =\
 	dns \

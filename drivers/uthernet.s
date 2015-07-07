@@ -1,21 +1,18 @@
 ; Uthernet driver
 
-.import _cs8900a
-
-.export eth = _cs8900a
-.export eth_driver_name
-.export eth_driver_io_base
+.export _cs8900a_driver_name
+.export _cs8900a_driver_io_base
 
 
 .rodata
 
-eth_driver_name:
+_cs8900a_driver_name:
   .byte "Uthernet",0
 
 
 .data
 
-eth_driver_io_base:
+_cs8900a_driver_io_base:
   .word $c0b0
 
 

@@ -1,21 +1,18 @@
 ; ETH64 driver
 
-.import _lan91c96
-
-.export eth = _lan91c96
-.export eth_driver_name
-.export eth_driver_io_base
+.export _lan91c96_driver_name
+.export _lan91c96_driver_io_base
 
 
 .rodata
 
-eth_driver_name:
+_lan91c96_driver_name:
   .byte "ETH64",0
 
 
 .data
 
-eth_driver_io_base:
+_lan91c96_driver_io_base:
   .word $de00
 
 

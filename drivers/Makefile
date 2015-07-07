@@ -1,16 +1,22 @@
-# c64rrnet.lib   : C64 with RR-Net or clone (default base addr: $de0x)
+# c64rrnet.lib   : C64 with RR-Net (or clone) (default base addr: $de0x)
 # c64eth64.lib   : C64 with ETH64 (default base addr: $de0x)
+# c64wiz811.lib  : C64 with WIZ811MJ (default base addr: $de0x)
+# c64combo.lib   : C64 with RR-Net or ETH64 or WIZ811MJ (default base addr: $de0x)
 # a2uther.lib    : Apple ][ with Uthernet (default slot: #3)
 # a2lancegs.lib  : Apple ][ with LANceGS (default slot: #3)
 # a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
+# a2combo.lib    : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
 # vic20rrnet.lib : VIC20 with RR-Net or clone (default base addr: $980x)
 
 DRIVERS=\
 	c64rrnet.lib \
 	c64eth64.lib \
+	c64wiz811.lib \
+	c64combo.lib \
 	a2uther.lib \
 	a2lancegs.lib \
 	a2uther2.lib \
+	a2combo.lib \
 	vic20rrnet.lib
 
 all: $(DRIVERS)
@@ -19,7 +25,6 @@ all: $(DRIVERS)
 	ca65 -D DYN_DRV=0 $<
 
 C64OBJS=\
-	contiki.o \
 	c64print.o \
 	c64timer.o \
 	c64kernal.o \
@@ -28,7 +33,6 @@ C64OBJS=\
 	cbmcharconv.o
 
 A2OBJS=\
-	contiki.o \
 	a2print.o \
 	a2timer.o \
 	a2kernal.o \
@@ -37,7 +41,6 @@ A2OBJS=\
 	a2charconv.o
 
 VIC20OBJS=\
-	contiki.o \
 	vic20print.o \
 	vic20timer.o \
 	vic20kernal.o \
@@ -45,22 +48,31 @@ VIC20OBJS=\
 	vic20filteredinput.o \
 	cbmcharconv.o
 
-c64rrnet.lib: rr-net.o cs8900a.o $(C64OBJS)
+c64rrnet.lib: rr-net.o cs8900a.o cs8900adriver.o ethernet.o $(C64OBJS)
 	ar65 a $@ $^
 
-c64eth64.lib: eth64.o lan91c96.o $(C64OBJS)
+c64eth64.lib: eth64.o lan91c96.o lan91c96driver.o ethernet.o $(C64OBJS)
 	ar65 a $@ $^
 
-a2uther.lib: uthernet.o cs8900a.o $(A2OBJS)
+c64wiz811.lib: wiz811mj.o w5100.o w5100driver.o ethernet.o $(C64OBJS)
 	ar65 a $@ $^
 
-a2lancegs.lib: lancegs.o lan91c96.o $(A2OBJS)
+c64combo.lib: rr-net.o cs8900a.o eth64.o lan91c96.o wiz811mj.o w5100.o ethernetcombo.o $(C64OBJS)
 	ar65 a $@ $^
 
-a2uther2.lib: uthernet2.o w5100.o $(A2OBJS)
+a2uther.lib: uthernet.o cs8900a.o cs8900adriver.o ethernet.o $(A2OBJS)
 	ar65 a $@ $^
 
-vic20rrnet.lib: vic20-rr-net.o cs8900a.o $(VIC20OBJS)
+a2lancegs.lib: lancegs.o lan91c96.o lan91c96driver.o ethernet.o $(A2OBJS)
+	ar65 a $@ $^
+
+a2uther2.lib: uthernet2.o w5100.o w5100driver.o ethernet.o $(A2OBJS)
+	ar65 a $@ $^
+
+a2combo.lib: uthernet.o cs8900a.o lancegs.o lan91c96.o uthernet2.o w5100.o ethernetcombo.o $(A2OBJS)
+	ar65 a $@ $^
+
+vic20rrnet.lib: vic20-rr-net.o cs8900a.o cs8900adriver.o ethernet.o $(VIC20OBJS)
 	ar65 a $@ $^
 
 clean:

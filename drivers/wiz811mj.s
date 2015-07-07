@@ -1,23 +1,23 @@
-; RR-Net driver
+; WIZ811MJ driver
 
-.export _cs8900a_driver_name
-.export _cs8900a_driver_io_base
+.export _w5100_driver_name
+.export _w5100_driver_io_base
 
 
 .rodata
 
-_cs8900a_driver_name:
-  .byte "RR-Net",0
+_w5100_driver_name:
+  .byte "WIZ811MJ",0
 
 
 .data
 
-_cs8900a_driver_io_base:
-  .word $de08
+_w5100_driver_io_base:
+  .word $de00
 
 
 
-; -- LICENSE FOR rr-net.s --
+; -- LICENSE FOR wiz811mj.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

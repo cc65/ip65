@@ -1,21 +1,18 @@
 ; Uthernet II driver
 
-.import _w5100
-
-.export eth = _w5100
-.export eth_driver_name
-.export eth_driver_io_base
+.export _w5100_driver_name
+.export _w5100_driver_io_base
 
 
 .rodata
 
-eth_driver_name:
+_w5100_driver_name:
   .byte "Uthernet II",0
 
 
 .data
 
-eth_driver_io_base:
+_w5100_driver_io_base:
   .word $c0b4
 
 

@@ -1,21 +1,18 @@
 ; RR-Net driver, as seen on a VIC-20 (i.e. using a Masquerade adapter)
 
-.import _cs8900a
-
-.export eth = _cs8900a
-.export eth_driver_name
-.export eth_driver_io_base
+.export _cs8900a_driver_name
+.export _cs8900a_driver_io_base
 
 
 .rodata
 
-eth_driver_name:
+_cs8900a_driver_name:
   .asciiz "VIC20 RR-Net"
 
 
 .data
 
-eth_driver_io_base:
+_cs8900a_driver_io_base:
   .word $9808
 
 
