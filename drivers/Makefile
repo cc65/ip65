@@ -60,16 +60,16 @@ c64wiz811.lib: wiz811mj.o w5100.o w5100driver.o ethernet.o $(C64OBJS)
 c64combo.lib: rr-net.o cs8900a.o eth64.o lan91c96.o wiz811mj.o w5100.o ethernetcombo.o $(C64OBJS)
 	ar65 a $@ $^
 
-a2uther.lib: uthernet.o cs8900a.o cs8900adriver.o ethernet.o $(A2OBJS)
+a2uther.lib: uthernet.o cs8900a.o cs8900adriver.o ethernet.o a2slot.o $(A2OBJS)
 	ar65 a $@ $^
 
-a2lancegs.lib: lancegs.o lan91c96.o lan91c96driver.o ethernet.o $(A2OBJS)
+a2lancegs.lib: lancegs.o lan91c96.o lan91c96driver.o ethernet.o a2slot.o $(A2OBJS)
 	ar65 a $@ $^
 
-a2uther2.lib: uthernet2.o w5100.o w5100driver.o ethernet.o $(A2OBJS)
+a2uther2.lib: uthernet2.o w5100.o w5100driver.o ethernet.o a2slot.o $(A2OBJS)
 	ar65 a $@ $^
 
-a2combo.lib: uthernet.o cs8900a.o lancegs.o lan91c96.o uthernet2.o w5100.o ethernetcombo.o $(A2OBJS)
+a2combo.lib: uthernet.o cs8900a.o lancegs.o lan91c96.o uthernet2.o w5100.o ethernetcombo.o a2slotcombo.o $(A2OBJS)
 	ar65 a $@ $^
 
 vic20rrnet.lib: vic20-rr-net.o cs8900a.o cs8900adriver.o ethernet.o $(VIC20OBJS)
