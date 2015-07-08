@@ -11,8 +11,6 @@
 .import dhcp_init
 .import dhcp_server
 
-.import cfg_get_configuration_ptr
-
 .ifdef A2_SLOT_SCAN
 .import a2_set_slot
 .endif

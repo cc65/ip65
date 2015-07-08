@@ -33,6 +33,12 @@
 .import eth_driver_name
 .import eth_driver_io_base
 .importzp copy_src
+.import cfg_mac
+.import cfg_ip
+.import cfg_netmask
+.import cfg_gateway
+.import cfg_dns
+.import dhcp_server
 .import cfg_tftp_server
 
 pptr = ptr1
@@ -107,45 +113,32 @@ print_ip_config:
 
   ldax #mac_address_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  ; first 6 bytes of cfg_get_configuration_ptr is MAC address
+  ldax #cfg_mac
   jsr print_mac
   jsr print_cr
 
   ldax #ip_address_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  adc #KPR_CFG_IP
-  bcc :+
-  inx
-: jsr print_dotted_quad
+  ldax #cfg_ip
+  jsr print_dotted_quad
   jsr print_cr
 
   ldax #netmask_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  adc #KPR_CFG_NETMASK
-  bcc :+
-  inx
-: jsr print_dotted_quad
+  ldax #cfg_netmask
+  jsr print_dotted_quad
   jsr print_cr
 
   ldax #gateway_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  adc #KPR_CFG_GATEWAY
-  bcc :+
-  inx
-: jsr print_dotted_quad
+  ldax #cfg_gateway
+  jsr print_dotted_quad
   jsr print_cr
 
   ldax #dns_server_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  adc #KPR_CFG_DNS_SERVER
-  bcc :+
-  inx
-: jsr print_dotted_quad
+  ldax #cfg_dns
+  jsr print_dotted_quad
   jsr print_cr
 
   ldax #tftp_server_msg
@@ -156,11 +149,8 @@ print_ip_config:
 
   ldax #dhcp_server_msg
   jsr print_ascii_as_native
-  jsr cfg_get_configuration_ptr ; ax=base config, carry flag clear
-  adc #KPR_CFG_DHCP_SERVER
-  bcc :+
-  inx
-: jsr print_dotted_quad
+  ldax #dhcp_server
+  jsr print_dotted_quad
   jsr print_cr
   rts
 

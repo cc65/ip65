@@ -16,6 +16,7 @@
 .export udp_add_listener
 .export udp_remove_listener
 .export udp_send
+.export udp_send_internal
 
 .export udp_callback
 
@@ -254,7 +255,17 @@ udp_send:
   stax copy_dest
   ldax udp_send_len
   jsr copymem
+  ; now we can fall through into udp_send_internal
 
+; send udp packet with data at (udp_outp + udp_data)
+; inputs:
+; udp_send_dest:  destination ip address (4 bytes)
+; udp_send_dest_port: destination port (2 bytes)
+; udp_send_src_port: source port (2 bytes)
+; udp_send_len: length of data to send (exclusive of any headers)
+; outputs:
+; carry flag is set if an error occured, clear otherwise
+udp_send_internal:
   ldx #3                        ; copy virtual header addresses
 : lda udp_send_dest,x
   sta udp_vh + udp_vh_dest,x    ; set virtual header destination

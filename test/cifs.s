@@ -4,7 +4,6 @@
 
 .import exit_to_basic
 
-.import cfg_get_configuration_ptr
 .import cifs_l1_encode
 .import cifs_l1_decode
 .import cifs_start

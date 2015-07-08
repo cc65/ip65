@@ -11,12 +11,10 @@
 .export dhcp_server
 .export cfg_tftp_server
 
-.export cfg_get_configuration_ptr
-
 
 .data
 
-cfg_mac:                        .byte $00, $80, $10, $00, $51, $00      ; mac address to be assigned to local machine
+cfg_mac:                        .byte $00, $80, $10, $00, $51, $00      ; mac address of local machine (will be overwritten if ip65_init is called)
 cfg_ip:                         .byte 192, 168, 1, 64                   ; ip address of local machine (will be overwritten if dhcp_init is called)
 ; cfg_ip:                       .byte 0, 0, 0, 0                        ; ip address of local machine (will be overwritten if dhcp_init is called)
 cfg_netmask:                    .byte 255, 255, 255, 0                  ; netmask of local network (will be overwritten if dhcp_init is called)
@@ -25,21 +23,6 @@ cfg_gateway:                    .byte 192, 168, 1, 1                    ; ip add
 cfg_dns:                        .byte 0, 0, 0, 0                        ; ip address of dns server to use (will be overwritten if dhcp_init is called)
 dhcp_server:                    .byte 0, 0, 0, 0                        ; will be set address of dhcp server that configuration was obtained from
 cfg_tftp_server:                .byte $ff, $ff, $ff, $ff                ; ip address of server to send tftp requests to (can be a broadcast address)
-
-
-.code
-
-; return a pointer to where the IP configuration is kept
-; this is really only useful for the NB65 API - for anything
-; linking directly against ip65, you would just import the
-; address of the individual configuration elements, rather
-; than use a base pointer+offsets to find each item.
-; inputs: none
-; outputs: AX = pointer to IP configuration.
-cfg_get_configuration_ptr:
-  ldax #cfg_mac
-  clc
-  rts
 
 
 

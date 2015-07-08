@@ -3,7 +3,6 @@
 .include "../inc/net.i"
 
 .import exit_to_basic
-.import cfg_get_configuration_ptr
 .import dns_set_hostname
 .import dns_resolve
 .import dns_ip

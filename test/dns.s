@@ -8,7 +8,6 @@
 .import dns_resolve
 .import dns_ip
 .import dns_status
-.import cfg_get_configuration_ptr
 
 
 ; keep LD65 happy

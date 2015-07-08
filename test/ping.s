@@ -4,7 +4,6 @@
 
 .import exit_to_basic
 
-.import cfg_get_configuration_ptr
 .import copymem
 .importzp copy_src
 .importzp copy_dest

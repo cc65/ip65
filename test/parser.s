@@ -4,7 +4,6 @@
 
 .import print_a
 .import get_key
-.import cfg_get_configuration_ptr
 .import ascii_to_native
 .import parser_init
 .import parser_skip_next
