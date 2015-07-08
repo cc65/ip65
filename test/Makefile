@@ -84,15 +84,6 @@ drivers:
 %.vicprg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
-webserver-uther.bin: httpd.o ip65 drivers $(INCFILES)
-	ld65 -o $@ -C apple2.cfg $< ../ip65/ip65_tcp.lib ../drivers/a2uther.lib apple2.lib
-
-webserver-uther2.bin: httpd.o ip65 drivers $(INCFILES)
-	ld65 -o $@ -C apple2.cfg $< ../ip65/ip65_tcp.lib ../drivers/a2uther2.lib apple2.lib
-
-webserver-lancegs.bin: httpd.o ip65 drivers $(INCFILES)
-	ld65 -o $@ -C apple2.cfg $< ../ip65/ip65_tcp.lib ../drivers/a2lancegs.lib apple2.lib
-
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -117,11 +108,15 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ tcp        bin < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
 
-ip65demo.dsk: webserver-uther.bin webserver-uther2.bin webserver-lancegs.bin
+%-slotscan.o: %.s
+	ca65 -D A2_SLOT_SCAN -o $@ $<
+
+httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
+
+ip65demo.dsk: httpd.bin httpd-slotscan.bin
 	cp dos33.dsk $@
-	java -jar $(AC) -cc65 $@ webserver-uther   B < webserver-uther.bin
-	java -jar $(AC) -cc65 $@ webserver-uther2  B < webserver-uther2.bin
-	java -jar $(AC) -cc65 $@ webserver-lancegs B < webserver-lancegs.bin
+	java -jar $(AC) -cc65 $@ webserver-slot3    B < httpd.bin
+	java -jar $(AC) -cc65 $@ webserver-slotscan B < httpd-slotscan.bin
 
 clean:
 	make -C ../ip65 clean

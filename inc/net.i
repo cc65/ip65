@@ -13,8 +13,25 @@
 
 .import cfg_get_configuration_ptr
 
+.ifdef A2_SLOT_SCAN
+.import a2_set_slot
+.endif
+
 .macro init_ip_via_dhcp
+.ifdef A2_SLOT_SCAN
+  lda #1
+: pha
+  jsr a2_set_slot
   jsr ip65_init
+  pla
+  bcc :+
+  adc #0
+  cmp #8
+  bcc :-
+:
+.else
+  jsr ip65_init
+.endif
   php
   print_driver_init
   plp
