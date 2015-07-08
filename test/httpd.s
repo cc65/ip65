@@ -20,6 +20,7 @@
   ldax #initializing
   jsr print
   init_ip_via_dhcp
+  bcs :+
   jsr print_ip_config
 
   ldax #listening
@@ -27,8 +28,7 @@
   ldax #httpd_callback
   jsr httpd_start
 
-  jmp exit_to_basic
-
+: jmp exit_to_basic
 
 print_vars:
   lda #'h'
@@ -55,7 +55,7 @@ httpd_callback:
 .rodata
 
 initializing:
-  .byte 13,"INITIALIZING ",0
+  .byte 13,"INITIALIZING",13,0
 listening:
   .byte "LISTENING",13,0
 said:
