@@ -29,24 +29,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ******************************************************************************/
 
-ptr  := $06         ; 2 byte pointer value
-tmp  := $08         ; 1 byte temporary value
-bas  := $09         ; 1 byte socket 1 Base Address (hibyte)
-sha  := $19         ; 2 byte physical addr shadow ($F000-$FFFF)
-len  := $1B         ; 2 byte frame length
-adv  := $1D         ; 2 byte pointer register advancement
-
-mode := $C0C4
-addr := $C0C5
-data := $C0C7
-
 .export init
 .export recv_init, recv_byte, recv_done
 .export send_init, send_byte, send_done
 
+ptr  := $06         ; 2 byte pointer value
+sha  := $08         ; 2 byte physical addr shadow ($F000-$FFFF)
+adv  := $EB         ; 2 byte pointer register advancement
+len  := $ED         ; 2 byte frame length
+tmp  := $FA         ; 1 byte temporary value
+bas  := $FB         ; 1 byte socket 1 Base Address (hibyte)
+
+mode := $C0B4
+addr := $C0B5
+data := $C0B7
+
 ;------------------------------------------------------------------------------
 
 init:
+; Input
+;       AX: Address of ip_parms (serverip, cfg_ip, cfg_netmask, cfg_gateway)
+; Output
+;       None
+; Remark
+;       The ip_parms are only accessed during this function.
+
         ; Set ip_parms pointer
         sta ptr
         stx ptr+1
@@ -99,6 +106,11 @@ init:
         ; -> A is still $0A
         sta data
 
+        ; Socket 1 Source Port Register: 6502
+        ldy #$04
+        jsr set_addrsocket1
+        jsr set_data6502
+
         ; Socket 1 Destination IP Address Register: Destination IP address
         ; This has to be the last call to set_ipv4value because it writes
         ; as a side effect to 'hdr' and it is the destination IP address
@@ -112,11 +124,6 @@ init:
         ; -> addr is already set
         jsr set_data6502
 
-        ; Socket 1 Source Port Register: 6502
-        ldy #$04
-        jsr set_addrsocket1
-        jsr set_data6502
-
         ; Socket 1 Mode Register: UDP
         ldy #$00
         jsr set_addrsocket1
@@ -124,7 +131,7 @@ init:
         sta data
 
         ; Socket 1 Command Register: OPEN
-        ; addr is already set
+        ; -> addr is already set
         lda #$01
         sta data
         rts
@@ -153,12 +160,20 @@ set_data6502:
 ;------------------------------------------------------------------------------
 
 recv_init:
+; Input
+;       None
+; Output
+;       C:  Clear if ready to receive
+;       AX: If C is clear then number of bytes to receive
+; Remark
+;       To be called before recv_byte.
+
         ; Socket 1 RX Received Size Register: 0 or volatile ?
         lda #$26                ; Socket RX Received Size Register
         jsr prolog
         bcs :+++
 
-        ; Socket 0 RX Read Pointer Register
+        ; Socket 1 RX Read Pointer Register
         ; -> addr already set
 
         ; Calculate and set pyhsical address
@@ -207,6 +222,13 @@ recv_init:
 ;------------------------------------------------------------------------------
 
 send_init:
+; Input
+;       AX: Number of bytes to send
+; Output
+;       C: Clear if ready to send
+; Remark
+;       To be called before send_byte.
+
         ; Set pointer advancement
         sta adv
         stx adv+1
@@ -219,7 +241,7 @@ send_init:
         ; Socket 1 TX Free Size Register: < advancement ?
         cpx adv                 ; Lobyte
         sbc adv+1               ; Hibyte
-        bcc rts_cs
+        bcc sec_rts             ; Not enough free size -> error
 
         ; Socket 1 TX Write Pointer Register
         ldy #$24
@@ -240,7 +262,7 @@ prolog:
         ; Socket 1 Command Register: 0 ?
         jsr set_addrcmdreg1
         ldx data
-        bne rts_cs              ; Not completed -> error
+        bne sec_rts             ; Not completed -> error
 
         ; Socket Size Register: not 0 ?
         tay                     ; Select Size Register
@@ -249,21 +271,30 @@ prolog:
         sta ptr+1               ; Hibyte
         ora ptr
         bne :+
-rts_cs: sec                     ; Error (size == 0)
+
+sec_rts:
+        sec                     ; Error (size == 0)
         rts
 
         ; Socket Size Register: volatile ?
 :       jsr get_wordsocket1
         cpx ptr                 ; Lobyte
-        bne rts_cs              ; Volatile size -> error
+        bne sec_rts             ; Volatile size -> error
         cmp ptr+1               ; Hibyte
-        bne rts_cs              ; Volatile size -> error
-        clc                     ; Sucess (size != 0)
+        bne sec_rts             ; Volatile size -> error
+        clc                     ; Success (size != 0)
         rts
 
 ;------------------------------------------------------------------------------
 
 recv_byte:
+; Input
+;       None
+; Output
+;       A: Byte received
+; Remark
+;       May be called as often as indicated by recv_init.
+
         ; Read byte
         lda data
 
@@ -275,6 +306,13 @@ recv_byte:
 ;------------------------------------------------------------------------------
 
 send_byte:
+; Input
+;       A: Byte to send
+; Output
+;       None
+; Remark
+;       Should be called as often as indicated to send_init.
+
         ; Write byte
         sta data
 
@@ -283,14 +321,24 @@ send_byte:
         beq incsha
         rts
 
+incsha:
         ; Increment physical addr shadow hibyte
-incsha: inc sha+1
+        inc sha+1
         beq set_addrbase
         rts
 
 ;------------------------------------------------------------------------------
 
 recv_done:
+; Input
+;       None
+; Output
+;       None
+; Remark
+;       Mark data indicated by recv_init as processed (independently from how
+;       often recv_byte was called), if not called then next call of recv_init
+;       will just indicate the very same data again.
+
         ; Set parameters for commit code
         lda #$40                ; RECV
         ldy #$28                ; Socket RX Read Pointer Register
@@ -299,12 +347,22 @@ recv_done:
 ;------------------------------------------------------------------------------
 
 send_done:
+; Input
+;       None
+; Output
+;       None
+; Remark
+;       Actually send data indicated to send_init (independently from how often
+;       send_byte was called), if not called then send_init (and send_byte) are
+;       just NOPs.
+
         ; Set parameters for commit code
         lda #$20                ; SEND
         ldy #$24                ; Socket TX Write Pointer Register
 
+epilog:
         ; Advance pointer register
-epilog: jsr set_addrsocket1
+        jsr set_addrsocket1
         tay                     ; Save command
         clc
         lda ptr
@@ -319,7 +377,7 @@ epilog: jsr set_addrsocket1
         tya                     ; Restore command
         jsr set_addrcmdreg1
         sta data
-        sec                     ; When coming from _recv_init -> error
+        sec                     ; When coming from recv_init -> error
         rts
 
 ;------------------------------------------------------------------------------
@@ -336,6 +394,7 @@ set_addrphysical:
         ora #>$F000             ; Move sha/sha+1 to $F000-$FFFF
         sty sha
         sta sha+1
+
 set_addr:
         stx addr                ; Hibyte
         sty addr+1              ; Lobyte
@@ -345,6 +404,7 @@ set_addr:
 
 set_addrcmdreg1:
         ldy #$01                ; Socket Command Register
+
 set_addrsocket1:
         ldx #>$0500             ; Socket 1 register base address
         bne set_addr            ; Always

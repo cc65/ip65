@@ -118,8 +118,16 @@ ip65demo.dsk: httpd.bin httpd-slotscan.bin
 	java -jar $(AC) -cc65 $@ webserver-slot3    B < httpd.bin
 	java -jar $(AC) -cc65 $@ webserver-slotscan B < httpd-slotscan.bin
 
+w5100_%.bin: ../supplement/w5100_%.s w5100_%_s.s w5100_%_c.c
+	cl65 -o $@ -t apple2enh -m $(basename $@).map $^
+
+w5100.dsk: w5100_udp.bin
+	cp prodos.dsk $@
+	java -jar $(AC) -cc65 $@ udp bin < w5100_udp.bin
+
 clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
-	-rm -f *.prg *.bin *.vicprg *.map
-	-rm -f ip65.d64 ip65.dsk ip65demo.dsk
+	-rm -f ../supplement/*.o
+	-rm -f *.o *.prg *.bin *.vicprg *.map
+	-rm -f ip65.d64 ip65.dsk ip65demo.dsk w5100.dsk
