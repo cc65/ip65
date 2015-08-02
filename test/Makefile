@@ -118,7 +118,7 @@ ip65demo.dsk: httpd.bin httpd-slotscan.bin
 	java -jar $(AC) -cc65 $@ webserver-slot3    B < httpd.bin
 	java -jar $(AC) -cc65 $@ webserver-slotscan B < httpd-slotscan.bin
 
-w5100_%.bin: ../supplement/w5100_%.s w5100_%_s.s w5100_%_c.c
+w5100_%.bin: ../supplement/w5100_%.s w5100_%_main.c
 	cl65 -o $@ -t apple2enh -m $(basename $@).map $^
 
 w5100.dsk: w5100_udp.bin

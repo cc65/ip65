@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include <conio.h>
 
-void __fastcall__ init(void *parms);
+void __fastcall__ w5100_init(void *parms);
 
-unsigned      recv_init(void);
-unsigned char recv_byte(void);
-void          recv_done(void);
+unsigned int  w5100_recv_init(void);
+unsigned char w5100_recv_byte(void);
+void          w5100_recv_done(void);
 
-unsigned __fastcall__ send_init(unsigned      len);
-void     __fastcall__ send_byte(unsigned char val);
-void                  send_done(void);
+unsigned char __fastcall__ w5100_send_init(unsigned int  len);
+void          __fastcall__ w5100_send_byte(unsigned char val);
+void                       w5100_send_done(void);
 
 struct
 {
@@ -32,7 +32,7 @@ void main(void)
 
   videomode(VIDEOMODE_80COL);
   printf("Init\n");
-  init(&parms);
+  w5100_init(&parms);
 
   printf("(S)end or e(X)it\n");
   do
@@ -57,19 +57,19 @@ void main(void)
                                                    parms.serverip[1],
                                                    parms.serverip[2],
                                                    parms.serverip[3]);
-      while (!send_init(len))
+      while (!w5100_send_init(len))
       {
         printf("!");
       }
       for (i = 0; i < len; ++i)
       {
-        send_byte(i);
+        w5100_send_byte(i);
       }
-      send_done();
+      w5100_send_done();
       printf(".\n");
     }
 
-    len = recv_init();
+    len = w5100_recv_init();
     if (len)
     {
       unsigned i;
@@ -84,9 +84,9 @@ void main(void)
         {
           printf("\n$%04X:", i);
         }
-        printf(" %02X", recv_byte());
+        printf(" %02X", w5100_recv_byte());
       }
-      recv_done();
+      w5100_recv_done();
       printf(".\n");
     }
   }

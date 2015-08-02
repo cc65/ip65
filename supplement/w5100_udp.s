@@ -29,9 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ******************************************************************************/
 
-.export init
-.export recv_init, recv_byte, recv_done
-.export send_init, send_byte, send_done
+.export _w5100_init
+.export _w5100_recv_init, _w5100_recv_byte, _w5100_recv_done
+.export _w5100_send_init, _w5100_send_byte, _w5100_send_done
 
 ptr  := $06         ; 2 byte pointer value
 sha  := $08         ; 2 byte physical addr shadow ($F000-$FFFF)
@@ -46,7 +46,7 @@ data := $C0B7
 
 ;------------------------------------------------------------------------------
 
-init:
+_w5100_init:
 ; Input
 ;       AX: Address of ip_parms (serverip, cfg_ip, cfg_netmask, cfg_gateway)
 ; Output
@@ -159,19 +159,18 @@ set_data6502:
 
 ;------------------------------------------------------------------------------
 
-recv_init:
+_w5100_recv_init:
 ; Input
 ;       None
 ; Output
-;       C:  Clear if ready to receive
-;       AX: If C is clear then number of bytes to receive
+;       AX: Number of bytes to receive
 ; Remark
 ;       To be called before recv_byte.
 
         ; Socket 1 RX Received Size Register: 0 or volatile ?
         lda #$26                ; Socket RX Received Size Register
         jsr prolog
-        bcs :+++
+        bne error
 
         ; Socket 1 RX Read Pointer Register
         ; -> addr already set
@@ -185,7 +184,7 @@ recv_init:
         clc
         ldx #$05
         stx tmp
-:       jsr recv_byte           ; Doesn't trash C
+:       jsr _w5100_recv_byte    ; Doesn't trash C
         ldx tmp
         eor hdr,x               ; Doesn't trash C
         beq :+
@@ -195,9 +194,9 @@ recv_init:
         php                     ; Save C
 
         ; Read data length
-        jsr recv_byte           ; Hibyte
+        jsr _w5100_recv_byte    ; Hibyte
         sta len+1
-        jsr recv_byte           ; Lobyte
+        jsr _w5100_recv_byte    ; Lobyte
         sta len
 
         ; Add 8 byte header to set pointer advancement
@@ -211,21 +210,20 @@ recv_init:
         ; Skip frame if it doesn't originate from our
         ; expected communicaion peer
         plp                     ; Restore C
-        bcs recv_done
+        bcs _w5100_recv_done
 
-        ; Return success with data length
+        ; Return data length
         lda len
         ldx len+1
-        clc
-:       rts
+        rts
 
 ;------------------------------------------------------------------------------
 
-send_init:
+_w5100_send_init:
 ; Input
 ;       AX: Number of bytes to send
 ; Output
-;       C: Clear if ready to send
+;       A: Nonzero if ready to send
 ; Remark
 ;       To be called before send_byte.
 
@@ -236,12 +234,12 @@ send_init:
         ; Socket 1 TX Free Size Register: 0 or volatile ?
         lda #$20                ; Socket TX Free Size Register
         jsr prolog
-        bcs :+
+        bne error
 
         ; Socket 1 TX Free Size Register: < advancement ?
         cpx adv                 ; Lobyte
         sbc adv+1               ; Hibyte
-        bcc sec_rts             ; Not enough free size -> error
+        bcc error               ; Not enough free size
 
         ; Socket 1 TX Write Pointer Register
         ldy #$24
@@ -252,8 +250,16 @@ send_init:
         jsr set_addrphysical
 
         ; Return success
-        clc
-:       rts
+        lda #$01
+        ldx #>$0000             ; Required by cc65 C callers
+        rts
+
+;------------------------------------------------------------------------------
+
+error:
+        lda #<$0000
+        tax
+        rts
 
 ;------------------------------------------------------------------------------
 
@@ -262,7 +268,7 @@ prolog:
         ; Socket 1 Command Register: 0 ?
         jsr set_addrcmdreg1
         ldx data
-        bne sec_rts             ; Not completed -> error
+        bne :++                 ; Not completed -> Z = 0
 
         ; Socket Size Register: not 0 ?
         tay                     ; Select Size Register
@@ -271,23 +277,20 @@ prolog:
         sta ptr+1               ; Hibyte
         ora ptr
         bne :+
-
-sec_rts:
-        sec                     ; Error (size == 0)
+        inx                     ; -> Z = 0
         rts
 
         ; Socket Size Register: volatile ?
 :       jsr get_wordsocket1
         cpx ptr                 ; Lobyte
-        bne sec_rts             ; Volatile size -> error
+        bne :+                  ; Volatile size -> Z = 0
         cmp ptr+1               ; Hibyte
-        bne sec_rts             ; Volatile size -> error
-        clc                     ; Success (size != 0)
-        rts
+        ; bne :+                ; Volatile size -> Z = 0
+:       rts
 
 ;------------------------------------------------------------------------------
 
-recv_byte:
+_w5100_recv_byte:
 ; Input
 ;       None
 ; Output
@@ -301,11 +304,12 @@ recv_byte:
         ; Increment physical addr shadow lobyte
         inc sha
         beq incsha
+        ldx #>$0000             ; Required by cc65 C callers
         rts
 
 ;------------------------------------------------------------------------------
 
-send_byte:
+_w5100_send_byte:
 ; Input
 ;       A: Byte to send
 ; Output
@@ -325,11 +329,12 @@ incsha:
         ; Increment physical addr shadow hibyte
         inc sha+1
         beq set_addrbase
+        ldx #>$0000             ; Required by cc65 C callers (_w5100_recv_byte)
         rts
 
 ;------------------------------------------------------------------------------
 
-recv_done:
+_w5100_recv_done:
 ; Input
 ;       None
 ; Output
@@ -346,7 +351,7 @@ recv_done:
 
 ;------------------------------------------------------------------------------
 
-send_done:
+_w5100_send_done:
 ; Input
 ;       None
 ; Output
@@ -377,8 +382,9 @@ epilog:
         tya                     ; Restore command
         jsr set_addrcmdreg1
         sta data
-        sec                     ; When coming from recv_init -> error
-        rts
+
+        ; Return error (_w5100_recv_init)
+        bne error               ; Always
 
 ;------------------------------------------------------------------------------
 
@@ -398,6 +404,7 @@ set_addrphysical:
 set_addr:
         stx addr                ; Hibyte
         sty addr+1              ; Lobyte
+        ldx #>$0000             ; Required by cc65 C callers (_w5100_recv_byte)
         rts
 
 ;------------------------------------------------------------------------------
