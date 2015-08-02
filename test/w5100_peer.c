@@ -5,6 +5,21 @@
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 
+static void dump(unsigned char *buf, unsigned len)
+{
+  unsigned i;
+
+  for (i = 0; i < len; ++i)
+  {
+    if ((i % 24) == 0)
+    {
+      printf("\n$%04X:", i);
+    }
+    printf(" %02X", buf[i]);
+  }
+  printf(".\n");
+}
+
 void main(void)
 {
   printf("Init\n");
@@ -14,14 +29,23 @@ void main(void)
     return;
   }
 
-  SOCKET s = socket(AF_INET, SOCK_DGRAM , IPPROTO_UDP);
-  if (s == INVALID_SOCKET)
+  SOCKET udp = socket(AF_INET, SOCK_DGRAM , IPPROTO_UDP);
+  if (udp == INVALID_SOCKET)
+  {
+    return;
+  }
+  SOCKET srv = socket(AF_INET, SOCK_STREAM , IPPROTO_TCP);
+  if (srv == INVALID_SOCKET)
   {
     return;
   }
 
   u_long arg = 1;
-  if (ioctlsocket(s, FIONBIO, &arg) == SOCKET_ERROR)
+  if (ioctlsocket(udp, FIONBIO, &arg) == SOCKET_ERROR)
+  {
+    return;
+  }
+  if (ioctlsocket(srv, FIONBIO, &arg) == SOCKET_ERROR)
   {
     return;
   }
@@ -30,13 +54,24 @@ void main(void)
   local.sin_family      = AF_INET;
   local.sin_addr.s_addr = INADDR_ANY;
   local.sin_port        = htons(6502);
-  if (bind(s, (SOCKADDR *)&local, sizeof(local)) == SOCKET_ERROR)
+  if (bind(udp, (SOCKADDR *)&local, sizeof(local)) == SOCKET_ERROR)
+  {
+    return;
+  }
+  if (bind(srv, (SOCKADDR *)&local, sizeof(local)) == SOCKET_ERROR)
+  {
+    return;
+  }
+
+  if (listen(srv, 1) == SOCKET_ERROR)
   {
     return;
   }
 
   SOCKADDR_IN remote;
   remote.sin_addr.s_addr = INADDR_NONE;
+
+  SOCKET tcp = INVALID_SOCKET;
 
   printf("(S)end or e(X)it\n");
   char key;
@@ -56,9 +91,9 @@ void main(void)
 
     if (key == 's')
     {
-      if (remote.sin_addr.s_addr == INADDR_NONE)
+      if (remote.sin_addr.s_addr == INADDR_NONE && tcp == INVALID_SOCKET)
       {
-        printf("Peer Addr Unknown As Yet\n", len);
+        printf("Peer Unknown As Yet\n", len);
       }
       else
       {
@@ -69,44 +104,94 @@ void main(void)
         {
           buf[i] = i;
         }
-        printf("Send Len $%04X To %s", len, inet_ntoa(remote.sin_addr));
-        if (sendto(s, buf, len, 0, (SOCKADDR *)&remote, sizeof(remote)) == SOCKET_ERROR)
+        if (tcp == INVALID_SOCKET)
         {
-          return;
+          printf("Send Len $%04X To %s", len, inet_ntoa(remote.sin_addr));
+          if (sendto(udp, buf, len, 0, (SOCKADDR *)&remote, sizeof(remote)) == SOCKET_ERROR)
+          {
+            return;
+          }
+        }
+        else
+        {
+          printf("Send Len $%04X", len);
+          if (send(tcp, buf, len, 0) == SOCKET_ERROR)
+          {
+            return;
+          }
         }
         printf(".\n");
       }
     }
 
     unsigned remote_size = sizeof(remote);
-    len = recvfrom(s, buf, sizeof(buf), 0, (SOCKADDR *)&remote, &remote_size);
+    len = recvfrom(udp, buf, sizeof(buf), 0, (SOCKADDR *)&remote, &remote_size);
     if (len == SOCKET_ERROR)
     {
       if (WSAGetLastError() != WSAEWOULDBLOCK)
       {
         return;
       }
-      len = 0;
     }
-    if (len)
+    else if (len)
     {
-      unsigned i;
-
       printf("Recv Len $%04X From %s", len, inet_ntoa(remote.sin_addr));
-      for (i = 0; i < len; ++i)
-      {
-        if ((i % 24) == 0)
-        {
-          printf("\n$%04X:", i);
-        }
-        printf(" %02X", buf[i]);
-      }
-      printf(".\n");
+      dump(buf, len);
     }
+
+    if (tcp == INVALID_SOCKET)
+    {
+      SOCKADDR_IN conn;
+      unsigned conn_size = sizeof(conn);
+      tcp = accept(srv, (SOCKADDR *)&conn, &conn_size);
+      if (tcp == INVALID_SOCKET)
+      {
+        if (WSAGetLastError() != WSAEWOULDBLOCK)
+        {
+          return;
+        }
+      }
+      else
+      {
+        printf("Connect From %s\n", inet_ntoa(conn.sin_addr));
+
+        u_long arg = 1;
+        if (ioctlsocket(tcp, FIONBIO, &arg) == SOCKET_ERROR)
+        {
+          return;
+        }
+      }
+    }
+    else
+    {
+      len = recv(tcp, buf, sizeof(buf), 0);
+      if (len == SOCKET_ERROR)
+      {
+        if (WSAGetLastError() != WSAEWOULDBLOCK)
+        {
+          return;
+        }
+      }
+      else if (len)
+      {
+        printf("Recv Len $%04X", len);
+        dump(buf, len);
+      }
+      else
+      {
+        printf("Disconnect\n");
+        closesocket(tcp);
+        tcp = INVALID_SOCKET;
+      }
+    }
+
+    Sleep(10);
   }
   while (key != 'x');
 
-  closesocket(s);
+  closesocket(udp);
+  closesocket(tcp);
+  closesocket(srv);
   WSACleanup();
   printf("Done\n");
 }
