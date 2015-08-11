@@ -60,7 +60,7 @@ free space in the its receive memory buffer.
 The W5100 offers up to 4 'sockets' allowing to specify the operation mode for
 each socket individually. However MAC-Raw mode is only available for the first
 socket. It is possible to combine MAC-Raw mode with other modes for the other
-sockets - which is called 'hybrid TCP/IP stack'. I have no personal experience 
+sockets - which is called 'hybrid TCP/IP stack'. I have no personal experience
 with this hybrid TCP/IP stack and see open questions:
 - Are packets delivered to other sockets filtered from the first socket?
 - Who takes care of incoming ARP and incoming ICMP Echo?
@@ -113,7 +113,7 @@ Win32 communication peer for the test programs located in test/w5100_peer.c.
 2.3 TCP Stream Split
 A correct BSD TCP socket program never presumes to be able to read/write any
 amount of data. Rather it is always prepared to call recv()/send() as often as
-necessary receive/send the expected amount data in whatever chuncks - and the
+necessary receive/send the expected amount data in whatever chunks - and the
 very same holds true for any program using the W5100 TCP mode! But this already
 necessary complexity in the upper layers allows to handle W5100 memory buffer
 wraparounds transparently by artificially limiting the size of a read/write

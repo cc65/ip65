@@ -69,7 +69,6 @@ void main(void)
         {
           printf("!");
         }
-printf(" All %d Len %d", all, len);
         len = MIN(all, len);
         for (i = 0; i < len; ++i)
         {
