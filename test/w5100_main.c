@@ -14,7 +14,7 @@ byte ip_addr[4] = {192, 168,   0, 123};
 byte submask[4] = {255, 255, 255,   0};
 byte gateway[4] = {192, 168,   0,   1};
 
-byte server[4] = {192, 168, 0, 25}; // IP addr of machine running w5100_peer.c
+byte server[4] = {192, 168, 0, 2}; // IP addr of machine running w5100_peer.c
 
 void main(void)
 {
