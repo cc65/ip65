@@ -99,14 +99,14 @@ void main(void)
       {
         unsigned i;
 
-        len = 512;
+        len = 500;
         for (i = 0; i < len; ++i)
         {
           buf[i] = i;
         }
         if (tcp == INVALID_SOCKET)
         {
-          printf("Send Len $%04X To %s", len, inet_ntoa(remote.sin_addr));
+          printf("Send Len %d To %s", len, inet_ntoa(remote.sin_addr));
           if (sendto(udp, buf, len, 0, (SOCKADDR *)&remote, sizeof(remote)) == SOCKET_ERROR)
           {
             return;
@@ -114,7 +114,7 @@ void main(void)
         }
         else
         {
-          printf("Send Len $%04X", len);
+          printf("Send Len %d", len);
           if (send(tcp, buf, len, 0) == SOCKET_ERROR)
           {
             return;
@@ -135,7 +135,7 @@ void main(void)
     }
     else if (len)
     {
-      printf("Recv Len $%04X From %s", len, inet_ntoa(remote.sin_addr));
+      printf("Recv Len %d From %s", len, inet_ntoa(remote.sin_addr));
       dump(buf, len);
     }
 
@@ -174,7 +174,7 @@ void main(void)
       }
       else if (len)
       {
-        printf("Recv Len $%04X", len);
+        printf("Recv Len %d", len);
         dump(buf, len);
       }
       else

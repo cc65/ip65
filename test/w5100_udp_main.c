@@ -20,7 +20,7 @@ struct
 }
 parms =
 {
-  {192, 168,   0,   2},
+  {192, 168,   0,   2}, // IP addr of machine running w5100_peer.c
   {192, 168,   0, 123},
   {255, 255, 255,   0},
   {192, 168,   0,   1}
@@ -52,11 +52,11 @@ void main(void)
     {
       unsigned i;
 
-      len = 512;
-      printf("Send Len $%04X To %d.%d.%d.%d", len, parms.serverip[0],
-                                                   parms.serverip[1],
-                                                   parms.serverip[2],
-                                                   parms.serverip[3]);
+      len = 500;
+      printf("Send Len %d To %d.%d.%d.%d", len, parms.serverip[0],
+                                                parms.serverip[1],
+                                                parms.serverip[2],
+                                                parms.serverip[3]);
       while (!w5100_send_init(len))
       {
         printf("!");
@@ -74,10 +74,10 @@ void main(void)
     {
       unsigned i;
 
-      printf("Recv Len $%04X From %d.%d.%d.%d", len, parms.serverip[0],
-                                                     parms.serverip[1],
-                                                     parms.serverip[2],
-                                                     parms.serverip[3]);
+      printf("Recv Len %d From %d.%d.%d.%d", len, parms.serverip[0],
+                                                  parms.serverip[1],
+                                                  parms.serverip[2],
+                                                  parms.serverip[3]);
       for (i = 0; i < len; ++i)
       {
         if ((i % 24) == 0)
