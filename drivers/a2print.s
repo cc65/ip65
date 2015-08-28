@@ -6,11 +6,11 @@
 .exportzp screen_current_row
 .exportzp screen_current_col
 
-
-.code
-
 screen_current_col = $24        ; CH - Horizontal cursor-position (0-39)
 screen_current_row = $25        ; CV - Vertical cursor-position (0-23)
+
+
+.code
 
 ; use Apple 2 monitor ROM function to display 1 char
 ; inputs: A should be set to ASCII char to display
@@ -36,13 +36,13 @@ print_a:
 print_cr:
   jmp $fd8e
 
-; use Apple 2 monitor ROM function to move to clear the screen
+; use Apple 2 monitor ROM function to clear the screen
 ; inputs: none
 ; outputs: none
 cls:
   jmp $fc58
 
-; use Apple 2 monitor ROM function to move to make a 'beep' noise
+; use Apple 2 monitor ROM function to make a 'beep' noise
 ; inputs: none
 ; outputs: none
 beep:
