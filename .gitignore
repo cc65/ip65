@@ -5,6 +5,7 @@
 *.bin
 *.com
 *.vicprg
+*.sys
 *.d64
 *.dsk
 *.atr
