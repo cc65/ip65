@@ -6,6 +6,7 @@
 # a2lancegs.lib  : Apple ][ with LANceGS (default slot: #3)
 # a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
 # a2combo.lib    : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
+# atrdragon.lib  : ATARI 8-bit with Dragon Cart (default base addr: $d500)
 # vic20rrnet.lib : VIC20 with RR-Net or clone (default base addr: $980x)
 
 DRIVERS=\
@@ -17,6 +18,7 @@ DRIVERS=\
 	a2lancegs.lib \
 	a2uther2.lib \
 	a2combo.lib \
+	atrdragon.lib \
 	vic20rrnet.lib
 
 all: $(DRIVERS)
@@ -39,6 +41,13 @@ A2OBJS=\
 	a2input.o \
 	a2filteredinput.o \
 	a2charconv.o
+
+ATROBJS=\
+	atrprint.o \
+	atrtimer.o \
+	atrkernal.o \
+	atrinput.o \
+	atrcharconv.o
 
 VIC20OBJS=\
 	vic20print.o \
@@ -70,6 +79,9 @@ a2uther2.lib: uthernet2.o w5100.o w5100driver.o ethernet.o a2slot.o $(A2OBJS)
 	ar65 a $@ $^
 
 a2combo.lib: uthernet.o cs8900a.o lancegs.o lan91c96.o uthernet2.o w5100.o ethernetcombo.o a2slotcombo.o $(A2OBJS)
+	ar65 a $@ $^
+
+atrdragon.lib: dragoncart.o cs8900a.o cs8900adriver.o ethernet.o $(ATROBJS)
 	ar65 a $@ $^
 
 vic20rrnet.lib: vic20-rr-net.o cs8900a.o cs8900adriver.o ethernet.o $(VIC20OBJS)

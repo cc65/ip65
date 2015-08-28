@@ -2,7 +2,10 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
+
 .import ascii_to_native
 .import parse_dotted_quad
 .import dotted_quad_value
@@ -43,6 +46,9 @@
   ; switch to lower case charset
   lda #14
   jsr print_a
+
+start:
+  jsr print_cr
 
   ldax #$1234
   stax acc16
@@ -196,7 +202,7 @@
   ldax #http_get_length
   stax tcp_send_data_len
   ldax #http_get_msg
-  jsr  tcp_send
+  jsr tcp_send
   jsr check_for_error
 
   ; now try to connect to port 80 - should be accepted
@@ -217,7 +223,7 @@
   ldax #http_get_length
   stax tcp_send_data_len
   ldax #http_get_msg
-  jsr  tcp_send
+  jsr tcp_send
   jsr check_for_error
 
 @loop_till_end:
@@ -226,7 +232,7 @@
   cmp cxn_closed
 
   beq @loop_till_end
-  rts
+  jmp exit_to_basic
 
   ldax #tcp_callback_routine
   stax tcp_callback
@@ -255,7 +261,6 @@
 @loop_forever:
   jsr ip65_process
   jmp @loop_forever
-  rts
 
 tcp_callback_routine:
   lda tcp_inbound_data_length

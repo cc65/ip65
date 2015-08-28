@@ -2,7 +2,10 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
+
 .import dns_set_hostname
 .import dns_resolve
 .import dns_ip
@@ -20,6 +23,8 @@
 
   lda #14
   jsr print_a                   ; switch to lower case
+
+start:
   jsr print_cr
   init_ip_via_dhcp
   jsr print_ip_config

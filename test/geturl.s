@@ -2,6 +2,10 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
+.import exit_to_basic
+
 .import print_a
 .import get_key
 .import ascii_to_native
@@ -31,6 +35,8 @@ temp_buff = copy_dest
   lda #14
   jsr print_a
 
+start:
+  jsr print_cr
   init_ip_via_dhcp
   jsr print_ip_config
 
@@ -39,7 +45,8 @@ temp_buff = copy_dest
 
   ldax #url_2
 ; jsr test_url_download
-  rts
+
+  jmp exit_to_basic
 
 test_url_download:
   stax temp_url_ptr

@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import dns_set_hostname
@@ -20,6 +22,7 @@
   lda #14
   jsr print_a
 
+start:
   jsr print_cr
   init_ip_via_dhcp
 ; jsr overwrite_with_hardcoded_dns_server

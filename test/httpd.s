@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import httpd_start
@@ -17,6 +19,7 @@
   lda #14
   jsr print_a                   ; switch to lower case
 
+start:
   ldax #initializing
   jsr print
   init_ip_via_dhcp

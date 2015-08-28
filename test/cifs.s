@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import cifs_l1_encode
@@ -19,6 +21,7 @@
   lda #14
   jsr print_a
 
+start:
   jsr print_cr
   init_ip_via_dhcp
 

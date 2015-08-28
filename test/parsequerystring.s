@@ -2,6 +2,10 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
+.import exit_to_basic
+
 .import print_a
 .import get_key
 .import ascii_to_native
@@ -20,6 +24,8 @@
   lda #14
   jsr print_a
 
+start:
+  jsr print_cr
   ldax #query_1
   jsr test_querystring
   ldax #query_2
@@ -33,7 +39,7 @@
   jsr test_querystring
   ldax #query_6
   jsr test_querystring
-  rts
+  jmp exit_to_basic
 
 test_querystring:
   stax temp_ax

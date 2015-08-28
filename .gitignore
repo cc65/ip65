@@ -1,9 +1,10 @@
-*.bin
-*.d64
-*.dsk
+*.o
 *.lib
 *.map
-*.o
 *.prg
 *.bin
+*.com
 *.vicprg
+*.d64
+*.dsk
+*.atr

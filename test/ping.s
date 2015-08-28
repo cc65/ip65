@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import copymem
@@ -22,6 +24,7 @@
   lda #14
   jsr print_a
 
+start:
   jsr print_cr
   init_ip_via_dhcp
   jsr print_ip_config
@@ -44,9 +47,10 @@
   jsr print_integer
   ldax #ms
   jsr print
-  rts
+  jmp exit_to_basic
 @error:
-  jmp print_errorcode
+  jsr print_errorcode
+  jmp exit_to_basic
 
 
 .rodata

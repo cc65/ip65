@@ -20,6 +20,7 @@ else
   C64DRIVERLIB = ../drivers/c64combo.lib
   A2DRIVERLIB  = ../drivers/a2combo.lib
 endif
+ATRDRIVERLIB = ../drivers/atrdragon.lib
 VICDRIVERLIB = ../drivers/vic20rrnet.lib
 
 UDP =\
@@ -46,10 +47,13 @@ $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
+$(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
+
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).vicprg))
+$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com $(pgm).vicprg))
 
 INCFILES =\
   ../inc/common.i \
@@ -60,11 +64,15 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 
 bin: $(addsuffix .bin,$(UDP) $(TCP))
 
+com: $(addsuffix .com,$(UDP) $(TCP))
+
 vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
 d64: ip65.d64
 
 dsk: ip65.dsk
+
+atr: ip65.atr
 
 ip65:
 	make -C ../ip65
@@ -80,6 +88,9 @@ drivers:
 
 %.bin: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.bin -C apple2.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
+
+%.com: %.o ip65 drivers $(INCFILES)
+	ld65 -o $*.com -C atari.cfg -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.vicprg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
@@ -108,6 +119,22 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ tcp        bin < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
 
+ip65.atr: com
+	mkdir atr
+	cp dos.sys        atr/dos.sys
+	cp dup.sys        atr/dup.sys
+	cp dns.com        atr/dns.com
+	cp dottedquad.com atr/dotquad.com
+	cp geturl.com     atr/geturl.com
+	cp httpd.com      atr/httpd.com
+	cp parser.com     atr/parser.com
+	cp ping.com       atr/ping.com
+	cp sntp.com       atr/sntp.com
+	cp tcp.com        atr/tcp.com
+	cp tftp.com       atr/tftp.com
+	$(DIR2ATR) -b Dos25 1040 $@ atr
+	rm -r atr
+
 %-slotscan.o: %.s
 	ca65 -D A2_SLOT_SCAN -o $@ $<
 
@@ -134,5 +161,5 @@ clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
 	-rm -f ../supplement/*.o
-	-rm -f *.o *.prg *.bin *.vicprg *.map
-	-rm -f ip65.d64 ip65.dsk ip65demo.dsk w5100.dsk
+	-rm -f *.o *.prg *.bin *.com *.vicprg *.map
+	-rm -f ip65.d64 ip65.dsk ip65.atr ip65demo.dsk w5100.dsk

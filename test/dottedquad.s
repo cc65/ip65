@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import parse_dotted_quad
@@ -18,6 +20,7 @@
   lda #14
   jsr print_a
 
+start:
   jsr print_cr
 
   ldax #dotted_quad_1

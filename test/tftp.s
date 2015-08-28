@@ -2,6 +2,8 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.export start
+
 .import exit_to_basic
 
 .import copymem
@@ -26,6 +28,7 @@
   lda #14
   jsr print_a
 
+start:
   jsr print_cr
   init_ip_via_dhcp
   jsr print_ip_config
@@ -58,7 +61,7 @@
   jsr tftp_upload_from_memory
   bcs @error
   print_ok
-  rts
+  jmp exit_to_basic
 
 @error:
   print_failed
