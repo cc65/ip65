@@ -34,7 +34,7 @@ old_handler:
 ; inputs: none
 ; outputs: none
 timer_init:
-  lda old_handler
+  lda old_handler+1
   bne @handler_installed
   ldax IRQ_VECTOR
   stax old_handler
@@ -57,10 +57,11 @@ timer_read:
 
 ; tick over the current timer value - should be called 60 times per second
 ; inputs: none
-; outputs: none (all registers preserved, by carry flag can be modified)
+; outputs: none (all registers preserved, but carry flag can be modified)
 timer_vbl_handler:
   pha
-  lda #$11                      ; 60 HZ =~ 17 ms per 'tick'
+  lda #17                       ; 60 HZ =~ 17 ms per 'tick'
+  clc
   adc current_time_value
   sta current_time_value
   bcc :+
@@ -92,8 +93,7 @@ timer_vbl_handler:
 : cmp #$5a
   bne :+
   lda #$00
-:
-sta current_seconds
+: sta current_seconds
 @done:
   pla
   jmp jmp_old_handler
