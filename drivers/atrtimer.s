@@ -4,6 +4,7 @@
 ; 1000 units per second. it doesn't have to be particularly accurate.
 ; this Atari implementation requires the routine timer_vbl_handler be called 60 times per second
 
+.include "atari.inc"
 .include "../inc/common.i"
 
 .export timer_init
@@ -32,12 +33,12 @@ vbichain: .word 0
 timer_init:
   lda vbichain+1
   bne @handler_installed
-  ldax $222                     ; IMMEDIATE VERTICAL BLANK NMI VECTOR
+  ldax VVBLKI                   ; IMMEDIATE VERTICAL BLANK NMI VECTOR
   stax vbichain                 ; save old immediate vector
   ldy #<timer_vbl_handler
   ldx #>timer_vbl_handler
   lda #6                        ; STAGE 1 VBI
-  jsr $e45c                     ; vector to set VBLANK parameters
+  jsr SETVBV                    ; vector to set VBLANK parameters
 @handler_installed:
   lda #0
   sta current_time_value
@@ -52,7 +53,7 @@ timer_exit:
   ldy vbichain
   ldx vbichain+1
   lda #6                        ; STAGE 1 VBI
-  jsr $e45c                     ; vector to set VBLANK parameters
+  jsr SETVBV                    ; vector to set VBLANK parameters
 @handler_not_installed:
   rts
 
@@ -104,7 +105,7 @@ timer_vbl_handler:
 : sta current_seconds
 @done:
   pla
-  jmp $e45f                     ; vector to process immediate VBLANK
+  jmp SYSVBV                    ; vector to process immediate VBLANK
 
 timer_seconds:
   lda current_seconds

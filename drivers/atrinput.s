@@ -1,3 +1,5 @@
+.include "atari.inc"
+
 .export get_key
 .export check_for_abort_key
 .export get_key_if_available
@@ -24,7 +26,7 @@ get_key:
 ; inputs: none
 ; outputs: A contains ASCII value of key just pressed (0 if no key pressed)
 get_key_if_available:
-  lda $02fc                     ; GLOBAL VARIABLE FOR KEYBOARD
+  lda CH                        ; GLOBAL VARIABLE FOR KEYBOARD
   cmp #255
   beq @nokey
   ldx iocb                      ; K: already open?
@@ -32,23 +34,23 @@ get_key_if_available:
   ldx #$40                      ; IOCB to use for keyboard input
   stx iocb                      ; mark K: as open
   lda #<kname
-  sta $344,x                    ; 1-byte low buffer address
+  sta ICBAL,x                   ; 1-byte low buffer address
   lda #>kname
-  sta $345,x                    ; 1-byte high buffer address
-  lda #3                        ; open
-  sta $342,x                    ; COMMAND CODE
-  lda #4                        ; open for input (all devices)
-  sta $34a,x                    ; 1-byte first auxiliary information
-  jsr $e456                     ; vector to CIO
+  sta ICBAH,x                   ; 1-byte high buffer address
+  lda #OPEN                     ; open
+  sta ICCOM,x                   ; COMMAND CODE
+  lda #OPNIN                    ; open for input (all devices)
+  sta ICAX1,x                   ; 1-byte first auxiliary information
+  jsr CIOV                      ; vector to CIO
 @read:
   lda #0
-  sta $348,x                    ; 1-byte low buffer length
-  sta $349,x                    ; 1-byte high buffer length
-  lda #7                        ; get character(s)
-  sta $342,x                    ; COMMAND CODE
-  jsr $e456                     ; vector to CIO
+  sta ICBLL,x                   ; 1-byte low buffer length
+  sta ICBLH,x                   ; 1-byte high buffer length
+  lda #GETCHR                   ; get character(s)
+  sta ICCOM,x                   ; COMMAND CODE
+  jsr CIOV                      ; vector to CIO
   ldx #255
-  stx $02fc                     ; GLOBAL VARIABLE FOR KEYBOARD
+  stx CH                        ; GLOBAL VARIABLE FOR KEYBOARD
   rts
 @nokey:
   lda #0
