@@ -1,3 +1,4 @@
+.include "atari.inc"
 .include "../inc/common.i"
 
 .export print_a
@@ -5,11 +6,6 @@
 .export print_cr
 .export cls
 .export beep
-.exportzp screen_current_row
-.exportzp screen_current_col
-
-screen_current_col = $55        ; 2-byte cursor column
-screen_current_row = $54        ; 1-byte cursor row
 
 
 .bss
@@ -25,11 +21,11 @@ char: .res 1
 print_a:
   cmp #10                       ; is it a CR?
   bne @not_lf
-  lda #155                      ; CR/LF char
+  lda #ATEOL                    ; CR/LF char
 @not_lf:
   cmp #13                       ; is it a LF?
   bne @not_cr
-  lda #155                      ; CR/LF char
+  lda #ATEOL                    ; CR/LF char
 @not_cr:
   sta char
   txa
@@ -37,13 +33,13 @@ print_a:
   tya
   pha
   ldax #1
-  stax $0348                    ; 2-byte buffer length
+  stax ICBLL                    ; 2-byte buffer length
   ldax #char
-  stax $0344                    ; 2-byte buffer address
-  ldx #11                       ; put character(s)
-  stx $0342                     ; COMMAND CODE
-  ldx #0
-  jsr $e456                     ; vector to CIO
+  stax ICBAL                    ; 2-byte buffer address
+  ldx #PUTCHR                   ; put character(s)
+  stx ICCOM                     ; COMMAND CODE
+  ldx #0                        ; use IOCB #0
+  jsr CIOV                      ; vector to CIO
   pla
   tay
   pla
@@ -54,21 +50,21 @@ print_a:
 ; inputs: none
 ; outputs: none
 print_cr:
-  lda #155                      ; CR/LF char
+  lda #ATEOL                    ; CR/LF char
   jmp print_a
 
 ; use ATARI CIOV function to clear the screen
 ; inputs: none
 ; outputs: none  
 cls:
-  lda #125                      ; clear screen
+  lda #ATCLR                    ; clear screen
   jmp print_a
 
 ; use ATARI CIOV function to make a 'beep' noise
 ; inputs: none
 ; outputs: none
 beep:
-  lda #253                      ; beep char
+  lda #ATBEL                    ; beep char
   jmp print_a
 
 print_a_inverse:
