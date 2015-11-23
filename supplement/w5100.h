@@ -183,7 +183,7 @@ void w5100_disconnect(void);
 
 // Commit sending of <size> bytes to server. <size> is usually smaller than
 // the return value of w5100_send_request(). Not commiting at all just turns
-// the w5100_send_request() and - the writes to *w5100_data - into NOPs.
+// the w5100_send_request() - and the writes to *w5100_data - into NOPs.
 #define w5100_send_commit(size) w5100_data_commit(1, (size))
 
 #endif
