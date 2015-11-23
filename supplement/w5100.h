@@ -113,7 +113,7 @@ Win32 communication peer for the test programs located in test/w5100_peer.c.
 2.3 TCP Stream Split
 A correct BSD TCP socket program never presumes to be able to read/write any
 amount of data. Rather it is always prepared to call recv()/send() as often as
-necessary receive/send the expected amount data in whatever chunks - and the
+necessary to receive/send the expected amount data in whatever chunks - and the
 very same holds true for any program using the W5100 TCP mode! But this already
 necessary complexity in the upper layers allows to handle W5100 memory buffer
 wraparounds transparently by artificially limiting the size of a read/write
