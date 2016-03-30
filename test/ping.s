@@ -15,7 +15,8 @@
 
 
 ; keep LD65 happy
-.segment "ZPSAVE"
+.segment "INIT"
+.segment "ONCE"
 
 
 .segment "STARTUP"

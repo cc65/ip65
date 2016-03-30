@@ -26,7 +26,8 @@ temp_buff = copy_dest
 
 
 ; keep LD65 happy
-.segment "ZPSAVE"
+.segment "INIT"
+.segment "ONCE"
 
 
 .segment "STARTUP"
