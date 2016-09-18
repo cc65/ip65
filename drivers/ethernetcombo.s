@@ -14,6 +14,10 @@
 .import eth_outp
 .import eth_outp_len
 
+.import _w5100
+.import _w5100_driver_name
+.import _w5100_driver_io_base
+
 .import _cs8900a
 .import _cs8900a_driver_name
 .import _cs8900a_driver_io_base
@@ -21,10 +25,6 @@
 .import _lan91c96
 .import _lan91c96_driver_name
 .import _lan91c96_driver_io_base
-
-.import _w5100
-.import _w5100_driver_name
-.import _w5100_driver_io_base
 
 .import cfg_mac
 
@@ -134,6 +134,14 @@ set_name:
 ; inputs: none
 ; outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
+  ldax #_w5100
+  jsr patch_wrapper
+  ldax #_w5100_driver_name
+  jsr set_name
+  ldax _w5100_driver_io_base
+  jsr init_adaptor
+  bcc @done
+
   ldax #_cs8900a
   jsr patch_wrapper
   ldax #_cs8900a_driver_name
@@ -147,14 +155,6 @@ eth_init:
   ldax #_lan91c96_driver_name
   jsr set_name
   ldax _lan91c96_driver_io_base
-  jsr init_adaptor
-  bcc @done
-
-  ldax #_w5100
-  jsr patch_wrapper
-  ldax #_w5100_driver_name
-  jsr set_name
-  ldax _w5100_driver_io_base
   jsr init_adaptor
 @done:
   rts

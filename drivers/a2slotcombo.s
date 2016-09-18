@@ -2,9 +2,9 @@
 
 .export a2_set_slot
 
+.import _w5100_driver_io_base
 .import _cs8900a_driver_io_base
 .import _lan91c96_driver_io_base
-.import _w5100_driver_io_base
 
 
 .code
@@ -21,6 +21,11 @@ a2_set_slot:
   asl
   sta tmp1
 
+  lda _w5100_driver_io_base
+  and #%10001111
+  ora tmp1
+  sta _w5100_driver_io_base
+
   lda _cs8900a_driver_io_base
   and #%10001111
   ora tmp1
@@ -30,11 +35,6 @@ a2_set_slot:
   and #%10001111
   ora tmp1
   sta _lan91c96_driver_io_base
-
-  lda _w5100_driver_io_base
-  and #%10001111
-  ora tmp1
-  sta _w5100_driver_io_base
   rts
 
 
