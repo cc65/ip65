@@ -141,9 +141,9 @@ ip65.atr: com
 httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
 
 ip65demo.dsk: httpd.bin httpd-slotscan.bin
-	cp dos33.dsk $@
-	java -jar $(AC) -cc65 $@ webserver-slot3    B < httpd.bin
-	java -jar $(AC) -cc65 $@ webserver-slotscan B < httpd-slotscan.bin
+	cp prodos.dsk $@
+	java -jar $(AC) -cc65 $@ httpd.slot3    bin < httpd.bin
+	java -jar $(AC) -cc65 $@ httpd.slotscan bin < httpd-slotscan.bin
 
 clean:
 	make -C ../ip65 clean
