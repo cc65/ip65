@@ -20,6 +20,7 @@ TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 
 .export tftp_set_callback_vector
 .export tftp_callback_vector
 .export tftp_clear_callbacks
+.export tftp_filename
 .export tftp_filesize
 .export tftp_upload_from_memory
 .import ip65_process
@@ -48,8 +49,6 @@ TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 
 .importzp copy_dest
 
 .import timer_read
-
-.exportzp tftp_filename = ptr3
 
 
 .bss
@@ -88,6 +87,7 @@ tftp_actual_server_ip:          .res 4  ; this is read from the reply - it may n
 tftp_just_set_new_load_address: .res 1
 
 tftp_opcode:            .res 2  ; will be set to 4 if we are doing a RRQ, or 7 if we are doing a DIR
+tftp_filename:          .res 2  ; pointer to null terminated name of file to upload/download
 tftp_filesize:          .res 2  ; will be set by tftp_download, needs to be set before calling tftp_upload_from_memory
 tftp_bytes_remaining:   .res 2
 
@@ -238,6 +238,8 @@ send_request_packet:
   sta tftp_state
   ldax tftp_opcode
   stax tftp_outp
+  ldax tftp_filename
+  stax ptr1
 
   ldx #$01                      ; we inc x/y at start of loop, so
   ldy #$ff                      ; set them to be 1 below where we want the copy to begin
@@ -245,7 +247,7 @@ send_request_packet:
   inx
   iny
   bmi @error_in_send            ; if we get to 0x80 bytes, we've gone too far
-  lda (tftp_filename),y
+  lda (ptr1),y
   sta tftp_outp,x
   bne @copy_filename_loop
 
