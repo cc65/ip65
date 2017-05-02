@@ -15,7 +15,7 @@
 .import tftp_set_callback_vector
 .import tftp_ip
 .import tftp_filesize
-.importzp tftp_filename
+.import tftp_filename
 
 
 ; keep LD65 happy
