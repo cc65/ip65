@@ -339,7 +339,7 @@ udp_send_internal:
   lda #ip_proto_udp             ; set protocol
   sta ip_outp + ip_proto
 
-  ; jsr dbg_dump_udp_header
+; jsr dbg_dump_udp_header
   jmp ip_send                   ; send packet, sec on error
 
 

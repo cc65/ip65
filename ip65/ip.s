@@ -1,6 +1,8 @@
 .include "zeropage.inc"
 .include "../inc/common.i"
 
+; .import dbg_dump_ip_header
+
 .export ip_init
 .export ip_process
 .export ip_calc_cksum

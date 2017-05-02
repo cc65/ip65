@@ -134,7 +134,7 @@ dns_set_hostname:
 @end_of_hostname:
   inc hostname_copied
   bne @set_length_of_last_label
-: cmp #'.'                         ; do we need to split the labels?
+: cmp #'.'                      ; do we need to split the labels?
   bne @not_a_dot
 @set_length_of_last_label:
   txa
