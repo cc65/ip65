@@ -5,9 +5,8 @@
 .export filter_url
 .export filter_number
 
-.import get_key_ip65
+.import get_key
 .import print_a
-.import print_hex
 
 .include "zeropage.inc"
 .include "../inc/common.i"
@@ -35,7 +34,7 @@ get_filtered_input:
 
   ; Wait for a character.
 @input_get:
-  jsr get_key_ip65
+  jsr get_key
   ; convert to standard ASCII by turning off high bit
   and #$7f
   sta LASTCHAR
