@@ -17,9 +17,12 @@ get_key:
 ; inputs: none
 ; outputs: A contains ASCII value of key just pressed (0 if no key pressed)
 get_key_if_available:
-  bit $c000                     ; key down?
-  bmi get_key
+  lda $c000                     ; current key pressed
+  bmi :+
   lda #0
+  rts
+: bit $c010                     ; clear the keyboard strobe
+  and #$7f
   rts
 
 ; check whether the escape key is being pressed
