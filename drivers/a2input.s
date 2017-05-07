@@ -1,7 +1,7 @@
 .export get_key
 .export check_for_abort_key
-.export get_key_ip65
 .export get_key_if_available
+.export get_key_ip65
 
 .import ip65_process
 
@@ -11,17 +11,23 @@
 ; use Apple 2 monitor ROM function to read from keyboard
 ; inputs: none
 ; outputs: A contains ASCII code of key pressed
-get_key:
-  jmp $fd0c
+get_key = $fd0c
 
 ; inputs: none
 ; outputs: A contains ASCII value of key just pressed (0 if no key pressed)
 get_key_if_available:
   lda $c000                     ; current key pressed
-  bmi :+
+  bmi got_key
   lda #0
   rts
-: bit $c010                     ; clear the keyboard strobe
+
+; process inbound ip packets while waiting for a keypress
+get_key_ip65:
+  jsr ip65_process
+  lda $c000                     ; key down?
+  bpl get_key_ip65
+got_key:
+  bit $c010                     ; clear the keyboard strobe
   and #$7f
   rts
 
@@ -37,13 +43,6 @@ check_for_abort_key:
   rts
 : clc
   rts
-
-; process inbound ip packets while waiting for a keypress
-get_key_ip65:
-  jsr ip65_process
-  bit $c000                     ; key down?
-  bpl get_key_ip65
-  jmp get_key
 
 
 

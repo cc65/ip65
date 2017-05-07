@@ -3,8 +3,7 @@
 
 .code
 
-exit_to_basic:
-  jmp $3d0
+exit_to_basic = $3d0
 
 
 

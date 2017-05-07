@@ -4,8 +4,7 @@
 .code
 
 ; jump to BASIC interpreter loop
-exit_to_basic:
-  jmp $a7ae
+exit_to_basic = $a7ae
 
 
 
