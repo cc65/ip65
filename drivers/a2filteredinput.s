@@ -35,11 +35,15 @@ get_filtered_input:
   ; Wait for a character.
 @input_get:
   jsr get_key
-  ; convert to standard ASCII by turning off high bit
+  ; Convert to standard ASCII by turning off high bit
   and #$7f
   sta LASTCHAR
 
-  cmp #$08                      ; Delete
+  cmp #$7f                      ; Delete
+  beq @delete
+
+  ; The ][ doesn't have a Delete key
+  cmp #$08                      ; Backspace
   beq @delete
 
   cmp #$0d                      ; Return
