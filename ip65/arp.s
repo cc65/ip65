@@ -68,7 +68,7 @@ ap_packlen  = 42                ; total length of packet
 
 ; gateway handling
 gw_mask: .res 4                 ; inverted netmask
-gw_test: .res 4                 ; gateway ip or:d with inverted netmask
+gw_test: .res 4                 ; gateway ip or'd with inverted netmask
 gw_last: .res 1                 ; netmask length - 1
 
 ; timeout
@@ -97,7 +97,7 @@ arp_calculate_gateway_mask:
   lda cfg_netmask,x
   eor #$ff
   cmp #$ff
-  bne :+
+  beq :+
   inc gw_last
 : sta gw_mask,x
   ora cfg_gateway,x
