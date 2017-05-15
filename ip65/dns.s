@@ -13,7 +13,6 @@ MAX_DNS_MESSAGES_SENT = 8       ; timeout after sending 8 messages will be about
 .export dns_set_hostname
 .export dns_resolve
 .export dns_ip
-.export dns_status
 .export dns_hostname_is_dotted_quad
 .import ip65_error
 .import cfg_dns
@@ -79,7 +78,6 @@ dns_state:              .res 1  ; flag indicating the current stage in the dns r
 dns_timer:              .res 1
 dns_loop_count:         .res 1
 dns_break_polling_loop: .res 1
-dns_status:             .res 2  ; for debugging purposes only (behaviour not garuanteed)
 
 hostname_copied:  .res 1
 
@@ -246,20 +244,25 @@ dns_resolve:
   bpl @too_many_messages_sent
   jmp @dns_polling_loop
 
-@complete:
-  lda #53
-  ldx dns_client_port_low_byte
-  jsr udp_remove_listener
-  rts
-
 @too_many_messages_sent:
-@failed:
-  lda #53
-  ldx dns_client_port_low_byte
-  jsr udp_remove_listener
   lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
+  bne @error                    ; always
+
+@failed:
+  lda #KPR_ERROR_DNS_LOOKUP_FAILED
+@error:
   sta ip65_error
   sec                           ; signal an error
+  bcs @done                     ; always
+
+@complete:
+  clc                           ; signal success
+@done:
+  php
+  lda #53
+  ldx dns_client_port_low_byte
+  jsr udp_remove_listener
+  plp
   rts
 
 send_dns_query:
@@ -331,8 +334,6 @@ dns_in:
   cmp #0
   beq @not_an_error_response
 
-  sta dns_status                ; anything non-zero is a permanent error (invalid domain, server doesn't support recursion etc)
-  sta dns_status+1
   lda #dns_failed
   sta dns_state
   rts
@@ -399,10 +400,6 @@ dns_in:
   @last_byte_of_cname:
   sta dns_packed_hostname,y
 
-  lda #$ff                      ; set a status marker so we know whats going on
-  sta dns_status
-  stx dns_status+1
-
   lda #1
   sta dns_break_polling_loop
   rts                           ; finished processing - the main dns polling loop should now resend a query, this time for the hostname from the CNAME record
@@ -440,8 +437,6 @@ dns_in:
   sta dns_break_polling_loop
 
 @error_in_response:
-  sta dns_status
-  stx dns_status+1
   rts
 
 
