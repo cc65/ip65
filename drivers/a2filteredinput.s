@@ -133,7 +133,7 @@ filter_text:
 filter_url:
   .byte ":/%&?+$"
 filter_dns:
-  .byte "-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  .byte "-AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"
 filter_ip:
   .byte "."
 filter_number:
