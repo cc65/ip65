@@ -12,8 +12,12 @@
 ; inputs: none
 ; outputs: A contains ASCII value of key just pressed
 get_key:
+  ldy #0
+  sty $cc                       ; cursor on
   jsr get_key_if_available
   beq get_key
+  ldy #1
+  sty $cc                       ; cursor off
   rts
 
 ; use C64 Kernel ROM function to read a key
