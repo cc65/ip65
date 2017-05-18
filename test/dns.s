@@ -9,7 +9,6 @@
 .import dns_set_hostname
 .import dns_resolve
 .import dns_ip
-.import dns_status
 
 
 ; keep LD65 happy
@@ -64,17 +63,10 @@ do_dns_query:
   bcc :+
   ldax #dns_lookup_failed_msg
   jsr print
-  jmp @print_dns_status
+  jmp print_cr
 : ldax #dns_ip
   jsr print_dotted_quad
-@print_dns_status:
-  jsr print_cr
-  lda dns_status
-  jsr print_hex
-  lda dns_status+1
-  jsr print_hex
-  jsr print_cr
-  rts
+  jmp print_cr
 
 overwrite_with_hardcoded_dns_server:
   ldx #3
