@@ -28,7 +28,8 @@ UDP =\
 	dottedquad \
 	parsequerystring \
 	sntp \
-	tftp
+	tftp \
+	vt100
 
 TCP =\
 	cifs \
@@ -68,11 +69,11 @@ com: $(addsuffix .com,$(UDP) $(TCP))
 
 vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
-d64: ip65.d64
+d64: ip65test.d64
 
-dsk: ip65.dsk
+dsk: ip65test.dsk
 
-atr: ip65.atr
+atr: ip65test.atr
 
 ip65:
 	make -C ../ip65
@@ -95,7 +96,7 @@ drivers:
 %.vicprg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
-ip65.d64: prg
+ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
 	$(C1541) -attach $@ -write dottedquad.prg dottedquad,p
@@ -106,8 +107,9 @@ ip65.d64: prg
 	$(C1541) -attach $@ -write sntp.prg       sntp,p
 	$(C1541) -attach $@ -write tcp.prg        tcp,p
 	$(C1541) -attach $@ -write tftp.prg       tftp,p
+	$(C1541) -attach $@ -write vt100.prg      vt100,p
 
-ip65.dsk: bin
+ip65test.dsk: bin
 	cp prodos.dsk $@
 	java -jar $(AC) -cc65 $@ dns        bin < dns.bin
 	java -jar $(AC) -cc65 $@ dottedquad bin < dottedquad.bin
@@ -118,8 +120,9 @@ ip65.dsk: bin
 	java -jar $(AC) -cc65 $@ sntp       bin < sntp.bin
 	java -jar $(AC) -cc65 $@ tcp        bin < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
+	java -jar $(AC) -cc65 $@ vt100      bin < vt100.bin
 
-ip65.atr: com
+ip65test.atr: com
 	mkdir atr
 	cp dos.sys        atr/dos.sys
 	cp dup.sys        atr/dup.sys
@@ -132,6 +135,7 @@ ip65.atr: com
 	cp sntp.com       atr/sntp.com
 	cp tcp.com        atr/tcp.com
 	cp tftp.com       atr/tftp.com
+	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
@@ -150,4 +154,4 @@ clean:
 	make -C ../drivers clean
 	-rm -f ../supplement/*.o
 	-rm -f *.o *.prg *.bin *.com *.vicprg *.map
-	-rm -f ip65.d64 ip65.dsk ip65.atr ip65demo.dsk
+	-rm -f ip65test.d64 ip65test.dsk ip65test.atr ip65demo.dsk
