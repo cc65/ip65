@@ -47,6 +47,7 @@ ATROBJS=\
 	atrtimer.o \
 	atrkernal.o \
 	atrinput.o \
+	atrfilteredinput.o \
 	atrcharconv.o
 
 VIC20OBJS=\
