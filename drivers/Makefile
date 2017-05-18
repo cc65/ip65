@@ -32,6 +32,7 @@ C64OBJS=\
 	c64kernal.o \
 	c64input.o \
 	c64filteredinput.o \
+	c64vt100.o \
 	cbmcharconv.o
 
 A2OBJS=\
@@ -40,6 +41,7 @@ A2OBJS=\
 	a2kernal.o \
 	a2input.o \
 	a2filteredinput.o \
+	a2vt100.o \
 	a2charconv.o
 
 ATROBJS=\
@@ -48,6 +50,7 @@ ATROBJS=\
 	atrkernal.o \
 	atrinput.o \
 	atrfilteredinput.o \
+	atrvt100.o \
 	atrcharconv.o
 
 VIC20OBJS=\
@@ -56,6 +59,7 @@ VIC20OBJS=\
 	vic20kernal.o \
 	vic20input.o \
 	vic20filteredinput.o \
+	vic20vt100.o \
 	cbmcharconv.o
 
 c64rrnet.lib: rr-net.o cs8900a.o cs8900adriver.o ethernet.o $(C64OBJS)

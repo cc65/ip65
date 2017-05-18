@@ -30,7 +30,6 @@ IP65OBJS=\
 	printf.o \
 	sntp.o \
 	string_utils.o \
-	telnet.o \
 	udp.o \
 	url.o
 

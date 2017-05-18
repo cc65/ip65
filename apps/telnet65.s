@@ -1,188 +1,298 @@
 ; minimal telnet implementation (dumb terminal emulation only)
-; to use:
-; set the following variables - telnet_use_native_charset,telnet_port,telnet_ip
-; then call telnet_connect
-; you must also define (and export) these function
-; telnet_menu - called whenever the F1 key is pressed.
-; telnet_on_connection - called after succesful connection
 
-.include "zeropage.inc"
 .include "../inc/common.i"
+.include "../inc/commonprint.i"
+.include "../inc/net.i"
 
-.import tcp_connect
+.export start
+
+.import get_filtered_input
+.import get_key
+.import get_key_if_available
+.import exit_to_basic
+.import filter_dns
+.import filter_number
+.import dns_hostname_is_dotted_quad
+.import dns_ip
+.import dns_resolve
+.import dns_set_hostname
+.import ip65_process
+.import native_to_ascii
+.import parse_integer
+.import print_cr
 .import tcp_callback
+.import tcp_close
+.import tcp_connect
 .import tcp_connect_ip
-.import tcp_listen
-.importzp KEYCODE_F1
 .import tcp_inbound_data_ptr
 .import tcp_inbound_data_length
 .import tcp_send
 .import tcp_send_data_len
-.import tcp_close
-.import print_a
-.import print_cr
-.import vt100_init_terminal
-.import vt100_process_inbound_char
-.import vt100_transform_outbound_char
 .import tcp_send_keep_alive
 .import timer_read
+.import vt100_init_terminal
+.import vt100_exit_terminal
+.import vt100_process_inbound_char
+.import vt100_process_outbound_char
+.importzp vt100_screen_cols
+.importzp vt100_screen_rows
 
-.import ip65_process
-.import get_key_if_available
-.import get_filtered_input
-.import check_for_abort_key
-.import ok_msg
-.import failed_msg
-.import print
-.import print_errorcode
+.export telnet_close
+.export telnet_send_char
+.export telnet_send_string
 
-.export telnet_connect
-.export telnet_use_native_charset
-.export telnet_port
-.export telnet_ip
-
-.import telnet_menu
-.import telnet_on_connection
-
-buffer_ptr = ptr4
+buffer_ptr = sreg
 
 
-.code
+; keep LD65 happy
+.segment "INIT"
+.segment "ONCE"
 
-; connect to a remote telnet server
-; inputs:
-; telnet_use_native_charset: set to 0 if remote server uses standard ASCII, 1 if remote server uses the 'native' charset (i.e. PETSCII)
-; telnet_port: port number to connect to
-; telnet_ip: ip address of remote server
-telnet_connect:
-  lda telnet_use_native_charset
-  bne :+
+
+.segment "STARTUP"
+
+start:
   jsr vt100_init_terminal
-: ldax #telnet_callback
+
+; initialize stack
+  ldax #initializing
+  jsr print_ascii_as_native
+  jsr ip65_init
+  bcc :+
+  ldax #device_not_found
+  jsr print_ascii_as_native
+  jmp error_exit
+: ldax #eth_driver_name
+  jsr print_ascii_as_native
+  ldax #io_base_prefix
+  jsr print_ascii_as_native
+  lda eth_driver_io_base+1
+  jsr print_hex
+  lda eth_driver_io_base
+  jsr print_hex
+  ldax #io_base_postfix
+  jsr print_ascii_as_native
+
+; get IP addr
+  ldax #obtaining
+  jsr print_ascii_as_native
+  jsr dhcp_init
+  bcc :+
+  jsr print_error
+  jmp error_exit
+: ldax #cfg_ip
+  jsr print_dotted_quad
+  jsr print_cr
+
+telnet_main_entry:
+; enter host name
+  ldax #remote_host
+  jsr print_ascii_as_native
+  ldy #40                       ; max chars
+  ldax #filter_dns
+  jsr get_filtered_input
+  bcc :+
+  jmp exit
+
+; set host name
+: stax buffer_ptr
+  ldy #$ff
+: iny
+  lda (buffer_ptr),y
+  jsr native_to_ascii
+  cmp #'a'
+  bcs :+
+  cmp #'A'
+  bcc :+
+  clc
+  adc #'a'-'A'
+: sta (buffer_ptr),y
+  tax                           ; set Z flag
+  bne :--
+  ldax buffer_ptr
+  jsr dns_set_hostname
+  bcc :+
+  jsr print_error
+  jmp telnet_main_entry
+
+; resolve host name
+: lda dns_hostname_is_dotted_quad
+  bne :++
+  ldax #resolving
+  jsr print_ascii_as_native
+  jsr dns_resolve
+  bcc :+
+  jsr print_error
+  jmp telnet_main_entry
+: ldax #dns_ip
+  jsr print_dotted_quad
+
+; enter port
+: ldax #remote_port
+  jsr print_ascii_as_native
+  ldy #5                        ; max chars
+  ldax #filter_number
+  jsr get_filtered_input
+  bcs :+                        ; empty -> default
+  jsr parse_integer
+  bcc :++
+  jmp telnet_main_entry
+: ldax #23                      ; default
+: stax telnet_port
+
+; connect
+  ldax #connecting
+  jsr print_ascii_as_native
+  ldax #dns_ip
+  jsr print_dotted_quad
+  ldax #blank
+  jsr print_ascii_as_native
+  ldax #telnet_callback
   stax tcp_callback
   ldx #3
-@copy_dest_ip:
-  lda telnet_ip,x
+: lda dns_ip,x
   sta tcp_connect_ip,x
   dex
-  bpl @copy_dest_ip
-
+  bpl :-
   ldax telnet_port
   jsr tcp_connect
+  bcc :+
+  jsr print_error
+  jmp telnet_main_entry
 
-  bcc @connect_ok
-  jsr print_cr
-  ldax #failed_msg
-  jsr print
-  jsr print_cr
-  jsr print_errorcode
-  rts
-@connect_ok:
-  jsr telnet_on_connection
-
-  ldax #ok_msg
-  jsr print
-  jsr print_cr
+; connected
+: ldax #ok
+  jsr print_ascii_as_native
   lda #0
+  sta connection_close_requested
   sta connection_closed
   sta iac_response_buffer_length
+  ldax #cursor_on
+  jsr print_vt100
 
 @main_polling_loop:
-  jsr check_for_abort_key
-  bcc @no_abort
-  jsr tcp_close
-  jmp @disconnected
-
-@no_abort:
   jsr timer_read
   txa
-  adc #$20                      ; 32 x 1/4 = ~ 8seconds
+  adc #$20                      ; 32 x 1/4 = ~ 8 seconds
   sta telnet_timeout
 @wait_for_keypress:
   jsr timer_read
   cpx telnet_timeout
-  bne @no_timeout
+  bne :+
   jsr tcp_send_keep_alive
   jmp @main_polling_loop
-@no_timeout:
-  jsr ip65_process
-  lda connection_closed
-  beq @not_disconnected
-@disconnected:
+: jsr ip65_process
+  lda connection_close_requested
+  beq :+
+  jsr tcp_close
+  jmp :++
+: lda connection_closed
+  beq :++
+: ldax #cursor_off
+  jsr print_vt100
   ldax #disconnected
-  jsr print
-  rts
-@not_disconnected:
-  lda iac_response_buffer_length
-  beq @no_iac_response
+  jsr print_ascii_as_native
+  jmp telnet_main_entry
+: lda iac_response_buffer_length
+  beq :+
   ldx #0
   stax tcp_send_data_len
   stx iac_response_buffer_length
   ldax #iac_response_buffer
   jsr tcp_send
-@no_iac_response:
-  jsr get_key_if_available
+: jsr get_key_if_available
   beq @wait_for_keypress
-
-  cmp #KEYCODE_F1
-  bne @not_telnet_menu
-  jsr telnet_menu
-  jmp @main_polling_loop
-@not_telnet_menu:
   ldx #0
   stx tcp_send_data_len
   stx tcp_send_data_len+1
+  tay
+  jsr vt100_process_outbound_char
+  jmp @main_polling_loop
 
-  ldx telnet_use_native_charset
-  bne @no_conversion_required
-
-  jsr vt100_transform_outbound_char
-
-  sta temp_a
-  tya
-  bne :+
-  jmp @main_polling_loop        ; Y = 0 means nothing to send
-: cmp #2
-  beq :+
-  lda temp_a
-  jmp @no_conversion_required
-: lda temp_a
+print_vt100:
   stax buffer_ptr
+  lda #0
+  sta buffer_offset
+: ldy buffer_offset
+  lda (buffer_ptr),y
+  bne :+
+  rts
+: tay
+  jsr vt100_process_inbound_char
+  inc buffer_offset
+  jmp :--
+
+print_error:
+  lda ip65_error
+  cmp #KPR_ERROR_ABORTED_BY_USER
+  bne :+
+  ldax #abort
+  jmp print_ascii_as_native
+: cmp #KPR_ERROR_TIMEOUT_ON_RECEIVE
+  bne :+
+  ldax #timeout
+  jmp print_ascii_as_native
+: ldax #error_prefix
+  jsr print_ascii_as_native
+  lda ip65_error
+  jsr print_hex
+  jmp print_cr
+
+error_exit:
+  ldax #press_a_key_to_continue
+  jsr print_ascii_as_native
+  jsr get_key
+exit:
+  jsr vt100_exit_terminal
+  jmp exit_to_basic
+
+
+; vt100 callback - will be executed when the user requests to close the connection
+telnet_close:
+  lda #1
+  sta connection_close_requested
+  rts
+
+
+; vt100 callback - will be executed when sending a char string
+telnet_send_string:
+  stx buffer_ptr
+  sty buffer_ptr+1
   ldy #0
 : lda (buffer_ptr),y
-  beq @send_char
+  beq send_char
   sta scratch_buffer,y
   inc tcp_send_data_len
   iny
   bne :-
-  jmp @send_char
+  jmp send_char
 
-@no_conversion_required:
+
+; vt100 callback - will be executed when sending a single char
+telnet_send_char:
   ldy tcp_send_data_len
   sta scratch_buffer,y
   inc tcp_send_data_len
 
-@send_char:
+send_char:
   ldax #scratch_buffer
   jsr tcp_send
-  bcs @error_on_send
-  jmp @main_polling_loop
+  bcs :+
+  rts
+: ldax #send_error
+  jsr print_ascii_as_native
+  jmp print_error
 
-@error_on_send:
-  ldax #transmission_error
-  jsr print
-  jmp print_errorcode
 
 ; tcp callback - will be executed whenever data arrives on the TCP connection
 telnet_callback:
   lda tcp_inbound_data_length+1
   cmp #$ff
-  bne @not_eof
+  bne :+
   lda #1
   sta connection_closed
   rts
-@not_eof:
-  ldax tcp_inbound_data_ptr
+: ldax tcp_inbound_data_ptr
   stax buffer_ptr
   lda tcp_inbound_data_length
   sta buffer_length
@@ -193,11 +303,9 @@ telnet_callback:
   ldy #0
   lda (buffer_ptr),y
   tax
-  lda telnet_use_native_charset
-  beq :+
-  jmp  @no_conversion_req
-  ; if we get here, we are in ASCII 'char at a time' mode,  so look for (and process) Telnet style IAC bytes
-: lda telnet_state
+  ; if we get here, we are in ASCII 'char at a time' mode,
+  ; so look for (and process) Telnet style IAC bytes
+  lda telnet_state
   cmp #telnet_state_got_command
   bne :+
   jmp @waiting_for_option
@@ -216,7 +324,6 @@ telnet_callback:
 
 @waiting_for_suboption_end:
   txa
-
   ldx iac_suboption_buffer_length
   sta iac_suboption_buffer,x
   inc iac_suboption_buffer_length
@@ -259,6 +366,7 @@ telnet_callback:
   lda #telnet_state_normal
   sta telnet_state
   jmp @byte_processed
+
 @suboption:
   lda #telnet_state_got_suboption
   sta telnet_state
@@ -276,17 +384,14 @@ telnet_callback:
   txa
   sta telnet_option
   lda telnet_command
-
   cmp #$fb
   beq @iac_will
   cmp #$fc
   beq @iac_wont
   cmp #$fe
   beq @iac_dont
-
   ; if we get here, then it's a "do"
   lda telnet_option
-
   cmp #$18                      ; terminal type
   beq @do_terminaltype
   cmp #$1f
@@ -298,11 +403,10 @@ telnet_callback:
 @add_iac_response:
   ldx iac_response_buffer_length
   sta iac_response_buffer+1,x
-  lda #255
+  lda #$ff
   sta iac_response_buffer,x
   lda telnet_option
   sta iac_response_buffer+2,x
-
   inc iac_response_buffer_length
   inc iac_response_buffer_length
   inc iac_response_buffer_length
@@ -312,19 +416,16 @@ telnet_callback:
   jmp @byte_processed
 @iac_will:
   lda telnet_option
-  cmp #$01 ; ECHO
+  cmp #$01                      ; ECHO
   beq @will_echo
   cmp #$03                      ; DO SUPPRESS GA
   beq @will_suppress_ga
-
 @iac_wont:
   lda #$fe                      ; DONT
   jmp @add_iac_response
-
 @will_echo:
   lda #$fd                      ; DO
   jmp @add_iac_response
-
 @will_suppress_ga:
   lda #$fd                      ; DO
   jmp @add_iac_response
@@ -339,46 +440,56 @@ telnet_callback:
   txa
   cmp #naws_response_length
   bne :-
-
   jmp @after_set_iac_response
-
 @do_terminaltype:
   lda #$fb                      ; WILL
   jmp @add_iac_response
 
 @not_iac:
-@convert_to_native:
   txa
+  tay
   jsr vt100_process_inbound_char
-  jmp @byte_processed
-@no_conversion_req:
-  txa
-  jsr print_a
+
 @byte_processed:
   inc buffer_ptr
   bne :+
   inc buffer_ptr+1
 : lda buffer_length+1
-  beq @last_page
+  beq :++
   lda buffer_length
-  bne @not_end_of_page
+  bne :+
   dec buffer_length+1
-@not_end_of_page:
-  dec buffer_length
+: dec buffer_length
   jmp @next_byte
-@last_page:
-  dec buffer_length
-  beq @finished
-
+: dec buffer_length
+  beq :+
   jmp @next_byte
+: rts
 
-@finished:
-  rts
 
-; constants
-closing_connection:     .byte "CLOSING CONNECTION",13,0
-disconnected:           .byte 13,"CONNECTION CLOSED",13,0
-transmission_error:     .byte "ERROR WHILE SENDING ",0
+.rodata
+
+blank:                  .byte " ",0
+initializing:           .byte 10," Telnet65 v1.0 based on:",10,10
+                        .byte "- IP65 (oliverschmidt.github.io/ip65)",10
+                        .byte "- CaTer (www.opppf.de/Cater)",10,10
+                        .byte "Initializing ",0
+obtaining:              .byte "Obtaining IP address ",0
+resolving:              .byte 10,"Resolving to address ",0
+connecting:             .byte 10,"Connecting to ",0
+io_base_prefix:         .byte " ($",0
+io_base_postfix:        .byte ")",10,0
+ok:                     .byte "Ok",10,10,0
+device_not_found:       .byte "- Device not found",10,0
+abort:                  .byte "- User abort",10,0
+timeout:                .byte "- Timeout",10,0
+error_prefix:           .byte "- Error $",0
+remote_host:            .byte 10,"Hostname (leave blank to quit)",10,"? ",0
+remote_port:            .byte 10,10,"Port Num (leave blank for default)",10,"? ",0
+disconnected:           .byte 10,"Disconnected",10,0
+send_error:             .byte "Sending ",0
+cursor_on:              .byte 27,"[?25h",0
+cursor_off:             .byte 27,"[?25l",0
 
 ; initial_telnet_options:
 ; .byte $ff,$fb,$1F             ; IAC WILL NAWS
@@ -387,36 +498,35 @@ transmission_error:     .byte "ERROR WHILE SENDING ",0
 
 terminal_type_response:
   .byte $ff                     ; IAC
-  .byte $fa; SB
-  .byte  $18                    ; TERMINAL TYPE
-  .byte $0 ; IS
+  .byte $fa                     ; SB
+  .byte $18                     ; TERMINAL TYPE
+  .byte $0                      ; IS
   .byte "vt100"                 ; what we pretend to be
   .byte $ff                     ; IAC
   .byte $f0                     ; SE
 terminal_type_response_length = *-terminal_type_response
 
 naws_response:
-  .byte $ff,$fb,$1F             ; IAC WILL NAWS
+  .byte $ff,$fb,$1f             ; IAC WILL NAWS
   .byte $ff                     ; IAC
   .byte $fa                     ; SB
-  .byte  $1F                    ; NAWS
+  .byte $1f                     ; NAWS
   .byte $00                     ; width (high byte)
-  .byte 40                      ; width (low byte)
+  .byte vt100_screen_cols       ; width (low byte)
   .byte $00                     ; height (high byte)
-  .byte 25                      ; height (low byte)
+  .byte vt100_screen_rows       ; height (low byte)
   .byte $ff                     ; IAC
   .byte $f0                     ; SE
 naws_response_length = *-naws_response
 
 
-.segment "APP_SCRATCH"
+.bss
 
 ; variables
-telnet_ip:                      .res 4  ; ip address of remote server
 telnet_port:                    .res 2  ; port number to connect to
 telnet_timeout:                 .res 1
+connection_close_requested:     .res 1
 connection_closed:              .res 1
-telnet_use_native_charset:      .res 1  ; 0 means all data is translated to/from NVT ASCII
 buffer_offset:                  .res 1
 telnet_command:                 .res 1
 telnet_option:                  .res 1
@@ -429,12 +539,11 @@ telnet_state_got_suboption = 3
 buffer_length:                  .res 2
 
 telnet_state:                   .res  1
-temp_a:                         .res  1
 iac_response_buffer:            .res 64
 iac_response_buffer_length:     .res  1
 scratch_buffer :                .res 40
 iac_suboption_buffer:           .res 64
-iac_suboption_buffer_length:    .res 1
+iac_suboption_buffer_length:    .res  1
 
 
 
