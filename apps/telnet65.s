@@ -166,22 +166,27 @@ telnet_main_entry:
   lda #0
   sta connection_close_requested
   sta connection_closed
+  sta data_received
   sta iac_response_buffer_length
   ldax #cursor_on
   jsr print_vt100
 
 @main_polling_loop:
   jsr timer_read
-  txa
+  txa                           ; 1/1000 * 256 = ~ 1/4 seconds
   adc #$20                      ; 32 x 1/4 = ~ 8 seconds
   sta telnet_timeout
-@wait_for_keypress:
+@check_timeout:
+  lda data_received
+  bne :+
   jsr timer_read
   cpx telnet_timeout
   bne :+
   jsr tcp_send_keep_alive
   jmp @main_polling_loop
-: jsr ip65_process
+: lda #0
+  sta data_received
+  jsr ip65_process
   lda connection_close_requested
   beq :+
   jsr tcp_close
@@ -201,7 +206,7 @@ telnet_main_entry:
   ldax #iac_response_buffer
   jsr tcp_send
 : jsr get_key_if_available
-  beq @wait_for_keypress
+  beq @check_timeout
   ldx #0
   stx tcp_send_data_len
   stx tcp_send_data_len+1
@@ -286,18 +291,17 @@ send_char:
 
 ; tcp callback - will be executed whenever data arrives on the TCP connection
 telnet_callback:
-  lda tcp_inbound_data_length+1
-  cmp #$ff
-  bne :+
   lda #1
+  ldx tcp_inbound_data_length+1
+  cpx #$ff
+  bne :+
   sta connection_closed
   rts
-: ldax tcp_inbound_data_ptr
-  stax buffer_ptr
+: sta data_received
   lda tcp_inbound_data_length
-  sta buffer_length
-  lda tcp_inbound_data_length+1
-  sta buffer_length+1
+  stax buffer_length
+  ldax tcp_inbound_data_ptr
+  stax buffer_ptr
 
 @next_byte:
   ldy #0
@@ -527,6 +531,7 @@ telnet_port:                    .res 2  ; port number to connect to
 telnet_timeout:                 .res 1
 connection_close_requested:     .res 1
 connection_closed:              .res 1
+data_received:                  .res 1
 buffer_offset:                  .res 1
 telnet_command:                 .res 1
 telnet_option:                  .res 1
