@@ -814,10 +814,10 @@ POrts   rts
 ;
 ; -------------------------------------
 
-ScrsrU .byt $1b, $5b, $41, $00 ; esc [ A
-ScrsrD .byt $1b, $5b, $42, $00 ; esc [ B
-ScrsrR .byt $1b, $5b, $43, $00 ; esc [ C
-ScrsrL .byt $1b, $5b, $44, $00 ; esc [ D
+ScrsrU .byt $1b, $4f, $41, $00 ; esc O A
+ScrsrD .byt $1b, $4f, $42, $00 ; esc O B
+ScrsrR .byt $1b, $4f, $43, $00 ; esc O C
+ScrsrL .byt $1b, $4f, $44, $00 ; esc O D
 
 CmdKey  tya         ; restore character
 
