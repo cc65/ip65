@@ -44,7 +44,7 @@ SendStr = telnet_send_string
 ; *************************************
 
 ; --- video RAM ---
-Video = $84 ; $8400 - $87E7
+Video = $84 ; $8400 - $87e7
 
 ; --- char ROM ---
 Char = $8800 ; $8800 - $8fff

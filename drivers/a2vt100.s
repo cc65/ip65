@@ -1050,13 +1050,13 @@ PC2     jmp PCend   ; no output
         ; -- handle reverse mode --
 PCrvs   ora #$80    ; turn on high bit
         ldy INVFLG
-        cpy #$FF    ; normal character display mode?
+        cpy #$ff    ; normal character display mode?
         beq PCput
-        cmp #$E0    ; lowercase?
-        bcc mask
-        and #$7F    ; inverse lowercase
+        cmp #$e0    ; lowercase?
+        bcc PCmask
+        and #$7f    ; inverse lowercase
         jmp PCput
-mask    and INVFLG  ; apply normal, inverse, flash
+PCmask  and INVFLG  ; apply normal, inverse, flash
 
 PCput   ldx lbPending   ; need new line?
         beq PC6         ; no -> skip
@@ -1457,7 +1457,7 @@ InitScr
         ; --- limit SET80COL-HISCR to text ---
         bit LORES
         ; --- erase screen ---
-        ldx #$16      ; start at ln 22
+        ldx #$17      ; start at ln 23
 IS1     txa
         pha           ; save X
         jsr ErLn      ; erase line
