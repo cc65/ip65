@@ -263,6 +263,8 @@ ExitTerminal
 
 ProcIn  lda EMode   ; handle esc mode
         bne PIEsc
+        tya         ; set 6502 N flag
+        bmi PIrts   ; ignore non-ASCII
         lda atp,y   ; ASCII to PETSCII
         beq PIrts   ; ignore $00
         cmp #$01    ; something special?
@@ -1275,7 +1277,7 @@ PC0     cmp #$c0
         bcc PC1
         and #$7f
         jmp PCrvs
-        ; -- $a0-$bf -- graphics/latin-9
+        ; -- $a0-$bf -- graphics
 PC1     cmp #$a0
         bcc PC2
         and #$3f
@@ -1843,24 +1845,6 @@ atp ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ;     p   q   r   s   t   u   v   w   x   y   z  {╋  |▒  }┃  ~▒▒ DEL
 ;     /   /   /   /   /   /   /   /   /   /   /   /   /   /   /
 .byt $50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$db,$dc,$dd,$de,$00  ; 7_
-
-;    --- upper control codes ---------------------------------------
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 8_
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 9_
-
-;    --- latin 9 chars ---------------------------------------------
-;    NBSP         £   €      (Š)  §  (š)  ©       «       -
-.byt $20,$df,$df,$bf,$be,$df,$d3,$b5,$53,$bb,$df,$bc,$df,$2d,$df,$df  ; a_
-;     °   ±   ²   ³  (Ž)  µ          (ž)          »   Œ   œ  (Ÿ)
-.byt $ba,$b8,$b6,$b7,$da,$b9,$df,$df,$5a,$df,$df,$bd,$b0,$b0,$d9,$df  ; b_
-;     À  (Á)  Â  (Ã)  Ä   Å      (Ç)  È   É   Ê  (Ë) (Ì) (Í) (Î) (Ï)
-.byt $a5,$c1,$a4,$c1,$a3,$a4,$df,$c3,$ad,$ab,$ac,$c5,$c9,$c9,$c9,$c9  ; c_
-;    (Ð) (Ñ) (Ò) (Ó)  Ô  (Õ)  Ö      (Ø) (Ù) (Ú) (Û)  Ü  (Ý)      ß
-.byt $c4,$ce,$cf,$cf,$b1,$cf,$af,$df,$cf,$d5,$d5,$d5,$b3,$d9,$df,$b4  ; d_
-;     à  (á)  â  (ã)  ä   å       ç   è   é   ê   ë  (ì) (í) (î) (ï)
-.byt $a2,$41,$a1,$41,$a0,$a1,$df,$a6,$aa,$a8,$a9,$a7,$49,$49,$49,$49  ; e_
-;        (ñ) (ò) (ó)  ô  (õ)  ö      (ø) (ù) (ú) (û)  ü  (ý)     (ÿ)
-.byt $df,$4e,$4f,$4f,$b1,$4f,$ae,$df,$4f,$55,$55,$55,$b2,$59,$df,$59  ; f_
 
 ; -------------------------------------
 ; table PETSCII to ASCII
