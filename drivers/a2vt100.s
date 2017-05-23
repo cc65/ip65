@@ -45,8 +45,6 @@ SendStr = telnet_send_string
 
 .include "apple2.inc"
 
-ControlFlags = $1000
-
 ; *************************************
 ; *
 ; * Zeropage
@@ -1038,39 +1036,29 @@ PrnChr  sta xVector ; save char
         lda xVector ; restore char
 
         ; -- $80-$ff -- non-ASCII
-        bpl PC1
-        jmp PCend
-        ; -- $20-$7f -- printable
-PC1     cmp #$20
-        bcc PC2
-        jmp PCrvs
-        ; -- $00-$1f -- control
-PC2     jmp PCend   ; no output
+        bmi PCend   ; no output
 
         ; -- handle reverse mode --
-PCrvs   ora #$80    ; turn on high bit
-        ldy INVFLG
-        cpy #$ff    ; normal character display mode?
-        beq PCput
-        cmp #$e0    ; lowercase?
-        bcc PCmask
-        and #$7f    ; inverse lowercase
+        ldx INVFLG  ; reverse mode?
+        bmi PC1     ; normal:$ff, reverse:$3f
+        tax
+        lda rtsc,x  ; reverse to ScreenCode
         jmp PCput
-PCmask  and INVFLG  ; apply normal, inverse, flash
+PC1     ora #$80    ; normal to ScreenCode
 
 PCput   ldx lbPending   ; need new line?
-        beq PC6         ; no -> skip
+        beq PC2         ; no -> skip
         ldx #$00        ; clear pending
         stx lbPending
         jsr NewLn
-PC6     tax             ; save char
+PC2     tax             ; save char
         lda CH          ; get crsr col
         lsr             ; col DIV 2
         tay
         txa             ; restore char
-        bcs PC7         ; odd col?
+        bcs PC3         ; odd col?
         bit $c055
-PC7     sta (BASL),y    ; char to screen
+PC3     sta (BASL),y    ; char to screen
         bit $c054
         ldy CH          ; get crsr col
 
@@ -1484,9 +1472,34 @@ ExitScr
 
 ; *************************************
 ; *
-; * ASCII tables
+; * ASCII and ScreenCode tables
 ; *
 ; *************************************
+
+; -------------------------------------
+; table reverse to ScreenCode
+;
+; This tabel is used to convert incoming
+; reverse chars.
+; -------------------------------------
+
+rtsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
+
+; --- Control chars - should never appear --------------------------
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 0_
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 1_
+
+; --- special chars ------------------------------------------------
+.byt $20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$2a,$2b,$2c,$2d,$2e,$2f  ; 2_
+.byt $30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$3a,$3b,$3c,$3d,$3e,$3f  ; 3_
+
+; --- capital letters ----------------------------------------------
+.byt $00,$01,$02,$03,$04,$05,$06,$07,$07,$09,$0a,$0b,$0c,$0d,$0e,$0f  ; 4_
+.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$1c,$1d,$1e,$1f  ; 5_
+
+; --- lower case letters -------------------------------------------
+.byt $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
+.byt $70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$7d,$7e,$7f  ; 7_
 
 ; -------------------------------------
 ; table keyboard to ASCII
