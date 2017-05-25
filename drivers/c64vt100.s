@@ -169,6 +169,8 @@ vVector = tmp1
 ; --- esc mode ---
 ; $00 = normal
 ; $0f = esc mode
+; $fd = esc ( mode
+; $fe = esc ) mode
 ; $ff = esc [ mode
 ; $f0 = ignore one char
 EMode .res 1
@@ -201,11 +203,20 @@ AFore .res 1
 ; background
 ABack .res 1
 
+; --- line drawing ---
+; contains four bits
+; bit 0 = G0 is line drawing
+; bit 1 = G1 is iine drawing
+; bit 6 = do line drawing
+; bit 7 = G1 is invoked
+Draw: .res 1
+
 ; --- crsr save area ---
 ; here is crsr info saved with ESC 7
 ; and restored from with ESC 8
 SaveF .res 1   ; font
 SaveR .res 1   ; reverse mode
+SaveD .res 1   ; line drawing
 SaveRow .res 1 ; row
 SaveCol .res 1 ; column
 
@@ -263,9 +274,15 @@ ExitTerminal
 
 ProcIn  lda EMode   ; handle esc mode
         bne PIEsc
-        tya         ; set 6502 N flag
+        tya
         bmi PIrts   ; ignore non-ASCII
-        lda atp,y   ; ASCII to PETSCII
+        bit Draw    ; line drawing?
+        bvc PI1     ; no
+        cmp #$60    ; line drawing char?
+        bcc PI1     ; no
+        eor #$e0    ; $60-$7f -> $80-$9f
+        tay
+PI1     lda atp,y   ; ASCII to PETSCII
         beq PIrts   ; ignore $00
         cmp #$01    ; something special?
         beq Special
@@ -342,8 +359,22 @@ D5a     tay         ; col to y
         ldx sRow    ; line to x
         jsr CPlot   ; set crsr
         rts
+; --- SO ---
+D6      cmp #$0e    ; SO?
+        bne D7
+        asl Draw
+        sec         ; set G1 invoked
+        ror Draw
+        jmp SLD
+; --- SI ---
+D7      cmp #$0f    ; SI?
+        bne D8
+        asl Draw
+        clc         ; clear G1 invoked
+        ror Draw
+        jmp SLD
 
-D6      rts
+D8      rts
 
 ; -------------------------------------
 ; esc mode
@@ -384,11 +415,15 @@ SEsc    tya         ; restore char
         ; --- ( ---
 E2      cmp #$28    ; ( ?
         bne E3
-        jmp sThrow
+        lda #$fd    ; set esc ( mode
+        sta EMode
+        rts
         ; --- ) ---
 E3      cmp #$29    ; ) ?
         bne E4
-        jmp sThrow
+        lda #$fe    ; set esc ) mode
+        sta EMode
+        rts
         ; --- # ---
 E4      cmp #$23    ; # ?
         bne E5
@@ -427,6 +462,8 @@ E8      cmp #$37    ; 7 ?
         sta SaveF
         lda Rvs     ; save reverse mode
         sta SaveR
+        lda Draw    ; save line drawing
+        sta SaveD
         ldx sRow    ; save position
         ldy sCol
         stx SaveRow
@@ -439,6 +476,8 @@ E9      cmp #$38    ; 8 ?
         ldx SaveRow ; restore pos
         ldy SaveCol
         jsr CPlot
+        lda SaveD   ; restore line drawing
+        sta Draw
         lda SaveR   ; restore ..
         sta Rvs     ; .. reverse mode
         ldx SaveF   ; restore font
@@ -461,12 +500,17 @@ sThrow  lda #$f0    ; set esc mode $f0
         rts
 
 ; -------------------------------------
-; [ esc mode
+; [ or ( or ) esc modes
 ;
-; EMode = $ff
+; EMode = $ff or $fd or $fe
 ; -------------------------------------
 
-LEsc    tya         ; restore char
+LEsc    lda EMode
+        cmp #$ff
+        beq LE1b
+        jmp SCS     ; ( esc or ) esc
+
+LE1b    tya         ; restore char
 
         ldy EBufL
         sta EBuf,y  ; store char
@@ -835,6 +879,43 @@ LE13
 LEend   lda #$00
         sta EBufL   ; reset esc buffer
         sta EMode   ; reset esc mode
+        rts
+
+; -------------------------------------
+; ( or ) esc modes (select char set)
+;
+; EMode = $fd or $fe in A
+; -------------------------------------
+
+SCS     and #$03    ; $01 or $02
+        cpy #'0'    ; line drawing?
+        bne SCS1
+        ora Draw    ; set Gx line drawing
+        jmp SCS2
+SCS1    eor #$ff    ; $fe or $fd
+        and Draw    ; clear Gx line drawing
+SCS2    sta Draw
+        jsr SLD
+        jmp LEend
+
+; -------------------------------------
+; SLD - set line drawing
+;
+; set bit 6 based on bits 0, 1, 7
+;--------------------------------------
+
+SLD     lda Draw
+        bmi SLD1    ; G1 is invoked?
+        and #$01    ; no -> G0..
+        jmp SLD2
+SLD1    and #$02    ; yes -> G1..
+SLD2    beq SLD3    ; ..is line drawing?
+        lda #$40    ; yes -> set..
+        ora Draw    ; ..line drawing
+        jmp SLD4
+SLD3    lda #$bf    ; no -> clear..
+        and Draw    ; ..line drawing
+SLD4    sta Draw
         rts
 
 ; -------------------------------------
@@ -1283,10 +1364,11 @@ PC1     cmp #$a0
         and #$3f
         ora #$40
         jmp PCrvs
-        ; -- $80-$9f -- upper control
-PC2     cmp #$80      ; no output
+        ; -- $80-$9f -- line drawing (moved from $60-$7f)
+PC2     cmp #$80
         bcc PC3
-        jmp PCend
+        eor #$e0 -> $60-$7f in custom font
+        jmp PCrvs
         ; -- $60-$7f -- lower capital
 PC3     cmp #$60 ; for string constants
         bcc PC4
@@ -1817,9 +1899,9 @@ ExitScr
 atp ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
 ; --- Control chars ------------------------------------------------
-;    NUL                     ACK BEL BS  TAB LF          CR
-;                                 C   C   C   C           C
-.byt $00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$00,$00,$01,$00,$00  ; 0_
+;    NUL                     ACK BEL BS  TAB LF          CR  SO  SI
+;                                 C   C   C   C           C   C   C
+.byt $00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$00,$00,$01,$01,$01  ; 0_
 ;                        NAK                     ESC
 ;                                                 C
 .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$00,$00,$00,$00  ; 1_
@@ -1845,6 +1927,12 @@ atp ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ;     p   q   r   s   t   u   v   w   x   y   z  {╋  |▒  }┃  ~▒▒ DEL
 ;     /   /   /   /   /   /   /   /   /   /   /   /   /   /   /
 .byt $50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$db,$dc,$dd,$de,$00  ; 7_
+
+; --- line drawing (moved from $60-$7f) ----------------------------
+;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
+.byt $80,$81,$82,$83,$84,$85,$86,$87,$88,$89,$8a,$8b,$8c,$8d,$8e,$8f  ; 8_
+;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
+.byt $90,$91,$92,$93,$94,$95,$96,$97,$98,$99,$9a,$9b,$9c,$9d,$9e,$9f  ; 9_
 
 ; -------------------------------------
 ; table PETSCII to ASCII

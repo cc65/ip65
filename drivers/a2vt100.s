@@ -73,6 +73,8 @@ vVector = ptr3
 ; --- esc mode ---
 ; $00 = normal
 ; $0f = esc mode
+; $fd = esc ( mode
+; $fe = esc ) mode
 ; $ff = esc [ mode
 ; $f0 = ignore one char
 EMode .res 1
@@ -99,11 +101,20 @@ SRE .res 1     ; last line number
 ; bit 2 = underline
 Font: .res 1
 
+; --- line drawing ---
+; contains four bits
+; bit 0 = G0 is line drawing
+; bit 1 = G1 is iine drawing
+; bit 6 = do line drawing
+; bit 7 = G1 is invoked
+Draw: .res 1
+
 ; --- crsr save area ---
 ; here is crsr info saved with ESC 7
 ; and restored from with ESC 8
 SaveF .res 1   ; font
 SaveR .res 1   ; reverse mode
+SaveD .res 1   ; line drawing
 SaveRow .res 1 ; row
 SaveCol .res 1 ; column
 
@@ -240,8 +251,22 @@ D5a     tay         ; col to y
         ldx CV      ; line to x
         jsr CPlot   ; set crsr
         rts
+; --- SO ---
+D6      cmp #$0e    ; SO?
+        bne D7
+        asl Draw
+        sec         ; set G1 invoked
+        ror Draw
+        jmp SLD
+; --- SI ---
+D7      cmp #$0f    ; SI?
+        bne D8
+        asl Draw
+        clc         ; clear G1 invoked
+        ror Draw
+        jmp SLD
 
-D6      rts
+D8      rts
 
 ; -------------------------------------
 ; esc mode
@@ -282,11 +307,15 @@ SEsc    tya         ; restore char
         ; --- ( ---
 E2      cmp #$28    ; ( ?
         bne E3
-        jmp sThrow
+        lda #$fd    ; set esc ( mode
+        sta EMode
+        rts
         ; --- ) ---
 E3      cmp #$29    ; ) ?
         bne E4
-        jmp sThrow
+        lda #$fe    ; set esc ) mode
+        sta EMode
+        rts
         ; --- # ---
 E4      cmp #$23    ; # ?
         bne E5
@@ -325,6 +354,8 @@ E8      cmp #$37    ; 7 ?
         sta SaveF
         lda INVFLG  ; save reverse mode
         sta SaveR
+        lda Draw    ; save line drawing
+        sta SaveD
         ldx CV      ; save position
         ldy CH
         stx SaveRow
@@ -337,6 +368,8 @@ E9      cmp #$38    ; 8 ?
         ldx SaveRow ; restore pos
         ldy SaveCol
         jsr CPlot
+        lda SaveD   ; restore line drawing
+        sta Draw
         lda SaveR   ; restore ..
         sta INVFLG  ; .. reverse mode
         ldx SaveF   ; restore font
@@ -357,12 +390,17 @@ sThrow  lda #$f0    ; set esc mode $f0
         rts
 
 ; -------------------------------------
-; [ esc mode
+; [ or ( or ) esc modes
 ;
-; EMode = $ff
+; EMode = $ff or $fd or $fe
 ; -------------------------------------
 
-LEsc    tya         ; restore char
+LEsc    lda EMode
+        cmp #$ff
+        beq LE1b
+        jmp SCS     ; ( esc or ) esc
+
+LE1b    tya         ; restore char
 
         ldy EBufL
         sta EBuf,y  ; store char
@@ -672,6 +710,43 @@ LE13
 LEend   lda #$00
         sta EBufL   ; reset esc buffer
         sta EMode   ; reset esc mode
+        rts
+
+; -------------------------------------
+; ( or ) esc modes (select char set)
+;
+; EMode = $fd or $fe in A
+; -------------------------------------
+
+SCS     and #$03    ; $01 or $02
+        cpy #'0'    ; line drawing?
+        bne SCS1
+        ora Draw    ; set Gx line drawing
+        jmp SCS2
+SCS1    eor #$ff    ; $fe or $fd
+        and Draw    ; clear Gx line drawing
+SCS2    sta Draw
+        jsr SLD
+        jmp LEend
+
+; -------------------------------------
+; SLD - set line drawing
+;
+; set bit 6 based on bits 0, 1, 7
+;--------------------------------------
+
+SLD     lda Draw
+        bmi SLD1    ; G1 is invoked?
+        and #$01    ; no -> G0..
+        jmp SLD2
+SLD1    and #$02    ; yes -> G1..
+SLD2    beq SLD3    ; ..is line drawing?
+        lda #$40    ; yes -> set..
+        ora Draw    ; ..line drawing
+        jmp SLD4
+SLD3    lda #$bf    ; no -> clear..
+        and Draw    ; ..line drawing
+SLD4    sta Draw
         rts
 
 ; -------------------------------------
@@ -1038,9 +1113,19 @@ PrnChr  sta xVector ; save char
         ; -- $80-$ff -- non-ASCII
         bmi PCend   ; no output
 
+        ; -- handle line drawing --
+        bit Draw    ; line drawing?
+        bvc PCrvs
+        cmp #$60    ; line drawing char?
+        bcc PCrvs
+        and INVFLG  ; normal:$ff, reverse:$3f
+        tax
+        lda ltsc,x  ; line drawing to ScreenCode
+        jmp PCput
+
         ; -- handle reverse mode --
-        ldx INVFLG  ; reverse mode?
-        bmi PC1     ; normal:$ff, reverse:$3f
+PCrvs   ldx INVFLG  ; normal:$ff, reverse:$3f
+        bmi PC1     ; reverse mode?
         tax
         lda rtsc,x  ; reverse to ScreenCode
         jmp PCput
@@ -1406,8 +1491,10 @@ InitVar lda #$00
         sta EBufL
         sta SRS
         sta Font
+        sta Draw
         sta SaveF
         sta SaveR
+        sta SaveD
         sta SaveRow
         sta SaveCol
         sta lbPending
@@ -1493,13 +1580,46 @@ rtsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$2a,$2b,$2c,$2d,$2e,$2f  ; 2_
 .byt $30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$3a,$3b,$3c,$3d,$3e,$3f  ; 3_
 
-; --- capital letters ----------------------------------------------
-.byt $00,$01,$02,$03,$04,$05,$06,$07,$07,$09,$0a,$0b,$0c,$0d,$0e,$0f  ; 4_
+; --- upper case letters ----------------------------------------------
+.byt $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f  ; 4_
 .byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$1c,$1d,$1e,$1f  ; 5_
 
 ; --- lower case letters -------------------------------------------
 .byt $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
 .byt $70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$7d,$7e,$7f  ; 7_
+
+; -------------------------------------
+; table line drawing to ScreenCode
+;
+; This tabel is used to convert incoming
+; line drawing chars.
+; -------------------------------------
+
+ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
+
+; --- unused -------------------------------------------------------
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 0_
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 1_
+
+; --- reverse ------------------------------------------------------
+;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
+;    ' '  ▒  ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' '  |  ' ' ' '  |   |   _
+.byt $20,$57,$20,$20,$20,$20,$20,$20,$20,$20,$7c,$20,$20,$7c,$7c,$1f  ; 2_
+;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
+;     _   _   _   _   |   |   _   _   |  ' ' ' ' ' ' ' ' ' ' ' ' ' '
+.byt $1f,$1f,$1f,$1f,$7c,$7c,$1f,$1f,$7c,$20,$20,$20,$20,$20,$20,$20  ; 3_
+
+; --- unused -------------------------------------------------------
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 4_
+.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 5_
+
+; --- normal -------------------------------------------------------
+;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
+;     ◆   ▒  ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' '  ┘  ' '  _   ⎿   ⎿   ⎺
+.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$5f,$a0,$9f,$54,$54,$4c  ; 6_
+;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
+;     ─   _   _   _   ├   ⎸   ⎿   _   ⎸  ' ' ' ' ' ' ' ' ' ' ' ' ' '
+.byt $53,$9f,$9f,$9f,$54,$5f,$54,$9f,$5f,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
 
 ; -------------------------------------
 ; table keyboard to ASCII
