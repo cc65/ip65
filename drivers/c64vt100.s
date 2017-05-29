@@ -1044,14 +1044,18 @@ aDDigE  rts
 ; -------------------------------------
 
 ProcOut
-        lda pta,y   ; PETSCII to ASCII
-        beq POrts   ; ignore key
+        lda pta,y      ; PETSCII to ASCII
+        beq POrts      ; ignore key
         cmp #$ff
-        beq StrKey  ; send a string
+        beq StrKey     ; send a string
         cmp #$fe
-        beq CmdKey  ; command key
+        beq POCmdKey   ; command key
         jsr putRS
 POrts   rts
+
+; to far for branch
+POCmdKey
+        jmp CmdKey
 
 ; -------------------------------------
 ; outgoing string
@@ -1059,10 +1063,18 @@ POrts   rts
 ; params: key in y
 ; -------------------------------------
 
-ScrsrU .byt $1b, $4f, $41, $00 ; esc O A
-ScrsrD .byt $1b, $4f, $42, $00 ; esc O B
-ScrsrR .byt $1b, $4f, $43, $00 ; esc O C
-ScrsrL .byt $1b, $4f, $44, $00 ; esc O D
+ScrsrU .byt $1b, $4f, $41, $00           ; esc O A
+ScrsrD .byt $1b, $4f, $42, $00           ; esc O B
+ScrsrR .byt $1b, $4f, $43, $00           ; esc O C
+ScrsrL .byt $1b, $4f, $44, $00           ; esc O D
+Sf1    .byt $1b, $4f, $50, $00           ; esc O P
+Sf2    .byt $1b, $4f, $51, $00           ; esc O Q
+Sf3    .byt $1b, $4f, $52, $00           ; esc O R
+Sf4    .byt $1b, $4f, $53, $00           ; esc O S
+Sf5    .byt $1b, $5b, $31, $35, $7e, $00 ; esc [ 1 5 ~
+Sf6    .byt $1b, $5b, $31, $37, $7e, $00 ; esc [ 1 7 ~
+Sf7    .byt $1b, $5b, $31, $38, $7e, $00 ; esc [ 1 8 ~
+Sf8    .byt $1b, $5b, $31, $39, $7e, $00 ; esc [ 1 9 ~
 
 StrKey  tya         ; restore key
 
@@ -1079,7 +1091,63 @@ K2      cmp #$9d    ; test crsr L
         ldx #<ScrsrL
         ldy #>ScrsrL
         jsr SendStr
-K3      rts
+        rts
+; --- f1 ---
+K3      cmp #$85    ; test f1
+        bne K4
+        ldx #<Sf1
+        ldy #>Sf1
+        jsr SendStr
+        rts
+; --- f2 ---
+K4      cmp #$89    ; test f2
+        bne K5
+        ldx #<Sf2
+        ldy #>Sf2
+        jsr SendStr
+        rts
+; --- f3 ---
+K5      cmp #$86    ; test f3
+        bne K6
+        ldx #<Sf3
+        ldy #>Sf3
+        jsr SendStr
+        rts
+; --- f4 ---
+K6      cmp #$8a    ; test f4
+        bne K7
+        ldx #<Sf4
+        ldy #>Sf4
+        jsr SendStr
+        rts
+; --- f5 ---
+K7      cmp #$87    ; test f5
+        bne K8
+        ldx #<Sf5
+        ldy #>Sf5
+        jsr SendStr
+        rts
+; --- f6 ---
+K8      cmp #$8b    ; test f6
+        bne K9
+        ldx #<Sf6
+        ldy #>Sf6
+        jsr SendStr
+        rts
+; --- f7 ---
+K9      cmp #$88    ; test f7
+        bne K10
+        ldx #<Sf7
+        ldy #>Sf7
+        jsr SendStr
+        rts
+; --- f8 ---
+K10     cmp #$8c    ; test f8
+        bne K11
+        ldx #<Sf8
+        ldy #>Sf8
+        jsr SendStr
+K11     rts
 
 ; -------------------------------------
 ; outgoing command key
@@ -1367,7 +1435,7 @@ PC1     cmp #$a0
         ; -- $80-$9f -- line drawing (moved from $60-$7f)
 PC2     cmp #$80
         bcc PC3
-        eor #$e0 -> $60-$7f in custom font
+        eor #$e0 ; -> $60-$7f in custom font
         jmp PCrvs
         ; -- $60-$7f -- lower capital
 PC3     cmp #$60 ; for string constants
@@ -1978,7 +2046,7 @@ pta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; --- upper control chars ------------------------------------------
 ;                        {f1}{f3}{f5}{f7}{f2}{f4}{f6}{f8}{ShRET}
 ;
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 8_
+.byt $00,$00,$00,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00  ; 8_
 ;      {crsr↑} {CLR}{INS}                              {crsr←}
 ;                    DEL
 .byt $00,$ff,$00,$00,$7f,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00  ; 9_
