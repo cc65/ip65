@@ -1001,10 +1001,11 @@ COff    pha            ; save registers
         lsr            ; column DIV 2
         tay
         lda sCrsrChar  ; restore char
-        bcs CO1         ; odd column?
+        bcs CO1        ; odd column?
         bit $c055
 CO1     sta (BASL),y
         bit $c054
+
 CO2     pla         ; restore registers
         tay
         pla
