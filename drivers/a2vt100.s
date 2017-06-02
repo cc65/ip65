@@ -99,7 +99,7 @@ SRE .res 1     ; last line number
 ; bit 0 = reverse
 ; bit 1 = bold
 ; bit 2 = underline
-Font: .res 1
+Font .res 1
 
 ; --- line drawing ---
 ; contains four bits
@@ -107,7 +107,7 @@ Font: .res 1
 ; bit 1 = G1 is iine drawing
 ; bit 6 = do line drawing
 ; bit 7 = G1 is invoked
-Draw: .res 1
+Draw .res 1
 
 ; --- crsr save area ---
 ; here is crsr info saved with ESC 7

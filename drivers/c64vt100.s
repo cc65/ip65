@@ -209,7 +209,7 @@ ABack .res 1
 ; bit 1 = G1 is iine drawing
 ; bit 6 = do line drawing
 ; bit 7 = G1 is invoked
-Draw: .res 1
+Draw .res 1
 
 ; --- crsr save area ---
 ; here is crsr info saved with ESC 7
@@ -1802,8 +1802,10 @@ InitVar lda #$00
         sta EBufL
         sta SRS
         sta Font
+        sta Draw
         sta SaveF
         sta SaveR
+        sta SaveD
         sta SaveRow
         sta SaveCol
         sta lbPending
