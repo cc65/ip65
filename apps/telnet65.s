@@ -55,6 +55,10 @@ start:
   jsr vt100_init_terminal
 
 ; initialize stack
+  ldax #welcome_1
+  jsr print_vt100
+  ldax #welcome_2
+  jsr print_vt100
   ldax #initializing
   jsr print_ascii_as_native
   jsr ip65_init
@@ -474,10 +478,7 @@ telnet_callback:
 .rodata
 
 blank:                  .byte " ",0
-initializing:           .byte 10," Telnet65 v1.0 based on:",10,10
-                        .byte "- IP65 (oliverschmidt.github.io/ip65)",10
-                        .byte "- CaTer (www.opppf.de/Cater)",10,10
-                        .byte "Initializing ",0
+initializing:           .byte 10,"Initializing ",0
 obtaining:              .byte "Obtaining IP address ",0
 resolving:              .byte 10,"Resolving to address ",0
 connecting:             .byte 10,"Connecting to ",0
@@ -492,6 +493,26 @@ remote_host:            .byte 10,"Hostname (leave blank to quit)",10,"? ",0
 remote_port:            .byte 10,10,"Port Num (leave blank for default)",10,"? ",0
 disconnected:           .byte 10,"Disconnected",10,0
 send_error:             .byte "Sending ",0
+
+welcome_1:              .byte 27,")0"
+                        .byte 14,"lqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk"
+                        .byte 15,13,10
+                        .byte 14,"x                                      x"
+                        .byte 15,13,10
+                        .byte 14,"x",15,27,"[1m","Telnet65 v1.0",27,"[0m"," based on:               ",14,"x"
+                        .byte 15,13,10
+                        .byte 14,"x                                      x"
+                        .byte 15,13,10,0
+welcome_2:              .byte 14,"x",15,"- IP65 (oliverschmidt.github.io/ip65) ",14,"x"
+                        .byte 15,13,10
+                        .byte 14,"x",15,"- CaTer (www.opppf.de/Cater)          ",14,"x"
+                        .byte 15,13,10
+                        .byte 14,"x                                      x"
+                        .byte 15,13,10
+                        .byte 14,"mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj"
+                        .byte 15,13,10
+                        .byte 27,")A"
+                        .byte 27,"[?25l",0
 cursor_on:              .byte 27,"[?25h",0
 cursor_off:             .byte 27,"[?25l",0
 
