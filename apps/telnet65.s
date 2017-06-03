@@ -6,6 +6,8 @@
 
 .export start
 
+.import drv_init
+.importzp drv_init_default
 .import get_filtered_input
 .import get_key
 .import get_key_if_available
@@ -51,6 +53,13 @@ buffer_ptr = sreg
 
 .segment "STARTUP"
 
+  jmp start
+drv_init_value:
+  .byte drv_init_default
+
+
+.code
+
 start:
   jsr vt100_init_terminal
 
@@ -61,6 +70,8 @@ start:
   jsr print_vt100
   ldax #initializing
   jsr print_ascii_as_native
+  lda drv_init_value
+  jsr drv_init
   jsr ip65_init
   bcc :+
   ldax #device_not_found
