@@ -1,10 +1,9 @@
 .include "zeropage.inc"
 
-.export a2_set_slot
+.export drv_init
+.exportzp drv_init_default = 3  ; Apple 2 default slot
 
-.import _w5100_driver_io_base
-.import _cs8900a_driver_io_base
-.import _lan91c96_driver_io_base
+.import eth_driver_io_base
 
 
 .code
@@ -14,32 +13,22 @@
 ; A: slot number (1-7)
 ; outputs:
 ; none
-a2_set_slot:
+drv_init:
   asl
   asl
   asl
   asl
   sta tmp1
 
-  lda _w5100_driver_io_base
+  lda eth_driver_io_base
   and #%10001111
   ora tmp1
-  sta _w5100_driver_io_base
-
-  lda _cs8900a_driver_io_base
-  and #%10001111
-  ora tmp1
-  sta _cs8900a_driver_io_base
-
-  lda _lan91c96_driver_io_base
-  and #%10001111
-  ora tmp1
-  sta _lan91c96_driver_io_base
+  sta eth_driver_io_base
   rts
 
 
 
-; -- LICENSE FOR a2slotcombo.s --
+; -- LICENSE FOR a2init.s --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

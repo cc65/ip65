@@ -12,14 +12,14 @@
 .import dhcp_server
 
 .ifdef A2_SLOT_SCAN
-.import a2_set_slot
+.import drv_init
 .endif
 
 .macro init_ip_via_dhcp
 .ifdef A2_SLOT_SCAN
   lda #1
 : pha
-  jsr a2_set_slot
+  jsr drv_init
   jsr ip65_init
   pla
   bcc :+
