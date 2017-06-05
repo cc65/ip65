@@ -6,6 +6,9 @@
 
 .export start
 
+.import abort_key
+.importzp abort_key_default
+.importzp abort_key_disable
 .import drv_init
 .importzp drv_init_default
 .import get_filtered_input
@@ -183,6 +186,8 @@ telnet_main_entry:
   sta connection_closed
   sta data_received
   sta iac_response_buffer_length
+  lda #abort_key_disable
+  sta abort_key
   ldax #cursor_on
   jsr print_vt100
 
@@ -208,7 +213,9 @@ telnet_main_entry:
   jmp :++
 : lda connection_closed
   beq :++
-: ldax #cursor_off
+: lda #abort_key_default
+  sta abort_key
+  ldax #cursor_off
   jsr print_vt100
   ldax #disconnected
   jsr print_ascii_as_native
