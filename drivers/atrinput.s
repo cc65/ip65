@@ -4,14 +4,18 @@
 .export check_for_abort_key
 .export get_key_if_available
 .export get_key_ip65
+.export abort_key
+.exportzp abort_key_default = 0
+.exportzp abort_key_disable = 0
 
 .import ip65_process
 
 
 .data
 
-iocb:  .byte 0
-kname: .byte "K:",155
+abort_key: .byte 0              ; ???
+iocb:      .byte 0
+kname:     .byte "K:",155
 
 
 .code
@@ -63,9 +67,9 @@ get_key_ip65:
   beq get_key_ip65
   rts
 
-;check whether the ??? key is being pressed
+;check whether the abort key is being pressed
 ;inputs: none
-;outputs: sec if ??? pressed, clear otherwise
+;outputs: sec if abort key pressed, clear otherwise
 check_for_abort_key:
   ; TODO: implement actual check
   clc

@@ -2,8 +2,16 @@
 .export check_for_abort_key
 .export get_key_if_available
 .export get_key_ip65
+.export abort_key
+.exportzp abort_key_default = $3f
+.exportzp abort_key_disable = $ff
 
 .import ip65_process
+
+
+.data
+
+abort_key: .byte $3f            ; RUN/STOP
 
 
 .code
@@ -14,8 +22,9 @@
 get_key:
   ldy #0
   sty $cc                       ; cursor on
+@loop:
   jsr get_key_if_available
-  beq get_key
+  beq @loop
   ldy #1
   sty $cc                       ; cursor off
   rts
@@ -32,18 +41,18 @@ get_key_ip65:
   beq get_key_ip65
   rts
 
-; check whether the RUN/STOP key is being pressed
+; check whether the abort key is being pressed
 ; inputs: none
-; outputs: sec if RUN/STOP pressed, clear otherwise
+; outputs: sec if abort key pressed, clear otherwise
 check_for_abort_key:
   lda $cb                       ; current key pressed
-  cmp #$3F
+  cmp abort_key
   bne @not_abort
 @flush_loop:
   jsr get_key_if_available
   bne @flush_loop
   lda $cb                       ; current key pressed
-  cmp #$3F
+  cmp abort_key
   beq @flush_loop
   sec
   rts

@@ -2,8 +2,16 @@
 .export check_for_abort_key
 .export get_key_if_available
 .export get_key_ip65
+.export abort_key
+.exportzp abort_key_default = $9b
+.exportzp abort_key_disable = $80
 
 .import ip65_process
+
+
+.data
+
+abort_key: .byte $9b            ; ESC
 
 
 .code
@@ -31,12 +39,12 @@ got_key:
   and #$7f
   rts
 
-; check whether the escape key is being pressed
+; check whether the abort key is being pressed
 ; inputs: none
-; outputs: sec if escape pressed, clear otherwise
+; outputs: sec if abort key pressed, clear otherwise
 check_for_abort_key:
   lda $c000                     ; current key pressed
-  cmp #$9b
+  cmp abort_key
   bne :+
   bit $c010                     ; clear the keyboard strobe
   sec
