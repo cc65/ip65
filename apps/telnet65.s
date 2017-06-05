@@ -523,7 +523,7 @@ welcome_1:              .byte 27,")0"
                         .byte 15,13,10
                         .byte 14,"x                                      x"
                         .byte 15,13,10
-                        .byte 14,"x",15,27,"[1m","Telnet65 v1.0",27,"[0m"," based on:               ",14,"x"
+                        .byte 14,"x",15,27,"[1m","Telnet65 v1.1",27,"[0m"," based on:               ",14,"x"
                         .byte 15,13,10
                         .byte 14,"x                                      x"
                         .byte 15,13,10,0
