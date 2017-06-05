@@ -188,7 +188,7 @@ telnet_main_entry:
   sta iac_response_buffer_length
   lda #abort_key_disable
   sta abort_key
-  ldax #cursor_on
+  ldax #on_connect
   jsr print_vt100
 
 @main_polling_loop:
@@ -215,7 +215,7 @@ telnet_main_entry:
   beq :++
 : lda #abort_key_default
   sta abort_key
-  ldax #cursor_off
+  ldax #on_disconnect
   jsr print_vt100
   ldax #disconnected
   jsr print_ascii_as_native
@@ -531,8 +531,8 @@ welcome_2:              .byte 14,"x",15,"- IP65 (oliverschmidt.github.io/ip65) "
                         .byte 15,13,10
                         .byte 27,")A"
                         .byte 27,"[?25l",0
-cursor_on:              .byte 27,"[?25h",0
-cursor_off:             .byte 27,"[?25l",0
+on_connect:             .byte 27,"[?25h",0
+on_disconnect:          .byte 27,"[?25l",27,"[0m",27,"(A",15,0
 
 ; initial_telnet_options:
 ; .byte $ff,$fb,$1F             ; IAC WILL NAWS
