@@ -306,6 +306,12 @@ send_char:
   jsr tcp_send
   bcs :+
   rts
+: lda ip65_error
+  cmp #KPR_ERROR_CONNECTION_CLOSED
+  bne :+
+  lda #1
+  sta connection_closed
+  rts
 : ldax #send_error
   jsr print_ascii_as_native
   jmp print_error
