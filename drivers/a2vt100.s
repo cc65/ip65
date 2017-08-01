@@ -555,6 +555,7 @@ LE6d    cmp #$02
         jsr ErLn      ; erase line
         sta sCrsrChar ; del char ..
                       ; ..under crsr
+        jsr COn
 LE6e    jmp LEend
 
 
@@ -1418,6 +1419,7 @@ EEL3    sta (BASL),y  ; clear char
 
         sta sCrsrChar ; del char ..
                       ; ..under crsr
+        jsr COn
         rts
 
 ; -------------------------------------
@@ -1450,6 +1452,7 @@ EBL3    dey
 
         sta sCrsrChar ; del char ..
                       ; ..under crsr
+        jsr COn
         rts
 
 ; -------------------------------------
