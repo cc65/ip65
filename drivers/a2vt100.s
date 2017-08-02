@@ -10,6 +10,9 @@
 .exportzp vt100_screen_cols         = 80
 .exportzp vt100_screen_rows         = 24
 
+.define Cols vt100_screen_cols
+.define Rows vt100_screen_rows
+
 .import beep
 .import telnet_close
 .import telnet_send_char
@@ -228,7 +231,7 @@ LF      jsr clPending
         bne D4a     ;  no -> branch
         jsr CUScrl  ;  yes -> scroll up
         rts
-D4a     cpx #$17    ; end of screen?
+D4a     cpx #Rows-1 ; end of screen?
         bne D4b     ;  no -> branch
         rts         ;  yes -> do nothing
 D4b     inx         ; next line
@@ -244,9 +247,9 @@ D5      cmp #$09    ; TAB?
         and #$f8    ; (col DIV 8) * 8
         clc         ; col + 8
         adc #$08
-        cmp #$50    ; col=80?
+        cmp #Cols   ; col=80?
         bne D5a     ; no -> skip
-        lda #$4f    ; yes -> col=79
+        lda #Cols-1 ; yes -> col=79
 D5a     tay         ; col to y
         ldx CV      ; line to x
         jsr CPlot   ; set crsr
@@ -467,11 +470,11 @@ LE3     cmp #$43    ; C ?
 LE3c    lda CH      ; get crsr col
         clc
         adc EPar    ; col = col + right
-        cmp #$4f    ; outside screen?
+        cmp #Cols-1 ; outside screen?
         bcs LE3d    ; yes -> branch
         tay
         jmp LE3a
-LE3d    ldy #$4f    ; y=col=left margin
+LE3d    ldy #Cols-1 ; y=col=left margin
 LE3a    ldx CV      ; x is row
         jsr CPlot   ; set crsr
         jmp LEend
@@ -584,7 +587,7 @@ LE8a    jsr GetNum
         bne LE8b    ; 0 means 1
         iny
 LE8b    dey         ; line 1 -> line 0
-        cpy #$18    ; >= 24?..
+        cpy #Rows   ; >= 24?..
         bcs LE8d    ; ..error!
         sty xVector ; save row
         ; -- prepare col
@@ -593,7 +596,7 @@ LE8b    dey         ; line 1 -> line 0
         bne LE8c    ; 0 means 1
         iny
 LE8c    dey         ; col 1 -> col 0
-        cpy #$50    ; >= 80?..
+        cpy #Cols   ; >= 80?..
         bcs LE8d    ; ..error!
         ldx xVector ; restore row to X
         jsr CPlot   ; set crsr
@@ -609,7 +612,7 @@ LE9     cmp #$4a      ; J ?
         jsr ErEnLn    ; del rest of line
         ldx CV        ; get crsr line
 LE9b    inx           ; next line
-        cpx #$18      ; line 24?
+        cpx #Rows     ; line 24?
         bcs LE9f      ; then end
         txa
         pha           ; save X
@@ -633,7 +636,7 @@ LE9c    dex           ; previous line
         ; -- 2 -- del screen
 LE9e    cmp #$02      ; unknown?
         bne LE9f      ; then ingnore
-        ldx #$17      ; start at ln 23
+        ldx #Rows-1   ; start at ln 23
 LE9d    txa
         pha           ; save X
         jsr ErLn      ; erase line
@@ -652,14 +655,14 @@ LE10    cmp #$72    ; r ?
         bne LE10e   ; no -> error
         ldy EPar    ; get top
         dey         ; line 1 -> line 0
-        cpy #$18    ; >=24?..
+        cpy #Rows   ; >=24?..
         bcs LE10e   ; ..error!
         sty xVector ; save top
         ; -- prepare bottom --
         jsr GetNum
         ldy EPar    ; get bottom
         dey         ; line 1 -> line 0
-        cpy #$18    ; >=24?..
+        cpy #Rows   ; >=24?..
         bcs LE10e   ; ..error!
         sty zVector ; save bottom
         ; -- validate lines --
@@ -1150,7 +1153,7 @@ PC3     sta (BASL),y    ; char to screen
         ldy CH          ; get crsr col
 
         ; -- move on crsr --
-        cpy #$4f        ; col = 79?
+        cpy #Cols-1     ; col = 79?
         bne PC8         ; no -> skip
         lda #$ff        ; yes -> set..
         sta lbPending   ; ..pending
@@ -1177,7 +1180,7 @@ NewLn   pha         ; save char
         ldx CV      ; get crsr row
         cpx SRE     ; end of scroll reg?
         beq NL1     ; yes -> branche
-        cpx #$17    ; line 23?
+        cpx #Rows-1 ; line 23?
         beq NLend   ; yes -> crsr stays
         ; --- normal wrap ---
         inx         ; increase line
@@ -1504,7 +1507,7 @@ InitVar lda #$00
         sta lbPending
         sta civis
 
-        lda #$17    ; last line
+        lda #Rows-1 ; last line
         sta SRE     ; = 23
 
         rts
@@ -1536,7 +1539,7 @@ InitScr
         ; --- limit SET80COL-HISCR to text ---
         bit LORES
         ; --- erase screen ---
-        ldx #$17      ; start at ln 23
+        ldx #Rows-1   ; start at ln 23
 IS1     txa
         pha           ; save X
         jsr ErLn      ; erase line
