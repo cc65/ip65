@@ -959,10 +959,19 @@ crsrR   ldx #<ScrsrR
         jsr SendStr
         rts
 
+; --- Open-Apple h ---
+; print help
+C3      cmp #$68    ; h
+        bne C4
+        bit BUTN0   ; Open-Apple key
+        bmi Help    ; pressed
+        jsr putRS   ; send h
+        rts
+
 ; ---  Open-Apple q ---
 ; quit CaTer
-C3      cmp #$71    ; q
-        bne C4
+C4      cmp #$71    ; q
+        bne C5
         bit BUTN0   ; Open-Apple key
         bmi Cquit   ; pressed
         jsr putRS   ; send q
@@ -973,7 +982,31 @@ Cquit   jsr telnet_close
         rts
 
 ; --- unknown character ---
-C4      rts
+C5      rts
+
+; -------------------------------------
+; Help - print help screen
+;
+; calledom outgoing data loop
+; returns with rts
+; -------------------------------------
+Help    jsr CR      ; next screen line
+        jsr LF
+        ldx #<HelpStr1
+        ldy #>HelpStr1
+        jsr CPrnStrNL
+        ldx #<HelpStr2
+        ldy #>HelpStr2
+        jsr CPrnStrNL
+        rts
+
+HelpStr1;".........1.........2.........3.........4.........5.........6.........7.........8"
+.asc     "OA-H    Help (this text)                OA-Q    Quit current Telnet session     "
+.asc     "OA-C-H  Send C-H                        OA-C-J  Send C-J"
+.byt $00
+HelpStr2;".........1.........2.........3.........4.........5.........6.........7.........8"
+.asc     "OA-C-K  Send C-K                        OA-C-U  Send C-U"
+.byt $00
 
 ; *************************************
 ; *
@@ -1358,6 +1391,54 @@ DS3     lda (xVector),y ; copy char
         rts
 
 ; -------------------------------------
+; CPrnStrNL - print string to sceen,
+;             followed by CR NL
+;
+; string: chars, terminated by $00
+; params: string ptr lo in X
+;         string ptr hi in y
+; affects: A, X, Y
+;
+; The string must be smaller than
+; 255 chrs.
+; The crsr ist turned off during
+; operation (COff - COn)
+; -------------------------------------
+CPrnStrNL
+        jsr CPrnStr
+        jsr CR
+        jsr LF
+        rts
+
+; -------------------------------------
+; CPrnStr - print string to screen
+;
+; string: chars, terminated by $00
+; params: string ptr lo in X
+;         string ptr hi in y
+; affects: A
+;
+; The string must be smaller than
+; 255 chrs.
+; The crsr ist turned off during
+; operation (COff - COn)
+; -------------------------------------
+CPrnStr stx vVector   ; store string ptr
+        sty vVector+1
+        jsr COff
+
+        ldy #$00
+L1      lda (vVector),y
+        beq L2      ; string ends at $00
+        jsr PrnChr
+        ; -- put char to screen --
+        iny
+        jmp L1
+
+L2      jsr COn
+        rts
+
+; -------------------------------------
 ; ErLn - erase screen line
 ;
 ; params: line number in X
@@ -1661,6 +1742,6 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
 ; --- lower case letters -------------------------------------------
 ;     `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
-.byt $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
+.byt $60,$61,$62,$63,$64,$65,$66,$67,$fe,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
 ;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
 .byt $70,$fe,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$7d,$7e,$7f  ; 7_

@@ -73,6 +73,10 @@ bgcolour = $0b      ; gray1
 ; border colour
 bgocolour = $0c     ; gray2
 
+; color for cater speaking
+; (help)
+colExtra = $07
+
 ; -------------------------------------
 ; Zeropage Kernal
 ;
@@ -227,6 +231,9 @@ lbPending .res 1
 ; --- crsr invisible ---
 ; 0 = visible, !0 = invisible
 civis .res 1
+
+; --- save crsr color for XCon/XCoff ---
+XCrsr .res 1 ; safe crsr colour
 
 ; --- buffer for addDecDig ---
 mul10buf .res 1
@@ -1179,7 +1186,7 @@ crsrR   ldx #<ScrsrR
 ; ---   ^Q   ---
 ; both events send char $11
 C0      cmp #$11    ;^Q / crsr down
-        bne C8
+        bne C2
         lda #$04    ; test control Key
         bit ControlFlags
         beq crsrD   ; not pressed
@@ -1193,6 +1200,12 @@ crsrD   ldx #<ScrsrD
         ldy #>ScrsrD
         jsr SendStr
         rts
+
+; --- C=H ---
+; print help
+C2      cmp #$b4    ; C=H
+        bne C8
+        jmp Help
 
 ; --- HOME key ---
 ; ---    ^S    ---
@@ -1239,6 +1252,24 @@ C10     cmp #$ab    ; C=Q
 
 ; --- unknown C=-Key ---
 C12     rts
+
+; -------------------------------------
+; Help - print help screen
+;
+; calledom outgoing data loop
+; returns with rts
+; -------------------------------------
+Help    jsr XCon
+        ldx #<HelpStr
+        ldy #>HelpStr
+        jsr CPrnStrNL
+        jsr XCoff
+        rts
+
+HelpStr ;".........1.........2.........3.........4"
+.asc     "c=h - hELP (THIS TEXT)                  "
+.asc     "c=q - qUIT CURRENT tELNET SESSION"
+.byt $00
 
 ; *************************************
 ; *
@@ -1670,6 +1701,54 @@ DS2     lda (xVector),y ; copy char
         rts
 
 ; -------------------------------------
+; CPrnStrNL - print string to sceen,
+;             followed by CR NL
+;
+; string: chars, terminated by $00
+; params: string ptr lo in X
+;         string ptr hi in y
+; affects: A, X, Y
+;
+; The string must be smaller than
+; 255 chrs.
+; The crsr ist turned off during
+; operation (COff - COn)
+; -------------------------------------
+CPrnStrNL
+        jsr CPrnStr
+        jsr CR
+        jsr LF
+        rts
+
+; -------------------------------------
+; CPrnStr - print string to screen
+;
+; string: chars, terminated by $00
+; params: string ptr lo in X
+;         string ptr hi in y
+; affects: A
+;
+; The string must be smaller than
+; 255 chrs.
+; The crsr ist turned off during
+; operation (COff - COn)
+; -------------------------------------
+CPrnStr stx vVector   ; store string ptr
+        sty vVector+1
+        jsr COff
+
+        ldy #$00
+L1      lda (vVector),y
+        beq L2      ; string ends at $00
+        jsr PrnChr
+        ; -- put char to screen --
+        iny
+        jmp L1
+
+L2      jsr COn
+        rts
+
+; -------------------------------------
 ; ErLn - erase screen line
 ;
 ; params: line number in X
@@ -1784,6 +1863,27 @@ SLV1    sty xVector+1
         adc #$d8-Video
         sta yVector+1
 
+        rts
+
+; -------------------------------------
+; XCon  - set yellow font, next line
+; XCoff - restore font, not next line
+;
+; affects: A, X, Y
+;
+; Switch to another font indicating
+; cater is speaking.
+; -------------------------------------
+XCon    lda sColor  ; save present..
+        sta XCrsr   ; ..colour
+        lda #colExtra
+        sta sColor
+        jsr CR      ; next screen line
+        jsr LF
+        rts
+
+XCoff   lda XCrsr   ; get colour
+        sta sColor
         rts
 
 ; *************************************
@@ -2059,7 +2159,7 @@ pta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$7c,$00,$fe,$00,$00,$00,$00  ; a_
 ;    C=A C=E C=R C=W C=H C=J C=L C=Y C=U C=O Sh@ C=F C=C C=X C=V C=B
 ;                                             `
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$60,$00,$00,$00,$00,$00  ; b_
+.byt $00,$00,$00,$00,$fe,$00,$00,$00,$00,$00,$60,$00,$00,$00,$00,$00  ; b_
 
 ; --- capital letters ----------------------------------------------
 ;    Sh*  A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
