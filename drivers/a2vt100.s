@@ -10,14 +10,13 @@
 .exportzp vt100_screen_cols         = 80
 .exportzp vt100_screen_rows         = 24
 
-.define Cols vt100_screen_cols
-.define Rows vt100_screen_rows
-
 .import beep
 .import telnet_close
 .import telnet_send_char
 .import telnet_send_string
 
+Cols    = vt100_screen_cols
+Rows    = vt100_screen_rows
 putRS   = telnet_send_char
 SendStr = telnet_send_string
 
