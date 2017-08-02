@@ -10,6 +10,7 @@
 
 .include "zeropage.inc"
 .include "../inc/common.i"
+.include "atari.inc"
 
 allowed_ptr = ptr1
 
@@ -37,10 +38,10 @@ get_filtered_input:
   jsr get_key
   sta LASTCHAR
 
-  cmp #$fe                      ; Delete
+  cmp #ATRUB                    ; Delete
   beq @delete
 
-  cmp #$9b                      ; Return
+  cmp #ATEOL                    ; Return
   beq @input_done
 
   ; End reached?
@@ -105,15 +106,15 @@ get_filtered_input:
   sta GOTINPUT,y
 
   ; Print the backspace char
-  lda #$88
+  lda #ATRUB
   jsr print_a
 
   ; Print the a space
-  lda #$a0
+  lda #' '
   jsr print_a
 
   ; Print the backspace char
-  lda #$88
+  lda #ATRUB
   jsr print_a
 
   ; Wait for next char
