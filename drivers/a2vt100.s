@@ -994,19 +994,14 @@ C5      rts
 ; -------------------------------------
 Help    jsr CR      ; next screen line
         jsr LF
-        ldx #<HelpStr1
-        ldy #>HelpStr1
-        jsr CPrnStrNL
-        ldx #<HelpStr2
-        ldy #>HelpStr2
+        ldx #<HelpStr
+        ldy #>HelpStr
         jsr CPrnStrNL
         rts
 
-HelpStr1;".........1.........2.........3.........4.........5.........6.........7.........8"
+HelpStr ;".........1.........2.........3.........4.........5.........6.........7.........8"
 .asc     "OA-H    Help (this text)                OA-Q    Quit current Telnet session     "
-.asc     "OA-C-H  Send C-H                        OA-C-J  Send C-J"
-.byt $00
-HelpStr2;".........1.........2.........3.........4.........5.........6.........7.........8"
+.asc     "OA-C-H  Send C-H                        OA-C-J  Send C-J                        "
 .asc     "OA-C-K  Send C-K                        OA-C-U  Send C-U"
 .byt $00
 
