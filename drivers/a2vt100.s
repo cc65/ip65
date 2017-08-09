@@ -1249,7 +1249,7 @@ DEL2    ; first col
         ldx CV
         beq DELee ; odd: top left corner
         dex
-        ldy #79
+        ldy #Cols-1
         jsr Plot
         ldy CH
 
@@ -1316,14 +1316,14 @@ US1     ; -- new line: --
         jsr SLV
         ; -- copy even col chars --
         bit $c055
-        ldy #$27        ; even col 39
+        ldy #Cols/2-1   ; even col 39
 US2     lda (xVector),y ; copy char
         sta (zVector),y
         dey
         bpl US2
         ; -- copy odd col chars --
         bit $c054
-        ldy #$27        ; odd col 39
+        ldy #Cols/2-1   ; odd col 39
 US3     lda (xVector),y ; copy char
         sta (zVector),y
         dey
@@ -1370,14 +1370,14 @@ DS1     ; -- new line: --
         jsr SLV
         ; -- copy even col chars --
         bit $c055
-        ldy #$27        ; even col 39
+        ldy #Cols/2-1   ; even col 39
 DS2     lda (xVector),y ; copy char
         sta (zVector),y
         dey
         bpl DS2
         ; -- copy odd col chars --
         bit $c054
-        ldy #$27        ; odd col 39
+        ldy #Cols/2-1   ; odd col 39
 DS3     lda (xVector),y ; copy char
         sta (zVector),y
         dey
@@ -1451,7 +1451,7 @@ ErLn    jsr SLV ; line start in xVector
 
         ; -- erase even col chars --
 ErLn_   bit $c055
-        ldy #$27      ; even col 39
+        ldy #Cols/2-1 ; even col 39
         lda #$20|$80  ; load space
 EL1     sta (xVector),y ; clear char
         dey
@@ -1459,7 +1459,7 @@ EL1     sta (xVector),y ; clear char
 
         ; -- erase odd col chars --
         bit $c054
-        ldy #$27      ; odd col 39
+        ldy #Cols/2-1 ; odd col 39
 EL2     sta (xVector),y ; clear char
         dey
         bpl EL2
@@ -1485,7 +1485,7 @@ ErEnLn
         bcs EEL2      ; odd crsr col
 EEL1    sta (BASL),y  ; clear char
 EEL2    iny
-        cpy #$28      ; even pos 40?
+        cpy #Cols/2   ; even pos 40?
         bne EEL1      ; next char
 
         ; -- erase odd col chars --
@@ -1493,7 +1493,7 @@ EEL2    iny
         ldy tmp1      ; restore start
 EEL3    sta (BASL),y  ; clear char
         iny
-        cpy #$28      ; odd pos 40?
+        cpy #Cols/2   ; odd pos 40?
         bne EEL3      ; next char
 
         sta sCrsrChar ; del char ..
