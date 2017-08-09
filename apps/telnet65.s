@@ -228,7 +228,7 @@ telnet_main_entry:
   ldax #iac_response_buffer
   jsr tcp_send
 : jsr get_key_if_available
-  beq @check_timeout
+  bcc @check_timeout
   ldx #0
   stx tcp_send_data_len
   stx tcp_send_data_len+1

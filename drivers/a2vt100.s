@@ -879,6 +879,7 @@ aDDigE  rts
 
 ProcOut
         lda kta,y   ; keyboard to ASCII
+        cmp #$ff
         beq POrts   ; ignore key
         cmp #$fe
         beq CmdKey  ; command key
@@ -1710,7 +1711,7 @@ ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; input for sending over the serial
 ; line.
 ;
-; ascii = $00 means ignore key
+; ascii = $ff means ignore key
 ; ascii = $fe means do something
 ;             complicated (command key)
 ; -------------------------------------
@@ -1719,7 +1720,7 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
 ; --- Control chars ------------------------------------------------
 ;                                    {←}     {↓} {↑}
-;        ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
+;    ^@  ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
 .byt $00,$01,$02,$03,$04,$05,$06,$07,$fe,$09,$fe,$fe,$0c,$0d,$0e,$0f  ; 0_
 ;                        {→}
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_

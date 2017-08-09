@@ -24,21 +24,26 @@ get_key:
   sty $cc                       ; cursor on
 @loop:
   jsr get_key_if_available
-  beq @loop
+  bcc @loop
   ldy #1
   sty $cc                       ; cursor off
   rts
 
 ; use C64 Kernel ROM function to read a key
 ; inputs: none
-; outputs: A contains ASCII value of key just pressed (0 if no key pressed)
-get_key_if_available = $f142    ; not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
+; outputs: sec if key pressed, clear otherwise
+;          A contains ASCII value of key just pressed
+get_key_if_available:
+  jsr $f142                     ; not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
+  beq no_key
+  sec
+  rts
 
 ; process inbound ip packets while waiting for a keypress
 get_key_ip65:
   jsr ip65_process
   jsr get_key_if_available
-  beq get_key_ip65
+  bcc get_key_ip65
   rts
 
 ; check whether the abort key is being pressed
@@ -47,16 +52,16 @@ get_key_ip65:
 check_for_abort_key:
   lda $cb                       ; current key pressed
   cmp abort_key
-  bne @not_abort
+  bne no_key
 @flush_loop:
   jsr get_key_if_available
-  bne @flush_loop
+  bcs @flush_loop
   lda $cb                       ; current key pressed
   cmp abort_key
   beq @flush_loop
   sec
   rts
-@not_abort:
+no_key:
   clc
   rts
 

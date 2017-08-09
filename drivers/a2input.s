@@ -18,15 +18,17 @@ abort_key: .byte $9b            ; ESC
 
 ; use Apple 2 monitor ROM function to read from keyboard
 ; inputs: none
-; outputs: A contains ASCII code of key pressed
+; outputs: A contains ASCII value of key just pressed
 get_key = $fd0c
 
 ; inputs: none
-; outputs: A contains ASCII value of key just pressed (0 if no key pressed)
+; outputs: sec if key pressed, clear otherwise
+;          A contains ASCII value of key just pressed
 get_key_if_available:
+  sec
   lda $c000                     ; current key pressed
   bmi got_key
-  lda #0
+  clc
   rts
 
 ; process inbound ip packets while waiting for a keypress
