@@ -185,7 +185,20 @@ tcp_listen:
   cmp tcp_state
   beq @listen_loop
 
-  jmp tcp_connection_established
+tcp_connection_established:
+  ; inc the sequence number to cover the SYN we have sent
+  ldax #tcp_connect_sequence_number
+  stax acc32
+  ldax #$01
+  jsr add_16_32
+
+set_expected_ack:
+  ; set the expected ack number with current seq number
+  ldx #3
+: lda tcp_connect_sequence_number,x
+  sta tcp_connect_expected_ack_number,x
+  dex
+  bpl :-
   rts
 
 ; make outbound tcp connection
@@ -278,20 +291,6 @@ tcp_connect:
   sec                           ; if we got here, then the other side sent a RST or FIN, so signal an error to the caller
   rts
 @was_accepted:
-tcp_connection_established:
-  ; inc the sequence number to cover the SYN we have sent
-  ldax #tcp_connect_sequence_number
-  stax acc32
-  ldax #$01
-  jsr add_16_32
-
-set_expected_ack:
-  ; set the expected ack number with current seq number
-  ldx #3
-: lda tcp_connect_sequence_number,x
-  sta tcp_connect_expected_ack_number,x
-  dex
-  bpl :-
   clc
   rts
 
@@ -725,6 +724,8 @@ tcp_process:
   stax acc32
   ldax #$0001
   jsr add_16_32                 ; increment the ACK counter by 1, for the SYN we just received
+
+  jsr tcp_connection_established
 
   lda #tcp_cxn_state_established
   sta tcp_state
