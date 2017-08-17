@@ -76,11 +76,12 @@ special_key_table2:
 ; outputs: A contains ASCII value of key just pressed
 get_key:
   jsr get_key_if_available
-  beq get_key
+  bcc get_key
   rts
 
 ; inputs: none
-; outputs: A contains ASCII value of key just pressed (A=0 and ZF=1 if no key pressed, sometimes only ZF is tested by the caller)
+; outputs: sec (CF=1) if key pressed, clear otherwise
+;          A contains ASCII value of key just pressed
 get_key_if_available:
   lda BRKKEY
   bne @no_abort
@@ -118,12 +119,11 @@ get_key_if_available:
 @done:
   ldx #255                      ; if K: handler hasn't been called, "consume" the key press
   stx CH                        ; and clear the zero flag which is a return value
-;  php
 ;  ldx CH_save                   ; for debugging purposes, return the scan code in X
-;  plp
+  sec
   rts
 nokey:
-  lda #0
+  clc
   rts
 
 ; inputs: A - keycode (CH)
@@ -154,7 +154,7 @@ get_key_ip65:
 ; process inbound ip packets while waiting for a keypress
   jsr ip65_process
   jsr get_key_if_available
-  beq get_key_ip65
+  bcc get_key_ip65
   rts
 
 ;check whether the abort key is being pressed
@@ -162,14 +162,11 @@ get_key_ip65:
 ;outputs: CF=1 if abort key pressed, clear otherwise
 check_for_abort_key:
   lda abort_key                 ; is "abort" enabled?
-  beq @no_abort                 ; no
+  beq nokey                     ; no
   lda BRKKEY
-  bne @no_abort
+  bne nokey
   dec BRKKEY
   sec
-  rts
-@no_abort:
-  clc
   rts
 
 
