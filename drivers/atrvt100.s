@@ -889,16 +889,19 @@ aDDigE  rts
 
 ProcOut
         lda kta,y   ; keyboard to ASCII
-        cmp #$81
+        cmp #$fd
         beq POrts   ; ignore key
-        cmp #$80
+        cmp #$fe
         beq CmdKey  ; command key
+        cmp #$ff
+        beq StrKey  ; send a string
         jsr putRS
 POrts   rts
 
 ; -------------------------------------
-; outgoing command key
+; outgoing string
 ;
+; params: key in y
 ; -------------------------------------
 
 ScrsrU .byt $1b, $4f, $41, $00 ; esc O A
@@ -906,11 +909,11 @@ ScrsrD .byt $1b, $4f, $42, $00 ; esc O B
 ScrsrR .byt $1b, $4f, $43, $00 ; esc O C
 ScrsrL .byt $1b, $4f, $44, $00 ; esc O D
 
-CmdKey  tya         ; restore character
+StrKey  tya         ; restore character
 
 ; --- crsr L ---
         cmp #ATLRW
-        bne C0
+        bne K0
 
 crsrL   ldx #<ScrsrL
         ldy #>ScrsrL
@@ -918,8 +921,8 @@ crsrL   ldx #<ScrsrL
         rts
 
 ; --- crsr D ---
-C0      cmp #ATDRW
-        bne C1
+K0      cmp #ATDRW
+        bne K1
 
 crsrD   ldx #<ScrsrD
         ldy #>ScrsrD
@@ -927,8 +930,8 @@ crsrD   ldx #<ScrsrD
         rts
 
 ; --- crsr U ---
-C1      cmp #ATURW
-        bne C2
+K1      cmp #ATURW
+        bne K2
 
 crsrU   ldx #<ScrsrU
         ldy #>ScrsrU
@@ -936,23 +939,30 @@ crsrU   ldx #<ScrsrU
         rts
 
 ; --- crsr R ---
-C2      cmp #ATRRW
-        bne C3
+K2      cmp #ATRRW
+        bne Cbad     ; unknown key
 
 crsrR   ldx #<ScrsrR
         ldy #>ScrsrR
         jsr SendStr
         rts
 
+; -------------------------------------
+; outgoing command key
+;
+; -------------------------------------
+
+CmdKey  tya          ; restore character
+
 ; ---  Option h H ---
 ; print help
-C3      cmp #$82     ; special value for HELP key
+        cmp #$fc     ; special value for HELP key
         beq Help
         cmp #$68     ; h
-        beq C31
+        beq C1
         cmp #$48     ; H
-        bne C4
-C31     lda CONSOL
+        bne C2
+C1      lda CONSOL
         and #4
         beq Help     ; "Option" pressed
         tya
@@ -961,11 +971,11 @@ C31     lda CONSOL
 
 ; ---  Option q Q ---
 ; quit CaTer
-C4      cmp #$71     ; q
-        beq C41
+C2      cmp #$71     ; q
+        beq C21
         cmp #$51     ; Q
-        bne C5
-C41     lda CONSOL
+        bne Cbad
+C21     lda CONSOL
         and #4
         beq Cquit    ; "Option" pressed
         tya
@@ -977,7 +987,7 @@ Cquit   jsr telnet_close
         rts
 
 ; --- unknown character ---
-C5      rts
+Cbad    rts
 
 ; -------------------------------------
 ; Help - print help screen
@@ -1638,10 +1648,11 @@ ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; input for sending over the serial
 ; line.
 ;
-; ascii = $82 means HELP key
-; ascii = $81 means ignore key
-; ascii = $80 means do something
+; ascii = $ff means send string
+; ascii = $fe means do something
 ;             complicated (command key)
+; ascii = $fd means ignore key
+; ascii = $fc means HELP key
 ; -------------------------------------
 
 kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
@@ -1651,7 +1662,7 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0A,$B,$0c,$0d,$0e,$0f  ; 0_
 ;                                                    {↑} {↓} {←} {→}
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_
-.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$80,$80,$80,$80  ; 1_
+.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$ff,$ff,$ff,$ff  ; 1_
 
 ; --- special chars ------------------------------------------------
 ;    ' '  !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /
@@ -1661,45 +1672,45 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
 ; --- capital letters ----------------------------------------------
 ;     @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
-.byt $40,$41,$42,$43,$44,$45,$46,$47,$80,$49,$4a,$4b,$4c,$4d,$4e,$4f  ; 4_
+.byt $40,$41,$42,$43,$44,$45,$46,$47,$fe,$49,$4a,$4b,$4c,$4d,$4e,$4f  ; 4_
 ;     P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _
-.byt $50,$80,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$5b,$5c,$5d,$5e,$5f  ; 5_
+.byt $50,$fe,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$5b,$5c,$5d,$5e,$5f  ; 5_
 
 ; --- lower case letters -------------------------------------------
 ;     `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
-.byt $60,$61,$62,$63,$64,$65,$66,$67,$80,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
+.byt $60,$61,$62,$63,$64,$65,$66,$67,$fe,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
 ;                                                          {DELETE}
 ;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
-.byt $70,$80,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$0c,$08,$09  ; 7_
+.byt $70,$fe,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$0c,$08,$09  ; 7_
 
 ; --- high bit set typically means "inverse chars" -----------------
 ; --- map them to regular chars in case the user has ---------------
 ; --- accidentally switched to inverse -----------------------------
 ;                                    {←}     {↓} {↑}
 ;        ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
-.byt $00,$01,$80,$03,$04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f  ; 8_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; 8_
 ;                        {→}                                 ~
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_
 ;                                              {RETURN}
-.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$0d,$7f,$81,$7e,$1f  ; 9_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$0d,$7f,$fd,$7e,$1f  ; 9_
 
 ; --- special chars ------------------------------------------------
 ;    ' '  !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /
-.byt $20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$2a,$2b,$2c,$2d,$2e,$2f  ; a_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; a_
 ;     0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?
-.byt $30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$3a,$3b,$3c,$3d,$3e,$3f  ; b_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; b_
 
 ; --- capital letters ----------------------------------------------
 ;     @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
-.byt $40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$4a,$4b,$4c,$4d,$4e,$4f  ; c_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; c_
 ;     P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _
-.byt $50,$80,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$5b,$5c,$5d,$5e,$5f  ; d_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; d_
 
 ; --- lower case letters -------------------------------------------
 ;     `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
-.byt $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; e_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; e_
 ;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
-.byt $70,$80,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$7d,$7f,$81  ; f_
+.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fe,$fd,$7f,$fd  ; f_
 
 
 ; -----------------------------------------------

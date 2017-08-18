@@ -99,7 +99,7 @@ get_key_if_available:
 @help:
   lda #0
   sta HELPFG                    ; clear HELPFG
-  lda #$82                      ; pseudo key code, handled in atrvt100.s
+  lda #$fc                      ; pseudo key code, handled in atrvt100.s
   bne @done
 @no_help:
   lda CH                        ; keyboard input (scan code)
