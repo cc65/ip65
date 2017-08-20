@@ -1052,22 +1052,16 @@ aDDigE  rts
 
 ProcOut
         lda pta,y      ; PETSCII to ASCII
-        beq POrts      ; ignore key
         cmp #$ff
-        beq StrKey     ; send a string
+        beq POrts      ; ignore key
         cmp #$fe
-        beq POCmdKey   ; command key
+        beq CmdKey     ; command key
         jsr putRS
 POrts   rts
 
-; to far for branch
-POCmdKey
-        jmp CmdKey
-
 ; -------------------------------------
-; outgoing string
+; outgoing command key
 ;
-; params: key in y
 ; -------------------------------------
 
 ScrsrU .byt $1b, $4f, $41, $00           ; esc O A
@@ -1083,91 +1077,93 @@ Sf6    .byt $1b, $5b, $31, $37, $7e, $00 ; esc [ 1 7 ~
 Sf7    .byt $1b, $5b, $31, $38, $7e, $00 ; esc [ 1 8 ~
 Sf8    .byt $1b, $5b, $31, $39, $7e, $00 ; esc [ 1 9 ~
 
-StrKey  tya         ; restore key
+CmdKey  tya         ; restore character
 
 ; --- crsr U ---
-K1      cmp #$91    ; test crsr U
-        bne K2
+        cmp #$91    ; test crsr U
+        bne C0
         ldx #<ScrsrU
         ldy #>ScrsrU
         jsr SendStr
         rts
+
 ; --- crsr L ---
-K2      cmp #$9d    ; test crsr L
-        bne K3
+C0      cmp #$9d    ; test crsr L
+        bne C1
         ldx #<ScrsrL
         ldy #>ScrsrL
         jsr SendStr
         rts
+
 ; --- f1 ---
-K3      cmp #$85    ; test f1
-        bne K4
+C1      cmp #$85    ; test f1
+        bne C2
         ldx #<Sf1
         ldy #>Sf1
         jsr SendStr
         rts
+
 ; --- f2 ---
-K4      cmp #$89    ; test f2
-        bne K5
+C2      cmp #$89    ; test f2
+        bne C3
         ldx #<Sf2
         ldy #>Sf2
         jsr SendStr
         rts
+
 ; --- f3 ---
-K5      cmp #$86    ; test f3
-        bne K6
+C3      cmp #$86    ; test f3
+        bne C4
         ldx #<Sf3
         ldy #>Sf3
         jsr SendStr
         rts
+
 ; --- f4 ---
-K6      cmp #$8a    ; test f4
-        bne K7
+C4      cmp #$8a    ; test f4
+        bne C5
         ldx #<Sf4
         ldy #>Sf4
         jsr SendStr
         rts
+
 ; --- f5 ---
-K7      cmp #$87    ; test f5
-        bne K8
+C5      cmp #$87    ; test f5
+        bne C6
         ldx #<Sf5
         ldy #>Sf5
         jsr SendStr
         rts
+
 ; --- f6 ---
-K8      cmp #$8b    ; test f6
-        bne K9
+C6      cmp #$8b    ; test f6
+        bne C7
         ldx #<Sf6
         ldy #>Sf6
         jsr SendStr
         rts
+
 ; --- f7 ---
-K9      cmp #$88    ; test f7
-        bne K10
+C7      cmp #$88    ; test f7
+        bne C8
         ldx #<Sf7
         ldy #>Sf7
         jsr SendStr
         rts
+
 ; --- f8 ---
-K10     cmp #$8c    ; test f8
-        bne K11
+C8      cmp #$8c    ; test f8
+        bne C9
         ldx #<Sf8
         ldy #>Sf8
         jsr SendStr
-K11     rts
-
-; -------------------------------------
-; outgoing command key
-;
-; -------------------------------------
-
-CmdKey  tya         ; restore character
+        rts
 
 ; --- crsr R ---
 ; ---   ^]   ---
 ; both events send $1d
-        cmp #$1d
-        bne C0
+C9      cmp #$1d
+        bne C10
         lda #$04    ; test control Key
         bit ControlFlags
         beq crsrR   ; not pressed
@@ -1185,8 +1181,8 @@ crsrR   ldx #<ScrsrR
 ; --- crsr D ---
 ; ---   ^Q   ---
 ; both events send char $11
-C0      cmp #$11    ;^Q / crsr down
-        bne C2
+C10     cmp #$11    ;^Q / crsr down
+        bne C11
         lda #$04    ; test control Key
         bit ControlFlags
         beq crsrD   ; not pressed
@@ -1203,55 +1199,55 @@ crsrD   ldx #<ScrsrD
 
 ; --- C=H ---
 ; print help
-C2      cmp #$b4    ; C=H
-        bne C8
+C11      cmp #$b4    ; C=H
+        bne C12
         jmp Help
 
 ; --- HOME key ---
 ; ---    ^S    ---
 ; both events send char $13
-C8      cmp #$13    ;^S / HOME
-        bne C9
+C12     cmp #$13    ;^S / HOME
+        bne C13
         lda #$04    ; test control Key
         bit ControlFlags
-        beq C8Home  ; not pressed
+        beq C12Home ; not pressed
         ; control S is pressed
         tya         ; send ^S
         jsr putRS
         rts
 
         ; send TAB
-C8Home  lda #$09
+C12Home lda #$09
         jsr putRS
         rts
 
 ; --- HOME key ---
 ; ---    ^T    ---
 ; both events send char $14
-C9      cmp #$14    ;^S / DEL
-        bne C10
+C13     cmp #$14    ;^S / DEL
+        bne C14
         lda #$04    ; test control Key
         bit ControlFlags
-        beq C9Del   ; not pressed
+        beq C13Del  ; not pressed
         ; control T is pressed
         tya         ; send ^T
         jsr putRS
         rts
 
         ; send TAB
-C9Del   lda #$08
+C13Del  lda #$08
         jsr putRS
         rts
 
 ; --- C=Q ---
 ; quit CaTer
-C10     cmp #$ab    ; C=Q
-        bne C12
+C14     cmp #$ab    ; C=Q
+        bne C15
         jsr telnet_close
         rts
 
 ; --- unknown C=-Key ---
-C12     rts
+C15     rts
 
 ; -------------------------------------
 ; Help - print help screen
@@ -2111,8 +2107,7 @@ atp ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; input for sending over the serial
 ; line.
 ;
-; ascii = $00 means ignore key
-; ascii = $ff menas send string
+; ascii = $ff means ignore key
 ; ascii = $fe means do something
 ;             complicated (command key)
 ; -------------------------------------
@@ -2121,7 +2116,7 @@ pta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
 ; --- Control chars ------------------------------------------------
 ;               {STOP}                                {RETURN}
-;        ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
+;    ^@  ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
 .byt $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f  ; 0_
 ;      {crsr↓} {HOME|DEL}                              {crsr→}
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\£ ^]  ^↑
@@ -2142,24 +2137,24 @@ pta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$5b,$5c,$5d,$5e,$1b  ; 5_
 
 ; --- mirror of upper letters - should never appear ----------------
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 6_
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 7_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; 6_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; 7_
 
 ; --- upper control chars ------------------------------------------
 ;                        {f1}{f3}{f5}{f7}{f2}{f4}{f6}{f8}{ShRET}
 ;
-.byt $00,$00,$00,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00  ; 8_
+.byt $ff,$ff,$ff,$ff,$ff,$fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe,$ff,$ff,$ff  ; 8_
 ;      {crsr↑} {CLR}{INS}                              {crsr←}
 ;                    DEL
-.byt $00,$ff,$00,$00,$7f,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00  ; 9_
+.byt $ff,$fe,$ff,$ff,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$ff,$ff  ; 9_
 
 ; --- block graphics -----------------------------------------------
 ;   ShSP C=K C=I C=T C=@ C=G C=+ C=M C=£ Sh£ C=N C=Q C=D C=Z C=S C=P
 ;                                         |
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$7c,$00,$fe,$00,$00,$00,$00  ; a_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$7c,$ff,$fe,$ff,$ff,$ff,$ff  ; a_
 ;    C=A C=E C=R C=W C=H C=J C=L C=Y C=U C=O Sh@ C=F C=C C=X C=V C=B
 ;                                             `
-.byt $00,$00,$00,$00,$fe,$00,$00,$00,$00,$00,$60,$00,$00,$00,$00,$00  ; b_
+.byt $ff,$ff,$ff,$ff,$fe,$ff,$ff,$ff,$ff,$ff,$60,$ff,$ff,$ff,$ff,$ff  ; b_
 
 ; --- capital letters ----------------------------------------------
 ;    Sh*  A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
@@ -2167,11 +2162,11 @@ pta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $5f,$41,$42,$43,$44,$45,$46,$47,$48,$49,$4a,$4b,$4c,$4d,$4e,$4f  ; c_
 ;     P   Q   R   S   T   U   V   W   X   Y   Z  Sh+ C=- Sh-  π  C=*
 ;     /   /   /   /   /   /   /   /   /   /   /   {       }   ~
-.byt $50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$7b,$00,$7d,$7e,$00  ; d_
+.byt $50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$5a,$7b,$ff,$7d,$7e,$ff  ; d_
 
 ; --- mirror of block graphics - should never appear ---------------
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; e_
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; f_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; e_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; f_
 
 ; --- Font ROM ------------------------
 

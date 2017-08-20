@@ -34,7 +34,9 @@ get_key:
 ; outputs: sec if key pressed, clear otherwise
 ;          A contains ASCII value of key just pressed
 get_key_if_available:
+  ldy #$ff
   jsr $f142                     ; not officially documented - where F13E (GETIN) falls through to if device # is 0 (KEYBD)
+  cpy #$ff                      ; Y gets modified iff there's a character available - this approach allows to read ^@ as 0
   beq no_key
   sec
   rts
