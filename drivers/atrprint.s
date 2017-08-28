@@ -60,12 +60,29 @@ cls:
   lda #ATCLR                    ; clear screen
   jmp print_a
 
-; use ATARI CIOV function to make a 'beep' noise
+; make a 'beep' noise the same way as the ROM does
 ; inputs: none
 ; outputs: none
 beep:
-  lda #ATBEL                    ; beep char
-  jmp print_a
+  tya                           ; FIXME: why is preservation of Y needed?
+  pha
+  ldy #20                       ; do the next loop 20 times
+@beep1:
+  ldx #63*2
+@beep2:
+  stx CONSOL                    ; turn on speaker
+  lda VCOUNT                    ; current vertical line
+@beep3:
+  cmp VCOUNT                    ; still the same?
+  beq @beep3                    ; yes, delay...
+  dex
+  dex
+  bpl @beep2
+  dey
+  bpl @beep1
+  pla
+  tay
+  rts
 
 print_a_inverse:
   ora  #$80                     ; turn on top bit

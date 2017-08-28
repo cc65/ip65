@@ -5,7 +5,7 @@
 .export get_key_if_available
 .export get_key_ip65
 .export abort_key
-.exportzp abort_key_default = 0
+.exportzp abort_key_default = 1
 .exportzp abort_key_disable = 0
 
 .import ip65_process
@@ -13,9 +13,61 @@
 
 .data
 
-abort_key: .byte 0              ; ???
-iocb:      .byte 0
-kname:     .byte "K:",155
+abort_key: .byte 1
+
+
+; keyboard translation tables for combinations not handled or supported by the ROM
+
+; scan codes
+special_key_table:
+  .byte $b5     ; Ctrl-8
+  .byte $f5     ; Shift-Ctrl-8
+  .byte $a0     ; Ctrl-,
+  .byte $e0     ; Shift-Ctrl-,
+  .byte $a6     ; Ctrl-/
+  .byte $e6     ; Shift-Ctrl-/
+  .byte $a2     ; Ctrl-.
+  .byte $e2     ; Shift-Ctrl-.
+  .byte $b3     ; Ctrl-7
+  .byte $f3     ; Shift-Ctrl-7
+  .byte $ce     ; Shift-Ctrl--
+  .byte $a1     ; Ctrl-<Space>
+  .byte $e1     ; Shift-Ctrl-<Space>
+  .byte $b0     ; Ctrl-9
+  .byte $f0     ; Shift-Ctrl-9
+  .byte $b2     ; Ctrl-0
+  .byte $f2     ; Shirt-Ctrl-0
+  .byte $ed     ; Shirt-Ctrl-T
+  .byte $de     ; Shirt-Ctrl-2
+special_key_table_len = * - special_key_table
+
+; return values for scan codes
+special_key_table2:
+  .byte $00     ; Ctrl-8  ==>  Ctrl-@
+  .byte $00     ; Shift-Ctrl-8  ==>  Ctrl-@
+  .byte $1b     ; Ctrl-,  ==>  Ctrl-[
+  .byte $1b     ; Shift-Ctrl-,  ==>  Ctrl-[
+  .byte $9c     ; Ctrl-/  ==>  Ctrl-\          ($1c already used for cursor up, ATURW)
+  .byte $9c     ; Shift-Ctrl-/  ==>  Ctrl-\
+  .byte $9d     ; Ctrl-.  ==>  Ctrl-]          ($1d already used for cursor down, ATDRW)
+  .byte $9d     ; Shift-Ctrl-.  ==>  Ctrl-]
+  .byte $9e     ; Ctrl-7  ==>  Ctrl-^          ($1e already used for cursor left, ATLRW)
+  .byte $60     ; Shift-Ctrl-7  ==>  `
+  .byte $9f     ; Shift-Ctrl--  ==>  Ctrl-_    ($1f already used for cursor right, ATRRW)
+  .byte $00     ; Ctrl-<Space>  ==>  Ctrl-@
+  .byte $00     ; Shift-Ctrl-<Space>  ==>  Ctrl-@
+  .byte $7b     ; Ctrl-9  ==>  {
+  .byte $7b     ; Shift-Ctrl-9  ==>  {
+  .byte $fd     ; Ctrl-0  ==>  }
+  .byte $fd     ; Shift-Ctrl-0  ==>  }
+  .byte $9e     ; Shift-Ctrl-T  ==>  ~
+  .byte $9e     ; Shift-Ctrl-2  ==>  ~
+; translations $9c..$9f -> $1c..$1f, $9e -> $7e, and $fd -> $7d will be done in atrvt100.s
+
+.bss
+
+; uncomment for debugging all CH_save related stuff
+;CH_save: .res 1
 
 
 .code
@@ -28,39 +80,78 @@ get_key:
   rts
 
 ; inputs: none
-; outputs: sec if key pressed, clear otherwise
+; outputs: sec (CF=1) if key pressed, clear otherwise
 ;          A contains ASCII value of key just pressed
 get_key_if_available:
-  lda CH                        ; GLOBAL VARIABLE FOR KEYBOARD
-  cmp #255
-  beq no_key
-  ldx iocb                      ; K: already open?
-  bne @read
-  ldx #$40                      ; IOCB to use for keyboard input
-  stx iocb                      ; mark K: as open
-  lda #<kname
-  sta ICBAL,x                   ; 1-byte low buffer address
-  lda #>kname
-  sta ICBAH,x                   ; 1-byte high buffer address
-  lda #OPEN                     ; open
-  sta ICCOM,x                   ; COMMAND CODE
-  lda #OPNIN                    ; open for input (all devices)
-  sta ICAX1,x                   ; 1-byte first auxiliary information
-  jsr CIOV                      ; vector to CIO
-@read:
+  lda BRKKEY
+  bne @no_abort
+  dec BRKKEY
+  lda #$03                      ; ^C
+  bne @done                     ; jump always
+@no_abort:
+  lda HELPFG                    ; HELP key? (to be 100% correct we should check for XL-type machine before...)
+  cmp #17                       ; HELP alone
+  beq @help
+  cmp #81                       ; Shift-HELP
+  beq @help
+  cmp #145                      ; Control-HELP
+  bne @no_help
+@help:
   lda #0
-  sta ICBLL,x                   ; 1-byte low buffer length
-  sta ICBLH,x                   ; 1-byte high buffer length
-  lda #GETCHR                   ; get character(s)
-  sta ICCOM,x                   ; COMMAND CODE
-  jsr CIOV                      ; vector to CIO
-  ldx #255
-  stx CH                        ; GLOBAL VARIABLE FOR KEYBOARD
+  sta HELPFG                    ; clear HELPFG
+  lda #$fc                      ; pseudo key code, handled in atrvt100.s
+  bne @done
+@no_help:
+  lda CH                        ; keyboard input (scan code)
+  cmp #255                      ; was a key pressed?
+  beq nokey                     ; 255 means "no"
+;  sta CH_save                   ; remember keyboard scan code (debugging)
+  bpl @call_k                   ; Ctrl wasn't pressed, continue with ROM
+  jsr handle_special_keys
+  bcs @done                     ; keypress was handled
+@call_k:
+  lda #0
+  sta INVFLG                    ; never input an inverse char
+  ; ideas from cc65's cgetc.s
+  lda #12
+  sta ICAX1Z
+  jsr getkey_k
+@done:
+  ldx #255                      ; if K: handler hasn't been called, "consume" the key press
+  stx CH                        ; and clear the zero flag which is a return value
+;  ldx CH_save                   ; for debugging purposes, return the scan code in X
+  sec
+  rts
+nokey:
+  clc
+  rts
+
+; inputs: A - keycode (CH)
+; outputs: A - char, CF=0 if regular ROM handling is needed
+handle_special_keys:
+  ldx #special_key_table_len-1
+@lookup:
+  cmp special_key_table,x
+  beq @found
+  dex
+  bpl @lookup
+  clc
+  rts
+@found:
+  lda special_key_table2,x
   sec
   rts
 
-; process inbound ip packets while waiting for a keypress
+; call "short-cut" handler of K:
+getkey_k:
+  lda KEYBDV+5
+  pha
+  lda KEYBDV+4
+  pha
+  rts
+
 get_key_ip65:
+; process inbound ip packets while waiting for a keypress
   jsr ip65_process
   jsr get_key_if_available
   bcc get_key_ip65
@@ -68,11 +159,14 @@ get_key_ip65:
 
 ;check whether the abort key is being pressed
 ;inputs: none
-;outputs: sec if abort key pressed, clear otherwise
+;outputs: CF=1 if abort key pressed, clear otherwise
 check_for_abort_key:
-  ; TODO: implement actual check
-no_key:
-  clc
+  lda abort_key                 ; is "abort" enabled?
+  beq nokey                     ; no
+  lda BRKKEY
+  bne nokey
+  dec BRKKEY
+  sec
   rts
 
 
