@@ -205,7 +205,7 @@ Special tya         ; restore char
 ; --- CR ---
         cmp #$0d    ; CR?
         bne D1
-CRhnd   jsr clPending
+DoCR    jsr clPending
         ldx ROWCRS  ; get row
         ldy #$00    ; set col=0
         jsr CPlot   ; set crsr
@@ -256,9 +256,9 @@ D5      cmp #$09    ; TAB?
         and #$f8    ; (col DIV 8) * 8
         clc         ; col + 8
         adc #$08
-        cmp #Cols
+        cmp #Cols   ; col=40?
         bne D5a     ; no -> skip
-        lda #$4f    ; yes -> col=79
+        lda #Cols-1 ; yes -> col=39
 D5a     tay         ; col to y
         ldx ROWCRS  ; line to x
         jsr CPlot   ; set crsr
@@ -356,7 +356,7 @@ E6b     dex         ; one line up
         ; --- E --- next line
 E7      cmp #$45    ; E ?
         bne E8
-        jsr CRhnd
+        jsr DoCR
         jsr LF
         jmp Eend
         ; --- 7 --- save crsr
@@ -479,11 +479,11 @@ LE3     cmp #$43    ; C ?
 LE3c    lda COLCRS  ; get crsr col
         clc
         adc EPar    ; col = col + right
-        cmp #$4f    ; outside screen?
+        cmp #Cols-1 ; outside screen?
         bcs LE3d    ; yes -> branch
         tay
         jmp LE3a
-LE3d    ldy #$4f    ; y=col=left margin
+LE3d    ldy #Cols-1 ; y=col=left margin
 LE3a    ldx ROWCRS  ; x is row
         jsr CPlot   ; set crsr
         jmp LEend
@@ -605,7 +605,7 @@ LE8b    dey         ; line 1 -> line 0
         bne LE8c    ; 0 means 1
         iny
 LE8c    dey         ; col 1 -> col 0
-        cpy #Cols
+        cpy #Cols   ; >= 40?..
         bcs LE8d    ; ..error!
         ldx xVector ; restore row to X
         jsr CPlot   ; set crsr
@@ -645,7 +645,7 @@ LE9c    dex           ; previous line
         ; -- 2 -- del screen
 LE9e    cmp #$02      ; unknown?
         bne LE9f      ; then ingnore
-        ldx #Rows-1   ; start at last line
+        ldx #Rows-1   ; start at ln 23
 LE9d    txa
         pha           ; save X
         jsr ErLn      ; erase line
@@ -664,14 +664,14 @@ LE10    cmp #$72    ; r ?
         bne LE10e   ; no -> error
         ldy EPar    ; get top
         dey         ; line 1 -> line 0
-        cpy #Rows
+        cpy #Rows   ; >=24?..
         bcs LE10e   ; ..error!
         sty xVector ; save top
         ; -- prepare bottom --
         jsr GetNum
         ldy EPar    ; get bottom
         dey         ; line 1 -> line 0
-        cpy #Rows
+        cpy #Rows   ; >=24?..
         bcs LE10e   ; ..error!
         sty zVector ; save bottom
         ; -- validate lines --
@@ -889,19 +889,16 @@ aDDigE  rts
 
 ProcOut
         lda kta,y   ; keyboard to ASCII
-        cmp #$fd
+        cmp #$ff
         beq POrts   ; ignore key
         cmp #$fe
         beq CmdKey  ; command key
-        cmp #$ff
-        beq StrKey  ; send a string
         jsr putRS
 POrts   rts
 
 ; -------------------------------------
-; outgoing string
+; outgoing command key
 ;
-; params: key in y
 ; -------------------------------------
 
 ScrsrU .byt $1b, $4f, $41, $00 ; esc O A
@@ -909,77 +906,74 @@ ScrsrD .byt $1b, $4f, $42, $00 ; esc O B
 ScrsrR .byt $1b, $4f, $43, $00 ; esc O C
 ScrsrL .byt $1b, $4f, $44, $00 ; esc O D
 
-StrKey  tya         ; restore character
+CmdKey  tya         ; restore character
 
 ; --- crsr L ---
         cmp #ATLRW
-        bne K0
+        bne C0
 
+        ; crsr L
 crsrL   ldx #<ScrsrL
         ldy #>ScrsrL
         jsr SendStr
         rts
 
 ; --- crsr D ---
-K0      cmp #ATDRW
-        bne K1
+C0      cmp #ATDRW
+        bne C1
 
+        ; crsr down is pressed
 crsrD   ldx #<ScrsrD
         ldy #>ScrsrD
         jsr SendStr
         rts
 
 ; --- crsr U ---
-K1      cmp #ATURW
-        bne K2
+C1      cmp #ATURW
+        bne C2
 
+        ; crsr up is pressed
 crsrU   ldx #<ScrsrU
         ldy #>ScrsrU
         jsr SendStr
         rts
 
 ; --- crsr R ---
-K2      cmp #ATRRW
-        bne Cbad     ; unknown key
+C2      cmp #ATRRW
+        bne C3
 
+		; crsr R
 crsrR   ldx #<ScrsrR
         ldy #>ScrsrR
         jsr SendStr
         rts
 
-; -------------------------------------
-; outgoing command key
-;
-; -------------------------------------
-
-CmdKey  tya          ; restore character
-
 ; ---  Option h H ---
 ; print help
-        cmp #$fc     ; special value for HELP key
+C3      cmp #$fc    ; special value for HELP key
         beq Help
-        cmp #$68     ; h
-        beq C1
-        cmp #$48     ; H
-        bne C2
-C1      lda CONSOL
+        cmp #$68    ; h
+        beq C31
+        cmp #$48    ; H
+        bne C4
+C31     lda CONSOL
         and #4
-        beq Help     ; "Option" pressed
+        beq Help    ; "Option" pressed
         tya
-        jsr putRS    ; send h or H
+        jsr putRS   ; send h or H
         rts
 
 ; ---  Option q Q ---
 ; quit CaTer
-C2      cmp #$71     ; q
-        beq C21
-        cmp #$51     ; Q
-        bne Cbad
-C21     lda CONSOL
+C4      cmp #$71    ; q
+        beq C41
+        cmp #$51    ; Q
+        bne C5
+C41     lda CONSOL
         and #4
-        beq Cquit    ; "Option" pressed
+        beq Cquit   ; "Option" pressed
         tya
-        jsr putRS    ; send q or Q
+        jsr putRS   ; send q or Q
         rts
 
         ; quit CaTer
@@ -987,7 +981,7 @@ Cquit   jsr telnet_close
         rts
 
 ; --- unknown character ---
-Cbad    rts
+C5      rts
 
 ; -------------------------------------
 ; Help - print help screen
@@ -995,7 +989,7 @@ Cbad    rts
 ; calledom outgoing data loop
 ; returns with rts
 ; -------------------------------------
-Help    jsr CRhnd    ; next screen line
+Help    jsr DoCR    ; next screen line
         jsr LF
         ldx #<HelpStr1
         ldy #>HelpStr1
@@ -1183,7 +1177,7 @@ PC2     ldy COLCRS      ; get crsr col
         sta (ADRESS),y  ; char to screen
 
         ; -- move on crsr --
-        cpy #Cols-1     ; col = last one?
+        cpy #Cols-1     ; col = 39?
         bne PC8         ; no -> skip
         lda #$ff        ; yes -> set..
         sta lbPending   ; ..pending
@@ -1210,7 +1204,7 @@ NewLn   pha         ; save char
         ldx ROWCRS  ; get crsr row
         cpx SRE     ; end of scroll reg?
         beq NL1     ; yes -> branche
-        cpx #Rows-1 ; last line
+        cpx #Rows-1 ; line 23?
         beq NLend   ; yes -> crsr stays
         ; --- normal wrap ---
         inx         ; increase line
@@ -1386,7 +1380,7 @@ DS2     lda (xVector),y ; copy char
 ; -------------------------------------
 CPrnStrNL
         jsr CPrnStr
-        jsr CRhnd
+        jsr DoCR
         jsr LF
         rts
 
@@ -1488,8 +1482,8 @@ EBL1    sta (xVector),y
 ; return: screen line ptr in xVector
 ; -------------------------------------
 
-SLV     lda     SAVMSC
-        clc
+SLV     clc
+        lda     SAVMSC
         adc     LineOffsLo,x
         sta     xVector
         lda     SAVMSC+1
@@ -1533,7 +1527,7 @@ InitVar lda #$00
         sta Rvs
 
         lda #Rows-1 ; last line
-        sta SRE     ; = Rows-1
+        sta SRE     ; = 23
 
         rts
 
@@ -1648,11 +1642,9 @@ ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; input for sending over the serial
 ; line.
 ;
-; ascii = $ff means send string
+; ascii = $ff means ignore key
 ; ascii = $fe means do something
 ;             complicated (command key)
-; ascii = $fd means ignore key
-; ascii = $fc means HELP key
 ; -------------------------------------
 
 kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
@@ -1662,7 +1654,7 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0A,$B,$0c,$0d,$0e,$0f  ; 0_
 ;                                                    {↑} {↓} {←} {→}
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_
-.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$ff,$ff,$ff,$ff  ; 1_
+.byt $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1a,$1b,$fe,$fe,$fe,$fe  ; 1_
 
 ; --- special chars ------------------------------------------------
 ;    ' '  !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /
@@ -1688,29 +1680,29 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; --- accidentally switched to inverse -----------------------------
 ;                                    {←}     {↓} {↑}
 ;        ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; 8_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; 8_
 ;                        {→}                                 ~
 ;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_
 ;                                              {RETURN}
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$0d,$7f,$fd,$7e,$1f  ; 9_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$0d,$7f,$ff,$7e,$1f  ; 9_
 
 ; --- special chars ------------------------------------------------
 ;    ' '  !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; a_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; a_
 ;     0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; b_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; b_
 
 ; --- capital letters ----------------------------------------------
 ;     @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; c_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; c_
 ;     P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; d_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; d_
 
 ; --- lower case letters -------------------------------------------
 ;     `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd  ; e_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; e_
 ;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
-.byt $fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fd,$fe,$fd,$7f,$fd  ; f_
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$ff,$7f,$ff  ; f_
 
 
 ; -----------------------------------------------

@@ -80,7 +80,7 @@ get_key:
   rts
 
 ; inputs: none
-; outputs: sec (CF=1) if key pressed, clear otherwise
+; outputs: sec if key pressed, clear otherwise
 ;          A contains ASCII value of key just pressed
 get_key_if_available:
   lda BRKKEY
@@ -150,16 +150,16 @@ getkey_k:
   pha
   rts
 
-get_key_ip65:
 ; process inbound ip packets while waiting for a keypress
+get_key_ip65:
   jsr ip65_process
   jsr get_key_if_available
   bcc get_key_ip65
   rts
 
-;check whether the abort key is being pressed
-;inputs: none
-;outputs: CF=1 if abort key pressed, clear otherwise
+; check whether the abort key is being pressed
+; inputs: none
+; outputs: sec if abort key pressed, clear otherwise
 check_for_abort_key:
   lda abort_key                 ; is "abort" enabled?
   beq nokey                     ; no
