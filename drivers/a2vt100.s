@@ -554,9 +554,8 @@ LE6b    cmp #$01
 LE6d    cmp #$02
         bne LE6e      ; par undefined
         ldx CV        ; line in X
+        jsr COff
         jsr ErLn      ; erase line
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         jsr COn
 LE6e    jmp LEend
 
@@ -635,6 +634,7 @@ LE9c    dex           ; previous line
         ; -- 2 -- del screen
 LE9e    cmp #$02      ; unknown?
         bne LE9f      ; then ingnore
+        jsr COff
         ldx #Rows-1   ; start at ln 23
 LE9d    txa
         pha           ; save X
@@ -643,6 +643,7 @@ LE9d    txa
         tax           ; restore X
         dex           ; previous line
         bpl LE9d
+        jsr COn
 LE9f    jmp LEend
 
 ; --- r ---  set scroll region
@@ -1474,7 +1475,7 @@ EL2     sta (xVector),y ; clear char
 ; erase screen line from crsr to end of line
 ; -------------------------------------
 
-ErEnLn
+ErEnLn  jsr COff
         ; -- erase even col chars --
         bit $c055
         lda CH        ; get crsr col
@@ -1496,8 +1497,6 @@ EEL3    sta (BASL),y  ; clear char
         cpy #Cols/2   ; odd pos 40?
         bne EEL3      ; next char
 
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         jsr COn
         rts
 
@@ -1509,7 +1508,7 @@ EEL3    sta (BASL),y  ; clear char
 ; erase screen line up to crsr
 ; -------------------------------------
 
-ErBeLn
+ErBeLn  jsr COff
         ; -- erase even col chars --
         bit $c055
         lda CH        ; get crsr col
@@ -1529,8 +1528,6 @@ EBL2    sta (BASL),y  ; clear char
 EBL3    dey
         bpl EBL2      ; pos>=0 -> next
 
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         jsr COn
         rts
 

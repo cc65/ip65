@@ -728,9 +728,9 @@ LE6b    cmp #$01
 LE6d    cmp #$02
         bne LE6e      ; par undefined
         ldx sRow      ; line in X
+        jsr COff
         jsr ErLn      ; erase line
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
+        jsr COn
 LE6e    jmp LEend
 
 
@@ -808,6 +808,7 @@ LE9c    dex           ; previous line
         ; -- 2 -- del screen
 LE9e    cmp #$02      ; unknown?
         bne LE9f      ; then ingnore
+        jsr COff
         ldx #$18      ; start at ln 24
 LE9d    txa
         pha           ; save X
@@ -816,6 +817,7 @@ LE9d    txa
         tax           ; restore X
         dex           ; previous line
         bpl LE9d
+        jsr COn
 LE9f    jmp LEend
 
 ; --- r ---  set scroll region
@@ -1783,7 +1785,7 @@ EL2     sta (yVector),y ; clear char
 ; erase screen line from crsr to end of line
 ; -------------------------------------
 
-ErEnLn
+ErEnLn  jsr COff
         ; -- erase chars --
         ldy sCol      ; get crsr col
         lda #$20      ; load space
@@ -1791,8 +1793,6 @@ EEL1    sta (sLinePtr),y ; clear char
         iny
         cpy #$28      ; pos 40?
         bne EEL1      ; next char
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         ; -- set colour --
         ldy sCol      ; get crsr col
         lda #fVa      ; load vanilla
@@ -1801,6 +1801,7 @@ EEL2    sta (sLineColPtr),y ; set colour
         cpy #$28      ; pos 40?
         bne EEL2      ; next char
 
+        jsr COn
         rts
 
 ; -------------------------------------
@@ -1811,15 +1812,13 @@ EEL2    sta (sLineColPtr),y ; set colour
 ; erase screen line up to crsr
 ; -------------------------------------
 
-ErBeLn
+ErBeLn  jsr COff
         ; -- erase chars --
         ldy sCol      ; get crsr col
         lda #$20      ; load space
 EBL1    sta (sLinePtr),y ; clear char
         dey
         bpl EBL1      ; pos>=0 -> next
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         ; -- set colour --
         ldy sCol      ; get crsr col
         lda #fVa      ; load vanilla
@@ -1827,6 +1826,7 @@ EBL2    sta (sLineColPtr),y ; clear char
         dey
         bpl EBL2      ; pos>=0 -> next
 
+        jsr COn
         rts
 
 ; -------------------------------------

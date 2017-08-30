@@ -564,9 +564,8 @@ LE6b    cmp #$01
 LE6d    cmp #$02
         bne LE6e      ; par undefined
         ldx ROWCRS    ; line in X
+        jsr COff
         jsr ErLn      ; erase line
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
         jsr COn
 LE6e    jmp LEend
 
@@ -645,6 +644,7 @@ LE9c    dex           ; previous line
         ; -- 2 -- del screen
 LE9e    cmp #$02      ; unknown?
         bne LE9f      ; then ingnore
+        jsr COff
         ldx #Rows-1   ; start at ln 23
 LE9d    txa
         pha           ; save X
@@ -653,6 +653,7 @@ LE9d    txa
         tax           ; restore X
         dex           ; previous line
         bpl LE9d
+        jsr COn
 LE9f    jmp LEend
 
 ; --- r ---  set scroll region
@@ -1424,8 +1425,10 @@ L2      jsr COn
 ; -------------------------------------
 
 ErLn    jsr SLV ; line start in xVector
-ErLn_   ldy #Cols-1
-        lda #$00
+
+        ; -- erase chars --
+ErLn_   ldy #Cols-1   ; col 39
+        lda #$00      ; load space
 EL1     sta (xVector),y ; clear char
         dey
         bpl EL1
@@ -1440,16 +1443,17 @@ EL1     sta (xVector),y ; clear char
 ; erase screen line from crsr to end of line
 ; -------------------------------------
 
-ErEnLn  ldx ROWCRS
+ErEnLn  jsr COff
+        ; -- erase chars --
+        ldx ROWCRS
         jsr SLV
-        ldy COLCRS
-        lda #$00
-EEL1    sta (xVector),y
+        ldy COLCRS    ; get crsr col
+        lda #$00      ; load space
+EEL1    sta (xVector),y ; clear char
         iny
-        cpy #Cols
-        bne EEL1
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
+        cpy #Cols     ; pos 40?
+        bne EEL1      ; next char
+
         jsr COn
         rts
 
@@ -1461,15 +1465,16 @@ EEL1    sta (xVector),y
 ; erase screen line up to crsr
 ; -------------------------------------
 
-ErBeLn  ldx ROWCRS
+ErBeLn  jsr COff
+        ; -- erase chars --
+        ldx ROWCRS
         jsr SLV
-        ldy COLCRS
-        lda #$00
-EBL1    sta (xVector),y
+        ldy COLCRS    ; get crsr col
+        lda #$00      ; load space
+EBL1    sta (xVector),y ; clear char
         dey
-        bpl EBL1
-        sta sCrsrChar ; del char ..
-                      ; ..under crsr
+        bpl EBL1      ; pos>=0 -> next
+
         jsr COn
         rts
 
