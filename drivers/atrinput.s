@@ -60,8 +60,8 @@ special_key_table2:
   .byte $7b     ; Shift-Ctrl-9  ==>  {
   .byte $fd     ; Ctrl-0  ==>  }
   .byte $fd     ; Shift-Ctrl-0  ==>  }
-  .byte $9e     ; Shift-Ctrl-T  ==>  ~
-  .byte $9e     ; Shift-Ctrl-2  ==>  ~
+  .byte $9a     ; Shift-Ctrl-T  ==>  ~
+  .byte $9a     ; Shift-Ctrl-2  ==>  ~
 ; translations $9c..$9f -> $1c..$1f, $9e -> $7e, and $fd -> $7d will be done in atrvt100.s
 
 .bss

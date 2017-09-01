@@ -14,6 +14,7 @@
 .import telnet_close
 .import telnet_send_char
 .import telnet_send_string
+.import vt100_font
 
 Cols    = vt100_screen_cols
 Rows    = vt100_screen_rows
@@ -142,6 +143,7 @@ mul10buf .res 1
 LMARGN_save .res 1
 SHFLOK_save .res 1
 INVFLG_save .res 1
+CHBAS_save .res 1
 
 
 ; *************************************
@@ -1542,6 +1544,10 @@ InitVar lda #$00
 ; -------------------------------------
 
 InitChar
+        lda CHBAS
+        sta CHBAS_save
+        lda #>vt100_font
+        sta CHBAS
         rts
 
 ; -------------------------------------
@@ -1550,6 +1556,8 @@ InitChar
 ; -------------------------------------
 
 ExitChar
+        lda CHBAS_save
+        sta CHBAS
         rts
 
 ; -------------------------------------
@@ -1634,11 +1642,11 @@ ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
 ;     ◆   ▒  ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' '  ⎸  ' '  _   ⎿   ⎿   ⎺
 ;.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$5f,$a0,$9f,$54,$54,$4c  ; 6_
-.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$43,$45,$51,$5a,$54,$4c  ; 6_
+.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$43,$45,$51,$5a,$53,$4c  ; 6_
 ;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
 ;     ─   _   _   _   ⎿   ⎸   ⎿   _   ⎸  ' ' ' ' ' ' ' ' ' ' ' ' ' '
 ;.byt $53,$9f,$9f,$9f,$54,$5f,$54,$9f,$5f,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
-.byt $53,$52,$9f,$9f,$54,$5f,$54,$9f,$7c,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
+.byt $53,$52,$9f,$9f,$41,$44,$54,$9f,$7c,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
 
 ; -------------------------------------
 ; table keyboard to ASCII
@@ -1678,36 +1686,22 @@ kta ;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 .byt $60,$61,$62,$63,$64,$65,$66,$67,$fe,$69,$6a,$6b,$6c,$6d,$6e,$6f  ; 6_
 ;                                                          {DELETE}
 ;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
-.byt $70,$fe,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$0c,$08,$09  ; 7_
+.byt $70,$fe,$72,$73,$74,$75,$76,$77,$78,$79,$7a,$7b,$7c,$0c,$7f,$09  ; 7_
 
-; --- high bit set typically means "inverse chars" -----------------
-; --- map them to regular chars in case the user has ---------------
-; --- accidentally switched to inverse -----------------------------
-;                                    {←}     {↓} {↑}
-;        ^A  ^B  ^C  ^D  ^E  ^F  ^G  ^H  ^I  ^J  ^K  ^L  ^M  ^N  ^O
+; --- most of the following values are set to "ignored" ($ff) ------
+; --- some of the not ignored values can come from the ROM ---------
+; --- some of them are synthesized in atrinput.s -------------------
+
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; 8_
-;                        {→}                                 ~
-;    ^P  ^Q  ^R  ^S  ^T  ^U  ^V  ^W  ^X  ^Y  ^Z  ^[  ^\  ^]  ^^  ^_
 ;                                              {RETURN}
-.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$0d,$7f,$ff,$7e,$1f  ; 9_
-
-; --- special chars ------------------------------------------------
-;    ' '  !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$7e,$0d,$1c,$1d,$1e,$1f  ; 9_
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; a_
-;     0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; b_
-
-; --- capital letters ----------------------------------------------
-;     @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; c_
-;     P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; d_
-
-; --- lower case letters -------------------------------------------
-;     `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
 .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  ; e_
-;     p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  DEL
-.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$ff,$7f,$ff  ; f_
+;                                                   {HELP}
+.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$7d,$08,$ff  ; f_
 
 
 ; -----------------------------------------------

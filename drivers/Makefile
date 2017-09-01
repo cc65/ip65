@@ -51,6 +51,7 @@ ATROBJS=\
 	atrinput.o \
 	atrfilteredinput.o \
 	atrvt100.o \
+	atrvt100font.o \
 	atrcharconv.o
 
 VIC20OBJS=\
