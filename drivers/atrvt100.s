@@ -1448,7 +1448,6 @@ EL1     sta (xVector),y ; clear char
 ErEnLn  jsr COff
         ; -- erase chars --
         ldx ROWCRS
-        jsr SLV
         ldy COLCRS    ; get crsr col
         lda #$00      ; load space
 EEL1    sta (xVector),y ; clear char
@@ -1470,7 +1469,6 @@ EEL1    sta (xVector),y ; clear char
 ErBeLn  jsr COff
         ; -- erase chars --
         ldx ROWCRS
-        jsr SLV
         ldy COLCRS    ; get crsr col
         lda #$00      ; load space
 EBL1    sta (xVector),y ; clear char
