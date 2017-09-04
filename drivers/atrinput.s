@@ -9,6 +9,7 @@
 .exportzp abort_key_disable = 0
 
 .import ip65_process
+.import print_a
 
 
 .data
@@ -75,8 +76,26 @@ special_key_table2:
 ; inputs: none
 ; outputs: A contains ASCII value of key just pressed
 get_key:
+  lda #0
+  sta CRSINH                    ; cursor on
+  ; according to "Mapping the Atari", a change to CRSINH will only be in effect after the next cursor movement,
+  ; so we move the cursor one to the left and then one to the right (to keep its original position)
+  lda #ATLRW
+  jsr print_a
+  lda #ATRRW
+  jsr print_a
+@loop:
   jsr get_key_if_available
-  bcc get_key
+  bcc @loop
+  ldy #1
+  sty CRSINH                    ; cursor on
+  tay                           ; save key
+  ; see above comment wrt. "Mapping the Atari"
+  lda #ATLRW
+  jsr print_a
+  lda #ATRRW
+  jsr print_a
+  tya                           ; restore key
   rts
 
 ; inputs: none
