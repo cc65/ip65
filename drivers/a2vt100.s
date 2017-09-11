@@ -1646,7 +1646,7 @@ ExitScr
 ; -------------------------------------
 ; table reverse to ScreenCode
 ;
-; This tabel is used to convert incoming
+; This table is used to convert incoming
 ; reverse chars.
 ; -------------------------------------
 
@@ -1671,7 +1671,7 @@ rtsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 ; -------------------------------------
 ; table line drawing to ScreenCode
 ;
-; This tabel is used to convert incoming
+; This table is used to convert incoming
 ; line drawing chars.
 ; -------------------------------------
 

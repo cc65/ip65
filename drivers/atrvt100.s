@@ -192,8 +192,9 @@ ProcIn  lda EMode   ; handle esc mode
         cpy #$20    ; control?
         bcc Special
         tya
+        bmi PIrts   ; ignore non-ASCII
         jsr CPrnChr ; print to screen
-        rts
+PIrts   rts
 
 ; to far for branch
 PIEsc   jmp Esc
@@ -945,7 +946,7 @@ crsrU   ldx #<ScrsrU
 C2      cmp #ATRRW
         bne C3
 
-		; crsr R
+        ; crsr R
 crsrR   ldx #<ScrsrR
         ldy #>ScrsrR
         jsr SendStr
@@ -1154,6 +1155,7 @@ PrnChr  sta xVector     ; save char
         bvc PCreg
         cmp #$60        ; line drawing char?
         bcc PCreg
+        sbc #$60        ; adapt index for table starting at offset $60
         tax
         lda ltsc,x      ; line drawing to ScreenCode
         eor Rvs
@@ -1614,37 +1616,18 @@ ExitScr
 ; -------------------------------------
 ; table line drawing to ScreenCode
 ;
-; This tabel is used to convert incoming
-; line drawing chars.
+; This table is used to convert incoming
+; line drawing chars. First entry is for
+; offset $60 (see PrnChr).
 ; -------------------------------------
 
 ltsc;_0  _1  _2  _3  _4  _5  _6  _7  _8  _9  _a  _b  _c  _d  _e  _f
 
-; --- unused -------------------------------------------------------
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 0_
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 1_
-
-; --- reverse ------------------------------------------------------
-;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
-;    ' '  ▒  ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' '  |  ' ' ' '  |   |   _
-.byt $20,$57,$20,$20,$20,$20,$20,$20,$20,$20,$7c,$20,$20,$7c,$7c,$1f  ; 2_
-;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
-;     _   _   _   _   |   |   _   _   |  ' ' ' ' ' ' ' ' ' ' ' ' ' '
-.byt $1f,$1f,$1f,$1f,$7c,$7c,$1f,$1f,$7c,$20,$20,$20,$20,$20,$20,$20  ; 3_
-
-; --- unused -------------------------------------------------------
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 4_
-.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ; 5_
-
 ; --- normal -------------------------------------------------------
 ;     ◆   ▒   ␉   ␌   ␍   ␊   °   ±   ␤   ␋   ┘   ┐   ┌   └   ┼   ⎺
-;     ◆   ▒  ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' '  ⎸  ' '  _   ⎿   ⎿   ⎺
-;.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$5f,$a0,$9f,$54,$54,$4c  ; 6_
-.byt $5b,$56,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$43,$45,$51,$5a,$53,$4c  ; 6_
+.byt $5b,$5c,$40,$48,$49,$4a,$4b,$50,$54,$55,$43,$45,$51,$5a,$53,$4d  ; 6_
 ;     ⎻   ─   ⎼   ⎽   ├   ┤   ┴   ┬   │   ≤   ≥   π   ≠   £   ·  ' '
-;     ─   _   _   _   ⎿   ⎸   ⎿   _   ⎸  ' ' ' ' ' ' ' ' ' ' ' ' ' '
-;.byt $53,$9f,$9f,$9f,$54,$5f,$54,$9f,$5f,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
-.byt $53,$52,$9f,$9f,$41,$44,$54,$9f,$7c,$a0,$a0,$a0,$a0,$a0,$a0,$a0  ; 7_
+.byt $4c,$52,$4f,$4e,$41,$44,$58,$57,$7c,$59,$5d,$5e,$5f,$47,$46,$00  ; 7_
 
 ; -------------------------------------
 ; table keyboard to ASCII

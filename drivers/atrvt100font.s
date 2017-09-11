@@ -652,14 +652,22 @@ vt100_font:
   .byte %11111111
   .byte %00000000
 
-;$40 - heart card
+;$40 - original: heart card; now 'HT' (line drawing mode)
+;  .byte %00000000
+;  .byte %00110110
+;  .byte %01111111
+;  .byte %01111111
+;  .byte %00111110
+;  .byte %00011100
+;  .byte %00001000
+;  .byte %00000000
   .byte %00000000
-  .byte %00110110
-  .byte %01111111
-  .byte %01111111
-  .byte %00111110
-  .byte %00011100
-  .byte %00001000
+  .byte %01010000
+  .byte %01110000
+  .byte %01010000
+  .byte %00001110
+  .byte %00000100
+  .byte %00000100
   .byte %00000000
 
 ;$41 - mid left window
@@ -712,71 +720,127 @@ vt100_font:
   .byte %00011000
   .byte %00011000
 
-;$46 - right slant box
-  .byte %00000011
-  .byte %00000111
-  .byte %00001110
+;$46 - original: right slant box; now 'dot' (line drawing mode)
+;  .byte %00000011
+;  .byte %00000111
+;  .byte %00001110
+;  .byte %00011100
+;  .byte %00111000
+;  .byte %01110000
+;  .byte %11100000
+;  .byte %11000000
+  .byte %00000000
+  .byte %00000000
+  .byte %00000000
+  .byte %00011000
+  .byte %00011000
+  .byte %00000000
+  .byte %00000000
+  .byte %00000000
+
+;$47 - original: left slant box; now 'pound'  (line drawing mode)
+;  .byte %11000000
+;  .byte %11100000
+;  .byte %01110000
+;  .byte %00111000
+;  .byte %00011100
+;  .byte %00001110
+;  .byte %00000111
+;  .byte %00000011
   .byte %00011100
-  .byte %00111000
+  .byte %00110110
+  .byte %01100000
+  .byte %01111100
+  .byte %01100000
+  .byte %00110000
+  .byte %01111110
+  .byte %00000000
+
+;$48 - original: right slant solid; now 'FF' (line drawing mode)
+;  .byte %00000001
+;  .byte %00000011
+;  .byte %00000111
+;  .byte %00001111
+;  .byte %00011111
+;  .byte %00111111
+;  .byte %01111111
+;  .byte %11111111
+  .byte %00000000
   .byte %01110000
-  .byte %11100000
-  .byte %11000000
+  .byte %01000000
+  .byte %01101110
+  .byte %01001000
+  .byte %00001100
+  .byte %00001000
+  .byte %00000000
 
-;$47 - left slant box
-  .byte %11000000
-  .byte %11100000
+;$49 - original: low right solid; now 'CR' (line drawing mode)
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00001111
+;  .byte %00001111
+;  .byte %00001111
+;  .byte %00001111
+  .byte %00000000
   .byte %01110000
-  .byte %00111000
-  .byte %00011100
-  .byte %00001110
-  .byte %00000111
-  .byte %00000011
+  .byte %01000000
+  .byte %01001100
+  .byte %01111010
+  .byte %00001100
+  .byte %00001010
+  .byte %00000000
 
-;$48 - right slant solid
-  .byte %00000001
-  .byte %00000011
-  .byte %00000111
-  .byte %00001111
-  .byte %00011111
-  .byte %00111111
-  .byte %01111111
+;$4A - original: left slant solid;  now 'LF' (line drawing mode)
+;  .byte %10000000
+;  .byte %11000000
+;  .byte %11100000
+;  .byte %11110000
+;  .byte %11111000
+;  .byte %11111100
+;  .byte %11111110
+;  .byte %11111111
+  .byte %00000000
+  .byte %01000000
+  .byte %01000000
+  .byte %01001110
+  .byte %01111000
+  .byte %00001100
+  .byte %00001000
+  .byte %00000000
+
+;$4B - original: up right solid; now ° (line drawing mode)
+;  .byte %00001111
+;  .byte %00001111
+;  .byte %00001111
+;  .byte %00001111
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+  .byte %00000000
+  .byte %00011000
+  .byte %01100110
+  .byte %01100110
+  .byte %00011000
+  .byte %00000000
+  .byte %00000000
+  .byte %00000000
+
+;$4C - original: up left solid; now upper line
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+  .byte %00000000
   .byte %11111111
-
-;$49 - low right solid
-  .byte %00000000
-  .byte %00000000
-  .byte %00000000
-  .byte %00000000
-  .byte %00001111
-  .byte %00001111
-  .byte %00001111
-  .byte %00001111
-
-;$4A - left slant solid
-  .byte %10000000
-  .byte %11000000
-  .byte %11100000
-  .byte %11110000
-  .byte %11111000
-  .byte %11111100
-  .byte %11111110
   .byte %11111111
-
-;$4B - up right solid
-  .byte %00001111
-  .byte %00001111
-  .byte %00001111
-  .byte %00001111
   .byte %00000000
-  .byte %00000000
-  .byte %00000000
-  .byte %00000000
-
-;$4C - up left solid
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
   .byte %00000000
   .byte %00000000
   .byte %00000000
@@ -802,24 +866,40 @@ vt100_font:
   .byte %11111111
   .byte %11111111
 
-;$4F - low left solid
+;$4F - original: low left solid; now lower line
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
   .byte %00000000
   .byte %00000000
   .byte %00000000
   .byte %00000000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
+  .byte %00000000
+  .byte %11111111
+  .byte %11111111
+  .byte %00000000
 
-;$50 - club card
+;$50 - original: club card; now plus/minus (line drawing mode)
+;  .byte %00000000
+;  .byte %00011100
+;  .byte %00011100
+;  .byte %01110111
+;  .byte %01110111
+;  .byte %00001000
+;  .byte %00011100
+;  .byte %00000000
   .byte %00000000
-  .byte %00011100
-  .byte %00011100
-  .byte %01110111
-  .byte %01110111
-  .byte %00001000
-  .byte %00011100
+  .byte %00011000
+  .byte %01111110
+  .byte %00011000
+  .byte %00000000
+  .byte %01111110
+  .byte %00000000
   .byte %00000000
 
 ;$51 - up left window
@@ -852,25 +932,41 @@ vt100_font:
   .byte %00011000
   .byte %00011000
 
-;$54 - solid circle
+;$54 - original: solid circle; now 'NL' (line drawing mode)
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00111100
+;  .byte %01111110
+;  .byte %01111110
+;  .byte %01111110
+;  .byte %00111100
+;  .byte %00000000
   .byte %00000000
-  .byte %00000000
-  .byte %00111100
-  .byte %01111110
-  .byte %01111110
-  .byte %01111110
-  .byte %00111100
+  .byte %01001000
+  .byte %01101000
+  .byte %01011000
+  .byte %01001000
+  .byte %00001000
+  .byte %00001110
   .byte %00000000
 
-;$55 - bottom solid
+;$55 - original: bottom solid; now 'VT' (line drawing mode)
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %00000000
+;  .byte %11111111
+;  .byte %11111111
+;  .byte %11111111
+;  .byte %11111111
   .byte %00000000
+  .byte %01010000
+  .byte %01010000
+  .byte %01011110
+  .byte %00100100
+  .byte %00000100
+  .byte %00000100
   .byte %00000000
-  .byte %00000000
-  .byte %00000000
-  .byte %11111111
-  .byte %11111111
-  .byte %11111111
-  .byte %11111111
 
 ;$56 - left box
   .byte %11000000
@@ -902,15 +998,23 @@ vt100_font:
   .byte %00000000
   .byte %00000000
 
-;$59 - left solid
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
-  .byte %11110000
+;$59 - original: left solid; now '<=' (line drawing mode)
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+;  .byte %11110000
+  .byte %00000000
+  .byte %00001100
+  .byte %00011000
+  .byte %00110000
+  .byte %00011000
+  .byte %00001100
+  .byte %00111110
+  .byte %00000000
 
 ;$5A - low left window
   .byte %00011000
@@ -922,54 +1026,94 @@ vt100_font:
   .byte %00000000
   .byte %00000000
 
-;$5B - display escape
-  .byte %01111000
-  .byte %01100000
-  .byte %01111000
-  .byte %01100000
-  .byte %01111110
-  .byte %00011000
-  .byte %00011110
-  .byte %00000000
-
-;$5C - up arrow
+;$5B - original: display escape; now diamond
+;  .byte %01111000
+;  .byte %01100000
+;  .byte %01111000
+;  .byte %01100000
+;  .byte %01111110
+;  .byte %00011000
+;  .byte %00011110
+;  .byte %00000000
   .byte %00000000
   .byte %00011000
   .byte %00111100
   .byte %01111110
-  .byte %00011000
-  .byte %00011000
-  .byte %00011000
-  .byte %00000000
-
-;$5D - down arrow
-  .byte %00000000
-  .byte %00011000
-  .byte %00011000
-  .byte %00011000
   .byte %01111110
   .byte %00111100
   .byte %00011000
   .byte %00000000
 
-;$5E - left arrow
+;$5C - original: up arrow; now checkerboard
+;  .byte %00000000
+;  .byte %00011000
+;  .byte %00111100
+;  .byte %01111110
+;  .byte %00011000
+;  .byte %00011000
+;  .byte %00011000
+;  .byte %00000000
+  .byte %10101010
+  .byte %01010101
+  .byte %10101010
+  .byte %01010101
+  .byte %10101010
+  .byte %01010101
+  .byte %10101010
+  .byte %01010101
+
+;$5D - original: down arrow; now '>=' (line drawing mode)
+;  .byte %00000000
+;  .byte %00011000
+;  .byte %00011000
+;  .byte %00011000
+;  .byte %01111110
+;  .byte %00111100
+;  .byte %00011000
+;  .byte %00000000
   .byte %00000000
+  .byte %00110000
+  .byte %00011000
+  .byte %00001100
   .byte %00011000
   .byte %00110000
-  .byte %01111110
-  .byte %00110000
-  .byte %00011000
-  .byte %00000000
+  .byte %01111100
   .byte %00000000
 
-;$5F - right arrow
+;$5E - original: left arrow; now 'pi' (line drawing mode)
+;  .byte %00000000
+;  .byte %00011000
+;  .byte %00110000
+;  .byte %01111110
+;  .byte %00110000
+;  .byte %00011000
+;  .byte %00000000
+;  .byte %00000000
+  .byte %00000000
+  .byte %00000001
+  .byte %11111111
+  .byte %01100110
+  .byte %01100110
+  .byte %01100110
+  .byte %01100110
+  .byte %00000000
+
+;$5F - original: right arrow; now 'unequal' (line drawing mode)
+;  .byte %00000000
+;  .byte %00011000
+;  .byte %00001100
+;  .byte %01111110
+;  .byte %00001100
+;  .byte %00011000
+;  .byte %00000000
+;  .byte %00000000
   .byte %00000000
   .byte %00011000
-  .byte %00001100
   .byte %01111110
-  .byte %00001100
   .byte %00011000
-  .byte %00000000
+  .byte %00011000
+  .byte %01111110
+  .byte %00011000
   .byte %00000000
 
 ;$60 - original: diamond card; now `
