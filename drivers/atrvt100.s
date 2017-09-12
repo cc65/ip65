@@ -192,9 +192,8 @@ ProcIn  lda EMode   ; handle esc mode
         cpy #$20    ; control?
         bcc Special
         tya
-        bmi PIrts   ; ignore non-ASCII
         jsr CPrnChr ; print to screen
-PIrts   rts
+        rts
 
 ; to far for branch
 PIEsc   jmp Esc
