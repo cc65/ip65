@@ -2,7 +2,6 @@
 ;
 ; the timer should be a 16-bit counter that's incremented by about
 ; 1000 units per second. it doesn't have to be particularly accurate.
-; this Atari implementation requires the routine timer_vbl_handler be called 60 times per second
 
 .include "atari.inc"
 .include "../inc/common.i"
@@ -18,7 +17,8 @@
 current_time_value: .res 2
 current_seconds:    .res 1
 current_jiffies:    .res 1
-
+timer_freq:         .res 1      ; VBLANK frequency: 50 - PAL, 60 - NTSC
+timer_freq_reciproc:.res 1      ; reciprocal for timer_freq in ms: 20 - PAL, ~17 - NTSC
 
 .data
 
@@ -40,6 +40,22 @@ timer_init:
   lda #6                        ; STAGE 1 VBI
   jsr SETVBV                    ; vector to set VBLANK parameters
 @handler_installed:
+  lda PAL                       ; hardware register describing TV system of GTIA
+  and #$0e                      ; mask out irrelevant bits
+  bne @ntsc
+  ; PAL system
+  lda #50
+  sta timer_freq
+  lda #20
+  sta timer_freq_reciproc
+  bne @system_set
+@ntsc:
+  ; NTSC system
+  lda #60
+  sta timer_freq
+  lda #17
+  sta timer_freq_reciproc
+@system_set:
   lda #0
   sta current_time_value
   sta current_time_value+1
@@ -54,6 +70,9 @@ timer_exit:
   ldx vbichain+1
   lda #6                        ; STAGE 1 VBI
   jsr SETVBV                    ; vector to set VBLANK parameters
+  lda #0
+  sta vbichain
+  sta vbichain+1
 @handler_not_installed:
   rts
 
@@ -69,7 +88,7 @@ timer_read:
 ; outputs: none (all registers preserved, but carry flag can be modified)
 timer_vbl_handler:
   pha
-  lda #17                       ; 60 HZ =~ 17 ms per 'tick'
+  lda timer_freq_reciproc       ; ms per tick
   clc
   adc current_time_value
   sta current_time_value
@@ -77,7 +96,7 @@ timer_vbl_handler:
   inc current_time_value+1
 : inc current_jiffies
   lda current_jiffies
-  cmp #60
+  cmp timer_freq                ; full second?
   bne @done
   lda #0
   sta current_jiffies
