@@ -68,29 +68,16 @@ timer_vbl_handler:
   inc current_time_value+1
 : inc current_jiffies
   lda current_jiffies
-  cmp #60
-  bne @done
-  lda #0
+  cmp #60                       ; full second?
+  bne @done                     ; no, we're done
+  lda #0                        ; yes, increment "seconds" counter
   sta current_jiffies
-  inc current_seconds
-  ; we don't want to mess around with decimal mode in an IRQ handler
-  lda current_seconds
-  cmp #$0a
-  bne :+
-  lda #$10
-: cmp #$1a
-  bne :+
-  lda #$20
-: cmp #$2a
-  bne :+
-  lda #$30
-: cmp #$3a
-  bne :+
-  lda #$40
-: cmp #$4a
-  bne :+
-  lda #$50
-: cmp #$5a
+  sed
+  clc
+  lda #$01
+  adc current_seconds
+  cld
+  cmp #$60
   bne :+
   lda #$00
 : sta current_seconds
