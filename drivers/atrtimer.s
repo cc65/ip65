@@ -27,19 +27,12 @@ vbichain: .word 0
 
 .code
 
-; reset timer to 0
+; reset timer to 0 and install handler
 ; inputs: none
 ; outputs: none
 timer_init:
   lda vbichain+1
-  bne @handler_installed
-  ldax VVBLKI                   ; IMMEDIATE VERTICAL BLANK NMI VECTOR
-  stax vbichain                 ; save old immediate vector
-  ldy #<timer_vbl_handler
-  ldx #>timer_vbl_handler
-  lda #6                        ; STAGE 1 VBI
-  jsr SETVBV                    ; vector to set VBLANK parameters
-@handler_installed:
+  bne @done
   lda PAL                       ; hardware register describing TV system of GTIA
   and #$0e                      ; mask out irrelevant bits
   bne @ntsc
@@ -56,11 +49,18 @@ timer_init:
   lda #17
   sta timer_freq_reciproc
 @system_set:
-  lda #0
+  lda #0                        ; initialize time variables
   sta current_time_value
   sta current_time_value+1
   sta current_seconds
   sta current_jiffies
+  ldax VVBLKI                   ; IMMEDIATE VERTICAL BLANK NMI VECTOR
+  stax vbichain                 ; save old immediate vector
+  ldy #<timer_vbl_handler
+  ldx #>timer_vbl_handler
+  lda #6                        ; STAGE 1 VBI
+  jsr SETVBV                    ; vector to set VBLANK parameters
+@done:
   rts
 
 timer_exit:
