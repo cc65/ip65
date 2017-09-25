@@ -1253,10 +1253,8 @@ DEL2    ; first col
         jsr Plot
         ldy COLCRS
 
-DELe    ldx ROWCRS
-        jsr SLV
-        lda #$00
-        sta (xVector),y ; clear char
+DELe    lda #$00
+        sta (ADRESS),y ; clear char
 DELee   jsr COn
         rts
 
@@ -1448,10 +1446,9 @@ EL1     sta (xVector),y ; clear char
 
 ErEnLn  jsr COff
         ; -- erase chars --
-        ldx ROWCRS
         ldy COLCRS    ; get crsr col
         lda #$00      ; load space
-EEL1    sta (xVector),y ; clear char
+EEL1    sta (ADRESS),y; clear char
         iny
         cpy #Cols     ; pos 40?
         bne EEL1      ; next char
@@ -1469,10 +1466,9 @@ EEL1    sta (xVector),y ; clear char
 
 ErBeLn  jsr COff
         ; -- erase chars --
-        ldx ROWCRS
         ldy COLCRS    ; get crsr col
         lda #$00      ; load space
-EBL1    sta (xVector),y ; clear char
+EBL1    sta (ADRESS),y; clear char
         dey
         bpl EBL1      ; pos>=0 -> next
 
