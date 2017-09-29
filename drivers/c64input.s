@@ -25,8 +25,16 @@ get_key:
 @loop:
   jsr get_key_if_available
   bcc @loop
+@wait_no_cursor:
+  sei
+  ldy $cf                       ; cursor currently displayed?
+  beq @done                     ; no
+  cli                           ; yes, wait longer
+  bne @wait_no_cursor
+@done:
   ldy #1
   sty $cc                       ; cursor off
+  cli
   rts
 
 ; use C64 Kernel ROM function to read a key
