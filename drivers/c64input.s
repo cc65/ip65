@@ -29,8 +29,10 @@ get_key:
   sei
   ldy $cf                       ; cursor currently displayed?
   beq @done                     ; no
-  cli                           ; yes, wait longer
-  bne @wait_no_cursor
+  ldy #1                        ; yes, wait longer
+  sty $cd                       ; set cursor "countdown" counter to low value, fixes typing latency
+  cli
+  bne @wait_no_cursor           ; jump always
 @done:
   ldy #1
   sty $cc                       ; cursor off
