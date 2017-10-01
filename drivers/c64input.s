@@ -25,8 +25,18 @@ get_key:
 @loop:
   jsr get_key_if_available
   bcc @loop
+@wait_no_cursor:
+  sei
+  ldy $cf                       ; cursor currently displayed?
+  beq @done                     ; no
+  ldy #1                        ; yes, wait longer
+  sty $cd                       ; set cursor "countdown" counter to low value, fixes typing latency
+  cli
+  bne @wait_no_cursor           ; jump always
+@done:
   ldy #1
   sty $cc                       ; cursor off
+  cli
   rts
 
 ; use C64 Kernel ROM function to read a key
