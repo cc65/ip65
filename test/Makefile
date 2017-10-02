@@ -81,6 +81,9 @@ ip65:
 drivers:
 	make -C ../drivers
 
+ATARI_CFG = atari.cfg
+vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
+
 %.o: %.s
 	ca65 $<
 
@@ -91,7 +94,7 @@ drivers:
 	ld65 -o $*.bin -C apple2.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
 %.com: %.o ip65 drivers $(INCFILES)
-	ld65 -o $*.com -C atari.cfg -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
+	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.vicprg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
