@@ -59,10 +59,17 @@ string1:
 .byte 07
 .byte "that was a beep!",13,10
 .byte $1b,"8"                   ; restore cursor position & attributes
-.byte $1b,"[20;1H";             ; move to row 20, pos 1
-.byte "ABCDEFGhijklmnopqRsTuVwXyZ01234567890"
-.byte $1b,"[20;10f";            ; move to row 20, pos 1
-.byte $1b,"[1K"
+.byte $1b,"[20;1H";             ; move to row 20, pos 1 (using CUP)
+.byte "ABCDEFGhijklmnopqRsTuVwXyZ01234567890"    ; these characters are drawn in inverse (old attribute)
+.byte $1b,"[20;10f";            ; move to row 20, pos 10 (using HVP)
+.byte $1b,"[1K"                 ; erase from start of line to cursor position (EL)
+.byte 13,10
+.byte $1b,"[0m"                 ; attributes off (SGR)
+.byte $1b,")0"                  ; select special graphics G1 (SCS)
+.byte $0e                       ; SO
+.byte "lqqkx`abcdefghijmnopqrstuvwyz{|}~"        ; line drawing chars
+.byte $0f                       ; SI
+.byte 13,10
 
 .byte 0
 
