@@ -1,8 +1,6 @@
 .include "zeropage.inc"
 .include "../inc/common.i"
 
-; .import dbg_dump_ip_header
-
 .export ip_init
 .export ip_process
 .export ip_calc_cksum
@@ -362,7 +360,6 @@ ip_send:
   adc #0
   sta eth_outp_len + 1
 
-; jsr dbg_dump_ip_header
   jmp eth_tx                    ; send packet and return status
 
 ; calculate checksum for a buffer according to the standard IP checksum algorithm

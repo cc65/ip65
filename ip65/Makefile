@@ -10,12 +10,10 @@ all: ip65.lib ip65_tcp.lib
 	ca65 -DTCP -o $@ $<
 
 IP65OBJS=\
-	arithmetic.o\
+	arithmetic.o \
 	arp.o \
-	cifs.o \
 	config.o \
 	copymem.o \
-	debug.o \
 	dhcp.o \
 	dns.o \
 	dottedquad.o \
@@ -25,9 +23,8 @@ IP65OBJS=\
 	ip65.o \
 	tftp.o \
 	timer.o \
-	output_buffer.o\
+	output_buffer.o \
 	parser.o \
-	printf.o \
 	sntp.o \
 	string_utils.o \
 	udp.o \

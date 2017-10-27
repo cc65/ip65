@@ -31,8 +31,6 @@
 
 .importzp eth_proto_arp
 
-.export ip65_random_word
-
 
 .bss
 
