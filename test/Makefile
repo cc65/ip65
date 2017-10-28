@@ -32,7 +32,6 @@ UDP =\
 	vt100
 
 TCP =\
-	cifs \
 	geturl \
 	httpd \
 	parser \
