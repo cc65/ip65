@@ -22,7 +22,7 @@ time: .res 2
 
 ; check if specified period of time has passed yet
 ; inputs: AX - maximum number of milliseconds we are willing to wait for
-; outputs: carry flag set if timeout occured, clear otherwise
+; outputs: carry flag clear if timeout occured, set otherwise
 timer_timeout:
   pha
   txa
