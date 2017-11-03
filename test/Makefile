@@ -55,6 +55,8 @@ $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com $(pgm).vicprg))
 
+httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
+
 INCFILES =\
   ../inc/common.i \
   ../inc/commonprint.i \
@@ -62,7 +64,7 @@ INCFILES =\
 
 prg: $(addsuffix .prg,$(UDP) $(TCP))
 
-bin: $(addsuffix .bin,$(UDP) $(TCP))
+bin: $(addsuffix .bin,$(UDP) $(TCP)) httpd-slotscan.bin
 
 com: $(addsuffix .com,$(UDP) $(TCP))
 
@@ -85,6 +87,9 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 
 %.o: %.s
 	ca65 $<
+
+%-slotscan.o: %.s
+	ca65 -D A2_SLOT_SCAN -o $@ $<
 
 %.prg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
@@ -113,16 +118,17 @@ ip65test.d64: prg
 
 ip65test.dsk: bin
 	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ dns        bin < dns.bin
-	java -jar $(AC) -cc65 $@ dottedquad bin < dottedquad.bin
-	java -jar $(AC) -cc65 $@ geturl     bin < geturl.bin
-	java -jar $(AC) -cc65 $@ httpd      bin < httpd.bin
-	java -jar $(AC) -cc65 $@ math       bin < math.bin
-	java -jar $(AC) -cc65 $@ parser     bin < parser.bin
-	java -jar $(AC) -cc65 $@ ping       bin < ping.bin
-	java -jar $(AC) -cc65 $@ sntp       bin < sntp.bin
-	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
-	java -jar $(AC) -cc65 $@ vt100      bin < vt100.bin
+	java -jar $(AC) -cc65 $@ dns            bin < dns.bin
+	java -jar $(AC) -cc65 $@ dottedquad     bin < dottedquad.bin
+	java -jar $(AC) -cc65 $@ geturl         bin < geturl.bin
+	java -jar $(AC) -cc65 $@ httpd          bin < httpd.bin
+	java -jar $(AC) -cc65 $@ httpd.slotscan bin < httpd-slotscan.bin
+	java -jar $(AC) -cc65 $@ math           bin < math.bin
+	java -jar $(AC) -cc65 $@ parser         bin < parser.bin
+	java -jar $(AC) -cc65 $@ ping           bin < ping.bin
+	java -jar $(AC) -cc65 $@ sntp           bin < sntp.bin
+	java -jar $(AC) -cc65 $@ tftp           bin < tftp.bin
+	java -jar $(AC) -cc65 $@ vt100          bin < vt100.bin
 
 ip65test.atr: com
 	mkdir atr
@@ -141,19 +147,8 @@ ip65test.atr: com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
-%-slotscan.o: %.s
-	ca65 -D A2_SLOT_SCAN -o $@ $<
-
-httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
-
-ip65demo.dsk: httpd.bin httpd-slotscan.bin
-	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ httpd.slot3    bin < httpd.bin
-	java -jar $(AC) -cc65 $@ httpd.slotscan bin < httpd-slotscan.bin
-
 clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
-	-rm -f ../supplement/*.o
 	-rm -f *.o *.prg *.bin *.com *.vicprg *.map
-	-rm -f ip65test.d64 ip65test.dsk ip65test.atr ip65demo.dsk
+	-rm -f ip65test.d64 ip65test.dsk ip65test.atr
