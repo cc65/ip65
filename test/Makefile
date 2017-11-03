@@ -34,9 +34,9 @@ UDP =\
 TCP =\
 	geturl \
 	httpd \
+	math \
 	parser \
-	ping \
-	tcp
+	ping
 
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
@@ -104,10 +104,10 @@ ip65test.d64: prg
 	$(C1541) -attach $@ -write dottedquad.prg dottedquad,p
 	$(C1541) -attach $@ -write geturl.prg     geturl,p
 	$(C1541) -attach $@ -write httpd.prg      httpd,p
+	$(C1541) -attach $@ -write math.prg       math,p
 	$(C1541) -attach $@ -write parser.prg     parser,p
 	$(C1541) -attach $@ -write ping.prg       ping,p
 	$(C1541) -attach $@ -write sntp.prg       sntp,p
-	$(C1541) -attach $@ -write tcp.prg        tcp,p
 	$(C1541) -attach $@ -write tftp.prg       tftp,p
 	$(C1541) -attach $@ -write vt100.prg      vt100,p
 
@@ -117,10 +117,10 @@ ip65test.dsk: bin
 	java -jar $(AC) -cc65 $@ dottedquad bin < dottedquad.bin
 	java -jar $(AC) -cc65 $@ geturl     bin < geturl.bin
 	java -jar $(AC) -cc65 $@ httpd      bin < httpd.bin
+	java -jar $(AC) -cc65 $@ math       bin < math.bin
 	java -jar $(AC) -cc65 $@ parser     bin < parser.bin
 	java -jar $(AC) -cc65 $@ ping       bin < ping.bin
 	java -jar $(AC) -cc65 $@ sntp       bin < sntp.bin
-	java -jar $(AC) -cc65 $@ tcp        bin < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp       bin < tftp.bin
 	java -jar $(AC) -cc65 $@ vt100      bin < vt100.bin
 
@@ -132,10 +132,10 @@ ip65test.atr: com
 	cp dottedquad.com atr/dotquad.com
 	cp geturl.com     atr/geturl.com
 	cp httpd.com      atr/httpd.com
+	cp math.com       atr/math.com
 	cp parser.com     atr/parser.com
 	cp ping.com       atr/ping.com
 	cp sntp.com       atr/sntp.com
-	cp tcp.com        atr/tcp.com
 	cp tftp.com       atr/tftp.com
 	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
