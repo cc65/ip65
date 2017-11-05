@@ -25,6 +25,7 @@ IP65OBJS=\
 	http.o \
 	httpd.o \
 	icmp_c.o \
+	input_c.o \
 	ip65.o \
 	ip65_c.o \
 	tftp.o \

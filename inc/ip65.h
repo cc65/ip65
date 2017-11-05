@@ -178,4 +178,15 @@ unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
                                     unsigned long dest, unsigned int dest_port,
                                     unsigned int src_port);
 
+// User abort control
+//
+// Control if the user can abort blocking functions with the abort key
+// (making them return IP65_ERROR_ABORTED_BY_USER). Initially the abort
+// key is enabled.
+//
+// Inputs: enable: 0 to disable the key, 1 to enable the key
+// Output: None
+//
+void __fastcall__ abort_key(unsigned char enable);
+
 #endif
