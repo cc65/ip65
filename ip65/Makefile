@@ -13,14 +13,20 @@ IP65OBJS=\
 	arithmetic.o \
 	arp.o \
 	config.o \
+	config_c.o \
 	copymem.o \
 	dhcp.o \
+	dhcp_c.o \
 	dns.o \
+	dns_c.o \
 	dottedquad.o \
+	dottedquad_c.o \
 	eth.o \
 	http.o \
 	httpd.o \
+	icmp_c.o \
 	ip65.o \
+	ip65_c.o \
 	tftp.o \
 	timer.o \
 	output_buffer.o \
@@ -28,6 +34,7 @@ IP65OBJS=\
 	sntp.o \
 	string_utils.o \
 	udp.o \
+	udp_c.o \
 	url.o
 
 ip65.lib: $(IP65OBJS) ip.o icmp.o

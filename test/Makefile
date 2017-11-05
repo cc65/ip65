@@ -29,6 +29,7 @@ UDP =\
 	parsequerystring \
 	sntp \
 	tftp \
+	udp \
 	vt100
 
 TCP =\
@@ -91,6 +92,8 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 %-slotscan.o: %.s
 	ca65 -D A2_SLOT_SCAN -o $@ $<
 
+%.o: %.c
+
 %.prg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
@@ -103,6 +106,18 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 %.vicprg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
+%.prg: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(IP65LIB) ../drivers/ip65_c64.lib
+	rm $*.o
+
+%.bin: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(IP65LIB) ../drivers/ip65_apple2.lib
+	rm $*.o
+
+%.com: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
+	rm $*.o
+
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -114,6 +129,7 @@ ip65test.d64: prg
 	$(C1541) -attach $@ -write ping.prg       ping,p
 	$(C1541) -attach $@ -write sntp.prg       sntp,p
 	$(C1541) -attach $@ -write tftp.prg       tftp,p
+	$(C1541) -attach $@ -write udp.prg        udp,p
 	$(C1541) -attach $@ -write vt100.prg      vt100,p
 
 ip65test.dsk: bin
@@ -128,6 +144,7 @@ ip65test.dsk: bin
 	java -jar $(AC) -cc65 $@ ping           bin < ping.bin
 	java -jar $(AC) -cc65 $@ sntp           bin < sntp.bin
 	java -jar $(AC) -cc65 $@ tftp           bin < tftp.bin
+	java -jar $(AC) -cc65 $@ udp            bin < udp.bin
 	java -jar $(AC) -cc65 $@ vt100          bin < vt100.bin
 
 ip65test.atr: com
@@ -143,12 +160,16 @@ ip65test.atr: com
 	cp ping.com       atr/ping.com
 	cp sntp.com       atr/sntp.com
 	cp tftp.com       atr/tftp.com
+	cp udp.com        atr/udp.com
 	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
+%.exe: %.c
+	cl /Fe:$@ $^
+
 clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
-	-rm -f *.o *.prg *.bin *.com *.vicprg *.map
+	-rm -f *.o *.prg *.bin *.com *.vicprg *.map *.obj *.exe
 	-rm -f ip65test.d64 ip65test.dsk ip65test.atr
