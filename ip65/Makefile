@@ -30,6 +30,7 @@ IP65OBJS=\
 	ip65_c.o \
 	tftp.o \
 	timer.o \
+	timer_c.o \
 	output_buffer.o \
 	parser.o \
 	sntp.o \

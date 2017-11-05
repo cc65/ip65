@@ -178,6 +178,20 @@ unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
                                     unsigned long dest, unsigned int dest_port,
                                     unsigned int src_port);
 
+// Get number of milliseconds since initialization
+//
+// Inputs: None
+// Output: Current number of milliseconds
+//
+unsigned int timer_read(void);
+
+// Check if specified period of time has passed yet
+//
+// Inputs: time: Number of milliseconds we are willing to wait for
+// Output: 1 if timeout occured, 0 otherwise
+//
+unsigned char __fastcall__ timer_timeout(unsigned int time);
+
 // User abort control
 //
 // Control if the user can abort blocking functions with the abort key
