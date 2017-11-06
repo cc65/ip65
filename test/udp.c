@@ -26,6 +26,10 @@ void error_exit(void)
 
 void udp_recv(void)
 {
+  if (len)
+  {
+    return;
+  }
   len = udp_recv_len();
   src = udp_recv_src();
   memcpy(buf, udp_recv_buf, len);
