@@ -2,13 +2,16 @@
 #include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../inc/ip65.h"
 
 #define LEN 500
 #define SRV "192.168.0.10"
 
-char buf[LEN];
+unsigned char buf[1500];
+unsigned int len;
+unsigned long src;
 
 void error_exit(void)
 {
@@ -23,19 +26,9 @@ void error_exit(void)
 
 void udp_recv(void)
 {
-  unsigned len = udp_recv_len();
-  unsigned i;
-
-  printf("Recv Len %u From %s", len, dotted_quad(udp_recv_src()));
-  for (i = 0; i < len; ++i)
-  {
-    if ((i % 11) == 0)
-    {
-      printf("\n$%04X:", i);
-    }
-    printf(" %02X", udp_recv_buf[i]);
-  }
-  printf(".\n");
+  len = udp_recv_len();
+  src = udp_recv_src();
+  memcpy(buf, udp_recv_buf, len);
 }
 
 void main(void)
@@ -43,9 +36,6 @@ void main(void)
   unsigned i;
   unsigned long srv;
   char key;
-
-  for (i = 0; i < LEN; ++i)
-    buf[i] = i;
 
   if(!(srv = parse_dotted_quad(SRV)))
   {
@@ -92,6 +82,10 @@ void main(void)
     if (key == 'u')
     {
       printf("Send Len %d To %s", LEN, SRV);
+      for (i = 0; i < LEN; ++i)
+      {
+        buf[i] = i;
+      }
       if (udp_send(buf, LEN, srv, 6502, 6502))
       {
         printf("!\n");
@@ -100,6 +94,22 @@ void main(void)
       {
         printf(".\n");
       }
+    }
+
+    if (len)
+    {
+      printf("Recv Len %u From %s", len, dotted_quad(src));
+      for (i = 0; i < len; ++i)
+      {
+        if ((i % 11) == 0)
+        {
+          ip65_process();
+          printf("\n$%04X:", i);
+        }
+        printf(" %02X", buf[i]);
+      }
+      len = 0;
+      printf(".\n");
     }
   }
   while (key != 'x');
