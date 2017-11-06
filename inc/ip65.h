@@ -45,11 +45,6 @@ extern unsigned long cfg_dns;
 //
 extern unsigned long dhcp_server;
 
-//
-//
-extern unsigned char* tcp_packet;
-extern unsigned int   tcp_packet_len;
-
 // Initialise the IP stack
 //
 // This calls the individual protocol & driver initialisations, so this is
@@ -177,6 +172,56 @@ extern unsigned char udp_recv_buf[1476];        // Buffer with data received
 unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
                                     unsigned long dest, unsigned int dest_port,
                                     unsigned int src_port);
+
+// Listen for an inbound TCP connection
+//
+// This is a 'blocking' call, i.e. it will not return until a connection has been made.
+//
+// Inputs: port:     TCP port to listen on
+//         callback: Vector to call when data arrives on this connection
+// Output: 1 if an error occured, 0 otherwise
+//
+unsigned char __fastcall__ tcp_listen(unsigned int port, void (*callback)(void));
+
+// Make outbound TCP connection
+//
+// Inputs: dest:      Destination IP address
+//         dest_port: Destination port
+//         callback:  Vector to call when data arrives on this connection
+// Output: 1 if an error occured, 0 otherwise
+//
+unsigned char __fastcall__ tcp_connect(unsigned long dest, unsigned int dest_port,
+                                       void (*callback)(void));
+
+// Close the current TCP connection
+//
+// Inputs: None
+// Output: 1 if an error occured, 0 otherwise
+//
+unsigned char tcp_close(void);
+
+// Access to received TCP data
+//
+// Access to the two items below is only valid in the context of a callback
+// set with tcp_listen or tcp_connect.
+//
+extern unsigned char* tcp_recv_buf;     // Pointer to buffer with data received
+extern int            tcp_recv_len;     // -1 on close, otherwise length of data received
+
+// Send data on the current TCP connection
+//
+// Inputs: buf: Pointer to buffer containing data to be sent
+//         len: Length of data to send (exclusive of any headers)
+// Output: 1 if an error occured, 0 otherwise
+//
+unsigned char __fastcall__ tcp_send(const unsigned char* buf, unsigned int len);
+
+// Send an empty ACK packet on the current TCP connection
+//
+// Inputs: None
+// Output: 1 if an error occured, 0 otherwise
+//
+unsigned char tcp_send_keep_alive(void);
 
 // Get number of milliseconds since initialization
 //

@@ -28,6 +28,7 @@ IP65OBJS=\
 	input_c.o \
 	ip65.o \
 	ip65_c.o \
+	tcp_c.o \
 	tftp.o \
 	timer.o \
 	timer_c.o \
