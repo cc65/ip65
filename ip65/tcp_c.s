@@ -3,8 +3,6 @@
 .export _tcp_listen
 .export _tcp_connect
 .export _tcp_close
-.export _tcp_recv_buf
-.export _tcp_recv_len
 .export _tcp_send
 .export _tcp_send_keep_alive
 
@@ -20,10 +18,25 @@
 .import tcp_connect_ip
 .import tcp_send_data_len
 
-.import popax, popeax
+.import pushax, popax, popeax
 .importzp ptr1, sreg
 
+
+.data
+
+callback:
+  ldax tcp_inbound_data_ptr
+  jsr pushax
+  ldax tcp_inbound_data_length
+jmpvector:
+  jmp $FFFF
+
+
+.code
+
 _tcp_listen:
+  stax jmpvector+1
+  ldax #callback
   stax tcp_callback
   jsr popax
   jsr tcp_listen
@@ -33,6 +46,8 @@ _tcp_listen:
   rts
 
 _tcp_connect:
+  stax jmpvector+1
+  ldax #callback
   stax tcp_callback
   jsr popax
   stax ptr1
@@ -53,10 +68,6 @@ _tcp_close:
   txa
   rol
   rts
-
-_tcp_recv_buf := tcp_inbound_data_ptr
-
-_tcp_recv_len := tcp_inbound_data_length
 
 _tcp_send:
   stax tcp_send_data_len

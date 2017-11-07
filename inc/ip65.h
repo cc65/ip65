@@ -179,19 +179,24 @@ unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
 //
 // Inputs: port:     TCP port to listen on
 //         callback: Vector to call when data arrives on this connection
+//                   buf: Pointer to buffer with data received
+//                   len: -1 on close, otherwise length of data received
 // Output: 1 if an error occured, 0 otherwise
 //
-unsigned char __fastcall__ tcp_listen(unsigned int port, void (*callback)(void));
+unsigned char __fastcall__ tcp_listen(unsigned int port,
+                                      void (*callback)(const unsigned char* buf, int len));
 
 // Make outbound TCP connection
 //
 // Inputs: dest:      Destination IP address
 //         dest_port: Destination port
 //         callback:  Vector to call when data arrives on this connection
+//                    buf: Pointer to buffer with data received
+//                    len: -1 on close, otherwise length of data received
 // Output: 1 if an error occured, 0 otherwise
 //
 unsigned char __fastcall__ tcp_connect(unsigned long dest, unsigned int dest_port,
-                                       void (*callback)(void));
+                                       void (*callback)(const unsigned char* buf, int len));
 
 // Close the current TCP connection
 //
@@ -199,14 +204,6 @@ unsigned char __fastcall__ tcp_connect(unsigned long dest, unsigned int dest_por
 // Output: 1 if an error occured, 0 otherwise
 //
 unsigned char tcp_close(void);
-
-// Access to received TCP data
-//
-// Access to the two items below is only valid in the context of a callback
-// set with tcp_listen or tcp_connect.
-//
-extern unsigned char* tcp_recv_buf;     // Pointer to buffer with data received
-extern int            tcp_recv_len;     // -1 on close, otherwise length of data received
 
 // Send data on the current TCP connection
 //

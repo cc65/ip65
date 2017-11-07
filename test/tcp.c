@@ -23,16 +23,16 @@ void error_exit(void)
   exit(1);
 }
 
-void tcp_recv(void)
+void tcp_recv(const unsigned char* tcp_buf, int tcp_len)
 {
   if (len)
   {
     return;
   }
-  len = tcp_recv_len;
+  len = tcp_len;
   if (len != -1)
   {
-    memcpy(buf, tcp_recv_buf, len);
+    memcpy(buf, tcp_buf, len);
   }
 }
 
