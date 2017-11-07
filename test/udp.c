@@ -72,8 +72,6 @@ void main(void)
   printf("(U)DP or e(X)it\n");
   do
   {
-    ip65_process();
-
     if (kbhit())
     {
       key = cgetc();
@@ -100,6 +98,8 @@ void main(void)
       }
     }
 
+    ip65_process();
+
     if (len)
     {
       printf("Recv Len %u From %s", len, dotted_quad(src));
@@ -108,6 +108,7 @@ void main(void)
         if ((i % 11) == 0)
         {
           ip65_process();
+
           printf("\n$%04X:", i);
         }
         printf(" %02X", buf[i]);

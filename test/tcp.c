@@ -73,8 +73,6 @@ void main(void)
   printf("(T)CP or e(X)it\n");
   do
   {
-    ip65_process();
-
     if (kbhit())
     {
       key = cgetc();
@@ -101,6 +99,8 @@ void main(void)
       }
     }
 
+    ip65_process();
+
     if (len == -1)
     {
       printf("Disconnect\n");
@@ -113,6 +113,7 @@ void main(void)
         if ((i % 11) == 0)
         {
           ip65_process();
+
           printf("\n$%04X:", i);
         }
         printf(" %02X", buf[i]);
