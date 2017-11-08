@@ -9,3 +9,5 @@
 *.d64
 *.dsk
 *.atr
+*.obj
+*.exe
