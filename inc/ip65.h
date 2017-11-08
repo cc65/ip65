@@ -181,9 +181,9 @@ unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
 //         callback: Vector to call when data arrives on this connection
 //                   buf: Pointer to buffer with data received
 //                   len: -1 on close, otherwise length of data received
-// Output: 1 if an error occured, 0 otherwise
+// Output: IP address of the connected client, 0 on error
 //
-unsigned char __fastcall__ tcp_listen(unsigned int port,
+unsigned long __fastcall__ tcp_listen(unsigned int port,
                                       void (*callback)(const unsigned char* buf, int len));
 
 // Make outbound TCP connection

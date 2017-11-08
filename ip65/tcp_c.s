@@ -15,6 +15,7 @@
 .import tcp_send_keep_alive
 
 .import tcp_callback
+.import tcp_remote_ip
 .import tcp_connect_ip
 .import tcp_send_data_len
 
@@ -40,9 +41,16 @@ _tcp_listen:
   stax tcp_callback
   jsr popax
   jsr tcp_listen
+  bcs error
+  ldax tcp_remote_ip+2
+  stax sreg
+  ldax tcp_remote_ip
+  rts
+
+error:
   ldx #$00
   txa
-  rol
+  stax sreg
   rts
 
 _tcp_connect:
