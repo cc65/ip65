@@ -23,6 +23,7 @@ endif
 ATRDRIVERLIB = ../drivers/atrdragon.lib
 
 UDP =\
+	date
 
 TCP =\
 	telnet65
@@ -70,6 +71,8 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 %.o: %.s
 	ca65 $<
 
+%.o: %.c
+
 %.prg: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
@@ -79,18 +82,33 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 %.com: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
+%.prg: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(IP65LIB) ../drivers/ip65_c64.lib
+	rm $*.o
+
+%.bin: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(IP65LIB) ../drivers/ip65_apple2.lib
+	rm $*.o
+
+%.com: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
+	rm $*.o
+
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
+	$(C1541) -attach $@ -write date.prg     date,p
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
 
 ip65.dsk: bin
 	cp prodos.dsk $@
+	java -jar $(AC) -cc65 $@ date     bin < date.bin
 	java -jar $(AC) -cc65 $@ telnet65 bin < telnet65.bin
 
 ip65.atr: com
 	mkdir atr
 	cp dos.sys      atr/dos.sys
 	cp dup.sys      atr/dup.sys
+	cp date.com     atr/date.com
 	cp telnet65.com atr/telnet65.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
