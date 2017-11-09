@@ -35,6 +35,7 @@ IP65OBJS=\
 	output_buffer.o \
 	parser.o \
 	sntp.o \
+	sntp_c.o \
 	string_utils.o \
 	udp.o \
 	udp_c.o \
