@@ -21,7 +21,6 @@ else
   A2DRIVERLIB  = ../drivers/a2combo.lib
 endif
 ATRDRIVERLIB = ../drivers/atrdragon.lib
-VICDRIVERLIB = ../drivers/vic20rrnet.lib
 
 UDP =\
 
@@ -40,10 +39,7 @@ $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
-$(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
-
-$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com $(pgm).vicprg))
+$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
 
 INCFILES =\
   ../inc/common.i \
@@ -55,8 +51,6 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 bin: $(addsuffix .bin,$(UDP) $(TCP))
 
 com: $(addsuffix .com,$(UDP) $(TCP))
-
-vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
 d64: ip65.d64
 
@@ -85,9 +79,6 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 %.com: %.o ip65 drivers $(INCFILES)
 	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
-%.vicprg: %.o ip65 drivers $(INCFILES)
-	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
-
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
@@ -108,5 +99,5 @@ clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
 	-rm -f ../supplement/*.o
-	-rm -f *.o *.prg *.bin *.com *.vicprg *.map
+	-rm -f *.o *.prg *.bin *.com *.map
 	-rm -f ip65.d64 ip65.dsk ip65.atr
