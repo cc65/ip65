@@ -3,19 +3,19 @@
 
 // Error codes
 //
-#define IP65_ERROR_PORT_IN_USE                   $80
-#define IP65_ERROR_TIMEOUT_ON_RECEIVE            $81
-#define IP65_ERROR_TRANSMIT_FAILED               $82
-#define IP65_ERROR_TRANSMISSION_REJECTED_BY_PEER $83
-#define IP65_ERROR_INPUT_TOO_LARGE               $84
-#define IP65_ERROR_DEVICE_FAILURE                $85
-#define IP65_ERROR_ABORTED_BY_USER               $86
-#define IP65_ERROR_LISTENER_NOT_AVAILABLE        $87
-#define IP65_ERROR_CONNECTION_RESET_BY_PEER      $89
-#define IP65_ERROR_CONNECTION_CLOSED             $8A
-#define IP65_ERROR_FILE_ACCESS_FAILURE           $90
-#define IP65_ERROR_MALFORMED_URL                 $A0
-#define IP65_ERROR_DNS_LOOKUP_FAILED             $A1
+#define IP65_ERROR_PORT_IN_USE                   0x80
+#define IP65_ERROR_TIMEOUT_ON_RECEIVE            0x81
+#define IP65_ERROR_TRANSMIT_FAILED               0x82
+#define IP65_ERROR_TRANSMISSION_REJECTED_BY_PEER 0x83
+#define IP65_ERROR_INPUT_TOO_LARGE               0x84
+#define IP65_ERROR_DEVICE_FAILURE                0x85
+#define IP65_ERROR_ABORTED_BY_USER               0x86
+#define IP65_ERROR_LISTENER_NOT_AVAILABLE        0x87
+#define IP65_ERROR_CONNECTION_RESET_BY_PEER      0x89
+#define IP65_ERROR_CONNECTION_CLOSED             0x8A
+#define IP65_ERROR_FILE_ACCESS_FAILURE           0x90
+#define IP65_ERROR_MALFORMED_URL                 0xA0
+#define IP65_ERROR_DNS_LOOKUP_FAILED             0xA1
 
 // Last error code
 //
@@ -219,6 +219,13 @@ unsigned char __fastcall__ tcp_send(const unsigned char* buf, unsigned int len);
 // Output: 1 if an error occured, 0 otherwise
 //
 unsigned char tcp_send_keep_alive(void);
+
+// Query an SNTP server for current UTC time
+//
+// Inputs: SNTP server IP address
+// Output: The number of seconds since 00:00 on Jan 1, 1900 (UTC)
+//
+unsigned long sntp_get_time(unsigned long server);
 
 // Get number of milliseconds since initialization
 //
