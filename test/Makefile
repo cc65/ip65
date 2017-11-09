@@ -55,7 +55,7 @@ $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com $(pgm).vicprg))
+$(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
 
 httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
 
