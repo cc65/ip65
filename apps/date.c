@@ -30,7 +30,7 @@ void error_exit(void)
 
 void confirm_exit(void)
 {
-  printf("\nPress any key");
+  printf("\nPress any key ");
   cgetc();
 }
 
@@ -43,7 +43,7 @@ void main(void)
     atexit(confirm_exit);
   }
 
-  printf("Initializing ");
+  printf("\nInitializing ");
   if (ip65_init())
   {
     error_exit();
