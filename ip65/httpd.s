@@ -13,6 +13,7 @@ HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be
 
 .export httpd_start
 .export httpd_port_number
+.export httpd_send_response
 
 .import http_parse_request
 .import http_get_value
@@ -157,7 +158,7 @@ httpd_start:
   ; AX should now point at data to be sent
   ; Y should contain the content type/status code
   bcs :+                        ; carry is set if the callback routine already sent the response
-  jsr send_response
+  jsr httpd_send_response
 : jmp @listen                   ; go listen for the next request
 
 http_callback:
@@ -224,7 +225,13 @@ reset_output_buffer:
   sta skip_mode
   rts
 
-send_response:
+; send HTTP response
+; inputs:
+; AX = pointer to data to be sent
+; Y = content type/status code
+; outputs:
+; none
+httpd_send_response:
   stax get_next_byte+1
   jsr reset_output_buffer
   jsr send_header
