@@ -30,7 +30,7 @@ callback:
   jsr pushax
   ldax tcp_inbound_data_length
 jmpvector:
-  jmp $FFFF
+  jmp $ffff
 
 
 .code
