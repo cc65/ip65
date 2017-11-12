@@ -432,7 +432,7 @@ application_octet_stream:
 
 end_of_header:
   .byte "Connection: Close",CR,LF
-  .byte "Server: Kipper_httpd/0.c64",CR,LF
+  .byte "Server: IP65_httpd/0.6502",CR,LF
   .byte CR,LF,0
 
 
