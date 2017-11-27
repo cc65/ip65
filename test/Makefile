@@ -40,6 +40,10 @@ TCP =\
 	ping \
 	tcp
 
+ATARIXL_VERSIONS =\
+	udp \
+	tcp
+
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
 
@@ -49,8 +53,8 @@ $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
-$(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
+$(addsuffix .com,$(UDP)) $(foreach file,$(filter $(UDP),$(ATARIXL_VERSIONS)),$(file)xl.com): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .com,$(TCP)) $(foreach file,$(filter $(TCP),$(ATARIXL_VERSIONS)),$(file)xl.com): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
@@ -68,7 +72,7 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 
 bin: $(addsuffix .bin,$(UDP) $(TCP)) httpd-slotscan.bin
 
-com: $(addsuffix .com,$(UDP) $(TCP))
+com: $(addsuffix .com,$(UDP) $(TCP)) $(patsubst %,%xl.com,$(ATARIXL_VERSIONS))
 
 vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
@@ -119,6 +123,15 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
+define atarixl-rule
+$(1)xl.com: $(1).c ip65 drivers $$(INCFILES)
+	cl65 -o $$@ -O -t atarixl -m $(1)xl.atr.map -vm $$< $$(IP65LIB) ../drivers/ip65_atarixl.lib
+	rm $(1).o
+endef
+
+$(foreach file,$(ATARIXL_VERSIONS),\
+	$(eval $(call atarixl-rule,$(file))))
+
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -151,20 +164,7 @@ ip65test.dsk: bin
 
 ip65test.atr: com
 	mkdir atr
-	cp dos.sys        atr/dos.sys
-	cp dup.sys        atr/dup.sys
-	cp dns.com        atr/dns.com
-	cp dottedquad.com atr/dotquad.com
-	cp geturl.com     atr/geturl.com
-	cp httpd.com      atr/httpd.com
-	cp math.com       atr/math.com
-	cp parser.com     atr/parser.com
-	cp ping.com       atr/ping.com
-	cp sntp.com       atr/sntp.com
-	cp tcp.com        atr/tcp.com
-	cp tftp.com       atr/tftp.com
-	cp udp.com        atr/udp.com
-	cp vt100.com      atr/vt100.com
+	cp dos.sys dup.sys $(foreach file,$(addsuffix .com,$(UDP) $(TCP)) $(patsubst %,%xl.com,$(ATARIXL_VERSIONS)),$(file)) atr
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
