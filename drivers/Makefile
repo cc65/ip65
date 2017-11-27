@@ -13,9 +13,10 @@
 
 # For C programs
 # --------------
-# ip65_c64.lib    : C64 with RR-Net or ETH64 or WIZ811MJ (default base addr: $de0x)
-# ip65_apple2.lib : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
-# ip65_atari.lib  : ATARI 8-bit with Dragon Cart (default base addr: $d500)
+# ip65_c64.lib     : C64 with RR-Net or ETH64 or WIZ811MJ (default base addr: $de0x)
+# ip65_apple2.lib  : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
+# ip65_atari.lib   : ATARI 8-bit with Dragon Cart (default base addr: $d500)
+# ip65_atarixl.lib : ATARI XL with Dragon Cart (default base addr: $d500)
 
 DRIVERS=\
 	c64rrnet.lib \
@@ -30,6 +31,7 @@ DRIVERS=\
 	ip65_apple2.lib \
 	atrdragon.lib \
 	ip65_atari.lib \
+	ip65_atarixl.lib \
 	vic20rrnet.lib
 
 all: $(DRIVERS)
@@ -39,6 +41,9 @@ $(DRIVERS):
 
 %.o: %.s
 	ca65 -D DYN_DRV=0 $<
+
+%.xl.o: %.s
+	ca65 -o $*.xl.o -t atarixl $<
 
 C64OBJS=\
 	c64print.o \
@@ -79,6 +84,10 @@ ATROBJS=\
 ATR_OBJS=\
 	atr_timer.o \
 	atr_input.o
+
+ATRXL_OBJS=\
+	atr_timer.xl.o \
+	atr_input.xl.o
 
 VIC20OBJS=\
 	vic20print.o \
@@ -133,6 +142,8 @@ ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o $(COMBOOBJS) $(A
 atrdragon.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATROBJS)
 
 ip65_atari.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATR_OBJS)
+
+ip65_atarixl.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATRXL_OBJS)
 
 vic20rrnet.lib: vic20init.o vic20-rr-net.o $(CS8900AOBJS) $(VIC20OBJS)
 

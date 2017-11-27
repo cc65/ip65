@@ -40,6 +40,8 @@ TCP =\
 	ping \
 	tcp
 
+C_PGM := $(foreach pgm,$(UDP) $(TCP),$(basename $(wildcard $(pgm).c)))
+
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
 
@@ -52,10 +54,15 @@ $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
+$(addsuffix .xl.com,$(UDP)): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .xl.com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
+
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
+
+$(foreach pgm,$(C_PGM),$(eval $(pgm): $(pgm).xl.com))
 
 httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
 
@@ -69,6 +76,8 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 bin: $(addsuffix .bin,$(UDP) $(TCP)) httpd-slotscan.bin
 
 com: $(addsuffix .com,$(UDP) $(TCP))
+
+xl.com: $(addsuffix .xl.com,$(C_PGM))
 
 vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
@@ -119,6 +128,10 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
+%.xl.com: %.c ip65 drivers $(INCFILES)
+	cl65 -o $*.xl.com -O -t atarixl -m $*.atrxl.map -vm $< $(IP65LIB) ../drivers/ip65_atarixl.lib
+	rm $*.o
+
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -149,7 +162,7 @@ ip65test.dsk: bin
 	java -jar $(AC) -cc65 $@ tftp           bin < tftp.bin
 	java -jar $(AC) -cc65 $@ udp            bin < udp.bin
 
-ip65test.atr: com
+ip65test.atr: com xl.com
 	mkdir atr
 	cp dos.sys        atr/dos.sys
 	cp dup.sys        atr/dup.sys
@@ -162,8 +175,10 @@ ip65test.atr: com
 	cp ping.com       atr/ping.com
 	cp sntp.com       atr/sntp.com
 	cp tcp.com        atr/tcp.com
+	cp tcp.xl.com     atr/tcp.xl.com
 	cp tftp.com       atr/tftp.com
 	cp udp.com        atr/udp.com
+	cp udp.xl.com     atr/udp.xl.com
 	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
