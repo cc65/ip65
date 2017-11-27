@@ -164,22 +164,7 @@ ip65test.dsk: bin
 
 ip65test.atr: com
 	mkdir atr
-	cp dos.sys        atr/dos.sys
-	cp dup.sys        atr/dup.sys
-	cp dns.com        atr/dns.com
-	cp dottedquad.com atr/dotquad.com
-	cp geturl.com     atr/geturl.com
-	cp httpd.com      atr/httpd.com
-	cp math.com       atr/math.com
-	cp parser.com     atr/parser.com
-	cp ping.com       atr/ping.com
-	cp sntp.com       atr/sntp.com
-	cp tcp.com        atr/tcp.com
-	cp tcpxl.com      atr/tcpxl.com
-	cp tftp.com       atr/tftp.com
-	cp udp.com        atr/udp.com
-	cp udpxl.com      atr/udpxl.com
-	cp vt100.com      atr/vt100.com
+	cp dos.sys dup.sys $(foreach file,$(addsuffix .com,$(UDP) $(TCP)) $(patsubst %,%xl.com,$(ATARIXL_VERSIONS)),$(file)) atr
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
