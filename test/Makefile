@@ -40,6 +40,10 @@ TCP =\
 	ping \
 	tcp
 
+ATARIXL_VERSIONS =\
+	udp \
+	tcp
+
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
 
@@ -49,8 +53,8 @@ $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
-$(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
+$(addsuffix .com,$(UDP)) udpxl.com: IP65LIB = ../ip65/ip65.lib
+$(addsuffix .com,$(TCP)) tcpxl.com: IP65LIB = ../ip65/ip65_tcp.lib
 
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
@@ -68,7 +72,7 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 
 bin: $(addsuffix .bin,$(UDP) $(TCP)) httpd-slotscan.bin
 
-com: $(addsuffix .com,$(UDP) $(TCP))
+com: $(addsuffix .com,$(UDP) $(TCP)) $(patsubst %,%xl.com,$(ATARIXL_VERSIONS))
 
 vicprg: $(addsuffix .vicprg,$(UDP) $(TCP))
 
@@ -119,6 +123,15 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
+define atarixl-rule
+$(1)xl.com: $(1).c ip65 drivers $$(INCFILES)
+	cl65 -o $$@ -O -t atarixl -m $(1)xl.atr.map -vm $$< $$(IP65LIB) ../drivers/ip65_atarixl.lib
+	rm $(1).o
+endef
+
+$(foreach file,$(ATARIXL_VERSIONS),\
+	$(eval $(call atarixl-rule,$(file))))
+
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write dns.prg        dns,p
@@ -162,8 +175,10 @@ ip65test.atr: com
 	cp ping.com       atr/ping.com
 	cp sntp.com       atr/sntp.com
 	cp tcp.com        atr/tcp.com
+	cp tcpxl.com      atr/tcpxl.com
 	cp tftp.com       atr/tftp.com
 	cp udp.com        atr/udp.com
+	cp udpxl.com      atr/udpxl.com
 	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
