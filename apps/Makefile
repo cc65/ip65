@@ -37,7 +37,7 @@ $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .com,$(UDP)) datex.com: IP65LIB = ../ip65/ip65.lib
 $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
@@ -51,7 +51,7 @@ prg: $(addsuffix .prg,$(UDP) $(TCP))
 
 bin: $(addsuffix .bin,$(UDP) $(TCP))
 
-com: $(addsuffix .com,$(UDP) $(TCP))
+com: $(addsuffix .com,$(UDP) $(TCP)) datex.com
 
 d64: ip65.d64
 
@@ -94,6 +94,10 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
+datex.com: date.c ip65 drivers $(INCFILES)
+	cl65 -o $@ -O -t atarixl -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atarixl.lib
+	rm date.o
+
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
 	$(C1541) -attach $@ -write date.prg     date,p
@@ -109,6 +113,7 @@ ip65.atr: com
 	cp dos.sys      atr/dos.sys
 	cp dup.sys      atr/dup.sys
 	cp date.com     atr/date.com
+	cp datex.com    atr/datex.com
 	cp telnet65.com atr/telnet65.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
