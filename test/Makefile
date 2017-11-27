@@ -53,8 +53,8 @@ $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
-$(addsuffix .com,$(UDP)) udpxl.com: IP65LIB = ../ip65/ip65.lib
-$(addsuffix .com,$(TCP)) tcpxl.com: IP65LIB = ../ip65/ip65_tcp.lib
+$(addsuffix .com,$(UDP)) $(foreach file,$(filter $(UDP),$(ATARIXL_VERSIONS)),$(file)xl.com): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .com,$(TCP)) $(foreach file,$(filter $(TCP),$(ATARIXL_VERSIONS)),$(file)xl.com): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(addsuffix .vicprg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .vicprg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
