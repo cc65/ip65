@@ -175,10 +175,10 @@ ip65test.atr: com xl.com
 	cp ping.com       atr/ping.com
 	cp sntp.com       atr/sntp.com
 	cp tcp.com        atr/tcp.com
-	cp tcp.xl.com     atr/tcp.xl.com
+	cp tcp.xl.com     atr/tcpxl.com
 	cp tftp.com       atr/tftp.com
 	cp udp.com        atr/udp.com
-	cp udp.xl.com     atr/udp.xl.com
+	cp udp.xl.com     atr/udpxl.com
 	cp vt100.com      atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
