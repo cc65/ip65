@@ -16,13 +16,11 @@ HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be
 .export httpd_send_response
 
 .import http_parse_request
-.import http_get_value
 .import tcp_listen
 .import tcp_callback
 .import ip65_process
 .import check_for_abort_key
 .import ip65_error
-.import parse_hex_digits
 .import print
 .import copymem
 .importzp copy_src
@@ -47,8 +45,6 @@ sent_header:                    .res 1
 connection_timeout_seconds:     .res 1
 tcp_buffer_ptr:                 .res 2
 buffer_size:                    .res 1
-skip_mode:                      .res 1
-temp_x:                         .res 1
 
 
 .data
@@ -56,9 +52,6 @@ temp_x:                         .res 1
 httpd_port_number:      .word 80
 
 jump_to_callback:
-  jmp $ffff
-
-jump_to_embedded_routine:
   jmp $ffff
 
 get_next_byte:
@@ -70,14 +63,10 @@ get_next_byte:
   rts
 
 emit_a:
-  stx temp_x
-  ldx skip_mode
-  bne skip_emit_a
-emit_a_ptr:
   sta $ffff
-  inc emit_a_ptr+1
+  inc emit_a+1
   bne :+
-  inc emit_a_ptr+2
+  inc emit_a+2
 : inc output_buffer_length
   bne :+
   inc output_buffer_length+1
@@ -85,10 +74,7 @@ emit_a_ptr:
   cmp #2
   bne :+
   jsr send_buffer
-:
-skip_emit_a:
-  ldx temp_x
-  rts
+: rts
 
 
 .code
@@ -217,12 +203,11 @@ http_callback:
 
 reset_output_buffer:
   ldax #io_buf
-  sta emit_a_ptr+1
-  stx emit_a_ptr+2
+  sta emit_a+1
+  stx emit_a+2
   lda #0
   sta output_buffer_length
   sta output_buffer_length+1
-  sta skip_mode
   rts
 
 ; send HTTP response
@@ -243,76 +228,8 @@ httpd_send_response:
 @send_buffer:
   jmp send_buffer
 @not_last_byte:
-  cmp #'%'
-  beq @escape
-@back_from_escape:
   jsr emit_a
   jmp @response_loop
-
-@escape:
-  jsr get_next_byte
-  cmp #0
-  beq @send_buffer
-  cmp #'%'
-  beq @back_from_escape
-  cmp #'$'
-  bne :+
-  jsr get_next_byte
-  jsr http_get_value
-  bcs @response_loop
-  jsr emit_string
-  jmp @response_loop
-: cmp #'.'
-  bne :+
-  lda #0
-  sta skip_mode
-  jmp @response_loop
-: cmp #'?'
-  bne :+
-  lda #0
-  sta skip_mode
-  jsr get_next_byte
-  jsr http_get_value
-  bcc @response_loop
-  inc skip_mode
-  jmp @response_loop
-: cmp #'!'
-  bne :+
-  lda #0
-  sta skip_mode
-  jsr get_next_byte
-  jsr http_get_value
-  bcs @response_loop
-  inc skip_mode
-  jmp @response_loop
-: cmp #';'
-  bne :+
-  jsr get_next_byte
-  sta jump_to_embedded_routine+1
-  jsr get_next_byte
-  sta jump_to_embedded_routine+2
-  jmp @call_embedded_routine
-: cmp #':'
-  bne :+
-  jsr @get_next_hex_value
-  sta jump_to_embedded_routine+2
-  jsr @get_next_hex_value
-  sta jump_to_embedded_routine+1
-@call_embedded_routine:
-  lda skip_mode
-  bne @dont_call_embedded_routine
-  ldax #emit_a
-  jsr jump_to_embedded_routine
-@dont_call_embedded_routine:
-  jmp @response_loop
-: ; if we got here, it's an invalid escape code
-  jmp @response_loop
-
-@get_next_hex_value:
-  jsr get_next_byte
-  tax
-  jsr get_next_byte
-  jmp parse_hex_digits
 
 send_buffer:
   ldax output_buffer_length

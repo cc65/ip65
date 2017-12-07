@@ -35,7 +35,7 @@ start:
 : jmp exit_to_basic
 
 print_vars:
-  lda #'h'
+  lda #'n'
   jsr http_get_value
   bcs :+
   jsr print
@@ -63,9 +63,9 @@ initializing:
 listening:
   .byte "LISTENING",13,0
 said:
-  .byte ":",0
+  .byte " said ",0
 html:
-  .byte "<h1>hello world</h1>%?mMessage recorded as '%$h:%$m'%.<form>Your Handle:<input name=h type=text length=20 value='%$h'><br>Your Message: <input type=text lengh=60 name='m'><br><input type=submit></form><br>",0
+  .byte "<h1>Hello World</h1><form>Your Name: <input name=n type=text length=20><br>Your Message: <input name=m type=text lengh=60><br><input type=submit></form>",0
 
 
 
