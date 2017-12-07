@@ -23,7 +23,9 @@ IP65OBJS=\
 	dottedquad_c.o \
 	eth.o \
 	http.o \
+	http_c.o \
 	httpd.o \
+	httpd_c.o \
 	icmp_c.o \
 	input_c.o \
 	ip65.o \

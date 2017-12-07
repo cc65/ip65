@@ -84,13 +84,13 @@ unsigned int ip65_random_word(void);
 // will overwrite.
 //
 // Inputs: quad: IP address
-// Output: Null terminated string containing dotted quad (e.g. "192.168.1.0")
+// Output: Zero terminated string containing dotted quad (e.g. "192.168.1.0")
 //
 char* __fastcall__ dotted_quad(unsigned long quad);
 
 // Convert a string representing a dotted quad (IP address, netmask) into 4 octets
 //
-// Inputs: quad: Null terminated string containing dotted quad (e.g. "192.168.1.0"),
+// Inputs: quad: Zero terminated string containing dotted quad (e.g. "192.168.1.0"),
 //               to simplify URL parsing, a ':' or '/' can also terminate the string.
 // Output: IP address, 0 on error
 //
@@ -112,9 +112,9 @@ unsigned char dhcp_init(void);
 
 // Resolve a string containing a hostname (or a dotted quad) to an IP address
 //
-// Inputs: hostname: pointer to null terminated string that contains either
-//                   a DNS hostname (e.g. "host.example.com") or an address
-//                   in "dotted quad" format (e.g. "192.168.1.0").
+// Inputs: hostname: Zero terminated string containing either a DNS hostname
+//                   (e.g. "host.example.com") or an address in "dotted quad"
+//                   format (e.g. "192.168.1.0")
 // Output: IP address of the hostname, 0 on error
 //
 unsigned long __fastcall__ dns_resolve(const char* hostname);
@@ -226,6 +226,56 @@ unsigned char tcp_send_keep_alive(void);
 // Output: The number of seconds since 00:00 on Jan 1, 1900 (UTC)
 //
 unsigned long sntp_get_time(unsigned long server);
+
+// Start an HTTP server
+//
+// This routine will stay in an endless loop that is broken only if user press the abort key.
+//
+// Inputs: port:     TCP port to listen on
+//         callback: Vector to call for each inbound HTTP request
+//                   client: IP address of the client that sent the request
+//                   method: Zero terminaed string containg the HTTP method
+//                   path:   Zero terminaed string containg the HTTP path
+// Output: None
+//
+void __fastcall__ httpd_start(unsigned int port, void (*callback)(unsigned long client,
+                                                                  const char* method,
+                                                                  const char* path));
+
+// HTTP response types
+//
+#define HTTPD_RESPONSE_NOHEADER 0   // No HTTP response header
+#define HTTPD_RESPONSE_200_TEXT 1   // HTTP Code: 200 OK, Content Type: 'text/text'
+#define HTTPD_RESPONSE_200_HTML 2   // HTTP Code: 200 OK, Content Type: 'text/html'
+#define HTTPD_RESPONSE_200_DATA 3   // HTTP Code: 200 OK, Content Type: 'application/octet-stream'
+#define HTTPD_RESPONSE_404      4   // HTTP Code: 404 Not Found
+#define HTTPD_RESPONSE_500      5   // HTTP Code: 500 System Error
+
+// Send HTTP response.
+//
+// Calling httpd_send_response is only valid in the context of a httpd_start callback.
+// For the response types HTTPD_RESPONSE_404 and HTTPD_RESPONSE_500 'buf' is ignored.
+// With the response type HTTPD_RESPONSE_NOHEADER it's possible to add more content to
+// an already sent HTTP response.
+//
+// Inputs: response_type: Value describing HTTP code and content type in response header
+//         buf:           Pointer to buffer with HTTP response content
+//         len:           Length of buffer with HTTP response content
+// Output: None
+//
+void __fastcall__ httpd_send_response(unsigned char response_type,
+                                      const unsigned char* buf, unsigned int len);
+
+// Retrieve the value of a variable defined in the previously received HTTP request.
+//
+// Calling http_get_value is only valid in the context of a httpd_start callback.
+// Only the first letter in a variable name is significant. E.g. if a querystring contains
+// the variables 'a','alpha' and 'alabama', then only the first one will be retrievable.
+//
+// Inputs: name: Variable to retrieve
+// Output: Variable value (zero terminated string) if variable exists, null otherwise.
+//
+char* __fastcall__ http_get_value(char name);
 
 // Get number of milliseconds since initialization
 //
