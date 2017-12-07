@@ -14,6 +14,7 @@ HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be
 .export httpd_start
 .export httpd_port_number
 .export httpd_send_response
+.export httpd_response_buffer_length
 
 .import http_parse_request
 .import tcp_listen
@@ -40,6 +41,7 @@ temp_ptr = ptr1
 io_buf:                         .res $800
 found_eol:                      .res 1
 connection_closed:              .res 1
+httpd_response_buffer_length:   .res 2
 output_buffer_length:           .res 2
 sent_header:                    .res 1
 connection_timeout_seconds:     .res 1
@@ -213,6 +215,7 @@ reset_output_buffer:
 ; send HTTP response
 ; inputs:
 ; AX = pointer to data to be sent
+; httpd_response_buffer_length = length of data to be sent
 ; Y = content type/status code
 ; outputs:
 ; none
@@ -222,12 +225,17 @@ httpd_send_response:
   jsr send_header
 
 @response_loop:
-  jsr get_next_byte
-  cmp #0
+  dec httpd_response_buffer_length
+  lda httpd_response_buffer_length
+  cmp #$ff
   bne @not_last_byte
-@send_buffer:
+  dec httpd_response_buffer_length+1
+  lda httpd_response_buffer_length+1
+  cmp #$ff
+  bne @not_last_byte
   jmp send_buffer
 @not_last_byte:
+  jsr get_next_byte
   jsr emit_a
   jmp @response_loop
 

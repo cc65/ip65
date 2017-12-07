@@ -2,11 +2,14 @@
 .include "../inc/commonprint.i"
 .include "../inc/net.i"
 
+.define HTML "<h1>Hello World</h1><form>Your Name: <input name=n type=text length=20><br>Your Message: <input name=m type=text lengh=60><br><input type=submit></form>"
+
 .export start
 
 .import exit_to_basic
 
 .import httpd_start
+.import httpd_response_buffer_length
 .import http_get_value
 
 
@@ -50,6 +53,9 @@ print_vars:
 
 httpd_callback:
   jsr print_vars
+  lda #<.strlen(HTML)
+  ldx #>.strlen(HTML)
+  stax httpd_response_buffer_length
   ldax #html
   ldy #2                        ; text/html
   clc
@@ -65,7 +71,7 @@ listening:
 said:
   .byte " said ",0
 html:
-  .byte "<h1>Hello World</h1><form>Your Name: <input name=n type=text length=20><br>Your Message: <input name=m type=text lengh=60><br><input type=submit></form>",0
+  .byte HTML
 
 
 
