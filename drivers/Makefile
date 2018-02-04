@@ -55,7 +55,8 @@ C64OBJS=\
 	cbmcharconv.o
 
 C64_OBJS=\
-	c64timer.o \
+	clk_timer.o \
+	c64_cps.o \
 	c64_input.o
 
 A2OBJS=\
@@ -82,11 +83,11 @@ ATROBJS=\
 	atrcharconv.o
 
 ATR_OBJS=\
-	atr_timer.o \
+	clk_timer.o \
 	atr_input.o
 
 ATRXL_OBJS=\
-	atr_timer.xl.o \
+	clk_timer.xl.o \
 	atr_input.xl.o
 
 VIC20OBJS=\
