@@ -29,6 +29,7 @@ UDP =\
 	parsequerystring \
 	sntp \
 	tftp \
+	timer \
 	udp \
 	vt100
 
@@ -117,19 +118,19 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
 %.prg: %.c ip65 drivers $(INCFILES)
-	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(IP65LIB) ../drivers/ip65_c64.lib
+	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_c64.lib
 	rm $*.o
 
 %.bin: %.c ip65 drivers $(INCFILES)
-	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(IP65LIB) ../drivers/ip65_apple2.lib
+	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_apple2.lib
 	rm $*.o
 
 %.com: %.c ip65 drivers $(INCFILES)
-	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
+	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
 %.xl.com: %.c ip65 drivers $(INCFILES)
-	cl65 -o $*.xl.com -O -t atarixl -m $*.atrxl.map -vm $< $(IP65LIB) ../drivers/ip65_atarixl.lib
+	cl65 -o $*.xl.com -O -t atarixl -m $*.atrxl.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atarixl.lib
 	rm $*.o
 
 ip65test.d64: prg
@@ -144,13 +145,13 @@ ip65test.d64: prg
 	$(C1541) -attach $@ -write sntp.prg       sntp,p
 	$(C1541) -attach $@ -write tcp.prg        tcp,p
 	$(C1541) -attach $@ -write tftp.prg       tftp,p
+	$(C1541) -attach $@ -write timer.prg      timer,p
 	$(C1541) -attach $@ -write udp.prg        udp,p
 	$(C1541) -attach $@ -write vt100.prg      vt100,p
 
 ip65test.dsk: bin
 	cp prodos.dsk $@
 	java -jar $(AC) -cc65 $@ dns            bin < dns.bin
-	java -jar $(AC) -cc65 $@ dottedquad     bin < dottedquad.bin
 	java -jar $(AC) -cc65 $@ geturl         bin < geturl.bin
 	java -jar $(AC) -cc65 $@ httpd          bin < httpd.bin
 	java -jar $(AC) -cc65 $@ httpd.slotscan bin < httpd-slotscan.bin
@@ -161,25 +162,27 @@ ip65test.dsk: bin
 	java -jar $(AC) -cc65 $@ tcp            bin < tcp.bin
 	java -jar $(AC) -cc65 $@ tftp           bin < tftp.bin
 	java -jar $(AC) -cc65 $@ udp            bin < udp.bin
+	java -jar $(AC) -cc65 $@ vt100          bin < vt100.bin
 
 ip65test.atr: com xl.com
 	mkdir atr
-	cp dos.sys        atr/dos.sys
-	cp dup.sys        atr/dup.sys
-	cp dns.com        atr/dns.com
-	cp dottedquad.com atr/dotquad.com
-	cp geturl.com     atr/geturl.com
-	cp httpd.com      atr/httpd.com
-	cp math.com       atr/math.com
-	cp parser.com     atr/parser.com
-	cp ping.com       atr/ping.com
-	cp sntp.com       atr/sntp.com
-	cp tcp.com        atr/tcp.com
-	cp tcp.xl.com     atr/tcpxl.com
-	cp tftp.com       atr/tftp.com
-	cp udp.com        atr/udp.com
-	cp udp.xl.com     atr/udpxl.com
-	cp vt100.com      atr/vt100.com
+	cp dos.sys      atr/dos.sys
+	cp dup.sys      atr/dup.sys
+	cp dns.com      atr/dns.com
+	cp geturl.com   atr/geturl.com
+	cp httpd.com    atr/httpd.com
+	cp math.com     atr/math.com
+	cp parser.com   atr/parser.com
+	cp ping.com     atr/ping.com
+	cp sntp.com     atr/sntp.com
+	cp tcp.com      atr/tcp.com
+	cp tcp.xl.com   atr/tcpxl.com
+	cp tftp.com     atr/tftp.com
+	cp timer.com    atr/timer.com
+	cp timer.xl.com atr/timerxl.com
+	cp udp.com      atr/udp.com
+	cp udp.xl.com   atr/udpxl.com
+	cp vt100.com    atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
