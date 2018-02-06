@@ -5,5 +5,3 @@
 
 _timer_init = timer_init
 _timer_seconds = timer_seconds
-
-.end
