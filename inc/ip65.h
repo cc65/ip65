@@ -45,7 +45,7 @@ extern unsigned long cfg_dns;
 //
 extern unsigned long dhcp_server;
 
-// Driver initialisation parameter values
+// Driver initialization parameter values
 //
 #ifdef __APPLE2__
 #define DRV_INIT_DEFAULT 3  // Apple II slot number
@@ -53,14 +53,14 @@ extern unsigned long dhcp_server;
 #define DRV_INIT_DEFAULT 0  // Unused
 #endif
 
-// Initialise the IP stack
+// Initialize the IP stack
 //
-// This calls the individual protocol & driver initialisations, so this is
+// This calls the individual protocol & driver initializations, so this is
 // the only *_init routine that must be called by a user application,
 // except for dhcp_init which must also be called if the application
 // is using DHCP rather than hardcoded IP configuration.
 //
-// Inputs: drv_init: Driver initialisation parameter
+// Inputs: drv_init: Driver initialization parameter
 // Output: 1 if there was an error, 0 otherwise
 //
 unsigned char __fastcall__ ip65_init(unsigned char drv_init);
