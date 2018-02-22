@@ -300,6 +300,7 @@ void error_exit(void)
 void main(void)
 {
   char cwd[FILENAME_MAX];
+  unsigned char drv_init = DRV_INIT_DEFAULT;
 
   getcwd(cwd, sizeof(cwd));
 
@@ -308,9 +309,26 @@ void main(void)
 #endif
 
   printf("\nHttpFileServer65 v1.0"
-         "\n====================="
-         "\n\nInitializing ");
-  if (ip65_init())
+         "\n=====================");
+
+#ifdef __APPLE2__
+  {
+    int file;
+
+    printf("\n\nSetting slot ");
+    file = open("ethernet.slot", O_RDONLY);
+    if (file != -1)
+    {
+      read(file, &drv_init, 1);
+      close(file);
+      drv_init &= ~'0';
+    }
+    printf("- %d", drv_init);
+  }
+#endif
+
+  printf("\n\nInitializing ");
+  if (ip65_init(drv_init))
   {
     error_exit();
   }

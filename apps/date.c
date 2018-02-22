@@ -1,8 +1,10 @@
 #include <cc65.h>
 #include <time.h>
+#include <fcntl.h>
 #include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "../inc/ip65.h"
 
@@ -37,14 +39,31 @@ void confirm_exit(void)
 void main(void)
 {
   unsigned long server, time;
+  unsigned char drv_init = DRV_INIT_DEFAULT;
 
   if (doesclrscrafterexit())
   {
     atexit(confirm_exit);
   }
 
+#ifdef __APPLE2__
+  {
+    int file;
+
+    printf("\nSetting slot ");
+    file = open("ethernet.slot", O_RDONLY);
+    if (file != -1)
+    {
+      read(file, &drv_init, 1);
+      close(file);
+      drv_init &= ~'0';
+    }
+    printf("- %d\n", drv_init);
+  }
+#endif
+
   printf("\nInitializing ");
-  if (ip65_init())
+  if (ip65_init(drv_init))
   {
     error_exit();
   }

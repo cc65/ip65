@@ -9,8 +9,10 @@
 .import ip65_process
 .import ip65_random_word
 .import ip65_error
+.import drv_init
 
 _ip65_init:
+  jsr drv_init
   jsr ip65_init
   ldx #$00
   txa
