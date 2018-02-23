@@ -23,7 +23,7 @@ endif
 ATRDRIVERLIB = ../drivers/atrdragon.lib
 
 UDP =\
-	date
+	date65
 
 TCP =\
 	hfs65 \
@@ -97,13 +97,13 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
-	$(C1541) -attach $@ -write date.prg     date,p
+	$(C1541) -attach $@ -write date65.prg   date65,p
 	$(C1541) -attach $@ -write hfs65.prg    hfs65,p
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
 
 ip65.dsk: bin
 	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ date     bin < date.bin
+	java -jar $(AC) -cc65 $@ date65   bin < date65.bin
 	java -jar $(AC) -cc65 $@ hfs65    bin < hfs65.bin
 	java -jar $(AC) -cc65 $@ telnet65 bin < telnet65.bin
 
@@ -111,7 +111,7 @@ ip65.atr: com
 	mkdir atr
 	cp dos.sys      atr/dos.sys
 	cp dup.sys      atr/dup.sys
-	cp date.com     atr/date.com
+	cp date65.com   atr/date65.com
 	cp telnet65.com atr/telnet65.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
