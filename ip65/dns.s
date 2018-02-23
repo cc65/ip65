@@ -3,8 +3,8 @@
 MAX_DNS_MESSAGES_SENT = 8       ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
 
 .include "zeropage.inc"
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export dns_set_hostname
 .export dns_resolve

@@ -1,5 +1,5 @@
 .include "atari.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export print_a
 .export print_a_inverse

@@ -1,6 +1,6 @@
-.include "../inc/common.i"
-.include "../inc/commonprint.i"
-.include "../inc/net.i"
+.include "../inc/common.inc"
+.include "../inc/commonprint.inc"
+.include "../inc/net.inc"
 
 .export start
 

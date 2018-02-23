@@ -1,4 +1,4 @@
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export _dotted_quad
 .export _parse_dotted_quad

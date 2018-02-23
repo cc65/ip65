@@ -1,5 +1,5 @@
-.include "../inc/common.i"
-.include "../inc/commonprint.i"
+.include "../inc/common.inc"
+.include "../inc/commonprint.inc"
 
 .export start
 .export telnet_close       = $1000

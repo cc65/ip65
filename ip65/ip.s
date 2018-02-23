@@ -1,5 +1,5 @@
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export ip_init
 .export ip_process

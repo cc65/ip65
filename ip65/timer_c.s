@@ -1,4 +1,4 @@
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export _timer_read
 .export _timer_timeout

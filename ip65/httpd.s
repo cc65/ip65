@@ -2,8 +2,8 @@
 ; to use - call httpd_start with AX pointing at routine to call for each inbound page
 
 .include "zeropage.inc"
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be open for?
 

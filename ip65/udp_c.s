@@ -1,4 +1,4 @@
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export _udp_add_listener
 .export _udp_remove_listener

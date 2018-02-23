@@ -1,6 +1,6 @@
 ; Common ethernet driver code (independant of host computer or ethernet chipset)
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export eth_set_broadcast_dest
 .export eth_set_my_mac_src

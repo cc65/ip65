@@ -7,7 +7,7 @@
 ;
 ; this is generic timer routines, machine specific code goes in drivers/<machinename>timer.s
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export timer_timeout
 .import timer_read

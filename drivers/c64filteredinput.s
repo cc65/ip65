@@ -8,7 +8,7 @@
 .import get_key
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 allowed_ptr = ptr1
 

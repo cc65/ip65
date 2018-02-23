@@ -2,8 +2,8 @@
 
 MAX_SNTP_MESSAGES_SENT = 8
 
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export sntp_ip
 .export sntp_utc_timestamp

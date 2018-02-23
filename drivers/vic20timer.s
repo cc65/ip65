@@ -4,7 +4,7 @@
 ; 1000 units per second. it doesn't have to be particularly accurate.
 ; this VIC20 implementation requires the routine timer_vbl_handler be called 60 times per second
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export timer_init
 .export timer_read

@@ -1,7 +1,7 @@
 ; helper routines for arithmetic on 32 bit numbers
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 
 .bss

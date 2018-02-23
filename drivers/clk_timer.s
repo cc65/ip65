@@ -5,7 +5,7 @@
 ; the timer should be a 16-bit counter that's incremented by about
 ; 1000 units per second. it doesn't have to be particularly accurate.
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export timer_init
 .export timer_read

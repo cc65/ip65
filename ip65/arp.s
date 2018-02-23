@@ -1,7 +1,7 @@
 ; ARP address resolution
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export arp_init
 .export arp_lookup

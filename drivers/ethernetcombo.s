@@ -1,7 +1,7 @@
 ; Wrapper for combination of Contiki ethernet drivers
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export eth_init
 .export eth_rx

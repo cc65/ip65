@@ -1,7 +1,7 @@
 ; ip65 main routines
 
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export ip65_init
 .export ip65_process

@@ -1,4 +1,4 @@
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export exit_to_basic
 

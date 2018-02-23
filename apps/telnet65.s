@@ -1,9 +1,9 @@
 ; minimal telnet implementation (dumb terminal emulation only)
 
-.include "../inc/common.i"
-.include "../inc/commonprint.i"
-.include "../inc/net.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/commonprint.inc"
+.include "../inc/net.inc"
+.include "../inc/error.inc"
 
 .export start
 

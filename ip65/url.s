@@ -1,8 +1,8 @@
 ; routines for parsing a URL, and downloading an URL
 
 .include "zeropage.inc"
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 TIMEOUT_SECONDS = 15
 
@@ -403,7 +403,7 @@ http_preamble:
   .byte " HTTP/1.0",$0d,$0a
   .byte "User-Agent: IP65/"
 
-.include "../inc/version.i"
+.include "../inc/version.inc"
 
   .byte $0d,$0a
   .byte "Connection: close",$0d,$0a

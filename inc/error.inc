@@ -1,57 +1,19 @@
-.import ip65_init
-.import ip65_process
-
-.import cfg_mac
-.import cfg_ip
-.import cfg_netmask
-.import cfg_gateway
-.import cfg_dns
-.import cfg_tftp_server
-
-.import dhcp_init
-.import dhcp_server
-
-.ifdef A2_SLOT_SCAN
-.import drv_init
-.endif
-
-.macro init_ip_via_dhcp
-.ifdef A2_SLOT_SCAN
-  lda #1
-: pha
-  jsr drv_init
-  jsr ip65_init
-  pla
-  bcc :+
-  adc #0
-  cmp #8
-  bcc :-
-:
-.else
-  jsr ip65_init
-.endif
-  php
-  print_driver_init
-  plp
-  bcc :+
-  print_failed
-  sec
-  jmp @end_macro
-: print_ok
-  print_dhcp_init
-  jsr dhcp_init
-  bcc :+
-  print_failed
-  sec
-  jmp @end_macro
-: print_ok
-  clc
-@end_macro:
-.endmacro
+KPR_ERROR_PORT_IN_USE                   = $80
+KPR_ERROR_TIMEOUT_ON_RECEIVE            = $81
+KPR_ERROR_TRANSMIT_FAILED               = $82
+KPR_ERROR_TRANSMISSION_REJECTED_BY_PEER = $83
+KPR_ERROR_INPUT_TOO_LARGE               = $84
+KPR_ERROR_DEVICE_FAILURE                = $85
+KPR_ERROR_ABORTED_BY_USER               = $86
+KPR_ERROR_LISTENER_NOT_AVAILABLE        = $87
+KPR_ERROR_CONNECTION_RESET_BY_PEER      = $89
+KPR_ERROR_CONNECTION_CLOSED             = $8A
+KPR_ERROR_MALFORMED_URL                 = $A0
+KPR_ERROR_DNS_LOOKUP_FAILED             = $A1
 
 
 
-; -- LICENSE FOR net.i --
+; -- LICENSE FOR error.inc --
 ; The contents of this file are subject to the Mozilla Public License
 ; Version 1.1 (the "License"); you may not use this file except in
 ; compliance with the License. You may obtain a copy of the License at

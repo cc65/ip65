@@ -1,7 +1,7 @@
 ; ICMP implementation
 
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export icmp_init
 .export icmp_process

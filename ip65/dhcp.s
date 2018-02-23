@@ -9,8 +9,8 @@
 
 MAX_DHCP_MESSAGES_SENT = 12     ; timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export dhcp_init
 .import dhcp_server

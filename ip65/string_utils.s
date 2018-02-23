@@ -7,7 +7,7 @@
 .importzp acc16
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 target_string = ptr2
 

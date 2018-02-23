@@ -4,7 +4,7 @@
 ; 1000 units per second. it doesn't have to be particularly accurate.
 
 .include "atari.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export timer_init
 .export timer_exit

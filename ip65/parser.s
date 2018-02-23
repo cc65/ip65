@@ -6,7 +6,7 @@
 .export parser_skip_next
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 target_string = ptr1
 search_string = ptr2

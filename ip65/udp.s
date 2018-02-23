@@ -1,7 +1,7 @@
 ; UDP (user datagram protocol) functions
 
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .import ip65_error
 

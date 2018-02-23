@@ -1,7 +1,7 @@
 ; IP configuration defaults
 ; most of these will be overwritten if dhcp is used for configuration
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export cfg_mac
 .export cfg_ip

@@ -5,8 +5,8 @@ TFTP_MAX_RESENDS = 10
 TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 seconds
 
 .include "zeropage.inc"
-.include "../inc/common.i"
-.include "../inc/error.i"
+.include "../inc/common.inc"
+.include "../inc/error.inc"
 
 .export tftp_load_address
 .export tftp_ip

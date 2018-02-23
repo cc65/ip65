@@ -6,7 +6,7 @@
 ;
 ; timer_read is meant to return a counter with millisecond resolution
 
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export timer_init
 .export timer_read

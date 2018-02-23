@@ -9,7 +9,7 @@
 .import print_a
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 allowed_ptr = ptr1
 

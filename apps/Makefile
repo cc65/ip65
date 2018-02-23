@@ -44,9 +44,9 @@ $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 $(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
 
 INCFILES =\
-  ../inc/common.i \
-  ../inc/commonprint.i \
-  ../inc/net.i
+  ../inc/common.inc \
+  ../inc/commonprint.inc \
+  ../inc/net.inc
 
 prg: $(addsuffix .prg,$(UDP) $(TCP))
 

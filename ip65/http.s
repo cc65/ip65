@@ -4,7 +4,7 @@
 ; other ip65 routines between the http_parse_request & http_get_value else odd things will happen.
 
 .include "zeropage.inc"
-.include "../inc/common.i"
+.include "../inc/common.inc"
 
 .export http_parse_request
 .export http_get_value

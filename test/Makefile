@@ -68,9 +68,9 @@ $(foreach pgm,$(C_PGM),$(eval $(pgm): $(pgm).xl.com))
 httpd-slotscan.bin: IP65LIB = ../ip65/ip65_tcp.lib
 
 INCFILES =\
-  ../inc/common.i \
-  ../inc/commonprint.i \
-  ../inc/net.i
+  ../inc/common.inc \
+  ../inc/commonprint.inc \
+  ../inc/net.inc
 
 prg: $(addsuffix .prg,$(UDP) $(TCP))
 
