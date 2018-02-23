@@ -43,11 +43,6 @@ $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(foreach pgm,$(UDP) $(TCP),$(eval $(pgm): $(pgm).prg $(pgm).bin $(pgm).com))
 
-INCFILES =\
-  ../inc/common.inc \
-  ../inc/commonprint.inc \
-  ../inc/net.inc
-
 prg: $(addsuffix .prg,$(UDP) $(TCP))
 
 bin: $(addsuffix .bin,$(UDP) $(TCP))
@@ -74,24 +69,24 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 
 %.o: %.c
 
-%.prg: %.o ip65 drivers $(INCFILES)
+%.prg: %.o ip65 drivers
 	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
-%.bin: %.o ip65 drivers $(INCFILES)
+%.bin: %.o ip65 drivers
 	ld65 -o $*.bin -C apple2.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
-%.com: %.o ip65 drivers $(INCFILES)
+%.com: %.o ip65 drivers
 	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
-%.prg: %.c ip65 drivers $(INCFILES)
+%.prg: %.c ip65 drivers
 	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(IP65LIB) ../drivers/ip65_c64.lib
 	rm $*.o
 
-%.bin: %.c ip65 drivers $(INCFILES)
+%.bin: %.c ip65 drivers
 	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $< $(IP65LIB) ../drivers/ip65_apple2.lib
 	rm $*.o
 
-%.com: %.c ip65 drivers $(INCFILES)
+%.com: %.c ip65 drivers
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(IP65LIB) ../drivers/ip65_atari.lib
 	rm $*.o
 
