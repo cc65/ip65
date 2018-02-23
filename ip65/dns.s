@@ -164,7 +164,7 @@ dns_set_hostname:
   rts
 
 @hostname_too_long:
-  lda #KPR_ERROR_INPUT_TOO_LARGE
+  lda #IP65_ERROR_INPUT_TOO_LARGE
   sta ip65_error
   sec
   rts
@@ -212,7 +212,7 @@ dns_resolve:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #KPR_ERROR_ABORTED_BY_USER
+  lda #IP65_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:
@@ -241,11 +241,11 @@ dns_resolve:
   jmp @dns_polling_loop
 
 @too_many_messages_sent:
-  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
+  lda #IP65_ERROR_TIMEOUT_ON_RECEIVE
   bne @error                    ; always
 
 @failed:
-  lda #KPR_ERROR_DNS_LOOKUP_FAILED
+  lda #IP65_ERROR_DNS_LOOKUP_FAILED
 @error:
   sta ip65_error
   sec                           ; signal an error
@@ -282,7 +282,7 @@ send_dns_query:
   sta output_buffer+dns_qname,x
   inx
   bpl  @hostname_still_ok
-  lda #KPR_ERROR_INPUT_TOO_LARGE
+  lda #IP65_ERROR_INPUT_TOO_LARGE
   sta ip65_error
   jmp @error_on_send            ; if we got past 128 bytes, there's a problem
 @hostname_still_ok:

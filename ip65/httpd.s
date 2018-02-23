@@ -119,7 +119,7 @@ httpd_start:
   jsr ip65_process
   jsr check_for_abort_key
   bcc @no_abort
-  lda #KPR_ERROR_ABORTED_BY_USER
+  lda #IP65_ERROR_ABORTED_BY_USER
   sta ip65_error
   rts
 @no_abort:

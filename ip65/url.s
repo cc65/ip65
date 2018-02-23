@@ -103,7 +103,7 @@ url_parse:
   cmp #'H'
   beq @http
 @exit_with_error:
-  lda #KPR_ERROR_MALFORMED_URL
+  lda #IP65_ERROR_MALFORMED_URL
   sta ip65_error
 @exit_with_sec:
   sec
@@ -128,7 +128,7 @@ lda #url_type_gopher
   bcs @exit_with_sec
   jsr dns_resolve
   bcc :+
-  lda #KPR_ERROR_DNS_LOOKUP_FAILED
+  lda #IP65_ERROR_DNS_LOOKUP_FAILED
   sta ip65_error
   jmp @exit_with_sec
 : ; copy IP address

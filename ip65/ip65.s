@@ -73,7 +73,7 @@ ip65_init:
   jsr eth_init                  ; initialize ethernet driver
 
   bcc @ok
-  lda #KPR_ERROR_DEVICE_FAILURE
+  lda #IP65_ERROR_DEVICE_FAILURE
   sta ip65_error
   rts
 @ok:

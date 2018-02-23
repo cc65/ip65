@@ -180,7 +180,7 @@ udp_add_listener:
 
 @full:
 @busy:
-  lda #KPR_ERROR_LISTENER_NOT_AVAILABLE
+  lda #IP65_ERROR_LISTENER_NOT_AVAILABLE
   sta ip65_error
   sec
   rts

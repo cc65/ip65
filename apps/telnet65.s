@@ -252,11 +252,11 @@ print_vt100:
 
 print_error:
   lda ip65_error
-  cmp #KPR_ERROR_ABORTED_BY_USER
+  cmp #IP65_ERROR_ABORTED_BY_USER
   bne :+
   ldax #abort
   jmp print_ascii_as_native
-: cmp #KPR_ERROR_TIMEOUT_ON_RECEIVE
+: cmp #IP65_ERROR_TIMEOUT_ON_RECEIVE
   bne :+
   ldax #timeout
   jmp print_ascii_as_native
@@ -308,7 +308,7 @@ send_char:
   bcs :+
   rts
 : lda ip65_error
-  cmp #KPR_ERROR_CONNECTION_CLOSED
+  cmp #IP65_ERROR_CONNECTION_CLOSED
   bne :+
   lda #1
   sta connection_closed

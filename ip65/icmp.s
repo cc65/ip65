@@ -368,7 +368,7 @@ icmp_ping:
   jsr icmp_send_echo
   bcc @message_sent_ok
   ; still can't send? then give up
-  lda #KPR_ERROR_TRANSMIT_FAILED
+  lda #IP65_ERROR_TRANSMIT_FAILED
   sta ip65_error
   rts
 @message_sent_ok:
@@ -398,7 +398,7 @@ icmp_ping:
 
   jsr timer_timeout
   bcs @loop_till_get_ping_response
-  lda #KPR_ERROR_TIMEOUT_ON_RECEIVE
+  lda #IP65_ERROR_TIMEOUT_ON_RECEIVE
   sta ip65_error
   lda #icmp_msg_type_echo_reply
   jsr icmp_remove_listener
