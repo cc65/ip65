@@ -2,11 +2,7 @@
   SCREEN_WIDTH = 40
 .endif
 
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "zeropage.inc"
-  .include "../inc/kipper_constants.i"
-.endif
+.include "zeropage.inc"
 
 .export print_hex
 .export print_ip_config

@@ -4,11 +4,7 @@ MAX_DNS_MESSAGES_SENT = 8       ; timeout after sending 8 messages will be about
 
 .include "zeropage.inc"
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export dns_set_hostname
 .export dns_resolve

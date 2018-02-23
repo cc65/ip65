@@ -3,11 +3,7 @@
 MAX_SNTP_MESSAGES_SENT = 8
 
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export sntp_ip
 .export sntp_utc_timestamp

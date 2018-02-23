@@ -2,11 +2,7 @@
 
 .include "zeropage.inc"
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 TIMEOUT_SECONDS = 15
 

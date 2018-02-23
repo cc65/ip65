@@ -6,11 +6,7 @@ TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 
 
 .include "zeropage.inc"
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export tftp_load_address
 .export tftp_ip

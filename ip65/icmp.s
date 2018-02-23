@@ -1,11 +1,7 @@
 ; ICMP implementation
 
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export icmp_init
 .export icmp_process

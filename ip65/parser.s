@@ -8,11 +8,6 @@
 .include "zeropage.inc"
 .include "../inc/common.i"
 
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
-
 target_string = ptr1
 search_string = ptr2
 

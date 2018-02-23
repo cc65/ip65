@@ -1,11 +1,7 @@
 ; ip65 main routines
 
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export ip65_init
 .export ip65_process

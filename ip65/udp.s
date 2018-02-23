@@ -1,11 +1,7 @@
 ; UDP (user datagram protocol) functions
 
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .import ip65_error
 

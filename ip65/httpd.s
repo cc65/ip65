@@ -3,11 +3,7 @@
 
 .include "zeropage.inc"
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 HTTPD_TIMEOUT_SECONDS = 5       ; what's the maximum time we let 1 connection be open for?
 

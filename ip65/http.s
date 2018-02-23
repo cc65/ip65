@@ -6,11 +6,6 @@
 .include "zeropage.inc"
 .include "../inc/common.i"
 
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
-
 .export http_parse_request
 .export http_get_value
 

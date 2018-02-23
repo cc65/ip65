@@ -10,11 +10,7 @@
 MAX_DHCP_MESSAGES_SENT = 12     ; timeout after sending 12 messages will be about 15 seconds (1+2+3...)/4
 
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .export dhcp_init
 .import dhcp_server

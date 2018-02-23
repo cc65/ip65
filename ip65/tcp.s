@@ -9,11 +9,7 @@ MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about
 
 .include "zeropage.inc"
 .include "../inc/common.i"
-
-.ifndef KPR_API_VERSION_NUMBER
-  .define EQU =
-  .include "../inc/kipper_constants.i"
-.endif
+.include "../inc/error.i"
 
 .import ip65_error
 
