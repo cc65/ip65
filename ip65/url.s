@@ -336,12 +336,7 @@ resource_download:
 @error:
   rts
 
-  lda #KPR_ERROR_FILE_ACCESS_FAILURE
-  sta ip65_error
-  sec
-  rts
-
-  url_download_callback:
+url_download_callback:
   lda tcp_inbound_data_length+1
   cmp #$ff
   bne not_end_of_file
