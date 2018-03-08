@@ -98,9 +98,9 @@ ip65.d64: prg
 
 ip65.dsk: bin
 	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ date65   bin < date65.bin
-	java -jar $(AC) -cc65 $@ hfs65    bin < hfs65.bin
-	java -jar $(AC) -cc65 $@ telnet65 bin < telnet65.bin
+	java -jar $(AC) -as $@ date65   < date65.bin
+	java -jar $(AC) -as $@ hfs65    < hfs65.bin
+	java -jar $(AC) -as $@ telnet65 < telnet65.bin
 
 ip65.atr: com
 	mkdir atr

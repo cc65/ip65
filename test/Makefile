@@ -146,18 +146,18 @@ ip65test.d64: prg
 
 ip65test.dsk: bin
 	cp prodos.dsk $@
-	java -jar $(AC) -cc65 $@ dns            bin < dns.bin
-	java -jar $(AC) -cc65 $@ geturl         bin < geturl.bin
-	java -jar $(AC) -cc65 $@ httpd          bin < httpd.bin
-	java -jar $(AC) -cc65 $@ httpd.slotscan bin < httpd-slotscan.bin
-	java -jar $(AC) -cc65 $@ math           bin < math.bin
-	java -jar $(AC) -cc65 $@ parser         bin < parser.bin
-	java -jar $(AC) -cc65 $@ ping           bin < ping.bin
-	java -jar $(AC) -cc65 $@ sntp           bin < sntp.bin
-	java -jar $(AC) -cc65 $@ tcp            bin < tcp.bin
-	java -jar $(AC) -cc65 $@ tftp           bin < tftp.bin
-	java -jar $(AC) -cc65 $@ udp            bin < udp.bin
-	java -jar $(AC) -cc65 $@ vt100          bin < vt100.bin
+	java -jar $(AC) -as $@ dns            < dns.bin
+	java -jar $(AC) -as $@ geturl         < geturl.bin
+	java -jar $(AC) -as $@ httpd          < httpd.bin
+	java -jar $(AC) -as $@ httpd.slotscan < httpd-slotscan.bin
+	java -jar $(AC) -as $@ math           < math.bin
+	java -jar $(AC) -as $@ parser         < parser.bin
+	java -jar $(AC) -as $@ ping           < ping.bin
+	java -jar $(AC) -as $@ sntp           < sntp.bin
+	java -jar $(AC) -as $@ tcp            < tcp.bin
+	java -jar $(AC) -as $@ tftp           < tftp.bin
+	java -jar $(AC) -as $@ udp            < udp.bin
+	java -jar $(AC) -as $@ vt100          < vt100.bin
 
 ip65test.atr: com xl.com
 	mkdir atr
