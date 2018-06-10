@@ -557,7 +557,7 @@ tcp_send_packet:
   lda #ip_proto_tcp
   sta tcp_vh + tcp_vh_proto
 
-  ldax #$0010                   ; $1000 in network byte order
+  ldax #$b405                   ; $05b4 (1460) in network byte order
   stax tcp_outp+tcp_window_size
 
   lda #0                        ; clear checksum
