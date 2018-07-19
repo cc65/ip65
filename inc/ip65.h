@@ -1,6 +1,9 @@
 #ifndef _IP65_H
 #define _IP65_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 // Error codes
 //
 #define IP65_ERROR_PORT_IN_USE                   0x80
@@ -18,31 +21,31 @@
 
 // Last error code
 //
-extern unsigned char ip65_error;
+extern uint8_t ip65_error;
 
 // MAC address of local machine (will be overwritten if ip65_init is called)
 //
-extern unsigned char cfg_mac[6];
+extern uint8_t cfg_mac[6];
 
 // IP address of local machine (will be overwritten if dhcp_init is called)
 //
-extern unsigned long cfg_ip;
+extern uint32_t cfg_ip;
 
 // Netmask of local network (will be overwritten if dhcp_init is called)
 //
-extern unsigned long cfg_netmask;
+extern uint32_t cfg_netmask;
 
 // IP address of router on local network (will be overwritten if dhcp_init is called)
 //
-extern unsigned long cfg_gateway;
+extern uint32_t cfg_gateway;
 
 // IP address of dns server to use (will be overwritten if dhcp_init is called)
 //
-extern unsigned long cfg_dns;
+extern uint32_t cfg_dns;
 
 // Will be set to address of DHCP server that configuration was obtained from
 //
-extern unsigned long dhcp_server;
+extern uint32_t dhcp_server;
 
 // Driver initialization parameter values
 //
@@ -60,9 +63,9 @@ extern unsigned long dhcp_server;
 // is using DHCP rather than hardcoded IP configuration.
 //
 // Inputs: drv_init: Driver initialization parameter
-// Output: 1 if there was an error, 0 otherwise
+// Output: true if there was an error, false otherwise
 //
-unsigned char __fastcall__ ip65_init(unsigned char drv_init);
+bool __fastcall__ ip65_init(uint8_t drv_init);
 
 // Main IP polling loop
 //
@@ -72,9 +75,9 @@ unsigned char __fastcall__ ip65_init(unsigned char drv_init);
 // handled. Any inbound packet will be handed off to the appropriate handler.
 //
 // Inputs: None
-// Output: 1 if no packet was waiting or packet handling caused error, 0 otherwise
+// Output: true if no packet was waiting or packet handling caused error, false otherwise
 //
-unsigned char ip65_process(void);
+bool ip65_process(void);
 
 // Generate a 'random' 16 bit word
 //
@@ -83,7 +86,7 @@ unsigned char ip65_process(void);
 // Inputs: None
 // Output: Pseudo-random 16 bit number
 //
-unsigned int ip65_random_word(void);
+uint16_t ip65_random_word(void);
 
 // Convert 4 octets (IP address, netmask) into a string representing a dotted quad
 //
@@ -93,7 +96,7 @@ unsigned int ip65_random_word(void);
 // Inputs: quad: IP address
 // Output: Zero terminated string containing dotted quad (e.g. "192.168.1.0")
 //
-char* __fastcall__ dotted_quad(unsigned long quad);
+char* __fastcall__ dotted_quad(uint32_t quad);
 
 // Convert a string representing a dotted quad (IP address, netmask) into 4 octets
 //
@@ -101,7 +104,7 @@ char* __fastcall__ dotted_quad(unsigned long quad);
 //               to simplify URL parsing, a ':' or '/' can also terminate the string.
 // Output: IP address, 0 on error
 //
-unsigned long __fastcall__ parse_dotted_quad(char* quad);
+uint32_t __fastcall__ parse_dotted_quad(char* quad);
 
 // Minimal DHCP client implementation
 //
@@ -110,12 +113,12 @@ unsigned long __fastcall__ parse_dotted_quad(char* quad);
 // this works fine in practice in a typical home network environment.
 //
 // Inputs: None (although ip65_init should be called first)
-// Output: 0 if IP config has been sucesfully obtained and cfg_ip, cfg_netmask,
-//           cfg_gateway and cfg_dns will be set per response from dhcp server.
-//           dhcp_server will be set to address of server that provided configuration.
-//         1 if there was an error
+// Output: false if IP config has been sucesfully obtained and cfg_ip, cfg_netmask,
+//               cfg_gateway and cfg_dns will be set per response from dhcp server.
+//               dhcp_server will be set to address of server that provided configuration.
+//         true if there was an error
 //
-unsigned char dhcp_init(void);
+bool dhcp_init(void);
 
 // Resolve a string containing a hostname (or a dotted quad) to an IP address
 //
@@ -124,40 +127,40 @@ unsigned char dhcp_init(void);
 //                   format (e.g. "192.168.1.0")
 // Output: IP address of the hostname, 0 on error
 //
-unsigned long __fastcall__ dns_resolve(const char* hostname);
+uint32_t __fastcall__ dns_resolve(const char* hostname);
 
 // Send a ping (ICMP echo request) to a remote host, and wait for a response
 //
 // Inputs: dest: Destination IP address
 // Output: 0 if no response, otherwise time (in miliseconds) for host to respond
 //
-unsigned int __fastcall__ icmp_ping(unsigned long dest);
+uint16_t __fastcall__ icmp_ping(uint32_t dest);
 
 // Add a UDP listener
 //
 // Inputs: port:     UDP port to listen on
 //         callback: Vector to call when UDP packet arrives on specified port
-// Output: 1 if too may listeners already installed, 0 otherwise
+// Output: true if too may listeners already installed, false otherwise
 //
-unsigned char __fastcall__ udp_add_listener(unsigned int port, void (*callback)(void));
+bool __fastcall__ udp_add_listener(uint16_t port, void (*callback)(void));
 
 // Remove a UDP listener
 //
 // Inputs: port: UDP port to stop listening on
-// Output: 0 if handler found and removed,
-//         1 if handler for specified port not found
+// Output: false if handler found and removed,
+//         true if handler for specified port not found
 //
-unsigned char __fastcall__ udp_remove_listener(unsigned int port);
+bool __fastcall__ udp_remove_listener(uint16_t port);
 
 // Access to received UDP packet
 //
 // Access to the four items below is only valid in the context of a callback
 // added with udp_add_listener.
 //
-extern unsigned char udp_recv_buf[1476];        // Buffer with data received
-       unsigned int  udp_recv_len(void);        // Length of data received
-       unsigned long udp_recv_src(void);        // Source IP address
-       unsigned int  udp_recv_src_port(void);   // Source port
+extern uint8_t  udp_recv_buf[1476];        // Buffer with data received
+       uint16_t udp_recv_len(void);        // Length of data received
+       uint32_t udp_recv_src(void);        // Source IP address
+       uint16_t udp_recv_src_port(void);   // Source port
 
 // Send a UDP packet
 //
@@ -174,11 +177,10 @@ extern unsigned char udp_recv_buf[1476];        // Buffer with data received
 //         dest:      Destination IP address
 //         dest_port: Destination port
 //         src_port:  Source port
-// Output: 1 if an error occured, 0 otherwise
+// Output: true if an error occured, false otherwise
 //
-unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
-                                    unsigned long dest, unsigned int dest_port,
-                                    unsigned int src_port);
+bool __fastcall__ udp_send(const uint8_t* buf, uint16_t len, uint32_t dest,
+                           uint16_t dest_port, uint16_t src_port);
 
 // Listen for an inbound TCP connection
 //
@@ -190,8 +192,9 @@ unsigned char __fastcall__ udp_send(const unsigned char* buf, unsigned int len,
 //                   len: -1 on close, otherwise length of data received
 // Output: IP address of the connected client, 0 on error
 //
-unsigned long __fastcall__ tcp_listen(unsigned int port,
-                                      void (*callback)(const unsigned char* buf, int len));
+uint32_t __fastcall__ tcp_listen(uint16_t port,
+                                 void __fastcall__ (*callback)(const uint8_t* buf,
+                                                               int16_t len));
 
 // Make outbound TCP connection
 //
@@ -200,39 +203,40 @@ unsigned long __fastcall__ tcp_listen(unsigned int port,
 //         callback:  Vector to call when data arrives on this connection
 //                    buf: Pointer to buffer with data received
 //                    len: -1 on close, otherwise length of data received
-// Output: 1 if an error occured, 0 otherwise
+// Output: true if an error occured, false otherwise
 //
-unsigned char __fastcall__ tcp_connect(unsigned long dest, unsigned int dest_port,
-                                       void (*callback)(const unsigned char* buf, int len));
+bool __fastcall__ tcp_connect(uint32_t dest, uint16_t dest_port,
+                              void __fastcall__ (*callback)(const uint8_t* buf,
+                                                            int16_t len));
 
 // Close the current TCP connection
 //
 // Inputs: None
-// Output: 1 if an error occured, 0 otherwise
+// Output: true if an error occured, false otherwise
 //
-unsigned char tcp_close(void);
+bool tcp_close(void);
 
 // Send data on the current TCP connection
 //
 // Inputs: buf: Pointer to buffer containing data to be sent
 //         len: Length of data to send (exclusive of any headers)
-// Output: 1 if an error occured, 0 otherwise
+// Output: true if an error occured, false otherwise
 //
-unsigned char __fastcall__ tcp_send(const unsigned char* buf, unsigned int len);
+bool __fastcall__ tcp_send(const uint8_t* buf, uint16_t len);
 
 // Send an empty ACK packet on the current TCP connection
 //
 // Inputs: None
-// Output: 1 if an error occured, 0 otherwise
+// Output: true if an error occured, false otherwise
 //
-unsigned char tcp_send_keep_alive(void);
+bool tcp_send_keep_alive(void);
 
 // Query an SNTP server for current UTC time
 //
 // Inputs: SNTP server IP address
 // Output: The number of seconds since 00:00 on Jan 1, 1900 (UTC)
 //
-unsigned long sntp_get_time(unsigned long server);
+uint32_t __fastcall__ sntp_get_time(uint32_t server);
 
 // Start an HTTP server
 //
@@ -245,9 +249,10 @@ unsigned long sntp_get_time(unsigned long server);
 //                   path:   Zero terminaed string containg the HTTP path
 // Output: None
 //
-void __fastcall__ httpd_start(unsigned int port, void (*callback)(unsigned long client,
-                                                                  const char* method,
-                                                                  const char* path));
+void __fastcall__ httpd_start(uint16_t port,
+                              void __fastcall__ (*callback)(uint32_t client,
+                                                            const char* method,
+                                                            const char* path));
 
 // HTTP response types
 //
@@ -270,8 +275,8 @@ void __fastcall__ httpd_start(unsigned int port, void (*callback)(unsigned long 
 //         len:           Length of buffer with HTTP response content
 // Output: None
 //
-void __fastcall__ httpd_send_response(unsigned char response_type,
-                                      const unsigned char* buf, unsigned int len);
+void __fastcall__ httpd_send_response(uint8_t response_type,
+                                      const uint8_t* buf, uint16_t len);
 
 // Retrieve the value of a variable defined in the previously received HTTP request.
 //
@@ -289,14 +294,14 @@ char* __fastcall__ http_get_value(char name);
 // Inputs: None
 // Output: Current number of milliseconds
 //
-unsigned int timer_read(void);
+uint16_t timer_read(void);
 
 // Check if specified period of time has passed yet
 //
 // Inputs: time: Number of milliseconds we are willing to wait for
-// Output: 1 if timeout occured, 0 otherwise
+// Output: true if timeout occured, false otherwise
 //
-unsigned char __fastcall__ timer_timeout(unsigned int time);
+bool __fastcall__ timer_timeout(uint16_t time);
 
 // User abort control
 //
@@ -304,9 +309,9 @@ unsigned char __fastcall__ timer_timeout(unsigned int time);
 // (making them return IP65_ERROR_ABORTED_BY_USER). Initially the abort
 // key is enabled.
 //
-// Inputs: enable: 0 to disable the key, 1 to enable the key
+// Inputs: enable: false to disable the key, true to enable the key
 // Output: None
 //
-void __fastcall__ abort_key(unsigned char enable);
+void __fastcall__ abort_key(bool enable);
 
 #endif
