@@ -21,6 +21,7 @@
 #endif
 #ifdef __ATARI__
 //#define IMAGE ".ATR"
+char* __fastcall__ getdevicedir(unsigned char, char*, size_t) { return NULL; } // Hack just to make it build !
 #endif
 
 #define SEND_FIRST 1
