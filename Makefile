@@ -8,7 +8,7 @@ endif
 
 ZIPCOMMENT := $(shell git rev-parse --short HEAD 2>$(NULLDEV))
 ifeq ($(words $(ZIPCOMMENT)),1)
-  ZIPCOMMENT := https://github.com/cc65/ip65/commit/$(ZIPCOMMENT)
+  ZIPCOMMENT := https://github.com/cc65/ip65/commits/$(ZIPCOMMENT)
 else
   ZIPCOMMENT := N/A
 endif
