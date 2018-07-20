@@ -234,9 +234,57 @@ bool tcp_send_keep_alive(void);
 // Query an SNTP server for current UTC time
 //
 // Inputs: SNTP server IP address
-// Output: The number of seconds since 00:00 on Jan 1, 1900 (UTC)
+// Output: The number of seconds since 00:00 on Jan 1 1900 (UTC), 0 on error
 //
 uint32_t __fastcall__ sntp_get_time(uint32_t server);
+
+// Download a file from a TFTP server and provide data to user supplied vector.
+//
+// Inputs: server:   IP address of server to receive file from
+//         name:     Name of file to download
+//         callback: Vector to call once for each 512 byte packet received
+//                   buf: Pointer to buffer containing data received
+//                   len: 512 if buffer is full, otherwise number of bytes
+//                        in the buffer
+// Output: true if an error occured, false otherwise
+//
+bool __fastcall__ tftp_download(uint32_t server, const char* name,
+                                void __fastcall__ (*callback)(const uint8_t* buf,
+                                                              uint16_t len));
+
+// Download a file from a TFTP server and provide data to specified memory location.
+//
+// Inputs: server: IP address of server to receive file from
+//         name:   Name of file to download
+//         buf:    Pointer to buffer containing data received
+// Output: Length of data received, 0 on error
+//
+uint16_t __fastcall__ tftp_download_to_memory(uint32_t server, const char* name,
+                                              const uint8_t* buf);
+
+// Upload a file to a TFTP server with data retrieved from user supplied vector.
+//
+// Inputs: server:   IP address of server to send file to
+//         name:     Name of file to upload
+//         callback: Vector to call once for each 512 byte packet to be sent
+//                   buf: Pointer to buffer containing data to be sent
+//                   Output: 512 if buffer is full, otherwise number of bytes
+//                           in the buffer
+// Output: true if an error occured, false otherwise
+//
+bool __fastcall__ tftp_upload(uint32_t server, const char* name,
+                              uint16_t __fastcall__ (*callback)(const uint8_t* buf));
+
+// Upload a file to a TFTP server with data retrieved from specified memory location.
+//
+// Inputs: server: IP address of server to send file to
+//         name:   Name of file to upload
+//         buf:    Pointer to buffer containing data to be sent
+//         len:    Length of data to be sent
+// Output: true if an error occured, false otherwise
+//
+bool __fastcall__ tftp_upload_from_memory(uint32_t server, const char* name,
+                                          const uint8_t* buf, uint16_t len);
 
 // Start an HTTP server
 //

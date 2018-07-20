@@ -13,6 +13,7 @@ TFTP_TIMER_MASK  = $F8          ; mask lower two bits, means we wait for 8 x1/4 
 .export tftp_download
 .export tftp_upload
 .export tftp_data_block_length
+.export tftp_current_memloc
 .export tftp_set_callback_vector
 .export tftp_callback_vector
 .export tftp_clear_callbacks
@@ -125,7 +126,7 @@ tftp_upload:
 ; inputs:
 ; tftp_ip: ip address of host to download from (set to 255.255.255.255 for broadcast)
 ; tftp_filename: pointer to null terminated name of file to download
-; tftp_load_address: memory location that dir will be stored in, or $0000 to
+; tftp_load_address: memory location that data will be stored in, or $0000 to
 ; treat first 2 bytes received from tftp server as memory address that rest
 ; of file should be loaded into (e.g. if downloading a C64 'prg' file)
 ; outputs: carry flag is set if there was an error
@@ -529,7 +530,8 @@ copy_ram_to_tftp_block:
 ; outputs: none
 tftp_set_callback_vector:
   stax tftp_callback_vector+1
-  inc tftp_callback_address_set
+  lda #1
+  sta tftp_callback_address_set
   rts
 
 ; clear callback vectors, i.e. all future transfers read from/write to RAM

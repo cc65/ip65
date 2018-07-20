@@ -32,6 +32,7 @@ IP65OBJS=\
 	ip65_c.o \
 	tcp_c.o \
 	tftp.o \
+	tftp_c.o \
 	timer.o \
 	timer_c.o \
 	output_buffer.o \
