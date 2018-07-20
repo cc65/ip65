@@ -238,10 +238,10 @@ bool tcp_send_keep_alive(void);
 //
 uint32_t __fastcall__ sntp_get_time(uint32_t server);
 
-// Download a file from a TFTP server and provide data to user supplied vector.
+// Download a file from a TFTP server and provide data to user supplied vector
 //
 // Inputs: server:   IP address of server to receive file from
-//         name:     Name of file to download
+//         name:     Zero terminated string containing the name of file to download
 //         callback: Vector to call once for each 512 byte packet received
 //                   buf: Pointer to buffer containing data received
 //                   len: 512 if buffer is full, otherwise number of bytes
@@ -252,20 +252,20 @@ bool __fastcall__ tftp_download(uint32_t server, const char* name,
                                 void __fastcall__ (*callback)(const uint8_t* buf,
                                                               uint16_t len));
 
-// Download a file from a TFTP server and provide data to specified memory location.
+// Download a file from a TFTP server and provide data to specified memory location
 //
 // Inputs: server: IP address of server to receive file from
-//         name:   Name of file to download
+//         name:   Zero terminated string containing the name of file to download
 //         buf:    Pointer to buffer containing data received
 // Output: Length of data received, 0 on error
 //
 uint16_t __fastcall__ tftp_download_to_memory(uint32_t server, const char* name,
                                               const uint8_t* buf);
 
-// Upload a file to a TFTP server with data retrieved from user supplied vector.
+// Upload a file to a TFTP server with data retrieved from user supplied vector
 //
 // Inputs: server:   IP address of server to send file to
-//         name:     Name of file to upload
+//         name:     Zero terminated string containing the name of file to upload
 //         callback: Vector to call once for each 512 byte packet to be sent
 //                   buf: Pointer to buffer containing data to be sent
 //                   Output: 512 if buffer is full, otherwise number of bytes
@@ -275,16 +275,45 @@ uint16_t __fastcall__ tftp_download_to_memory(uint32_t server, const char* name,
 bool __fastcall__ tftp_upload(uint32_t server, const char* name,
                               uint16_t __fastcall__ (*callback)(const uint8_t* buf));
 
-// Upload a file to a TFTP server with data retrieved from specified memory location.
+// Upload a file to a TFTP server with data retrieved from specified memory location
 //
 // Inputs: server: IP address of server to send file to
-//         name:   Name of file to upload
+//         name:   Zero terminated string containing the name of file to upload
 //         buf:    Pointer to buffer containing data to be sent
 //         len:    Length of data to be sent
 // Output: true if an error occured, false otherwise
 //
 bool __fastcall__ tftp_upload_from_memory(uint32_t server, const char* name,
                                           const uint8_t* buf, uint16_t len);
+
+// Parse an HTTP URL into a form that makes it easy to retrieve the specified resource
+//
+// On success the variables url_ip, url_port and url_selector (see below) are valid.
+//
+// Inputs: url: Zero (or ctrl char) terminated string containing the URL
+// Output: true if an error occured, false otherwise
+//
+bool __fastcall__ url_parse(const char* url);
+
+// Access to parsed HTTP URL
+//
+// Access to the three items below is only valid after url_parse returned false.
+//
+extern uint32_t url_ip;         // IP address of host in URL
+extern uint16_t url_port;       // Port number of URL
+extern char*    url_selector;   // Zero terminated string containing selector part of URL
+
+// Download a resource specified by an HTTP URL
+//
+// On success the resource is zero terminated.
+//
+// Inputs: url: Zero (or ctrl char) terminated string containing the URL
+//         buf: Pointer to a buffer that the resource will be downloaded into
+//         len: Length of buffer
+// Output: Length of resource downloaded, 0 on error
+//
+uint16_t __fastcall__ url_download(const char* url, const uint8_t* buf, uint16_t len);
+
 
 // Start an HTTP server
 //
@@ -293,8 +322,8 @@ bool __fastcall__ tftp_upload_from_memory(uint32_t server, const char* name,
 // Inputs: port:     TCP port to listen on
 //         callback: Vector to call for each inbound HTTP request
 //                   client: IP address of the client that sent the request
-//                   method: Zero terminaed string containg the HTTP method
-//                   path:   Zero terminaed string containg the HTTP path
+//                   method: Zero terminated string containing the HTTP method
+//                   path:   Zero terminated string containing the HTTP path
 // Output: None
 //
 void __fastcall__ httpd_start(uint16_t port,

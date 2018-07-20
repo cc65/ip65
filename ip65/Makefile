@@ -42,7 +42,8 @@ IP65OBJS=\
 	string_utils.o \
 	udp.o \
 	udp_c.o \
-	url.o
+	url.o \
+	url_c.o
 
 ip65.lib: $(IP65OBJS) ip.o icmp.o
 	ar65 a $@ $^

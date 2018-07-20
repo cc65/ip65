@@ -37,6 +37,7 @@ TIMEOUT_SECONDS = 15
 .export url_download_buffer
 .export url_download_buffer_length
 .export resource_download
+.export resource_buffer
 
 target_string   = ptr1
 search_string   = ptr2
@@ -61,8 +62,8 @@ selector_buffer = output_buffer
   url_download_buffer:          .res 2  ; points to a buffer that url will be downloaded into
   url_download_buffer_length:   .res 2  ; length of buffer that url will be downloaded into
 
-  temp_buffer:          .res 2
-  temp_buffer_length:   .res 2
+  resource_buffer:          .res 2
+  resource_buffer_length:   .res 2
 
   download_flag: .res 1
 
@@ -287,13 +288,12 @@ url_download:
 ; url_download_buffer_length - length of buffer
 ; outputs:
 ; sec if an error occured, else buffer pointed at by url_download_buffer is filled with contents
-; of specified resource (with an extra 2 null bytes at the end),
-; AX = length of resource downloaded.
+; of specified resource (with an extra 2 null bytes at the end).
 resource_download:
   ldax url_download_buffer
-  stax temp_buffer
+  stax resource_buffer
   ldax url_download_buffer_length
-  stax temp_buffer_length
+  stax resource_buffer_length
   jsr put_zero_at_end_of_dl_buffer
 
   ldx #3                        ; save IP address just retrieved
@@ -342,7 +342,7 @@ url_download_callback:
 
 put_zero_at_end_of_dl_buffer:
   ; put a zero byte at the end of the file
-  ldax temp_buffer
+  ldax resource_buffer
   stax ptr2
   lda #0
   tay
@@ -351,45 +351,45 @@ put_zero_at_end_of_dl_buffer:
 
 not_end_of_file:
   ; copy this chunk to our input buffer
-  ldax temp_buffer
+  ldax resource_buffer
   stax copy_dest
   ldax tcp_inbound_data_ptr
   stax copy_src
   sec
-  lda temp_buffer_length
+  lda resource_buffer_length
   sbc tcp_inbound_data_length
   pha
-  lda temp_buffer_length+1
+  lda resource_buffer_length+1
   sbc tcp_inbound_data_length+1
   bcc @would_overflow_buffer
-  sta temp_buffer_length+1
+  sta resource_buffer_length+1
   pla
-  sta temp_buffer_length
+  sta resource_buffer_length
   ldax tcp_inbound_data_length
   jsr copymem
   ; increment the pointer into the input buffer
   clc
-  lda temp_buffer
+  lda resource_buffer
   adc tcp_inbound_data_length
-  sta temp_buffer
-  lda temp_buffer+1
+  sta resource_buffer
+  lda resource_buffer+1
   adc tcp_inbound_data_length+1
-  sta temp_buffer+1
+  sta resource_buffer+1
   jmp put_zero_at_end_of_dl_buffer
 
 @would_overflow_buffer:
   pla ; clean up the stack
-  ldax temp_buffer_length
+  ldax resource_buffer_length
   jsr copymem
-  lda temp_buffer
-  adc temp_buffer_length
-  sta temp_buffer
-  lda temp_buffer+1
-  adc temp_buffer_length+1
-  sta temp_buffer+1
+  lda resource_buffer
+  adc resource_buffer_length
+  sta resource_buffer
+  lda resource_buffer+1
+  adc resource_buffer_length+1
+  sta resource_buffer+1
   lda #0
-  sta temp_buffer_length
-  sta temp_buffer_length+1
+  sta resource_buffer_length
+  sta resource_buffer_length+1
   jmp put_zero_at_end_of_dl_buffer
 
 
