@@ -13,6 +13,7 @@
 
 dotted_quad: .res 4*4           ; "xxx.xxx.xxx.xxx\0"
 
+
 .code
 
 _dotted_quad:
