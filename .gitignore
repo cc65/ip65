@@ -8,5 +8,6 @@
 *.d64
 *.dsk
 *.atr
+*.zip
 *.obj
 *.exe
