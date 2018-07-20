@@ -97,23 +97,22 @@ ip65.d64: prg
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
 
 ip65.dsk: bin
-	cp prodos.dsk $@
+	cp ../build/prodos.dsk $@
 	java -jar $(AC) -as $@ date65   < date65.bin
 	java -jar $(AC) -as $@ hfs65    < hfs65.bin
 	java -jar $(AC) -as $@ telnet65 < telnet65.bin
 
 ip65.atr: com
 	mkdir atr
-	cp dos.sys      atr/dos.sys
-	cp dup.sys      atr/dup.sys
-	cp date65.com   atr/date65.com
-	cp telnet65.com atr/telnet65.com
+	cp ../build/dos.sys atr/dos.sys
+	cp ../build/dup.sys atr/dup.sys
+	cp date65.com       atr/date65.com
+	cp telnet65.com     atr/telnet65.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
 clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
-	-rm -f ../supplement/*.o
 	-rm -f *.o *.prg *.bin *.com *.map
 	-rm -f ip65.d64 ip65.dsk ip65.atr

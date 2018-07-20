@@ -145,7 +145,7 @@ ip65test.d64: prg
 	$(C1541) -attach $@ -write vt100.prg      vt100,p
 
 ip65test.dsk: bin
-	cp prodos.dsk $@
+	cp ../build/prodos.dsk $@
 	java -jar $(AC) -as $@ dns            < dns.bin
 	java -jar $(AC) -as $@ geturl         < geturl.bin
 	java -jar $(AC) -as $@ httpd          < httpd.bin
@@ -161,23 +161,23 @@ ip65test.dsk: bin
 
 ip65test.atr: com xl.com
 	mkdir atr
-	cp dos.sys      atr/dos.sys
-	cp dup.sys      atr/dup.sys
-	cp dns.com      atr/dns.com
-	cp geturl.com   atr/geturl.com
-	cp httpd.com    atr/httpd.com
-	cp math.com     atr/math.com
-	cp parser.com   atr/parser.com
-	cp ping.com     atr/ping.com
-	cp sntp.com     atr/sntp.com
-	cp tcp.com      atr/tcp.com
-	cp tcp.xl.com   atr/tcpxl.com
-	cp tftp.com     atr/tftp.com
-	cp timer.com    atr/timer.com
-	cp timer.xl.com atr/timerxl.com
-	cp udp.com      atr/udp.com
-	cp udp.xl.com   atr/udpxl.com
-	cp vt100.com    atr/vt100.com
+	cp ../build/dos.sys atr/dos.sys
+	cp ../build/dup.sys atr/dup.sys
+	cp dns.com          atr/dns.com
+	cp geturl.com       atr/geturl.com
+	cp httpd.com        atr/httpd.com
+	cp math.com         atr/math.com
+	cp parser.com       atr/parser.com
+	cp ping.com         atr/ping.com
+	cp sntp.com         atr/sntp.com
+	cp tcp.com          atr/tcp.com
+	cp tcp.xl.com       atr/tcpxl.com
+	cp tftp.com         atr/tftp.com
+	cp timer.com        atr/timer.com
+	cp timer.xl.com     atr/timerxl.com
+	cp udp.com          atr/udp.com
+	cp udp.xl.com       atr/udpxl.com
+	cp vt100.com        atr/vt100.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
