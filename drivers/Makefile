@@ -9,7 +9,7 @@
 # a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
 # a2combo.lib    : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
 # atrdragon.lib  : ATARI 8-bit with Dragon Cart (default base addr: $d500)
-# vic20rrnet.lib : VIC20 with RR-Net or clone (default base addr: $980x)
+# vic20rrnet.lib : VIC20 with RR-Net (or clone) (default base addr: $980x)
 
 # For C programs
 # --------------
