@@ -15,8 +15,8 @@ On the C64 there are two supported Ethernet carts
 - The [ETH64](http://www.ide64.org/eth64.html)
 
 On the Apple II there are three supported Ethernet cards
-- The [Uthernet](https://web.archive.org/web/20150323031638/http://a2retrosystems.com/products.htm) - emulated by [AppleWin](https://github.com/AppleWin/AppleWin) and [GSport](https://david-schmidt.github.io/gsport/)
-- The [LANceGS](https://web.archive.org/web/20040220125902/http://lancegs.a2central.com:80/install/index.html)
+- The [Uthernet](https://web.archive.org/web/20010331001718/http://lancegs.a2central.com:80/) - emulated by [AppleWin](https://github.com/AppleWin/AppleWin) and [GSport](https://david-schmidt.github.io/gsport/)
+- The [LANceGS](https://web.archive.org/web/20020602144800/http://lancegs.a2central.com:80/install/index.html)
 - The [Uthernet II](http://a2retrosystems.com/products.htm)
 
 On the ATARI (XL) there is one supported Ethernet cart
