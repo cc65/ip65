@@ -314,7 +314,6 @@ extern char*    url_selector;   // Zero terminated string containing selector pa
 //
 uint16_t __fastcall__ url_download(const char* url, const uint8_t* buf, uint16_t len);
 
-
 // Start an HTTP server
 //
 // This routine will stay in an endless loop that is broken only if user press the abort key.
@@ -340,7 +339,7 @@ void __fastcall__ httpd_start(uint16_t port,
 #define HTTPD_RESPONSE_404      4   // HTTP Code: 404 Not Found
 #define HTTPD_RESPONSE_500      5   // HTTP Code: 500 System Error
 
-// Send HTTP response.
+// Send HTTP response
 //
 // Calling httpd_send_response is only valid in the context of a httpd_start callback.
 // For the response types HTTPD_RESPONSE_404 and HTTPD_RESPONSE_500 'buf' is ignored.
@@ -355,7 +354,7 @@ void __fastcall__ httpd_start(uint16_t port,
 void __fastcall__ httpd_send_response(uint8_t response_type,
                                       const uint8_t* buf, uint16_t len);
 
-// Retrieve the value of a variable defined in the previously received HTTP request.
+// Retrieve the value of a variable defined in the previously received HTTP request
 //
 // Calling http_get_value is only valid in the context of a httpd_start callback.
 // Only the first letter in a variable name is significant. E.g. if a querystring contains
