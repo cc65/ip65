@@ -61,6 +61,8 @@ ip65:
 drivers:
 	make -C ../drivers
 
+CC65 := $(shell cl65 --print-target-path)
+
 ATARI_CFG = atari.cfg
 telnet65.com: ATARI_CFG = atrtelnet.cfg
 
@@ -98,9 +100,11 @@ ip65.d64: prg
 
 ip65.dsk: bin
 	cp ../build/prodos.dsk $@
-	java -jar $(AC) -as $@ date65   < date65.bin
-	java -jar $(AC) -as $@ hfs65    < hfs65.bin
-	java -jar $(AC) -as $@ telnet65 < telnet65.bin
+	java -jar $(AC) -as $@ date65            < date65.bin
+	java -jar $(AC) -p  $@ date65.system sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ hfs65             < hfs65.bin
+	java -jar $(AC) -p  $@ hfs65.system  sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ telnet65          < telnet65.bin
 
 ip65.atr: com
 	mkdir atr
