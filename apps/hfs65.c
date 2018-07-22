@@ -214,7 +214,7 @@ void image()
 }
 #endif
 
-void http_server(unsigned long client, const char* method, const char* path)
+void http_server(uint32_t client, const char* method, const char* path)
 {
   char* delimiter;
 
