@@ -21,6 +21,8 @@ IP65OBJS=\
 	dns_c.o \
 	dottedquad.o \
 	dottedquad_c.o \
+	download.o \
+	download_c.o \
 	eth.o \
 	http.o \
 	http_c.o \
