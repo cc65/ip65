@@ -101,13 +101,15 @@ void main(void)
   {
     // See ProDOS 8 Technical Reference Manual
     // Chapter 6.1 - Clock/Calendar Routines
-    typedef struct {
+    typedef struct
+    {
         unsigned mday :5;
         unsigned mon  :4;
         unsigned year :7;
         uint8_t  min;
         uint8_t  hour;
-    } dostime_t;
+    }
+    dostime_t;
     dostime_t* dostime = (dostime_t*)0xBF90;
 
     // If DOS time is 0:00 assume no RTC active
