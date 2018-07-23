@@ -85,7 +85,7 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 	rm $*.o
 
 %.bin: %.c ip65 drivers
-	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $< $(IP65LIB) ../drivers/ip65_apple2.lib
+	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $< --start-addr 0x0C00 apple2enh-iobuf-0800.o $(IP65LIB) ../drivers/ip65_apple2.lib
 	rm $*.o
 
 %.com: %.c ip65 drivers
