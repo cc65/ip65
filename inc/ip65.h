@@ -373,7 +373,14 @@ uint16_t timer_read(void);
 //
 bool __fastcall__ timer_timeout(uint16_t time);
 
-// User abort control
+// Check whether the abort key is being pressed
+//
+// Inputs: None
+// Output: true if abort key pressed, false otherwise
+//
+bool input_check_for_abort_key(void);
+
+// Control abort key
 //
 // Control if the user can abort blocking functions with the abort key
 // (making them return IP65_ERROR_ABORTED_BY_USER). Initially the abort
@@ -382,6 +389,10 @@ bool __fastcall__ timer_timeout(uint16_t time);
 // Inputs: enable: false to disable the key, true to enable the key
 // Output: None
 //
-void __fastcall__ abort_key(bool enable);
+void __fastcall__ input_set_abort_key(bool enable);
+
+// Access to actual abort key code
+//
+extern uint8_t abort_key;
 
 #endif
