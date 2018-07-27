@@ -295,7 +295,7 @@ void error_exit(void)
     cgetc();
   }
 
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 void main(void)

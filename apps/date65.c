@@ -27,7 +27,7 @@ void error_exit(void)
   default:
     printf("- Error $%X\n", ip65_error);
   }
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 void confirm_exit(void)
