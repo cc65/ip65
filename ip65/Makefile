@@ -23,6 +23,7 @@ IP65OBJS=\
 	dottedquad_c.o \
 	download.o \
 	download_c.o \
+	driver_c.o \
 	eth.o \
 	http.o \
 	http_c.o \

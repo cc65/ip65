@@ -23,30 +23,6 @@
 //
 extern uint8_t ip65_error;
 
-// MAC address of local machine (will be overwritten if ip65_init is called)
-//
-extern uint8_t cfg_mac[6];
-
-// IP address of local machine (will be overwritten if dhcp_init is called)
-//
-extern uint32_t cfg_ip;
-
-// Netmask of local network (will be overwritten if dhcp_init is called)
-//
-extern uint32_t cfg_netmask;
-
-// IP address of router on local network (will be overwritten if dhcp_init is called)
-//
-extern uint32_t cfg_gateway;
-
-// IP address of dns server to use (will be overwritten if dhcp_init is called)
-//
-extern uint32_t cfg_dns;
-
-// Will be set to address of DHCP server that configuration was obtained from
-//
-extern uint32_t dhcp_server;
-
 // Driver initialization parameter values
 //
 #ifdef __APPLE2__
@@ -66,6 +42,14 @@ extern uint32_t dhcp_server;
 // Output: true if there was an error, false otherwise
 //
 bool __fastcall__ ip65_init(uint8_t drv_init);
+
+// Access to Ethernet configuration
+//
+// Access to the three items below is only valid after ip65_init returned false.
+//
+extern uint8_t  cfg_mac[6];         // MAC address of local machine
+extern char     eth_driver_name[];  // Zero terminated string containing driver name
+extern uint8_t* eth_driver_io_base; // Ethernet chip I/O base address used by driver
 
 // Main IP polling loop
 //
@@ -119,6 +103,16 @@ uint32_t __fastcall__ parse_dotted_quad(char* quad);
 //         true if there was an error
 //
 bool dhcp_init(void);
+
+// Access to IP configuration
+//
+// The five items below will be overwritten if dhcp_init is called.
+//
+extern uint32_t cfg_ip;         // IP address of local machine
+extern uint32_t cfg_netmask;    // Netmask of local network
+extern uint32_t cfg_gateway;    // IP address of router on local network
+extern uint32_t cfg_dns;        // IP address of DNS server to use
+extern uint32_t dhcp_server;    // Address of DHCP server that config was obtained from
 
 // Resolve a string containing a hostname (or a dotted quad) to an IP address
 //
