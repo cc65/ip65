@@ -22,6 +22,10 @@ else
 endif
 ATRDRIVERLIB = ../drivers/atrdragon.lib
 
+C64_DRIVERLIB = ../drivers/ip65_c64.lib
+A2_DRIVERLIB  = ../drivers/ip65_apple2.lib
+ATR_DRIVERLIB = ../drivers/ip65_atari.lib
+
 UDP =\
 	date65
 
@@ -83,13 +87,13 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.prg: %.c $(BUILDS)
-	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) ../drivers/ip65_c64.lib
+	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(C64_DRIVERLIB)
 
 %.bin: %.c $(BUILDS)
-	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $(filter-out $(BUILDS),$^) --start-addr 0x0C00 apple2enh-iobuf-0800.o $(IP65LIB) ../drivers/ip65_apple2.lib
+	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $(filter-out $(BUILDS),$^) --start-addr 0x0C00 apple2enh-iobuf-0800.o $(IP65LIB) $(A2_DRIVERLIB)
 
 %.com: %.c $(BUILDS)
-	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) ../drivers/ip65_atari.lib
+	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(ATR_DRIVERLIB)
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
