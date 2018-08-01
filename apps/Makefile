@@ -33,6 +33,12 @@ TCP =\
 	hfs65 \
 	telnet65
 
+bin: wget65.bin
+
+wget65.bin: w5100.c linenoise.c
+wget65.bin: IP65LIB = ../ip65/ip65.lib
+wget65.bin: A2_DRIVERLIB = ../drivers/ip65_apple2_uther2.lib
+
 date65.bin hfs65.bin: CL65FLAGS = --start-addr 0x0C00 apple2enh-iobuf-0800.o
 
 telnet65.com: ATARI_CFG = atrtelnet.cfg
@@ -110,6 +116,8 @@ ip65.dsk: bin
 	java -jar $(AC) -p  $@ date65.system sys < $(CC65)/apple2enh/util/loader.system
 	java -jar $(AC) -as $@ hfs65             < hfs65.bin
 	java -jar $(AC) -p  $@ hfs65.system  sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ wget65            < wget65.bin
+	java -jar $(AC) -p  $@ wget65.system sys < $(CC65)/apple2enh/util/loader.system
 	java -jar $(AC) -as $@ telnet65          < telnet65.bin
 
 ip65.atr: com
