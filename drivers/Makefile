@@ -29,6 +29,7 @@ DRIVERS=\
 	a2uther2.lib \
 	a2combo.lib \
 	ip65_apple2.lib \
+	ip65_apple2_uther2.lib \
 	atrdragon.lib \
 	ip65_atari.lib \
 	ip65_atarixl.lib \
@@ -139,6 +140,8 @@ a2uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2OBJS)
 a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o $(COMBOOBJS) $(A2OBJS)
 
 ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o $(COMBOOBJS) $(A2_OBJS)
+
+ip65_apple2_uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2_OBJS)
 
 atrdragon.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATROBJS)
 
