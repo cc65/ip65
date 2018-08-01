@@ -245,11 +245,7 @@ get:
 
 http_preamble:
   .byte " HTTP/1.0",$0d,$0a
-  .byte "User-Agent: IP65/"
-
-.include "../inc/version.inc"
-
-  .byte $0d,$0a
+  .byte "User-Agent: IP65/0.6502",$0d,$0a
   .byte "Connection: close",$0d,$0a
   .byte "Host: ",0
 
