@@ -33,6 +33,10 @@ TCP =\
 	hfs65 \
 	telnet65
 
+date65.bin hfs65.bin: CL65FLAGS = --start-addr 0x0C00 apple2enh-iobuf-0800.o
+
+telnet65.com: ATARI_CFG = atrtelnet.cfg
+
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
 
@@ -70,7 +74,6 @@ BUILDS = ip65 drivers
 CC65 := $(shell cl65 --print-target-path)
 
 ATARI_CFG = atari.cfg
-telnet65.com: ATARI_CFG = atrtelnet.cfg
 
 %.s.o: %.s
 	ca65 -o $@ $<
@@ -87,13 +90,13 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.prg: %.c $(BUILDS)
-	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(C64_DRIVERLIB)
+	cl65 -o $*.prg -O -t c64 $(CL65FLAGS) -m $*.c64.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(C64_DRIVERLIB)
 
 %.bin: %.c $(BUILDS)
-	cl65 -o $*.bin -O -t apple2enh -m $*.a2.map -vm $(filter-out $(BUILDS),$^) --start-addr 0x0C00 apple2enh-iobuf-0800.o $(IP65LIB) $(A2_DRIVERLIB)
+	cl65 -o $*.bin -O -t apple2enh $(CL65FLAGS) -m $*.a2.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(A2_DRIVERLIB)
 
 %.com: %.c $(BUILDS)
-	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(ATR_DRIVERLIB)
+	cl65 -o $*.com -O -t atari $(CL65FLAGS) -m $*.atr.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(ATR_DRIVERLIB)
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
