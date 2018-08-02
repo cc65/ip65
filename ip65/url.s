@@ -57,6 +57,7 @@ url_parse:
   ldy #80
   sty url_port
   ldy #0
+  sty url_port+1
   sty url_resource_type
 
   jsr skip_to_hostname
