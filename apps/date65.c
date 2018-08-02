@@ -1,3 +1,14 @@
+///////////////////////////////////////////
+
+// https://www.epochconverter.com/timezones
+
+#define TIMEZONE_CODE "CET"
+#define TIMEZONE_SECS 3600
+
+#define NTP_SERVER "pool.ntp.org"
+
+///////////////////////////////////////////
+
 #include <cc65.h>
 #include <time.h>
 #include <fcntl.h>
@@ -5,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "../inc/ip65.h"
 
@@ -43,6 +55,10 @@ void main(void)
   time_t rawtime;
   struct tm* timeinfo;
 
+  strncpy(_tz.tzname, TIMEZONE_CODE,
+          sizeof(_tz.tzname) - 1);
+  _tz.timezone = TIMEZONE_SECS;
+
   if (doesclrscrafterexit())
   {
     atexit(confirm_exit);
@@ -76,14 +92,14 @@ void main(void)
     error_exit();
   }
 
-  printf("- Ok\n\nResolving pool.ntp.org ");
-  server = dns_resolve("pool.ntp.org");
+  printf("- Ok\n\nResolving %s ", NTP_SERVER);
+  server = dns_resolve(NTP_SERVER);
   if (!server)
   {
     error_exit();
   }
 
-  printf("- Ok\n\nGetting UTC ");
+  printf("- Ok\n\nGetting %s ", _tz.tzname);
   rawtime = sntp_get_time(server);
   if (!rawtime)
   {
