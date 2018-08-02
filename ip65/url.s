@@ -52,10 +52,11 @@ selector_buffer = output_buffer
 ; url_selector= address of selector part of URL
 url_parse:
   stax url_string
-  ldy #0
+  ldy #url_type_http
   sty url_type
+  ldy #80
   sty url_port
-  sty url_port+1
+  ldy #0
   sty url_resource_type
 
   jsr skip_to_hostname
@@ -71,21 +72,15 @@ url_parse:
   cmp #'G'
   beq @gopher
   cmp #'h'
-  beq @http
+  beq @protocol_set
   cmp #'H'
-  beq @http
+  beq @protocol_set
 @exit_with_error:
   lda #IP65_ERROR_MALFORMED_URL
   sta ip65_error
 @exit_with_sec:
   sec
   rts
-@http:
-  lda #url_type_http
-  sta url_type
-  lda #80
-  sta url_port
-  jmp @protocol_set
 @gopher:
 lda #url_type_gopher
   sta url_type
@@ -123,7 +118,10 @@ lda #url_type_gopher
   ; skip over next slash
   ldax #slash
   jsr parser_skip_next
-  ; AX now pointing at selector
+  bcc :+
+  ; No slash at all after hostname -> empty selector
+  ldax #zero
+: ; AX now pointing at selector
   stax ptr1
   ldax #selector_buffer
   stax ptr2
@@ -252,7 +250,9 @@ http_preamble:
 colon_slash_slash:
   .byte ":/"
 slash:
-  .byte "/",0
+  .byte "/"
+zero:
+  .byte 0
 
 colon:
   .byte ":",0
