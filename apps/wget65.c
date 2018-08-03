@@ -187,7 +187,7 @@ char *get_argument(char arg, const char *name, const char *history,
 
     snprintf(prompt, sizeof(prompt), "%s? ", name);
     val = linenoise(prompt);
-    if (!val)
+    if (!val || !*val)
     {
       putchar('\n');
       exit(EXIT_FAILURE);
