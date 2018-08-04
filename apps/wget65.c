@@ -219,14 +219,88 @@ void exit_on_disconnect(void)
   }
 }
 
+void receive_file(const char *name)
+{
+  uint16_t i;
+  int file;
+  uint16_t rcv;
+  bool cont = true;
+  uint16_t len = 0;
+  uint32_t size = 0;
+
+  printf("- Ok\n\nOpening file ");
+  file = open(name, O_WRONLY | O_CREAT | O_TRUNC);
+  if (file == -1)
+  {
+    w5100_disconnect();
+    file_error_exit();
+  }
+  printf("- Ok\n\n");
+
+  while (cont)
+  {
+    exit_on_key();
+
+    rcv = w5100_receive_request();
+    if (!rcv)
+    {
+      cont = w5100_connected();
+      if (cont)
+      {
+        continue;
+      }
+    }
+
+    if (rcv > sizeof(buffer) - len)
+    {
+      rcv = sizeof(buffer) - len;
+    }
+
+    {
+      // One less to allow for faster pre-increment below
+      char *dataptr = buffer + len - 1;
+      for (i = 0; i < rcv; ++i)
+      {
+        // The variable is necessary to have cc65 generate code
+        // suitable to access the W5100 auto-increment register.
+        char data = *w5100_data;
+        *++dataptr = data;
+      }
+    }
+
+    w5100_receive_commit(rcv);
+    len += rcv;
+
+    if (cont && len < sizeof(buffer))
+    {
+      continue;
+    }
+
+    cprintf("\rWriting ");
+    if (write(file, buffer, len) != len)
+    {
+      w5100_disconnect();
+      file_error_exit();
+    }
+    size += len;
+    cprintf("%lu bytes ", size);
+
+    len = 0;
+  }
+
+  printf("- Ok\n\nClosing file ");
+  if (close(file))
+  {
+    w5100_disconnect();
+    file_error_exit();
+  }
+}
+
 int main(int, char *argv[])
 {
-  uint8_t drv_init = DRV_INIT_DEFAULT;
-  uint16_t i, len;
+  uint16_t i;
   char *arg;
-  char data;
-  char *dataptr;
-  int file;
+  uint8_t drv_init = DRV_INIT_DEFAULT;
 
   if (doesclrscrafterexit())
   {
@@ -250,13 +324,17 @@ int main(int, char *argv[])
     *argv[0] = '\0';
   }
 
-  printf("\nSetting slot ");
-  file = open(self_path("ethernet.slot"), O_RDONLY);
-  if (file != -1)
   {
-    read(file, &drv_init, 1);
-    close(file);
-    drv_init &= ~'0';
+    int file;
+
+    printf("\nSetting slot ");
+    file = open(self_path("ethernet.slot"), O_RDONLY);
+    if (file != -1)
+    {
+      read(file, &drv_init, 1);
+      close(file);
+      drv_init &= ~'0';
+    }
   }
 
   printf("- %d\n\nInitializing ", drv_init);
@@ -304,12 +382,12 @@ int main(int, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  printf("- Ok\n\nSending Request ");
+  printf("- Ok\n\nSending request ");
   {
     uint16_t snd;
     uint16_t pos = 0;
+    uint16_t len = strlen(url_selector);
 
-    len = strlen(url_selector);
     while (len)
     {
       exit_on_key();
@@ -326,14 +404,16 @@ int main(int, char *argv[])
         snd = len;
       }
 
-      // One less to allow for faster pre-increment below
-      dataptr = url_selector + pos - 1;
-      for (i = 0; i < snd; ++i)
       {
-        // The variable is necessary to have cc65 generate code
-        // suitable to access the W5100 auto-increment register.
-        data = *++dataptr;
-        *w5100_data = data;
+        // One less to allow for faster pre-increment below
+        char *dataptr = url_selector + pos - 1;
+        for (i = 0; i < snd; ++i)
+        {
+          // The variable is necessary to have cc65 generate code
+          // suitable to access the W5100 auto-increment register.
+          char data = *++dataptr;
+          *w5100_data = data;
+        }
       }
 
       w5100_send_commit(snd);
@@ -342,13 +422,13 @@ int main(int, char *argv[])
     }
   }
 
-  printf("- Ok\n\nReceiving Response ");
+  printf("- Ok\n\nReceiving response ");
   {
     uint16_t rcv;
-    char *body;
+    bool body = false;
+    uint16_t len = 0;
 
-    len = 0;
-    while (true)
+    while (!body)
     {
       exit_on_key();
 
@@ -359,34 +439,34 @@ int main(int, char *argv[])
         continue;
       }
 
-      // One less to allow for zero-termination further down below
-      if (rcv > sizeof(buffer) - 1 - len)
+      if (rcv > sizeof(buffer) - len)
       {
-        rcv = sizeof(buffer) - 1 - len;
+        rcv = sizeof(buffer) - len;
       }
 
-      // One less to allow for faster pre-increment below
-      dataptr = buffer + len - 1;
-      for (i = 0; i < rcv; ++i)
       {
-        // The variable is necessary to have cc65 generate code
-        // suitable to access the W5100 auto-increment register.
-        data = *w5100_data;
-        *++dataptr = data;
+        // One less to allow for faster pre-increment below
+        char *dataptr = buffer + len - 1;
+        for (i = 0; i < rcv; ++i)
+        {
+          // The variable is necessary to have cc65 generate code
+          // suitable to access the W5100 auto-increment register.
+          char data = *w5100_data;
+          *++dataptr = data;
+
+          if (!memcmp(dataptr - 3, "\r\n\r\n", 4))
+          {
+            rcv = i + 1;
+            body = true;
+          }
+        }
       }
 
       w5100_receive_commit(rcv);
       len += rcv;
 
-      buffer[len] = '\0';
-      body = strstr(buffer,"\r\n\r\n");
-      if (body)
-      {
-        break;
-      }
-
-      // No body found but full buffer
-      if (len == sizeof(buffer) - 1)
+      // No body found in full buffer
+      if (len == sizeof(buffer))
       {
         printf("- Invalid response\n");
         w5100_disconnect();
@@ -412,82 +492,9 @@ int main(int, char *argv[])
       w5100_disconnect();
       exit(EXIT_FAILURE);
     }
-
-    body += strlen("\r\n\r\n");
-    len -= body - buffer;
-    memmove(buffer, body, len);
   }
 
-  printf("- Ok\n\nOpening file ");
-  file = open(arg, O_WRONLY | O_CREAT | O_TRUNC);
-  if (file == -1)
-  {
-    w5100_disconnect();
-    file_error_exit();
-  }
-  printf("- Ok\n\n");
-
-  {
-    uint16_t rcv;
-    bool cont = true;
-    uint32_t size = 0;
-
-    while (cont)
-    {
-      exit_on_key();
-
-      rcv = w5100_receive_request();
-      if (!rcv)
-      {
-        cont = w5100_connected();
-        if (cont)
-        {
-          continue;
-        }
-      }
-
-      if (rcv > sizeof(buffer) - len)
-      {
-        rcv = sizeof(buffer) - len;
-      }
-
-      // One less to allow for faster pre-increment below
-      dataptr = buffer + len - 1;
-      for (i = 0; i < rcv; ++i)
-      {
-        // The variable is necessary to have cc65 generate code
-        // suitable to access the W5100 auto-increment register.
-        data = *w5100_data;
-        *++dataptr = data;
-      }
-
-      w5100_receive_commit(rcv);
-      len += rcv;
-
-      if (cont && len < sizeof(buffer))
-      {
-        continue;
-      }
-
-      cprintf("\rWriting ");
-      if (write(file, buffer, len) != len)
-      {
-        w5100_disconnect();
-        file_error_exit();
-      }
-      size += len;
-      cprintf("%lu bytes ", size);
-
-      len = 0;
-    }
-  }
-
-  printf("- Ok\n\nClosing file ");
-  if (close(file))
-  {
-    w5100_disconnect();
-    file_error_exit();
-  }
+  receive_file(arg);
 
   printf("- Ok\n\nDisconnecting ");
   w5100_disconnect();
