@@ -217,7 +217,7 @@ char *get_argument(char arg, const char *name,
 
   if (_argc > arg)
   {
-    val = *_argv[arg];
+    val = (*_argv)[arg];
     printf("%s: %s", name, val);
   }
   else
