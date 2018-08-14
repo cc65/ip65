@@ -19,7 +19,7 @@
 .import tcp_connect_ip
 .import tcp_send_data_len
 
-.import pushax, popax, popeax
+.import pushax, popax, popeax, popptr1
 .importzp ptr1, sreg
 
 
@@ -57,8 +57,7 @@ _tcp_connect:
   stax jmpvector+1
   ldax #callback
   stax tcp_callback
-  jsr popax
-  stax ptr1
+  jsr popptr1
   jsr popeax
   stax tcp_connect_ip
   ldax sreg
