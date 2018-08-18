@@ -52,8 +52,7 @@ void main(void)
 {
   uint8_t drv_init = DRV_INIT_DEFAULT;
   uint32_t server;
-  time_t rawtime;
-  struct tm* timeinfo;
+  struct timespec time;
 
   strncpy(_tz.tzname, TIMEZONE_CODE,
           sizeof(_tz.tzname) - 1);
@@ -100,42 +99,18 @@ void main(void)
   }
 
   printf("- Ok\n\nGetting %s ", _tz.tzname);
-  rawtime = sntp_get_time(server);
-  if (!rawtime)
+  time.tv_sec = sntp_get_time(server);
+  if (!time.tv_sec)
   {
     error_exit();
   }
 
   // Convert time from seconds since 1900 to
   // seconds since 1970 according to RFC 868
-  rawtime -= 2208988800UL;
+  time.tv_sec -= 2208988800UL;
 
-  timeinfo = localtime(&rawtime);
-  printf("- %s", asctime(timeinfo));
+  printf("- %s", ctime(&time.tv_sec));
 
-#ifdef __APPLE2__
-  {
-    // See ProDOS 8 Technical Reference Manual
-    // Chapter 6.1 - Clock/Calendar Routines
-    typedef struct
-    {
-        unsigned mday :5;
-        unsigned mon  :4;
-        unsigned year :7;
-        uint8_t  min;
-        uint8_t  hour;
-    }
-    dostime_t;
-    dostime_t* dostime = (dostime_t*)0xBF90;
-
-    // If DOS time is 0:00 assume no RTC active
-    if (!(dostime->hour || dostime->min))
-    {
-      // Set only DOS date to today
-      dostime->year = timeinfo->tm_year % 100;
-      dostime->mon  = timeinfo->tm_mon  + 1;
-      dostime->mday = timeinfo->tm_mday;
-    }
-  }
-#endif
+  time.tv_nsec = 0;
+  clock_settime(CLOCK_REALTIME, &time);
 }
