@@ -91,10 +91,6 @@ static void refreshLine(struct linenoiseState *l);
 
 /* ======================= Low level terminal handling ====================== */
 
-#ifdef __APPLE2__
-#pragma code-name (push, "LC")
-#endif
-
 /* Try to get the number of columns in the current terminal, or assume 80
  * if it fails. */
 static int getColumns() {
@@ -103,6 +99,10 @@ static int getColumns() {
     screensize(&cols,&rows);
     return cols;
 }
+
+#ifdef __APPLE2__
+#pragma code-name (push, "LC")
+#endif
 
 /* Beep, used for completion when there is nothing to complete or when all
  * the choices were already shown. */
@@ -214,6 +214,7 @@ void linenoiseAddCompletion(linenoiseCompletions *lc, const char *str) {
  * cursor position, and number of columns of the terminal. */
 static void refreshLine(struct linenoiseState *l) {
     char tmp;
+    unsigned char y = wherey();
     size_t plen = strlen(l->prompt);
     char *buf = l->buf;
     size_t len = l->len;
@@ -242,7 +243,7 @@ static void refreshLine(struct linenoiseState *l) {
         cclear(l->cols-wherex());
     }
     /* Move cursor to original position. */
-    gotox((unsigned char)(pos+plen));
+    gotoxy((unsigned char)(pos+plen),y);
 }
 
 /* Insert the character 'c' at cursor current position. */
