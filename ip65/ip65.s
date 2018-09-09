@@ -48,6 +48,7 @@ ip65_random_word:
   adc $4e                       ; on an Apple 2, this is RNDL
   adc $9004                     ; on a VIC 20, this is the raster register
   adc $d41b                     ; on a C64, this is a 'random' number from the SID
+  adc $d20a                     ; on an Atari, this is a 'random' number from the POKEY
   pha
   adc ip65_ctr_arp
   ora #$08                      ; make sure we grab at least 8 bytes from eth_inp
