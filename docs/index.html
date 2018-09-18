@@ -1,0 +1,203 @@
+<html>
+<head>
+<title>IP65 - a TCP/IP stack for 6502 computers</title>
+</head>
+
+<style type="text/css">
+
+body {
+  background-color: white;
+  color: black;
+}
+
+table {
+  background-color: #000000;
+  padding: 0px;
+  margin: 10px 20px;
+}
+
+th {
+  width: 10em;
+  background-color: #ccccff;
+  padding: 4px;
+  text-align: center;
+  padding-right: 4px;
+#  border: solid 2px black;
+}
+
+td {
+  background-color: #ffff99;
+  font-family: sans-serif;
+  font-weight: bold;
+  width: 6em;
+  padding: 4px;
+  text-align: center;
+  white-space: nowrap;
+#  border: solid 2px black;
+}
+
+</style>
+
+<body>
+
+
+<h1>IP65</h1>
+
+<p>
+IP65 is a TCP/IP stack for 6502 based computers.
+</p>
+
+
+<h2>Status</h2>
+
+<table>
+
+  <tr>
+    <th>Applications</th>
+    <td colspan="1">HTTP Client</td>
+    <td colspan="1">HTTP Server</td>
+    <td colspan="1">Telnet Client</td>
+    <td colspan="1">Gopher Client</td>
+    <td colspan="2">TFTP</td>
+    <td colspan="1">Ping</td>
+  </tr>
+
+  <tr>
+    <th>Services</th>
+    <td colspan="4" rowspan="2">TCP</td>
+    <td colspan="1">DHCP</td>
+    <td colspan="1">DNS</td>
+    <td colspan="1">Echo</td>
+  </tr>
+
+  <tr>
+    <th>Transport</th>
+    <td colspan="2">UDP</td>
+    <td colspan="1">ICMP</td>
+  </tr>
+
+  <tr>
+    <th>Network</th>
+    <td colspan="7">IP</td>
+  </tr>
+
+  <tr>
+    <th>Addressing</th>
+    <td colspan="7">ARP</td>
+  </tr>
+
+  <tr>
+    <th>Ethernet controller</th>
+    <td colspan="7">CS8900A / LAN91C96 / W5100</td>
+  </tr>
+
+  <tr>
+    <th>Ethernet driver</th>
+    <td colspan="1">RR-Net</td>
+    <td colspan="1">ETH64</td>
+    <td colspan="1">Uthernet</td>
+    <td colspan="1">LANceGS</td>
+    <td colspan="1">Uthernet II</td>
+    <td colspan="1">Dragon Cart</td>
+    <td colspan="1">RR-Net</td>
+  </tr>
+
+  <tr>
+    <th>Host computer</th>
+    <td colspan="2">C64 / C128</td>
+    <td colspan="3">Apple ][</td>
+    <td colspan="1">ATARI 8-bit</td>
+    <td colspan="1">VIC20</td>
+  </tr>
+
+</table>
+
+<h2>Documentation</h2>
+
+<a href="ref_frames.html">IP65 technical reference</a>
+
+
+<h2>Download</h2>
+
+<a href="http://github.com/cc65/ip65/archive/master.zip">Latest code</a> (github.com)<p>
+<a href="http://sourceforge.net/projects/ip65/files/ip65-2012-11-21.zip/download">ip65-2012-11-21.zip</a> (sourceforge.net)<p>
+<a href="http://web.archive.org/web/20121128054236if_/http://www.paradroid.net/ip65/ip65-2009-01-22.zip">ip65-2009-01-22.zip</a> (paradroid.net)
+
+<h2>History</h2>
+<pre>
+  Release	Maintainer	Changes
+  -------	----------	-------
+  2011-01-15	Jonno Downes	Drivers for Wiznet W5100 ethernet, VIC-20 host
+  2009-12-23	Jonno Downes	TCP and telnet bugfixes, vt100 emulation, XMODEM support
+  2009-10-31	Jonno Downes	Added Web Application Server functions
+  2009-08-02	Jonno Downes	More TCP functionality, includes telnet
+  2009-07-12	Jonno Downes	Initial TCP implementation (use -DTCP to include)
+  2009-03-21	Jonno Downes	Added technical reference documentation
+  2009-03-15	Jonno Downes	Added DHCP, DNS & TFTP
+  2009-01-22	Per Olofsson	Added copymem fix from Jonno Downes. Added MPL license.
+  2008-09-27	Per Olofsson	Added timeout fix for ineth_tx from David Schmidt.
+  2006-09-20	Per Olofsson	Fixed checksum calculation for odd packet sizes.
+  2006-02-22	Per Olofsson	Added fix for sending of packets larger than 256 bytes
+				from Ewen Wannop and Glenn Jones.
+</pre>
+
+<h2>Sample UDP listener source</h2>
+
+<pre>
+gangedport      = 60064
+
+        jsr ip65_init
+        lda #&lt;gotpacket
+        ldx #&gt;gotpacket
+        sta udp_callback
+        stx udp_callback + 1
+        lda #&lt;gangedport
+        ldx #&gt;gangedport
+        jsr udp_add_listener
+
+main:
+        jsr ip65_process
+        jmp main
+
+gotpacket:
+        sei
+        lda $01
+        pha
+        lda udp_inp
+        sta $01
+
+        lda udp_inp + 1
+        ldx udp_inp + 2
+        sta zp_data
+        stx zp_data + 2
+        ldy udp_inp + 3
+copy:
+        lda udp_inp + 3,y
+        sta (zp_data),y
+        dey
+        bne copy
+
+        pla
+        sta $01
+        cli
+        rts
+</pre>
+
+
+<h2>License</h2>
+
+This project is released under the Mozilla Public License Version 1.1.
+For details, please visit <a href="http://www.mozilla.org/MPL/">http://www.mozilla.org/MPL/</a>.
+
+
+<h2>Source Code</h2>
+
+Browse online at <a href="http://github.com/cc65/ip65">http://github.com/cc65/ip65</a> or else download the whole tree through Git with the following instruction:
+  <pre>git clone https://github.com/cc65/ip65.git</pre>
+
+
+<p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+
+
+</body>
+</html>

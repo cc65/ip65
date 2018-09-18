@@ -1,0 +1,86 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="ca65-doc-style.css"/></head><body><a href="ref_index.html"><h1>ip65 technical reference</h1></a><h1>File : drivers/a2print.s</h1><h2 id="functions">functions</h2><table><tr><th>function</th><th>description</th></tr><tr><td id="beep">beep</td><td><pre>use Apple 2 monitor ROM function to move to make a 'beep' noise
+inputs: none
+outputs: none</pre></td></tr><tr><td id="cls">cls</td><td><pre>use Apple 2 monitor ROM function to move to clear the screen
+inputs: none
+outputs: none  </pre></td></tr><tr><td id="print_a">print_a</td><td><pre>
+use Apple 2 monitor ROM function to display 1 char
+inputs: A should be set to ASCII char to display
+outputs: none</pre></td></tr><tr><td id="print_a_inverse">print_a_inverse</td><td><pre/></td></tr><tr><td id="print_cr">print_cr</td><td><pre>use Apple 2 monitor ROM function to move to new line
+inputs: none
+outputs: none</pre></td></tr></table><h2 id="constants">constants</h2><table><tr><th>constants</th><th>description</th><th>value</th></tr><tr><td id="screen_current_col">screen_current_col</td><td> CH - Horizontal cursor-position (0-39)</td><td>$24 </td></tr><tr><td id="screen_current_row">screen_current_row</td><td> CV - Vertical cursor-position (0-23)</td><td>$25 </td></tr></table><h2>implementation</h2><pre id="code">
+.export print_a
+.export print_a_inverse
+.export print_cr
+.export cls
+.export beep
+.exportzp screen_current_row
+.exportzp screen_current_col
+
+.code
+
+screen_current_col=$24 ; CH - Horizontal cursor-position (0-39)
+screen_current_row=$25 ; CV - Vertical cursor-position (0-23)
+
+;
+;use Apple 2 monitor ROM function to display 1 char
+;inputs: A should be set to ASCII char to display
+;outputs: none
+print_a:
+  ora  #$80  ;turn ASCII into Apple 2 screen codes  
+  cmp #$8A   ;is it a line feed?
+  bne @not_line_feed
+;  jmp print_cr
+  pha
+  lda #$0
+  sta screen_current_col
+  pla
+@not_line_feed:
+  
+  jmp $fded
+
+
+;use Apple 2 monitor ROM function to move to new line
+;inputs: none
+;outputs: none
+print_cr:
+
+  jmp $fd8e
+    
+
+;use Apple 2 monitor ROM function to move to clear the screen
+;inputs: none
+;outputs: none  
+cls:
+    jmp $fc58
+
+;use Apple 2 monitor ROM function to move to make a 'beep' noise
+;inputs: none
+;outputs: none
+beep:
+  jmp $fbdd
+  
+print_a_inverse:
+  and  #$7F  ;turn off top bits
+  jsr $fded
+
+
+
+;-- LICENSE FOR a2print.s --
+; The contents of this file are subject to the Mozilla Public License
+; Version 1.1 (the "License"); you may not use this file except in
+; compliance with the License. You may obtain a copy of the License at
+; http://www.mozilla.org/MPL/
+; 
+; Software distributed under the License is distributed on an "AS IS"
+; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+; License for the specific language governing rights and limitations
+; under the License.
+; 
+; The Original Code is ip65.
+; 
+; The Initial Developer of the Original Code is Jonno Downes,
+; jonno@jamtronix.com.
+; Portions created by the Initial Developer are Copyright (C) 2009
+; Jonno Downes. All Rights Reserved.  
+; -- LICENSE END --
+</pre></body></html>

@@ -1,0 +1,55 @@
+body { background-color: #cde; color: #333; }
+
+body, p, ol, ul, td, th {
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size:   9pt;
+/*  line-height: 12pt;*/
+}
+
+pre {
+  background-color: #eee;
+  padding: 10px;
+  font-size: 16px;
+  white-space: pre-wrap; /* css-3 */
+  white-space: -moz-pre-wrap !important; /* Mozilla, since 1999 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
+}
+
+td,th {
+ background-color: #eee;
+ vertical-align: text-top;
+/*  padding-left: 3px;
+  padding-right: 3px;
+*/  
+}
+
+tr.header {
+  background-color: #aaf;
+}
+
+p.footer {
+  font-size:   12px;
+  line-height: 16px;
+}
+
+h2 {
+	background-color: #bcd;
+}
+
+h3 {
+	background-color: #bcd;
+}
+
+img {
+	border: 0px;
+}
+
+
+a { color: #000; }
+a:visited { color: #666; }
+a:hover { color: #fff; background-color:#000; }
+
+
+
