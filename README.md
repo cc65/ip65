@@ -1,6 +1,6 @@
 IP65 consists of three parts:
-- A [TCP/IP library to be used by 6502 asm programmers](https://github.com/cc65/ip65/wiki/Library-for-asm-programs) using the [ca65](http://cc65.github.io/doc/ca65.html) macro assembler
-- A [TCP/IP library to be used by C programmers](https://github.com/cc65/ip65/wiki/Library-for-C-programs) using the [cc65](http://cc65.github.io/doc/cc65.html) 6502 C cross compiler
+- A [TCP/IP library to be used by 6502 asm programmers](https://github.com/cc65/ip65/wiki/Library-for-asm-programs) using the [ca65](https://cc65.github.io/doc/ca65.html) macro assembler
+- A [TCP/IP library to be used by C programmers](https://github.com/cc65/ip65/wiki/Library-for-C-programs) using the [cc65](https://cc65.github.io/doc/cc65.html) 6502 C cross compiler
 - Several [ready-to-run TCP/IP programs](https://github.com/cc65/ip65/wiki) using one of the libraries
 
 All three parts are available for three 6502 based target systems:
