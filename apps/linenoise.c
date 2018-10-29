@@ -47,7 +47,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <conio.h>
+#ifdef __APPLE2__
 #include <apple2_filetype.h>
+#endif
 
 #include "linenoise.h"
 
