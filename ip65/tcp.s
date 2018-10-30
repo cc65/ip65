@@ -369,7 +369,7 @@ tcp_close:
 ; inputs:
 ; tcp connection should already be opened
 ; AX: pointer to buffer - data up to (but not including)
-; the first nul byte will be sent. max of 255 bytes will be sent.
+; the first nul byte will be sent.
 ; outputs:
 ; carry flag is set if an error occured, clear otherwise
 tcp_send_string:
@@ -388,6 +388,9 @@ tcp_send_string:
   inc tcp_send_data_len
   iny
   bne @find_end_of_string
+  inc tcp_send_data_len+1
+  inc ptr1+1
+  jmp @find_end_of_string
 @done:
   ldax tcp_send_data_ptr
   ; now we can fall through into tcp_send
