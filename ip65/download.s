@@ -47,6 +47,7 @@ TIMEOUT_SECONDS = 15
 .code
 
 ; download a resource specified by an URL
+; caution - the selector built from the URL must fit into the output_buffer !!!
 ; inputs:
 ; AX = address of URL string
 ; url_download_buffer - points to a buffer that url will be downloaded into

@@ -42,6 +42,7 @@ selector_buffer = output_buffer
 .code
 
 ; parses a URL into a form that makes it easy to retrieve the specified resource
+; caution - the resulting selector part of URL must fit into the output_buffer !!!
 ; inputs:
 ; AX = address of URL string
 ; any control character (i.e. <$20) is treated as 'end of string', e.g. a CR or LF, as well as $00
@@ -162,11 +163,15 @@ lda #url_type_gopher
   cmp #$20
   bcc @end_of_selector          ; any control char (including CR,LF, and $00) should be treated as end of URL
   inc src_ptr
+  bne @save_first_byte_of_selector
+  inc ptr1+1
 @save_first_byte_of_selector:
   ldy dest_ptr
   sta (ptr2),y
   inc dest_ptr
   bne @copy_one_byte
+  inc ptr2+1
+  jmp @copy_one_byte
 @end_of_selector:
   ldx #1                        ; number of CRLF at end of gopher request
   lda url_type
@@ -177,18 +182,24 @@ lda #url_type_gopher
   ; now the HTTP version number & Host: field
   ldx #0
 : lda http_preamble,x
-  beq :+
+  beq :++
   ldy dest_ptr
-  inc dest_ptr
   sta (ptr2),y
-  inx
-  bne :-
+  inc dest_ptr
+  bne :+
+  inc ptr2+1
+: inx
+  bne :--
 : ; now copy the host field
+  lda ptr2+1
+  pha
   jsr skip_to_hostname
   ; AX now pointing at hostname
   stax ptr1
-  ldax #selector_buffer
-  stax ptr2
+  ldax #<selector_buffer
+  sta ptr2
+  pla
+  sta ptr2+1
 
   lda #0
   sta src_ptr
@@ -206,6 +217,8 @@ lda #url_type_gopher
   sta (ptr2),y
   inc dest_ptr
   bne @copy_one_byte_of_hostname
+  inc ptr2+1
+  jmp @copy_one_byte_of_hostname
 @end_of_hostname:
   ldx #2                        ; number of CRLF at end of HTTP request
 
@@ -214,10 +227,14 @@ lda #url_type_gopher
   lda #$0d
   sta (ptr2),y
   iny
-  lda #$0a
+  bne :+
+  inc ptr2+1
+: lda #$0a
   sta (ptr2),y
   iny
-  sty dest_ptr
+  bne :+
+  inc ptr2+1
+: sty dest_ptr
   dex
   bne @final_crlf
 

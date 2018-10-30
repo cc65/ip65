@@ -299,6 +299,7 @@ extern char*    url_selector;   // Zero terminated string containing selector pa
 
 // Download a resource specified by an HTTP URL
 //
+// The URL mustn't be longer than 450 chars.
 // On success the resource is zero terminated.
 //
 // Inputs: url: Zero (or ctrl char) terminated string containing the URL
