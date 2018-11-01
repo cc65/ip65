@@ -31,7 +31,8 @@ UDP =\
 
 TCP =\
 	hfs65 \
-	telnet65
+	telnet65 \
+	tweet65
 
 bin: wget65.bin
 
@@ -39,9 +40,11 @@ wget65.bin: w5100.c linenoise.c
 wget65.bin: IP65LIB = ../ip65/ip65.lib
 wget65.bin: A2_DRIVERLIB = ../drivers/ip65_apple2_uther2.lib
 
-date65.bin hfs65.bin: CL65FLAGS = --start-addr 0x0C00 apple2enh-iobuf-0800.o
+date65.bin hfs65.bin tweet65.bin: CL65FLAGS = --start-addr 0x0C00 apple2enh-iobuf-0800.o
 
 telnet65.com: ATARI_CFG = atrtelnet.cfg
+
+tweet65.prg tweet65.bin tweet65.com: ifttt.c
 
 all:    $(UDP) $(TCP)
 .PHONY: $(UDP) $(TCP)
@@ -109,16 +112,19 @@ ip65.d64: prg
 	$(C1541) -attach $@ -write date65.prg   date65,p
 	$(C1541) -attach $@ -write hfs65.prg    hfs65,p
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
+	$(C1541) -attach $@ -write tweet65.prg  tweet65,p
 
 ip65.dsk: bin
 	cp ../build/prodos.dsk $@
-	java -jar $(AC) -as $@ date65            < date65.bin
-	java -jar $(AC) -p  $@ date65.system sys < $(CC65)/apple2enh/util/loader.system
-	java -jar $(AC) -as $@ hfs65             < hfs65.bin
-	java -jar $(AC) -p  $@ hfs65.system  sys < $(CC65)/apple2enh/util/loader.system
-	java -jar $(AC) -as $@ wget65            < wget65.bin
-	java -jar $(AC) -p  $@ wget65.system sys < $(CC65)/apple2enh/util/loader.system
-	java -jar $(AC) -as $@ telnet65          < telnet65.bin
+	java -jar $(AC) -as $@ date65             < date65.bin
+	java -jar $(AC) -p  $@ date65.system  sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ hfs65              < hfs65.bin
+	java -jar $(AC) -p  $@ hfs65.system   sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ tweet65            < tweet65.bin
+	java -jar $(AC) -p  $@ tweet65.system sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ wget65             < wget65.bin
+	java -jar $(AC) -p  $@ wget65.system  sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ telnet65           < telnet65.bin
 
 ip65.atr: com
 	mkdir atr
@@ -126,6 +132,7 @@ ip65.atr: com
 	cp ../build/dup.sys atr/dup.sys
 	cp date65.com       atr/date65.com
 	cp telnet65.com     atr/telnet65.com
+	cp tweet65.com      atr/tweet65.com
 	$(DIR2ATR) -b Dos25 1040 $@ atr
 	rm -r atr
 
