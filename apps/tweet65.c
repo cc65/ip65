@@ -12,7 +12,7 @@
 #include "../inc/ip65.h"
 #include "ifttt.h"
 
-char key[22 + 1];
+char key[80 + 1];
 char text[280 + 1];
 
 void error_exit(void)
