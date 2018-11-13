@@ -213,7 +213,7 @@ bool tcp_close(void);
 // Send data on the current TCP connection
 //
 // Inputs: buf: Pointer to buffer containing data to be sent
-//         len: Length of data to send (exclusive of any headers)
+//         len: Length of data to send (up to 1460 bytes)
 // Output: true if an error occured, false otherwise
 //
 bool __fastcall__ tcp_send(const uint8_t* buf, uint16_t len);
@@ -299,8 +299,9 @@ extern char*    url_selector;   // Zero terminated string containing selector pa
 
 // Download a resource specified by an HTTP URL
 //
-// The URL mustn't be longer than 450 chars.
-// On success the resource is zero terminated.
+// The URL mustn't be longer than 1400 chars. The buffer is temporarily used to hold the
+// generated HTTP request so it should have a length of at least 1460 bytes. On success
+// the resource is zero terminated.
 //
 // Inputs: url: Zero (or ctrl char) terminated string containing the URL
 //         buf: Pointer to a buffer that the resource will be downloaded into

@@ -18,9 +18,9 @@
 .export url_selector
 .export url_resource_type
 .export url_parse
+.export url_parse_buffer
 
 search_string   = ptr1
-selector_buffer = output_buffer
 
 
 .bss
@@ -50,8 +50,22 @@ selector_buffer = output_buffer
 ; sec if a malformed url, otherwise:
 ; url_ip = ip address of host in url
 ; url_port = port number of url
-; url_selector= address of selector part of URL
+; url_selector = address of selector part of URL
 url_parse:
+  ldax #output_buffer
+  stax url_selector
+
+; parses a URL into a form that makes it easy to retrieve the specified resource
+; caution - the resulting selector part of URL must fit into the provided buffer !!!
+; inputs:
+; AX = address of URL string
+; any control character (i.e. <$20) is treated as 'end of string', e.g. a CR or LF, as well as $00
+; url_selector = points to a buffer that selector part of URL will be placed into
+; outputs:
+; sec if a malformed url, otherwise:
+; url_ip = ip address of host in url
+; url_port = port number of url
+url_parse_buffer:
   stax url_string
   ldy #url_type_http
   sty url_type
@@ -125,7 +139,7 @@ lda #url_type_gopher
   ldax #zero
 : ; AX now pointing at selector
   stax ptr1
-  ldax #selector_buffer
+  ldax url_selector
   stax ptr2
   lda #0
   sta src_ptr
@@ -196,7 +210,7 @@ lda #url_type_gopher
   jsr skip_to_hostname
   ; AX now pointing at hostname
   stax ptr1
-  ldax #<selector_buffer
+  lda url_selector
   sta ptr2
   pla
   sta ptr2+1
@@ -241,8 +255,6 @@ lda #url_type_gopher
 @done:
   lda #$00
   sta (ptr2),y
-  ldax #selector_buffer
-  stax url_selector
   clc
   rts
 
@@ -261,7 +273,7 @@ get:
 
 http_preamble:
   .byte " HTTP/1.0",$0d,$0a
-  .byte "User-Agent: IP65/0.6502",$0d,$0a
+  .byte "User-Agent: IP65/0.65",$0d,$0a
   .byte "Connection: close",$0d,$0a
   .byte "Host: ",0
 

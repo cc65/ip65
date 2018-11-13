@@ -21,7 +21,7 @@ TIMEOUT_SECONDS = 15
 .import url_ip
 .import url_port
 .import url_selector
-.import url_parse
+.import url_parse_buffer
 
 .export url_download
 .export url_download_buffer
@@ -47,17 +47,21 @@ TIMEOUT_SECONDS = 15
 .code
 
 ; download a resource specified by an URL
-; caution - the selector built from the URL must fit into the output_buffer !!!
+; caution - the selector built from the URL must fit into the url_download_buffer !!!
 ; inputs:
 ; AX = address of URL string
-; url_download_buffer - points to a buffer that url will be downloaded into
-; url_download_buffer_length - length of buffer
+; url_download_buffer = points to a buffer that url will be downloaded into
+; url_download_buffer_length = length of buffer
 ; outputs:
 ; sec if an error occured, else buffer pointed at by url_download_buffer is filled with contents
 ; of specified resource (with an extra 2 null bytes at the end),
 ; AX = length of resource downloaded.
 url_download:
-  jsr url_parse
+  ldy url_download_buffer
+  sty url_selector
+  ldy url_download_buffer+1
+  sty url_selector+1
+  jsr url_parse_buffer
   bcc resource_download
   rts
 
@@ -65,9 +69,9 @@ url_download:
 ; inputs:
 ; url_ip = ip address of host to connect to
 ; url_port = port number of to connect to
-; url_selector= address of selector to send to host after connecting
-; url_download_buffer - points to a buffer that url will be downloaded into
-; url_download_buffer_length - length of buffer
+; url_selector = address of selector to send to host after connecting
+; url_download_buffer = points to a buffer that url will be downloaded into
+; url_download_buffer_length = length of buffer
 ; outputs:
 ; sec if an error occured, else buffer pointed at by url_download_buffer is filled with contents
 ; of specified resource (with an extra 2 null bytes at the end).
@@ -76,7 +80,6 @@ resource_download:
   stax resource_buffer
   ldax url_download_buffer_length
   stax resource_buffer_length
-  jsr put_zero_at_end_of_dl_buffer
 
   ldx #3                        ; save IP address just retrieved
 : lda url_ip,x
@@ -94,8 +97,9 @@ resource_download:
   ldx #0
   stx download_flag
   ldax url_selector
-
   jsr tcp_send_string
+
+  jsr put_zero_at_end_of_dl_buffer
   jsr timer_read
   txa
   adc #TIMEOUT_SECONDS*4        ; what value should trigger the timeout?

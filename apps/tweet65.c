@@ -28,6 +28,9 @@ void error_exit(void)
   case IP65_ERROR_TIMEOUT_ON_RECEIVE:
     printf("- Timeout\n");
     break;
+  case IP65_ERROR_MALFORMED_URL:
+    printf("- Malformed URL\n");
+    break;
   case IP65_ERROR_DNS_LOOKUP_FAILED:
     printf("- Lookup failed\n");
     break;

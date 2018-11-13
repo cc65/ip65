@@ -6,8 +6,8 @@
 #include "../inc/ip65.h"
 #include "ifttt.h"
 
-static char url[1024];
-static char download[1024];
+static char url[2048];
+static char download[2048];
 
 static bool isclean(char c)
 {
@@ -85,7 +85,7 @@ int ifttt_trigger(const char* key, const char* event,
     ++ptr;
   }
 
-  if (strlen(url) > 450)
+  if (strlen(url) > 1400)
   {
     ip65_error = IP65_ERROR_MALFORMED_URL;
     return -1;

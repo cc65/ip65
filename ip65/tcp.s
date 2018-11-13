@@ -398,7 +398,7 @@ tcp_send_string:
 ; send tcp data
 ; inputs:
 ; tcp connection should already be opened
-; tcp_send_data_len: length of data to send (exclusive of any headers)
+; tcp_send_data_len: length of data to send (up to 1460 bytes)
 ; AX: pointer to buffer containing data to be sent
 ; outputs:
 ;   carry flag is set if an error occured, clear otherwise
