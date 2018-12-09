@@ -52,8 +52,10 @@ search_string   = ptr1
 ; url_port = port number of url
 ; url_selector = address of selector part of URL
 url_parse:
-  ldax #output_buffer
-  stax url_selector
+  ldy #<output_buffer
+  sty url_selector
+  ldy #>output_buffer
+  sty url_selector+1
 
 ; parses a URL into a form that makes it easy to retrieve the specified resource
 ; caution - the resulting selector part of URL must fit into the provided buffer !!!
