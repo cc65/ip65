@@ -4,6 +4,12 @@
 .export _lan91c96_driver_io_base
 
 
+__APPLE2__ = 1
+DYN_DRV = 0
+
+.include "lan91c96.s"
+
+
 .rodata
 
 _lan91c96_driver_name:

@@ -4,6 +4,12 @@
 .export _w5100_driver_io_base
 
 
+__APPLE2__ = 1
+DYN_DRV = 0
+
+.include "w5100.s"
+
+
 .rodata
 
 _w5100_driver_name:

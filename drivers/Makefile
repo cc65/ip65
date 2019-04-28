@@ -41,7 +41,7 @@ $(DRIVERS):
 	ar65 a $@ $^
 
 %.o: %.s
-	ca65 -D DYN_DRV=0 $<
+	ca65 $<
 
 %.xl.o: %.s
 	ca65 -o $*.xl.o -t atarixl $<
@@ -101,25 +101,16 @@ VIC20OBJS=\
 	cbmcharconv.o
 
 CS8900AOBJS=\
-	cs8900a.o \
 	cs8900adriver.o \
 	ethernet.o
 
 LAN91C96OBJS=\
-	lan91c96.o \
 	lan91c96driver.o \
 	ethernet.o
 
 W5100OBJS=\
-	w5100.o \
 	w5100driver.o \
 	ethernet.o
-
-COMBOOBJS=\
-	cs8900a.o \
-	lan91c96.o \
-	w5100.o \
-	ethernetcombo.o
 
 c64rrnet.lib: c64init.o rr-net.o $(CS8900AOBJS) $(C64OBJS)
 
@@ -127,9 +118,9 @@ c64eth64.lib: c64init.o eth64.o $(LAN91C96OBJS) $(C64OBJS)
 
 c64wiz811.lib: c64init.o wiz811mj.o $(W5100OBJS) $(C64OBJS)
 
-c64combo.lib: c64init.o rr-net.o eth64.o wiz811mj.o $(COMBOOBJS) $(C64OBJS)
+c64combo.lib: c64init.o rr-net.o eth64.o wiz811mj.o ethernetcombo.o $(C64OBJS)
 
-ip65_c64.lib: c64init.o rr-net.o eth64.o wiz811mj.o $(COMBOOBJS) $(C64_OBJS)
+ip65_c64.lib: c64init.o rr-net.o eth64.o wiz811mj.o ethernetcombo.o $(C64_OBJS)
 
 a2uther.lib: a2init.o uthernet.o $(CS8900AOBJS) $(A2OBJS)
 
@@ -137,9 +128,9 @@ a2lancegs.lib: a2init.o lancegs.o $(LAN91C96OBJS) $(A2OBJS)
 
 a2uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2OBJS)
 
-a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o $(COMBOOBJS) $(A2OBJS)
+a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o ethernetcombo.o $(A2OBJS)
 
-ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o $(COMBOOBJS) $(A2_OBJS)
+ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o ethernetcombo.o $(A2_OBJS)
 
 ip65_apple2_uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2_OBJS)
 

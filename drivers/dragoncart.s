@@ -4,6 +4,12 @@
 .export _cs8900a_driver_io_base
 
 
+__ATARI__ = 1
+DYN_DRV = 0
+
+.include "cs8900a.s"
+
+
 .rodata
 
 _cs8900a_driver_name:
