@@ -134,6 +134,8 @@ set_name:
 ; inputs: none
 ; outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
+
+.ifdef __APPLE2__
   ldax #_w5100
   jsr patch_wrapper
   ldax #_w5100_driver_name
@@ -141,6 +143,7 @@ eth_init:
   ldax _w5100_driver_io_base
   jsr init_adaptor
   bcc @done
+.endif
 
   ldax #_cs8900a
   jsr patch_wrapper

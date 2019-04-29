@@ -10,17 +10,17 @@
 ifeq ($(eth),cl)
   C64DRIVERLIB = ../drivers/c64rrnet.lib
   A2DRIVERLIB  = ../drivers/a2uther.lib
+  ATRDRIVERLIB = ../drivers/atrdragon.lib
 else ifeq ($(eth),sm)
   C64DRIVERLIB = ../drivers/c64eth64.lib
   A2DRIVERLIB  = ../drivers/a2lancegs.lib
 else ifeq ($(eth),wn)
-  C64DRIVERLIB = ../drivers/c64wiz811.lib
   A2DRIVERLIB  = ../drivers/a2uther2.lib
 else
   C64DRIVERLIB = ../drivers/c64combo.lib
   A2DRIVERLIB  = ../drivers/a2combo.lib
+  ATRDRIVERLIB = ../drivers/atrdragon.lib
 endif
-ATRDRIVERLIB = ../drivers/atrdragon.lib
 
 C64_DRIVERLIB = ../drivers/ip65_c64.lib
 A2_DRIVERLIB  = ../drivers/ip65_apple2.lib

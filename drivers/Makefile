@@ -2,8 +2,7 @@
 # ----------------------
 # c64rrnet.lib   : C64 with RR-Net (or clone) (default base addr: $de0x)
 # c64eth64.lib   : C64 with ETH64 (default base addr: $de0x)
-# c64wiz811.lib  : C64 with WIZ811MJ (default base addr: $de0x)
-# c64combo.lib   : C64 with RR-Net or ETH64 or WIZ811MJ (default base addr: $de0x)
+# c64combo.lib   : C64 with RR-Net or ETH64 (default base addr: $de0x)
 # a2uther.lib    : Apple ][ with Uthernet (default slot: #3)
 # a2lancegs.lib  : Apple ][ with LANceGS (default slot: #3)
 # a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
@@ -13,7 +12,7 @@
 
 # For C programs
 # --------------
-# ip65_c64.lib     : C64 with RR-Net or ETH64 or WIZ811MJ (default base addr: $de0x)
+# ip65_c64.lib     : C64 with RR-Net or ETH64 (default base addr: $de0x)
 # ip65_apple2.lib  : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
 # ip65_atari.lib   : ATARI 8-bit with Dragon Cart (default base addr: $d500)
 # ip65_atarixl.lib : ATARI XL with Dragon Cart (default base addr: $d500)
@@ -21,7 +20,6 @@
 DRIVERS=\
 	c64rrnet.lib \
 	c64eth64.lib \
-	c64wiz811.lib \
 	c64combo.lib \
 	ip65_c64.lib \
 	a2uther.lib \
@@ -116,11 +114,9 @@ c64rrnet.lib: c64init.o rr-net.o $(CS8900AOBJS) $(C64OBJS)
 
 c64eth64.lib: c64init.o eth64.o $(LAN91C96OBJS) $(C64OBJS)
 
-c64wiz811.lib: c64init.o wiz811mj.o $(W5100OBJS) $(C64OBJS)
+c64combo.lib: c64init.o rr-net.o eth64.o c64combo.o $(C64OBJS)
 
-c64combo.lib: c64init.o rr-net.o eth64.o wiz811mj.o c64combo.o $(C64OBJS)
-
-ip65_c64.lib: c64init.o rr-net.o eth64.o wiz811mj.o c64combo.o $(C64_OBJS)
+ip65_c64.lib: c64init.o rr-net.o eth64.o c64combo.o $(C64_OBJS)
 
 a2uther.lib: a2init.o uthernet.o $(CS8900AOBJS) $(A2OBJS)
 
