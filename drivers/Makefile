@@ -118,9 +118,9 @@ c64eth64.lib: c64init.o eth64.o $(LAN91C96OBJS) $(C64OBJS)
 
 c64wiz811.lib: c64init.o wiz811mj.o $(W5100OBJS) $(C64OBJS)
 
-c64combo.lib: c64init.o rr-net.o eth64.o wiz811mj.o ethernetcombo.o $(C64OBJS)
+c64combo.lib: c64init.o rr-net.o eth64.o wiz811mj.o c64combo.o $(C64OBJS)
 
-ip65_c64.lib: c64init.o rr-net.o eth64.o wiz811mj.o ethernetcombo.o $(C64_OBJS)
+ip65_c64.lib: c64init.o rr-net.o eth64.o wiz811mj.o c64combo.o $(C64_OBJS)
 
 a2uther.lib: a2init.o uthernet.o $(CS8900AOBJS) $(A2OBJS)
 
@@ -128,9 +128,9 @@ a2lancegs.lib: a2init.o lancegs.o $(LAN91C96OBJS) $(A2OBJS)
 
 a2uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2OBJS)
 
-a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o ethernetcombo.o $(A2OBJS)
+a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o a2combo.o $(A2OBJS)
 
-ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o ethernetcombo.o $(A2_OBJS)
+ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o a2combo.o $(A2_OBJS)
 
 ip65_apple2_uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2_OBJS)
 
