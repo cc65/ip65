@@ -1,4 +1,4 @@
-__CBM__ = 1
+__C64__ = 1
 
 .include "ethernetcombo.s"
 

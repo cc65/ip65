@@ -74,7 +74,44 @@ cnt	:=	ptr4		; Frame length counter
 
 	.endif
 
+;=====================================================================
+
+	.ifdef __CBM__
+
+	.ifdef __C64__
+rxtxreg		:= $DE08
+txcmd		:= $DE0C
+txlen		:= $DE0E
+isq		:= $DE00
+packetpp	:= $DE02
+ppdata		:= $DE04
+	.endif
+
+	.ifdef __VIC20__
+rxtxreg		:= $9808
+txcmd		:= $980C
+txlen		:= $980E
+isq		:= $9800
+packetpp	:= $9802
+ppdata		:= $9804
+	.endif
+
 ;---------------------------------------------------------------------
+
+	.code
+
+init:
+	; Activate C64 RR clockport in order to operate RR-Net
+	; (RR config register overlays unused CS8900A ISQ register)
+	lda isq+1
+	ora #$01		; Set clockport bit
+	sta isq+1
+
+	.endif
+
+;=====================================================================
+
+	.ifdef __APPLE2__
 
 	.rodata
 
@@ -85,8 +122,7 @@ fixup:	.byte	fixup02-fixup01, fixup03-fixup02, fixup04-fixup03
 	.byte	fixup14-fixup13, fixup15-fixup14, fixup16-fixup15
 	.byte	fixup17-fixup16, fixup18-fixup17, fixup19-fixup18
 	.byte	fixup20-fixup19, fixup21-fixup20, fixup22-fixup21
-	.byte	fixup23-fixup22, fixup24-fixup23, fixup25-fixup24
-	.byte	fixup26-fixup25
+	.byte	fixup23-fixup22, fixup24-fixup23
 
 fixups	= * - fixup
 
@@ -100,9 +136,9 @@ isq		:= $FFF8
 packetpp	:= $FFFA
 ppdata		:= $FFFC
 
-	.data
-
 ;---------------------------------------------------------------------
+
+	.data
 
 init:
 	; Save address of rxtxreg
@@ -120,7 +156,7 @@ init:
 	; Fixup address at location
 :	lda (ptr),y
 	and #$0F
-	eor reg			; Use XOR to support C64 RR-Net
+	ora reg
 	sta (ptr),y
 	iny
 	lda reg+1
@@ -138,14 +174,30 @@ init:
 	bcc :-
 	inc ptr+1
 	bcs :-			; Always
-
-	; Activate C64 RR clockport in order to operate RR-Net
-	; - RR config register overlays CS8900A ISQ register
-	; - No need to distinguish as ISQ access doesn't hurt
 :
-fixup01:lda isq+1
-	ora #$01		; Set clockport bit
-fixup02:sta isq+1
+
+	.endif
+
+;=====================================================================
+
+	.ifdef __ATARI__
+
+rxtxreg		:= $D500
+txcmd		:= $D504
+txlen		:= $D506
+isq		:= $D508
+packetpp	:= $D50A
+ppdata		:= $D50C
+
+;---------------------------------------------------------------------
+
+	.code
+
+init:
+
+	.endif
+
+;=====================================================================
 
 	; Check EISA registration number of Crystal Semiconductor
 	; PACKETPP = $0000, PPDATA == $630E ?
@@ -153,8 +205,8 @@ fixup02:sta isq+1
 	tax
 	jsr packetpp_ax
 	lda #$63^$0E
-fixup03:eor ppdata
-fixup04:eor ppdata+1
+fixup01:eor ppdata
+fixup02:eor ppdata+1
 	beq :+
 	sec
 	rts
@@ -164,9 +216,9 @@ fixup04:eor ppdata+1
 :	lda #$14
 	jsr packetpp_a1
 	ldy #$40
-fixup05:sty ppdata
+fixup03:sty ppdata
 :	jsr packetpp_a1
-fixup06:ldy ppdata
+fixup04:ldy ppdata
 	and #$40
 	bne :-
 
@@ -212,7 +264,7 @@ poll:
 	; PACKETPP = $0124, PPDATA & $0D00 ?
 	lda #$24
 	jsr packetpp_a1
-fixup07:lda ppdata+1
+fixup05:lda ppdata+1
 	and #$0D
 	beq :+
 
@@ -221,13 +273,13 @@ fixup07:lda ppdata+1
 	
 	; Read receiver event and discard it
 	; RXTXREG
-fixup08:ldx rxtxreg+1
-fixup09:lda rxtxreg
+fixup06:ldx rxtxreg+1
+fixup07:lda rxtxreg
 
 	; Read frame length
 	; cnt = len = RXTXREG
-fixup10:ldx rxtxreg+1
-fixup11:lda rxtxreg
+fixup08:ldx rxtxreg+1
+fixup09:lda rxtxreg
 	sta len
 	stx len+1
 	sta cnt
@@ -255,10 +307,10 @@ fixup11:lda rxtxreg
 	; Read bytes into buffer
 :	jsr adjustptr
 :
-fixup12:lda rxtxreg
+fixup10:lda rxtxreg
 	sta (ptr),y
 	iny
-fixup13:lda rxtxreg+1
+fixup11:lda rxtxreg+1
 	sta (ptr),y
 	iny
 	bne :-
@@ -282,12 +334,12 @@ send:
 	; Transmit command
 	lda #$C9
 	ldx #$00
-fixup14:sta txcmd
-fixup15:stx txcmd+1
+fixup12:sta txcmd
+fixup13:stx txcmd+1
 	lda cnt
 	ldx cnt+1
-fixup16:sta txlen
-fixup17:stx txlen+1
+fixup14:sta txlen
+fixup15:stx txlen+1
 
 	; Adjust odd frame length
 	jsr adjustcnt
@@ -299,7 +351,7 @@ fixup17:stx txlen+1
 	; PACKETPP = $0138, PPDATA & $0100 ?
 :	lda #$38
 	jsr packetpp_a1
-fixup18:lda ppdata+1
+fixup16:lda ppdata+1
 	and #$01
 	bne :+
 
@@ -318,10 +370,10 @@ fixup18:lda ppdata+1
 	; Write bytes from buffer
 :	jsr adjustptr
 :	lda (ptr),y
-fixup19:sta rxtxreg
+fixup17:sta rxtxreg
 	iny
 	lda (ptr),y
-fixup20:sta rxtxreg+1
+fixup18:sta rxtxreg+1
 	iny
 	bne :-
 	inc ptr+1
@@ -340,15 +392,15 @@ exit:
 packetpp_a1:
 	ldx #$01
 packetpp_ax:
-fixup21:sta packetpp
-fixup22:stx packetpp+1
+fixup19:sta packetpp
+fixup20:stx packetpp+1
 	rts
 
 ;---------------------------------------------------------------------
 
 ppdata_ax:
-fixup23:sta ppdata
-fixup24:stx ppdata+1
+fixup21:sta ppdata
+fixup22:stx ppdata+1
 	rts
 
 ;---------------------------------------------------------------------
@@ -357,9 +409,9 @@ skipframe:
 	; PACKETPP = $0102, PPDATA = PPDATA | $0040
 	lda #$02
 	jsr packetpp_a1
-fixup25:lda ppdata
+fixup23:lda ppdata
 	ora #$40
-fixup26:sta ppdata
+fixup24:sta ppdata
 	rts
 
 ;---------------------------------------------------------------------

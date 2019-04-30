@@ -4,7 +4,7 @@
 .export _lan91c96_driver_io_base
 
 
-__CBM__ = 1
+__C64__ = 1
 DYN_DRV = 0
 
 .include "lan91c96.s"

@@ -73,7 +73,56 @@ len	:=	ptr3		; Frame length
 
 	.endif
 
+;=====================================================================
+
+	.ifdef __C64__
+
+ethbsr		:= $DE0E	; Bank select register             R/W (2B)
+
+; Register bank 0
+ethtcr		:= $DE00	; Transmition control register     R/W (2B)
+ethephsr	:= $DE02	; EPH status register              R/O (2B)
+ethrcr		:= $DE04	; Receive control register         R/W (2B)
+ethecr		:= $DE06	; Counter register                 R/O (2B)
+ethmir		:= $DE08	; Memory information register      R/O (2B)
+ethmcr		:= $DE0A	; Memory Config. reg.    +0 R/W +1 R/O (2B)
+
+; Register bank 1
+ethcr		:= $DE00	; Configuration register           R/W (2B)
+ethbar		:= $DE02	; Base address register            R/W (2B)
+ethiar		:= $DE04	; Individual address register      R/W (6B)
+ethgpr		:= $DE0A	; General address register         R/W (2B)
+ethctr		:= $DE0C	; Control register                 R/W (2B)
+
+; Register bank 2
+ethmmucr	:= $DE00	; MMU command register             W/O (1B)
+ethautotx	:= $DE01	; AUTO TX start register           R/W (1B)
+ethpnr		:= $DE02	; Packet number register           R/W (1B)
+etharr		:= $DE03	; Allocation result register       R/O (1B)
+ethfifo		:= $DE04	; FIFO ports register              R/O (2B)
+ethptr		:= $DE06	; Pointer register                 R/W (2B)
+ethdata		:= $DE08	; Data register                    R/W (4B)
+ethist		:= $DE0C	; Interrupt status register        R/O (1B)
+ethack		:= $DE0C	; Interrupt acknowledge register   W/O (1B)
+ethmsk		:= $DE0D	; Interrupt mask register          R/W (1B)
+
+; Register bank 3
+ethmt		:= $DE00	; Multicast table                  R/W (8B)
+ethmgmt		:= $DE08	; Management interface             R/W (2B)
+ethrev		:= $DE0A	; Revision register                R/W (2B)
+ethercv		:= $DE0C	; Early RCV register               R/W (2B)
+
 ;---------------------------------------------------------------------
+
+	.code
+
+init:
+
+	.endif
+
+;=====================================================================
+
+	.ifdef __APPLE2__
 
 	.rodata
 
@@ -169,9 +218,14 @@ init:
 	bcc :-
 	inc ptr+1
 	bcs :-			; Always
+:
+
+	.endif
+
+;=====================================================================
 
 	; Check bank select register upper byte to always read as $33
-:	ldy #$00
+	ldy #$00
 fixup01:sty ethbsr+1
 fixup02:lda ethbsr+1
 	cmp #$33
