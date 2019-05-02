@@ -1,7 +1,6 @@
 ; LANceGS driver
 
-.export _lan91c96_driver_name
-.export _lan91c96_driver_io_base
+.export _lan91c96_name
 
 
 __APPLE2__ = 1
@@ -12,14 +11,8 @@ DYN_DRV = 0
 
 .rodata
 
-_lan91c96_driver_name:
+_lan91c96_name:
   .byte "LANceGS",0
-
-
-.data
-
-_lan91c96_driver_io_base:
-  .word $c0b0
 
 
 

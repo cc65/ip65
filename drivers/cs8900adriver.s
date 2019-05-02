@@ -1,12 +1,10 @@
 ; Cirrus Logic CS8900A driver
 
 .import _cs8900a
-.import _cs8900a_driver_name
-.import _cs8900a_driver_io_base
+.import _cs8900a_name
 
-.export eth                = _cs8900a
-.export eth_driver_name    = _cs8900a_driver_name
-.export eth_driver_io_base = _cs8900a_driver_io_base
+.export eth      = _cs8900a
+.export eth_name = _cs8900a_name
 
 
 

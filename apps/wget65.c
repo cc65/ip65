@@ -472,7 +472,7 @@ int main(int, char *argv[])
   uint16_t i;
   char *arg;
   char device;
-  uint8_t drv_init = DRV_INIT_DEFAULT;
+  uint8_t eth_init = ETH_INIT_DEFAULT;
 
   if (doesclrscrafterexit())
   {
@@ -503,14 +503,14 @@ int main(int, char *argv[])
     file = open(self_path("ethernet.slot"), O_RDONLY);
     if (file != -1)
     {
-      read(file, &drv_init, 1);
+      read(file, &eth_init, 1);
       close(file);
-      drv_init &= ~'0';
+      eth_init &= ~'0';
     }
   }
 
-  printf("- %d\n\nInitializing ", drv_init);
-  if (ip65_init(drv_init))
+  printf("- %d\n\nInitializing ", eth_init);
+  if (ip65_init(eth_init))
   {
     ip65_error_exit(true);
   }
@@ -526,7 +526,7 @@ int main(int, char *argv[])
   printf("- Ok\n\n");
 
   // Copy IP config from IP65 to W5100
-  w5100_config();
+  w5100_config(eth_init);
 
   load_argument("wget.urls");
   while (true)

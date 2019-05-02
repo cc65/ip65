@@ -104,19 +104,22 @@ fixups	= * - fixup
 
 ;---------------------------------------------------------------------
 
-; 14 most significant bits are fixed up at runtime
-mode		:= $FFFC|0
-addr		:= $FFFC|1
-data		:= $FFFC|3
-
-	.data
+; The addresses are fixed up at runtime
+mode		:= $C084
+addr		:= $C085
+data		:= $C087
 
 ;---------------------------------------------------------------------
 
+	.data
+
 init:
-	; Save address of register base
+	; Convert slot number to slot I/O offset
+	asl
+	asl
+	asl
+	asl
 	sta reg
-	stx reg+1
 
 	; Start with first fixup location
 	lda #<(fixup01+1)
@@ -128,13 +131,9 @@ init:
 
 	; Fixup address at location
 :	lda (ptr),y
-	and #$03
+	and #%10001111		; Allow for re-init
 	ora reg
 	sta (ptr),y
-	iny
-	lda reg+1
-	sta (ptr),y
-	dey
 	
 	; Advance to next fixup location
 	inx
@@ -147,9 +146,9 @@ init:
 	bcc :-
 	inc ptr+1
 	bcs :-			; Always
+:
 
 	; Indirect Bus I/F mode, Address Auto-Increment
-:
 fixup01:lda mode
 	ora #$03
 fixup02:sta mode

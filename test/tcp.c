@@ -48,7 +48,7 @@ void main(void)
   }
 
   printf("Init\n");
-  if (ip65_init(DRV_INIT_DEFAULT))
+  if (ip65_init(ETH_INIT_DEFAULT))
   {
     error_exit();
   }

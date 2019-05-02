@@ -48,7 +48,7 @@ extern volatile uint8_t* w5100_data;
 
 // Configure W5100 Ethernet controller with additional information from IP65
 // after the IP65 TCP/IP stack has been configured.
-void w5100_config(void);
+void w5100_config(uint8_t eth_init);
 
 // Connect to server with IP address <server_addr> on TCP port <server_port>.
 // Return true if the connection is established, return false otherwise.

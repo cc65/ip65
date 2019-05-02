@@ -114,12 +114,12 @@ static void set_quad(uint16_t addr, uint32_t data)
   }
 }
 
-void w5100_config(void)
+void w5100_config(uint8_t eth_init)
 {
-  w5100_mode    = eth_driver_io_base;
-  w5100_addr_hi = eth_driver_io_base + 1;
-  w5100_addr_lo = eth_driver_io_base + 2;
-  w5100_data    = eth_driver_io_base + 3;
+  w5100_mode    = (uint8_t*)(eth_init << 4 | 0xC084);
+  w5100_addr_hi = w5100_mode + 1;
+  w5100_addr_lo = w5100_mode + 2;
+  w5100_data    = w5100_mode + 3;
 
   // Source IP Address Register
   set_quad(0x000F, cfg_ip);

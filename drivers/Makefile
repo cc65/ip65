@@ -110,33 +110,33 @@ W5100OBJS=\
 	w5100driver.o \
 	ethernet.o
 
-c64rrnet.lib: c64init.o rr-net.o $(CS8900AOBJS) $(C64OBJS)
+c64rrnet.lib: rr-net.o $(CS8900AOBJS) c64init.o $(C64OBJS)
 
-c64eth64.lib: c64init.o eth64.o $(LAN91C96OBJS) $(C64OBJS)
+c64eth64.lib: eth64.o $(LAN91C96OBJS) c64init.o $(C64OBJS)
 
-c64combo.lib: c64init.o rr-net.o eth64.o c64combo.o $(C64OBJS)
+c64combo.lib: rr-net.o eth64.o c64combo.o c64init.o $(C64OBJS)
 
-ip65_c64.lib: c64init.o rr-net.o eth64.o c64combo.o $(C64_OBJS)
+ip65_c64.lib: rr-net.o eth64.o c64combo.o c64init.o $(C64_OBJS)
 
-a2uther.lib: a2init.o uthernet.o $(CS8900AOBJS) $(A2OBJS)
+a2uther.lib: uthernet.o $(CS8900AOBJS) a2init.o $(A2OBJS)
 
-a2lancegs.lib: a2init.o lancegs.o $(LAN91C96OBJS) $(A2OBJS)
+a2lancegs.lib: lancegs.o $(LAN91C96OBJS) a2init.o $(A2OBJS)
 
-a2uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2OBJS)
+a2uther2.lib: uthernet2.o $(W5100OBJS) a2init.o $(A2OBJS)
 
-a2combo.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o a2combo.o $(A2OBJS)
+a2combo.lib: uthernet.o lancegs.o uthernet2.o a2combo.o a2init.o $(A2OBJS)
 
-ip65_apple2.lib: a2initcombo.o uthernet.o lancegs.o uthernet2.o a2combo.o $(A2_OBJS)
+ip65_apple2.lib: uthernet.o lancegs.o uthernet2.o a2combo.o a2init.o $(A2_OBJS)
 
-ip65_apple2_uther2.lib: a2init.o uthernet2.o $(W5100OBJS) $(A2_OBJS)
+ip65_apple2_uther2.lib: uthernet2.o $(W5100OBJS) a2init.o $(A2_OBJS)
 
-atrdragon.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATROBJS)
+atrdragon.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATROBJS)
 
-ip65_atari.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATR_OBJS)
+ip65_atari.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATR_OBJS)
 
-ip65_atarixl.lib: atrinit.o dragoncart.o $(CS8900AOBJS) $(ATRXL_OBJS)
+ip65_atarixl.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATRXL_OBJS)
 
-vic20rrnet.lib: vic20init.o vic20-rr-net.o $(CS8900AOBJS) $(VIC20OBJS)
+vic20rrnet.lib: vic20-rr-net.o $(CS8900AOBJS) vic20init.o $(VIC20OBJS)
 
 clean:
 	-rm -f *.o

@@ -50,7 +50,7 @@ void confirm_exit(void)
 
 void main(void)
 {
-  uint8_t drv_init = DRV_INIT_DEFAULT;
+  uint8_t eth_init = ETH_INIT_DEFAULT;
   uint32_t server;
   struct timespec time;
 
@@ -71,16 +71,16 @@ void main(void)
     file = open("ethernet.slot", O_RDONLY);
     if (file != -1)
     {
-      read(file, &drv_init, 1);
+      read(file, &eth_init, 1);
       close(file);
-      drv_init &= ~'0';
+      eth_init &= ~'0';
     }
-    printf("- %d\n", drv_init);
+    printf("- %d\n", eth_init);
   }
 #endif
 
   printf("\nInitializing ");
-  if (ip65_init(drv_init))
+  if (ip65_init(eth_init))
   {
     error_exit();
   }

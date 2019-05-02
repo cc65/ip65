@@ -1,12 +1,10 @@
 ; Standard Microsystems LAN91C96 driver
 
 .import _lan91c96
-.import _lan91c96_driver_name
-.import _lan91c96_driver_io_base
+.import _lan91c96_name
 
-.export eth                = _lan91c96
-.export eth_driver_name    = _lan91c96_driver_name
-.export eth_driver_io_base = _lan91c96_driver_io_base
+.export eth      = _lan91c96
+.export eth_name = _lan91c96_name
 
 
 

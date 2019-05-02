@@ -128,22 +128,25 @@ fixups	= * - fixup
 
 ;---------------------------------------------------------------------
 
-; 3 most significant nibbles are fixed up at runtime
-rxtxreg		:= $FFF0
-txcmd		:= $FFF4
-txlen		:= $FFF6
-isq		:= $FFF8
-packetpp	:= $FFFA
-ppdata		:= $FFFC
+; The addresses are fixed up at runtime
+rxtxreg		:= $C080
+txcmd		:= $C084
+txlen		:= $C086
+isq		:= $C088
+packetpp	:= $C08A
+ppdata		:= $C08C
 
 ;---------------------------------------------------------------------
 
 	.data
 
 init:
-	; Save address of rxtxreg
+	; Convert slot number to slot I/O offset
+	asl
+	asl
+	asl
+	asl
 	sta reg
-	stx reg+1
 
 	; Start with first fixup location
 	lda #<(fixup01+1)
@@ -155,13 +158,9 @@ init:
 
 	; Fixup address at location
 :	lda (ptr),y
-	and #$0F
+	and #%10001111		; Allow for re-init
 	ora reg
 	sta (ptr),y
-	iny
-	lda reg+1
-	sta (ptr),y
-	dey
 
 	; Advance to next fixup location
 	inx

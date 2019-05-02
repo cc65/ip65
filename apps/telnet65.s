@@ -10,8 +10,7 @@
 .import abort_key
 .importzp abort_key_default
 .importzp abort_key_disable
-.import drv_init
-.importzp drv_init_default
+.importzp eth_init_default
 .import get_filtered_input
 .import get_key
 .import get_key_if_available
@@ -58,8 +57,8 @@ buffer_ptr = sreg
 .segment "STARTUP"
 
   jmp start
-drv_init_value:
-  .byte drv_init_default
+eth_init_value:
+  .byte eth_init_default
 
 
 .code
@@ -74,23 +73,15 @@ start:
   jsr print_vt100
   ldax #initializing
   jsr print_ascii_as_native
-  lda drv_init_value
-  jsr drv_init
+  lda eth_init_value
   jsr ip65_init
   bcc :+
   ldax #device_not_found
   jsr print_ascii_as_native
   jmp error_exit
-: ldax #eth_driver_name
+: ldax #eth_name
   jsr print_ascii_as_native
-  ldax #io_base_prefix
-  jsr print_ascii_as_native
-  lda eth_driver_io_base+1
-  jsr print_hex
-  lda eth_driver_io_base
-  jsr print_hex
-  ldax #io_base_postfix
-  jsr print_ascii_as_native
+  jsr print_cr
 
 ; get IP addr
   ldax #obtaining
@@ -507,8 +498,6 @@ initializing:           .byte 10,"Initializing ",0
 obtaining:              .byte "Obtaining IP address ",0
 resolving:              .byte 10,"Resolving to address ",0
 connecting:             .byte 10,"Connecting to ",0
-io_base_prefix:         .byte " ($",0
-io_base_postfix:        .byte ")",10,0
 ok:                     .byte "Ok",10,10,0
 device_not_found:       .byte "- Device not found",10,0
 abort:                  .byte "- User abort",10,0
@@ -524,13 +513,13 @@ welcome_1:              .byte 27,")0"
                         .byte 15,13,10
                         .byte 14,"x                                      x"
                         .byte 15,13,10
-                        .byte 14,"x",15,27,"[1m","Telnet65 v1.2",27,"[0m"," based on:               ",14,"x"
+                        .byte 14,"x",15,"  ",27,"[1m","Telnet65 v1.2",27,"[0m"," based on:             ",14,"x"
                         .byte 15,13,10
                         .byte 14,"x                                      x"
                         .byte 15,13,10,0
-welcome_2:              .byte 14,"x",15,"- IP65 (oliverschmidt.github.io/ip65) ",14,"x"
+welcome_2:              .byte 14,"x",15,"    - IP65 (github.com/cc65/ip65)     ",14,"x"
                         .byte 15,13,10
-                        .byte 14,"x",15,"- CaTer (www.opppf.de/Cater)          ",14,"x"
+                        .byte 14,"x",15,"    - CaTer (www.opppf.de/Cater)      ",14,"x"
                         .byte 15,13,10
                         .byte 14,"x                                      x"
                         .byte 15,13,10

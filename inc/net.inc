@@ -11,15 +11,12 @@
 .import dhcp_init
 .import dhcp_server
 
-.ifdef A2_SLOT_SCAN
-.import drv_init
-.endif
+.importzp eth_init_default
 
 .macro init_ip_via_dhcp
 .ifdef A2_SLOT_SCAN
   lda #1
 : pha
-  jsr drv_init
   jsr ip65_init
   pla
   bcc :+
@@ -28,6 +25,7 @@
   bcc :-
 :
 .else
+  lda #eth_init_default
   jsr ip65_init
 .endif
   php

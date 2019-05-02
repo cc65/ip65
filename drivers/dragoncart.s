@@ -1,7 +1,6 @@
 ; Dragon Cart driver
 
-.export _cs8900a_driver_name
-.export _cs8900a_driver_io_base
+.export _cs8900a_name
 
 
 __ATARI__ = 1
@@ -12,14 +11,8 @@ DYN_DRV = 0
 
 .rodata
 
-_cs8900a_driver_name:
+_cs8900a_name:
   .byte "Dragon Cart",0
-
-
-.data
-
-_cs8900a_driver_io_base:
-  .word $d500
 
 
 

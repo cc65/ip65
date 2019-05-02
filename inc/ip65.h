@@ -23,12 +23,12 @@
 //
 extern uint8_t ip65_error;
 
-// Driver initialization parameter values
+// Ethernet driver initialization parameter values
 //
 #ifdef __APPLE2__
-#define DRV_INIT_DEFAULT 3  // Apple II slot number
+#define ETH_INIT_DEFAULT 3  // Apple II slot number
 #else
-#define DRV_INIT_DEFAULT 0  // Unused
+#define ETH_INIT_DEFAULT 0  // Unused
 #endif
 
 // Initialize the IP stack
@@ -38,18 +38,17 @@ extern uint8_t ip65_error;
 // except for dhcp_init which must also be called if the application
 // is using DHCP rather than hardcoded IP configuration.
 //
-// Inputs: drv_init: Driver initialization parameter
+// Inputs: eth_init: Ethernet driver initialization parameter
 // Output: true if there was an error, false otherwise
 //
-bool __fastcall__ ip65_init(uint8_t drv_init);
+bool __fastcall__ ip65_init(uint8_t eth_init);
 
 // Access to Ethernet configuration
 //
-// Access to the three items below is only valid after ip65_init returned false.
+// Access to the two items below is only valid after ip65_init returned false.
 //
-extern uint8_t  cfg_mac[6];         // MAC address of local machine
-extern char     eth_driver_name[];  // Zero terminated string containing driver name
-extern uint8_t* eth_driver_io_base; // Ethernet chip I/O base address used by driver
+extern uint8_t  cfg_mac[6]; // MAC address of local machine
+extern char     eth_name[]; // Zero terminated string containing Ethernet driver name
 
 // Main IP polling loop
 //

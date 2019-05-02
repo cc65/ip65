@@ -68,7 +68,7 @@ ip65_random_word:
 ; the only *_init routine that must be called by a user application,
 ; except for dhcp_init which must also be called if the application
 ; is using dhcp rather than hardcoded ip configuration
-; inputs: none
+; inputs: A = adaptor specific initialisation value or 'eth_init_default'
 ; outputs: carry flag is set if there was an error, clear otherwise
 ip65_init:
   jsr eth_init                  ; initialize ethernet driver

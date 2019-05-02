@@ -1,12 +1,10 @@
 ; WIZnet W5100 driver
 
 .import _w5100
-.import _w5100_driver_name
-.import _w5100_driver_io_base
+.import _w5100_name
 
-.export eth                = _w5100
-.export eth_driver_name    = _w5100_driver_name
-.export eth_driver_io_base = _w5100_driver_io_base
+.export eth      = _w5100
+.export eth_name = _w5100_name
 
 
 

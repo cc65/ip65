@@ -12,7 +12,6 @@
 .import eth_outp_len
 
 .import eth
-.import eth_driver_io_base
 
 .import cfg_mac
 
@@ -32,10 +31,9 @@
 .code
 
 ; initialize the ethernet adaptor
-; inputs: none
+; inputs: A = adaptor specific initialisation value or 'eth_init_default'
 ; outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
-  ldax eth_driver_io_base
   jsr eth+driver::init
   ldx #5
 : lda eth+driver::mac,x

@@ -6,8 +6,7 @@
 .export eth_init
 .export eth_rx
 .export eth_tx
-.export eth_driver_name
-.export eth_driver_io_base
+.export eth_name
 
 .import eth_inp
 .import eth_inp_len
@@ -15,16 +14,13 @@
 .import eth_outp_len
 
 .import _w5100
-.import _w5100_driver_name
-.import _w5100_driver_io_base
+.import _w5100_name
 
 .import _cs8900a
-.import _cs8900a_driver_name
-.import _cs8900a_driver_io_base
+.import _cs8900a_name
 
 .import _lan91c96
-.import _lan91c96_driver_name
-.import _lan91c96_driver_io_base
+.import _lan91c96_name
 
 .import cfg_mac
 
@@ -45,8 +41,8 @@ eth = ptr1
 
 .bss
 
-eth_driver_name:    .res 20
-eth_driver_io_base: .res  2
+eth_name:       .res 20
+eth_init_value: .res 1
 
 
 .code
@@ -125,39 +121,37 @@ set_name:
   stax ptr1
   ldy #18                       ; sizeof(eth_driver_name)-2
 : lda (ptr1),y
-  sta eth_driver_name,y
+  sta eth_name,y
   dey
   bpl :-
   rts
 
 ; initialize one of the known ethernet adaptors
-; inputs: none
+; inputs: A = adaptor specific initialisation value or 'eth_init_default'
 ; outputs: carry flag is set if there was an error, clear otherwise
 eth_init:
+  sta eth_init_value
 
 .ifdef __APPLE2__
   ldax #_w5100
   jsr patch_wrapper
-  ldax #_w5100_driver_name
+  ldax #_w5100_name
   jsr set_name
-  ldax _w5100_driver_io_base
   jsr init_adaptor
   bcc @done
 .endif
 
   ldax #_cs8900a
   jsr patch_wrapper
-  ldax #_cs8900a_driver_name
+  ldax #_cs8900a_name
   jsr set_name
-  ldax _cs8900a_driver_io_base
   jsr init_adaptor
   bcc @done
 
   ldax #_lan91c96
   jsr patch_wrapper
-  ldax #_lan91c96_driver_name
+  ldax #_lan91c96_name
   jsr set_name
-  ldax _lan91c96_driver_io_base
   jsr init_adaptor
 @done:
   rts
@@ -166,10 +160,10 @@ eth_init:
 .data
 
 ; initialize the ethernet adaptor
-; inputs: ethernet adaptor i/o base addr
+; inputs: none
 ; outputs: carry flag is set if there was an error, clear otherwise
 init_adaptor:
-  stax eth_driver_io_base
+  lda eth_init_value
 patch_init:
   jsr $ffff                     ; temporary vector - gets filled in later
   ldx #5

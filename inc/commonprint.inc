@@ -26,8 +26,7 @@
 
 .import ascii_to_native
 
-.import eth_driver_name
-.import eth_driver_io_base
+.import eth_name
 .importzp copy_src
 .import cfg_mac
 .import cfg_ip
@@ -57,18 +56,8 @@ temp_ptr: .res 2
 .endmacro
 
 .macro print_driver_init
-  ldax #eth_driver_name
+  ldax #eth_name
   jsr print_ascii_as_native
-  lda #'('
-  jsr print_a
-  lda #'$'
-  jsr print_a
-  lda eth_driver_io_base+1
-  jsr print_hex
-  lda eth_driver_io_base
-  jsr print_hex
-  lda #')'
-  jsr print_a
   ldax #init_msg
   jsr print_ascii_as_native
 .endmacro
@@ -97,13 +86,13 @@ temp_ptr: .res 2
 
 .import print_a
 .import print_cr
-.import eth_driver_name
+.import eth_name
 
 print_ip_config:
   ldax #interface_type
   jsr print_ascii_as_native
 
-  ldax #eth_driver_name
+  ldax #eth_name
   jsr print_ascii_as_native
   jsr print_cr
 

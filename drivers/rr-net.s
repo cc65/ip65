@@ -1,7 +1,6 @@
 ; RR-Net driver
 
-.export _cs8900a_driver_name
-.export _cs8900a_driver_io_base
+.export _cs8900a_name
 
 
 __CBM__ = 1
@@ -13,14 +12,8 @@ DYN_DRV = 0
 
 .rodata
 
-_cs8900a_driver_name:
+_cs8900a_name:
   .byte "RR-Net",0
-
-
-.data
-
-_cs8900a_driver_io_base:
-  .word $de08
 
 
 

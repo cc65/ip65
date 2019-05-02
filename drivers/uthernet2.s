@@ -1,7 +1,6 @@
 ; Uthernet II driver
 
-.export _w5100_driver_name
-.export _w5100_driver_io_base
+.export _w5100_name
 
 
 __APPLE2__ = 1
@@ -12,14 +11,8 @@ DYN_DRV = 0
 
 .rodata
 
-_w5100_driver_name:
+_w5100_name:
   .byte "Uthernet II",0
-
-
-.data
-
-_w5100_driver_io_base:
-  .word $c0b4
 
 
 
