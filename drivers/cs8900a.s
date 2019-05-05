@@ -89,6 +89,14 @@ cnt	:=	ptr4		; Frame length counter
 
 	.ifdef __CBM__
 
+	.rodata
+
+	; Ethernet address
+rrnet:	.byte	$28, $CD, $4C	; OUI of Individual Computers
+	.byte	$FF		; Reserved for RR-Net
+
+;---------------------------------------------------------------------
+
 	.ifdef __C64__
 rxtxreg		:= $DE08
 txcmd		:= $DE0C
@@ -117,6 +125,78 @@ init:
 	lda isq+1
 	ora #$01		; Set clockport bit
 	sta isq+1
+
+	; Check EISA registration number of Crystal Semiconductor
+	; PACKETPP = $0000, PPDATA == $630E ?
+	lda #$00
+	tax
+	jsr packetpp_ax
+	lda #$63^$0E
+	eor ppdata
+	eor ppdata+1
+	beq :+
+	sec
+	rts
+
+	; "When the RR-Net MK3 is used in cartridge mode, the EEPROM will serve as a
+	;  regular 8k ROM cartridge. It is used as a startup-ROM if the unit is plugged
+	;  directly to a C64. The startup code will initialize the MAC address."
+	; PACKETPP = $0158, PPDATA == RR-Net[0], RR-Net[1] ?
+	; PACKETPP = $015A, PPDATA == RR-Net[2], RR-Net[3] ?
+	; PACKETPP = $015C, AX = PPDATA
+:	ldy #$58
+:	tya
+	jsr packetpp_a1
+	lda ppdata
+	ldx ppdata+1
+	cpy #$58+4
+	bcs copy
+	cmp rrnet-$58,y
+	bne :+
+	txa
+	cmp rrnet-$58+1,y
+	bne :+
+	iny
+	iny
+	bne :-			; Always
+
+	; "If the RR-Net MK3 is connected to a clockport, then the last 4 bytes of the
+	;  EEPROM are visible by reading the last 4, normally write-only, registers."
+	; MAC_LO ^ MAC_HI ^ $55 == CHKSUM0 ?
+:	lda txcmd		; MAC_LO
+	eor txcmd+1		; MAC_HI
+	eor #$55
+	cmp txlen		; CHKSUM0
+	bne reset
+
+	; (CHKSUM0 + MAC_LO + MAC_HI) ^ $AA == CHKSUM1 ?
+	clc
+	adc txcmd		; MAC_LO
+	clc
+	adc txcmd+1		; MAC_HI
+	eor #$AA
+	cmp txlen+1		; CHKSUM1
+	bne reset
+
+	; "When both checksums match, the CS8900A should be initialized
+	;  to use the MAC Address 28:CD:4C:FF:<MAC_HI>:<MAC_LO>."
+	; AX = MAC_LO, MAC_HI
+	lda txcmd		; MAC_LO
+	ldx txcmd+1		; MAC_HI
+
+	; MAC[4], MAC[5] = AX
+	; MAC[2], MAC[3] = RR-Net[2], RR-Net[3]
+	; MAC[0], MAC[1] = RR-Net[0], RR-Net[1]
+copy:	ldy #$04
+	bne :++			; Always
+:	lda rrnet,y
+	ldx rrnet+1,y
+:	sta mac,y
+	txa
+	sta mac+1,y
+	dey
+	dey
+	bpl :--
 
 	.endif
 
@@ -184,7 +264,18 @@ init:
 	bcc :-
 	inc ptr+1
 	bcs :-			; Always
-:
+
+	; Check EISA registration number of Crystal Semiconductor
+	; PACKETPP = $0000, PPDATA == $630E ?
+:	lda #$00
+	tax
+	jsr packetpp_ax
+	lda #$63^$0E
+fixup01:eor ppdata
+fixup02:eor ppdata+1
+	beq reset
+	sec
+	rts
 
 	.endif
 
@@ -204,26 +295,26 @@ ppdata		:= $D50C
 	.code
 
 init:
-
-	.endif
-
-;=====================================================================
-
 	; Check EISA registration number of Crystal Semiconductor
 	; PACKETPP = $0000, PPDATA == $630E ?
 	lda #$00
 	tax
 	jsr packetpp_ax
 	lda #$63^$0E
-fixup01:eor ppdata
-fixup02:eor ppdata+1
-	beq :+
+	eor ppdata
+	eor ppdata+1
+	beq reset
 	sec
 	rts
 
+	.endif
+
+;=====================================================================
+
+reset:
 	; Initiate a chip-wide reset
 	; PACKETPP = $0114, PPDATA = $0040
-:	lda #$14
+	lda #$14
 	jsr packetpp_a1
 	ldy #$40
 fixup03:sty ppdata
