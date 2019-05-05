@@ -41,7 +41,7 @@
 
 	; Ethernet address
 mac:	.byte	$00, $08, $DC	; OUI of WIZnet
-	.byte	$11, $11, $11
+	.byte	$A2, $A2, $A2
 
 	; Buffer attributes
 bufaddr:.res	2		; Address

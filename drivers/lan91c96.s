@@ -42,7 +42,12 @@
 
 	; Ethernet address
 mac:	.byte	$00, $80, $0F	; OUI of Standard Microsystems
-	.byte	$11, $11, $11
+	.ifdef __C64__
+	.byte	$64, $64, $64
+	.endif
+	.ifdef __APPLE2__
+	.byte	$A2, $A2, $A2
+	.endif
 
 	; Buffer attributes
 bufaddr:.res	2		; Address

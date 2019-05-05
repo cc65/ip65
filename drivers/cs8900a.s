@@ -41,7 +41,18 @@
 
 	; Ethernet address
 mac:	.byte	$00, $0E, $3A	; OUI of Cirrus Logic
-	.byte	$11, $11, $11
+	.ifdef __C64__
+	.byte	$64, $64, $64
+	.endif
+	.ifdef __APPLE2__
+	.byte	$A2, $A2, $A2
+	.endif
+	.ifdef __ATARI__
+	.byte	$A8, $A8, $A8
+	.endif
+	.ifdef __VIC20__
+	.byte	$20, $20, $20
+	.endif
 
 	; Buffer attributes
 bufaddr:.res	2		; Address
