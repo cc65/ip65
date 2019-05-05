@@ -1,21 +1,21 @@
 # For assembler programs
 # ----------------------
-# c64rrnet.lib   : C64 with RR-Net (or clone) (default base addr: $de0x)
-# c64eth64.lib   : C64 with ETH64 (default base addr: $de0x)
-# c64combo.lib   : C64 with RR-Net or ETH64 (default base addr: $de0x)
+# c64rrnet.lib   : C64 with RR-Net (or clone)
+# c64eth64.lib   : C64 with ETH64
+# c64combo.lib   : C64 with RR-Net or ETH64
 # a2uther.lib    : Apple ][ with Uthernet (default slot: #3)
 # a2lancegs.lib  : Apple ][ with LANceGS (default slot: #3)
 # a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
 # a2combo.lib    : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
-# atrdragon.lib  : ATARI 8-bit with Dragon Cart (default base addr: $d500)
-# vic20rrnet.lib : VIC20 with RR-Net (or clone) (default base addr: $980x)
+# atrdragon.lib  : ATARI 8-bit with Dragon Cart
+# vic20rrnet.lib : VIC20 with RR-Net (or clone)
 
 # For C programs
 # --------------
-# ip65_c64.lib     : C64 with RR-Net or ETH64 (default base addr: $de0x)
+# ip65_c64.lib     : C64 with RR-Net or ETH64
 # ip65_apple2.lib  : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
-# ip65_atari.lib   : ATARI 8-bit with Dragon Cart (default base addr: $d500)
-# ip65_atarixl.lib : ATARI XL with Dragon Cart (default base addr: $d500)
+# ip65_atari.lib   : ATARI 8-bit with Dragon Cart
+# ip65_atarixl.lib : ATARI XL with Dragon Cart
 
 DRIVERS=\
 	c64rrnet.lib \
