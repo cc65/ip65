@@ -110,6 +110,14 @@ W5100OBJS=\
 	w5100driver.o \
 	ethernet.o
 
+rr-net.o uthernet.o dragoncart.o vic20-rr-net.o: cs8900a.s
+
+eth64.o lancegs.o: lan91c96.s
+
+uthernet2.o: w5100.s
+
+c64combo.o a2combo.o: ethernetcombo.s
+
 c64rrnet.lib: rr-net.o $(CS8900AOBJS) c64init.o $(C64OBJS)
 
 c64eth64.lib: eth64.o $(LAN91C96OBJS) c64init.o $(C64OBJS)
