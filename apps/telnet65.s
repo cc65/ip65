@@ -155,8 +155,8 @@ telnet_main_entry:
   jsr print_ascii_as_native
   ldax #dns_ip
   jsr print_dotted_quad
-  ldax #blank
-  jsr print_ascii_as_native
+  lda #' '
+  jsr print_a
   ldax #telnet_callback
   stax tcp_callback
   ldx #3
@@ -493,7 +493,6 @@ telnet_callback:
 
 .rodata
 
-blank:                  .byte " ",0
 initializing:           .byte 10,"Initializing ",0
 obtaining:              .byte "Obtaining IP address ",0
 resolving:              .byte 10,"Resolving to address ",0
