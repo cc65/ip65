@@ -582,6 +582,10 @@ int main(int, char *argv[])
           buffer[i] = '.';
           dot = &buffer[i];
         }
+        else
+        {
+          continue;
+        }
         ++i;
       }
     }
