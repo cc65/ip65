@@ -45,6 +45,9 @@ mac:	.byte	$00, $80, $0F	; OUI of Standard Microsystems
 	.ifdef __C64__
 	.byte	$64, $64, $64
 	.endif
+	.ifdef __C128__
+	.byte	$28, $28, $28
+	.endif
 	.ifdef __APPLE2__
 	.byte	$A2, $A2, $A2
 	.endif
@@ -80,7 +83,7 @@ len	:=	ptr3		; Frame length
 
 ;=====================================================================
 
-	.ifdef __C64__
+	.if .defined (__C64__) .or .defined (__C128__)
 
 ethbsr		:= $DE0E	; Bank select register             R/W (2B)
 

@@ -44,6 +44,9 @@ mac:	.byte	$00, $0E, $3A	; OUI of Cirrus Logic
 	.ifdef __C64__
 	.byte	$64, $64, $64
 	.endif
+	.ifdef __C128__
+	.byte	$28, $28, $28
+	.endif
 	.ifdef __APPLE2__
 	.byte	$A2, $A2, $A2
 	.endif
@@ -97,7 +100,7 @@ rrnet:	.byte	$28, $CD, $4C	; OUI of Individual Computers
 
 ;---------------------------------------------------------------------
 
-	.ifdef __C64__
+	.if .defined (__C64__) .or .defined (__C128__)
 rxtxreg		:= $DE08
 txcmd		:= $DE0C
 txlen		:= $DE0E
