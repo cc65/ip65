@@ -10,7 +10,7 @@ All three parts are available for three 6502 based target systems:
 
 IP65 requires Ethernet hardware. There's no support for TCP/IP over serial connections whatsoever.
 
-On the C64 there are two supported Ethernet carts:
+On the C64 there are two supported Ethernet devices:
 - The [RR-Net](http://wiki.icomp.de/wiki/RR-Net) - emulated by [VICE](http://vice-emu.sourceforge.net/)
 - The [ETH64](https://www.ide64.org/eth64.html)
 
@@ -19,5 +19,6 @@ On the Apple II there are three supported Ethernet cards:
 - The [LANceGS](https://web.archive.org/web/20010331001718/http://lancegs.a2central.com:80/)
 - The [Uthernet II](http://a2retrosystems.com/products.htm)
 
-On the ATARI (XL) there is one supported Ethernet cart:
+On the ATARI (XL) there are two supported Ethernet devices:
 - The [Dragon Cart](https://www.atari8ethernet.com/) - emulated by [Altirra](http://www.virtualdub.org/altirra.html)
+- The [Dracarys](https://atariage.com/forums/topic/287376-preannouncement-dragon-cart-ii/)
