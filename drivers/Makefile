@@ -1,21 +1,23 @@
 # For assembler programs
 # ----------------------
-# c64rrnet.lib   : C64 with RR-Net (or clone)
-# c64eth64.lib   : C64 with ETH64
-# c64combo.lib   : C64 with RR-Net or ETH64
-# a2uther.lib    : Apple ][ with Uthernet (default slot: #3)
-# a2lancegs.lib  : Apple ][ with LANceGS (default slot: #3)
-# a2uther2.lib   : Apple ][ with Uthernet II (default slot: #3)
-# a2combo.lib    : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
-# atrdragon.lib  : ATARI 8-bit with Dragon Cart
-# vic20rrnet.lib : VIC20 with RR-Net (or clone)
+# c64rrnet.lib    : C64 with RR-Net (or clone)
+# c64eth64.lib    : C64 with ETH64
+# c64combo.lib    : C64 with RR-Net or ETH64
+# a2uther.lib     : Apple ][ with Uthernet (default slot: #3)
+# a2lancegs.lib   : Apple ][ with LANceGS (default slot: #3)
+# a2uther2.lib    : Apple ][ with Uthernet II (default slot: #3)
+# a2combo.lib     : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
+# atrdragon.lib   : ATARI 8-bit with Dragon Cart
+# atrdracarys.lib : ATARI 8-bit with Dracarys (default PBI device ID: #8)
+# atrcombo.lib    : ATARI 8-bit with Dragon Cart or Dracarys (default PBI device ID: #8)
+# vic20rrnet.lib  : VIC20 with RR-Net (or clone)
 
 # For C programs
 # --------------
 # ip65_c64.lib     : C64 with RR-Net or ETH64
 # ip65_apple2.lib  : Apple ][ with Uthernet or LANceGS or Uthernet II (default slot: #3)
-# ip65_atari.lib   : ATARI 8-bit with Dragon Cart
-# ip65_atarixl.lib : ATARI XL with Dragon Cart
+# ip65_atari.lib   : ATARI 8-bit with Dragon Cart or Dracarys (default PBI device ID: #8)
+# ip65_atarixl.lib : ATARI XL with Dragon Cart or Dracarys (default PBI device ID: #8)
 
 DRIVERS=\
 	c64rrnet.lib \
@@ -29,6 +31,8 @@ DRIVERS=\
 	ip65_apple2.lib \
 	ip65_apple2_uther2.lib \
 	atrdragon.lib \
+	atrdracarys.lib \
+	atrcombo.lib \
 	ip65_atari.lib \
 	ip65_atarixl.lib \
 	vic20rrnet.lib
@@ -114,9 +118,9 @@ rr-net.o uthernet.o dragoncart.o vic20-rr-net.o: cs8900a.s
 
 eth64.o lancegs.o: lan91c96.s
 
-uthernet2.o: w5100.s
+uthernet2.o dracarys.o: w5100.s
 
-c64combo.o a2combo.o: ethernetcombo.s
+c64combo.o a2combo.o atrcombo.o: ethernetcombo.s
 
 c64rrnet.lib: rr-net.o $(CS8900AOBJS) c64init.o $(C64OBJS)
 
@@ -140,9 +144,13 @@ ip65_apple2_uther2.lib: uthernet2.o $(W5100OBJS) a2init.o $(A2_OBJS)
 
 atrdragon.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATROBJS)
 
-ip65_atari.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATR_OBJS)
+atrdracarys.lib: dracarys.o $(W5100OBJS) atrinit.o $(ATROBJS)
 
-ip65_atarixl.lib: dragoncart.o $(CS8900AOBJS) atrinit.o $(ATRXL_OBJS)
+atrcombo.lib: dragoncart.o dracarys.o atrcombo.o atrinit.o $(ATROBJS)
+
+ip65_atari.lib: dragoncart.o dracarys.o atrcombo.o atrinit.o $(ATR_OBJS)
+
+ip65_atarixl.lib: dragoncart.o dracarys.o atrcombo.o atrinit.o $(ATRXL_OBJS)
 
 vic20rrnet.lib: vic20-rr-net.o $(CS8900AOBJS) vic20init.o $(VIC20OBJS)
 

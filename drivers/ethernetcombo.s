@@ -132,7 +132,7 @@ set_name:
 eth_init:
   sta eth_init_value
 
-.ifdef __APPLE2__
+.if .defined (__APPLE2__) .or .defined (__ATARI__)
   ldax #_w5100
   jsr patch_wrapper
   ldax #_w5100_name
@@ -148,11 +148,14 @@ eth_init:
   jsr init_adaptor
   bcc @done
 
+.if .defined (__C64__) .or .defined (__APPLE2__)
   ldax #_lan91c96
   jsr patch_wrapper
   ldax #_lan91c96_name
   jsr set_name
   jsr init_adaptor
+.endif
+
 @done:
   rts
 

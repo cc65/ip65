@@ -25,8 +25,10 @@ extern uint8_t ip65_error;
 
 // Ethernet driver initialization parameter values
 //
-#ifdef __APPLE2__
+#if defined(__APPLE2__)
 #define ETH_INIT_DEFAULT 3  // Apple II slot number
+#elif defined(__ATARI__)
+#define ETH_INIT_DEFAULT 8  // ATARI PBI device ID
 #else
 #define ETH_INIT_DEFAULT 0  // Unused
 #endif
