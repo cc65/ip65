@@ -309,7 +309,7 @@ void main(void)
   videomode(VIDEOMODE_80COL);
 #endif
 
-  printf("\nHttpFileServer65 v1.0"
+  printf("\nHttpFileServer65 v1.1"
          "\n=====================");
 
 #ifdef __APPLE2__
