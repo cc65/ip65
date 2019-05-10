@@ -35,7 +35,8 @@ _dotted_quad:
   rts
 
 convert_byte:
-; hex to bcd routine taken from Andrew Jacob's code at http://www.6502.org/source/integers/hex2dec-more.htm
+; hex to bcd routine taken from Andrew Jacob's code at
+; http://www.6502.org/source/integers/hex2dec-more.htm
   sed                           ; switch to decimal mode
   lda #$00                      ; ensure the result is clear
   sta tmp1                      ; BCD low
@@ -53,19 +54,23 @@ convert_byte:
   bne :-
   cld                           ; back to binary
 
+  lda tmp1
+  lsr
+  lsr
+  lsr
+  lsr
+  pha
   lda tmp2
   beq :+
   ora #'0'
-  sta dotted_quad,y             ; write x00 if not 0
+  sta dotted_quad,y             ; write x00
+  pla
   iny
-: lda tmp1
-  lsr
-  lsr
-  lsr
-  lsr
-  beq :+
-  ora #'0'
-  sta dotted_quad,y             ; write 0x0 if not 0
+  bne :++                       ; always
+: pla
+  beq :++
+: ora #'0'
+  sta dotted_quad,y             ; write 0x0
   iny
 : lda tmp1
   and #$0F
