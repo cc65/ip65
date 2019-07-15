@@ -25,6 +25,15 @@ else
   VICDRIVERLIB = ../drivers/vic20rrnet.lib
 endif
 
+# See http://vice-emu.sourceforge.net/
+C1541 ?= c1541
+
+# See https://applecommander.github.io/
+AC ?= ac.jar
+
+# See https://www.horus.com/~hias/atari/
+DIR2ATR ?= dir2atr
+
 UDP =\
 	dns \
 	dottedquad \

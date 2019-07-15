@@ -27,6 +27,15 @@ C64_DRIVERLIB = ../drivers/ip65_c64.lib
 A2_DRIVERLIB  = ../drivers/ip65_apple2.lib
 ATR_DRIVERLIB = ../drivers/ip65_atari.lib
 
+# See http://vice-emu.sourceforge.net/
+C1541 ?= c1541
+
+# See https://applecommander.github.io/
+AC ?= ac.jar
+
+# See https://www.horus.com/~hias/atari/
+DIR2ATR ?= dir2atr
+
 UDP =\
 	date65
 
