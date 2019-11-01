@@ -24,6 +24,10 @@ temp_ax: .res 2
 .export cmp_32_32
 .export cmp_16_16
 
+;dengland
+.export	gte_32_32
+;---
+
 .export mul_8_16
 
 ; compare 2 32bit numbers
@@ -46,6 +50,38 @@ cmp_32_32:
   cmp (acc32),y
 @exit:
   rts
+ 
+;dengland 
+; 	Compare two 32 bit numbers.  
+;	Set carry if acc32 >= op32 else clear carry
+gte_32_32:
+		LDY	#$03
+		LDA 	(acc32), Y  ; compare high bytes
+		CMP 	(op32), Y
+		BCC 	@LABEL1 ; if NUM1H < NUM2H then NUM1 < NUM2
+		BNE 	@LABEL2 ; if NUM1H <> NUM2H then NUM1 > NUM2 (so NUM1 >= NUM2)
+		DEY
+		LDA 	(acc32), Y  ; compare high bytes
+		CMP 	(op32), Y
+		BCC 	@LABEL1 ; if NUM1H < NUM2H then NUM1 < NUM2
+		BNE 	@LABEL2 ; if NUM1H <> NUM2H then NUM1 > NUM2 (so NUM1 >= NUM2)
+		DEY
+		LDA 	(acc32), Y  ; compare middle bytes
+		CMP 	(op32), Y
+		BCC 	@LABEL1 ; if NUM1M < NUM2M then NUM1 < NUM2
+		BNE 	@LABEL2 ; if NUM1M <> NUM2M then NUM1 > NUM2 (so NUM1 >= NUM2)
+		DEY
+		LDA 	(acc32), Y  ; compare low bytes
+		CMP 	(op32), Y
+		BCS 	@LABEL2 ; if NUM1L >= NUM2L then NUM1 >= NUM2
+@LABEL1:
+		CLC
+		RTS
+@LABEL2:
+		SEC
+		RTS
+;---
+
 
 ; compare 2 16bit numbers
 ; on exit, zero flag clear iff acc16==AX

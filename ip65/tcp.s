@@ -5,7 +5,11 @@
 ; to use, first call "tcp_connect" to create a connection. to send data on that connection, call "tcp_send".
 ; whenever data arrives, a call will be made to the routine pointed at by tcp_callback.
 
-MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
+;dengland
+;	This change may not actually be necessary.
+;MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
+MAX_TCP_PACKETS_SENT = 12        ; timeout after sending 8 messages will be about 7 seconds (1+2+3+4+5+6+7+8)/4
+;---
 
 .include "zeropage.inc"
 .include "../inc/common.inc"
@@ -30,6 +34,12 @@ MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about
 .export tcp_inbound_data_ptr
 .export tcp_inbound_data_length
 
+;dengland
+;	Export these for health metrics
+	.export	tcp_loop_count
+	.export	tcp_packet_sent_count
+
+
 .import ip_calc_cksum
 .import ip_send
 .import ip_create_packet
@@ -50,6 +60,11 @@ MAX_TCP_PACKETS_SENT = 8        ; timeout after sending 8 messages will be about
 .import cmp_32_32
 .import cmp_16_16
 .import sub_16_16
+
+;dengland
+;	We will need this in the send routine
+.import gte_32_32
+;---
 
 .importzp ip_cksum_ptr
 .importzp ip_header_cksum
@@ -137,6 +152,11 @@ tcp_packet_sent_count:  .res 1
 
 
 .code
+;dengland 
+;	This is a dummy change for my client only
+;	Need this to prevent JMP () across page boundary.  *ugh*
+	NOP
+;---
 
 ; initialize tcp
 ; called automatically by ip_init if "ip.s" was compiled with -DTCP
@@ -241,9 +261,17 @@ tcp_connect:
   stax tcp_remote_port
 
   jsr tcp_send_packet
-  lda tcp_packet_sent_count
-  adc #1
-  sta tcp_loop_count            ; we wait a bit longer between each resend
+
+;dengland
+;	Don't wait longer and longer, instead always allow for up to a second to send
+;	instead of expecting a response in less than 250ms and then less than 500ms etc...
+;	lda 	tcp_packet_sent_count
+; 	adc 	#1				; we wait a bit longer between each resend
+;
+	lda	#$04
+;---
+	sta 	tcp_loop_count            
+  
 @outer_delay_loop:
   jsr timer_read
   stx tcp_timer                 ; we only care about the high byte
@@ -304,7 +332,15 @@ tcp_close:
   sta tcp_state
   clc
   rts
-: ; increment the expected sequence number for the SYN we are about to send
+: 
+;dengland
+;	Play nice...
+;
+	lda 	#0                        ; reset the "packet sent" counter
+	sta 	tcp_packet_sent_count
+;---
+
+; increment the expected sequence number for the SYN we are about to send
   ldax #tcp_connect_expected_ack_number
   stax acc32
   ldax #1
@@ -331,10 +367,30 @@ tcp_close:
   stax tcp_remote_port
 
   jsr tcp_send_packet
+  
+;dengland
+;	Don't try to get a return value because it ain't going to happen.
+;	Simply signal its closed and return
+		LDA	#tcp_cxn_state_closed
+		STA	tcp_state
+		LDA	#IP65_ERROR_CONNECTION_CLOSED
+		STA	ip65_error
+		CLC		; signal no error????
+		RTS
+		
+;	The following code doesn't even try to see if there was a return packet,
+;	it just waits...  For nothing...
+;---
 
-  lda tcp_packet_sent_count
-  adc #1
-  sta tcp_loop_count            ; we wait a bit longer between each resend
+;dengland
+;	Don't wait longer and longer, instead always allow for up to a second to send
+;	instead of expecting a response in less than 250ms and then less than 500ms etc...
+;
+; lda tcp_packet_sent_count
+;  adc #1				; we wait a bit longer between each resend
+	lda	#$04
+;---
+	sta 	tcp_loop_count            
 @outer_delay_loop:
   jsr timer_read
   stx tcp_timer                 ; we only care about the high byte
@@ -412,10 +468,23 @@ tcp_send:
   sta ip65_error
   sec
   rts
-  lda #0                        ; reset the "packet sent" counter
-  sta tcp_packet_sent_count
+
+;dengland
+;	This must be moved to below @connection_established otherwise
+;	resend count will accumulate between individual sends.
+;
+;lda #0                        ; reset the "packet sent" counter
+;sta tcp_packet_sent_count
+;---
 
 @connection_established:
+
+;dengland  
+;	Move here from above, see above.
+  lda #0                        ; reset the "packet sent" counter
+  sta tcp_packet_sent_count
+;---
+
   ; increment the expected sequence number
   ldax #tcp_connect_expected_ack_number
   stax acc32
@@ -446,14 +515,24 @@ tcp_send:
   stax tcp_remote_port
 
   jsr tcp_send_packet
-  lda tcp_packet_sent_count
-  adc #1
-  sta tcp_loop_count            ; we wait a bit longer between each resend
+
+;dengland
+;	Don't wait longer and longer, instead always allow for up to a second to send
+;	instead of expecting a response in less than 250ms and then less than 500ms etc...
+;
+;	lda 	tcp_packet_sent_count
+;	adc 	#1			; we wait a bit longer between each resend
+	lda	#$04
+;---
+	sta 	tcp_loop_count            
+	
 @outer_delay_loop:
   jsr timer_read
   stx tcp_timer                 ; we only care about the high byte
+  
 @inner_delay_loop:
   jsr ip65_process
+  
   jsr check_for_abort_key
   bcc @no_abort
   lda #IP65_ERROR_ABORTED_BY_USER
@@ -461,13 +540,22 @@ tcp_send:
   lda #tcp_cxn_state_closed
   sta tcp_state
   rts
+  
 @no_abort:
   ldax #tcp_connect_last_ack
   stax acc32
   ldax #tcp_connect_expected_ack_number
   stax op32
-  jsr cmp_32_32
-  beq @got_ack
+;dengland
+;	Don't test for equality.  Test for greater or equal to.  There may have been
+;	other packets processed and their ack's will not be handled if testing for equality
+;
+;  	jsr cmp_32_32
+;	beq @got_ack
+
+	JSR	gte_32_32
+	BCS	@got_ack
+;---
 
   jsr timer_read
   cpx tcp_timer                 ; this will tick over after about 1/4 of a second
@@ -844,8 +932,9 @@ tcp_process:
   jsr  cmp_32_32
 
   beq :+
-  rts                           ; bail if not expected sequence number
-: ; set the length to $ffff
+	rts                           ; bail if not expected sequence number
+: 
+; set the length to $ffff
   lda #$ff
   sta tcp_inbound_data_length
   sta tcp_inbound_data_length+1
