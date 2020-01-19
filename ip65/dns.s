@@ -51,7 +51,7 @@ dns_arcount = 10
 dns_qname   = 12
 
 dns_server_port = 53
-dns_client_port_low_byte:       .res 1
+dns_client_port_high_byte:       .res 1
 
 dns_ip:                         .res 4  ; will be contain ip address of hostname after succesful exection of dns_resolve
 
@@ -184,9 +184,9 @@ dns_resolve:
 @hostname_not_dotted_quad:
   ldax #dns_in
   stax udp_callback
-  lda #53
-  inc dns_client_port_low_byte  ; each call to resolve uses a different client address
-  ldx dns_client_port_low_byte  ; so we don't get confused by late replies to a previous call
+  ldx #53
+  inc dns_client_port_high_byte  ; each call to resolve uses a different client address
+  lda dns_client_port_high_byte  ; so we don't get confused by late replies to a previous call
   jsr udp_add_listener
 
   bcc :+
@@ -255,8 +255,8 @@ dns_resolve:
   clc                           ; signal success
 @done:
   php
-  lda #53
-  ldx dns_client_port_low_byte
+  ldx #53
+  lda dns_client_port_high_byte
   jsr udp_remove_listener
   plp
   rts
@@ -302,8 +302,8 @@ send_dns_query:
   ldx #0
   stax udp_send_len
 
-  lda #53
-  ldx dns_client_port_low_byte
+  ldx #53
+  lda dns_client_port_high_byte
   stax udp_send_src_port
 
   ldx #3                        ; set destination address
