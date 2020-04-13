@@ -51,7 +51,7 @@ dns_arcount = 10
 dns_qname   = 12
 
 dns_server_port = 53
-dns_client_port_high_byte:       .res 1
+dns_client_port_high_byte:      .res 1
 
 dns_ip:                         .res 4  ; will be contain ip address of hostname after succesful exection of dns_resolve
 
@@ -185,8 +185,8 @@ dns_resolve:
   ldax #dns_in
   stax udp_callback
   ldx #53
-  inc dns_client_port_high_byte  ; each call to resolve uses a different client address
-  lda dns_client_port_high_byte  ; so we don't get confused by late replies to a previous call
+  inc dns_client_port_high_byte ; each call to resolve uses a different client address
+  lda dns_client_port_high_byte ; so we don't get confused by late replies to a previous call
   jsr udp_add_listener
 
   bcc :+
