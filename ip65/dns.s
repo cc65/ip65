@@ -164,7 +164,7 @@ dns_set_hostname:
   rts
 
 @hostname_too_long:
-  lda #IP65_ERROR_INPUT_TOO_LARGE
+  lda #IP65_ERROR_NAME_TOO_LONG
   sta ip65_error
   sec
   rts
@@ -282,7 +282,7 @@ send_dns_query:
   sta output_buffer+dns_qname,x
   inx
   bpl  @hostname_still_ok
-  lda #IP65_ERROR_INPUT_TOO_LARGE
+  lda #IP65_ERROR_NAME_TOO_LONG
   sta ip65_error
   jmp @error_on_send            ; if we got past 128 bytes, there's a problem
 @hostname_still_ok:

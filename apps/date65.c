@@ -22,23 +22,7 @@
 
 void error_exit(void)
 {
-  switch (ip65_error)
-  {
-  case IP65_ERROR_DEVICE_FAILURE:
-    printf("- No device found\n");
-    break;
-  case IP65_ERROR_ABORTED_BY_USER:
-    printf("- User abort\n");
-    break;
-  case IP65_ERROR_TIMEOUT_ON_RECEIVE:
-    printf("- Timeout\n");
-    break;
-  case IP65_ERROR_DNS_LOOKUP_FAILED:
-    printf("- Lookup failed\n");
-    break;
-  default:
-    printf("- Error $%X\n", ip65_error);
-  }
+  printf("- %s\n", ip65_strerror(ip65_error));
   exit(EXIT_FAILURE);
 }
 

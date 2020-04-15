@@ -4,25 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// Error codes
-//
-#define IP65_ERROR_PORT_IN_USE                   0x80
-#define IP65_ERROR_TIMEOUT_ON_RECEIVE            0x81
-#define IP65_ERROR_TRANSMIT_FAILED               0x82
-#define IP65_ERROR_TRANSMISSION_REJECTED_BY_PEER 0x83
-#define IP65_ERROR_INPUT_TOO_LARGE               0x84
-#define IP65_ERROR_DEVICE_FAILURE                0x85
-#define IP65_ERROR_ABORTED_BY_USER               0x86
-#define IP65_ERROR_LISTENER_NOT_AVAILABLE        0x87
-#define IP65_ERROR_CONNECTION_RESET_BY_PEER      0x89
-#define IP65_ERROR_CONNECTION_CLOSED             0x8A
-#define IP65_ERROR_MALFORMED_URL                 0xA0
-#define IP65_ERROR_DNS_LOOKUP_FAILED             0xA1
-
-// Last error code
-//
-extern uint8_t ip65_error;
-
 // Ethernet driver initialization parameter values
 //
 #if defined(__APPLE2__)
@@ -51,6 +32,34 @@ bool __fastcall__ ip65_init(uint8_t eth_init);
 //
 extern uint8_t  cfg_mac[6]; // MAC address of local machine
 extern char     eth_name[]; // Zero terminated string containing Ethernet driver name
+
+// Error codes
+//
+#define IP65_ERROR_PORT_IN_USE                   0x80
+#define IP65_ERROR_TIMEOUT_ON_RECEIVE            0x81
+#define IP65_ERROR_TRANSMIT_FAILED               0x82
+#define IP65_ERROR_TRANSMISSION_REJECTED_BY_PEER 0x83
+#define IP65_ERROR_NAME_TOO_LONG                 0x84
+#define IP65_ERROR_DEVICE_FAILURE                0x85
+#define IP65_ERROR_ABORTED_BY_USER               0x86
+#define IP65_ERROR_LISTENER_NOT_AVAILABLE        0x87
+#define IP65_ERROR_CONNECTION_RESET_BY_PEER      0x89
+#define IP65_ERROR_CONNECTION_CLOSED             0x8A
+#define IP65_ERROR_MALFORMED_URL                 0xA0
+#define IP65_ERROR_DNS_LOOKUP_FAILED             0xA1
+
+// Last error code
+//
+extern uint8_t ip65_error;
+
+// Convert error code into a string describing the error
+//
+// The pointer returned is a static string, which mustn't be modified.
+//
+// Inputs: err_code: Error code
+// Output: Zero terminated string describing the error
+//
+char* __fastcall__ ip65_strerror(uint8_t err_code);
 
 // Main IP polling loop
 //
