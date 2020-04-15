@@ -285,7 +285,7 @@ void error_exit(void)
   exit(EXIT_FAILURE);
 }
 
-void main(void)
+int main(void)
 {
   char cwd[FILENAME_MAX];
   unsigned char eth_init = ETH_INIT_DEFAULT;
@@ -331,4 +331,5 @@ void main(void)
   httpd_start(80, http_server);
 
   chdir(cwd);
+  return EXIT_SUCCESS;
 }

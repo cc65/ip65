@@ -32,7 +32,7 @@ void confirm_exit(void)
   cgetc();
 }
 
-void main(void)
+int main(void)
 {
   uint8_t eth_init = ETH_INIT_DEFAULT;
   uint32_t server;
@@ -97,4 +97,6 @@ void main(void)
 
   time.tv_nsec = 0;
   clock_settime(CLOCK_REALTIME, &time);
+
+  return EXIT_SUCCESS;
 }

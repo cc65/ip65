@@ -92,7 +92,7 @@ void input(char* str, unsigned int max, const char* tag)
   }
 }
 
-void main()
+int main(void)
 {
   int retval;
   uint8_t eth_init = ETH_INIT_DEFAULT;
@@ -120,7 +120,7 @@ void main()
       if (*key == '\0')
       {
         printf("\n");
-        return;
+        return EXIT_FAILURE;
       }
 
       printf("\n\nSaving key ");
@@ -175,7 +175,7 @@ void main()
   if (*text == '\0')
   {
     printf("\n");
-    return;
+    return EXIT_FAILURE;
   }
 
   printf("\n\nSending tweet ");
@@ -191,4 +191,5 @@ void main()
     exit(EXIT_FAILURE);
   }
   printf("- Ok\n");
+  return EXIT_SUCCESS;
 }
