@@ -13,6 +13,7 @@
 
 #include "../inc/ip65.h"
 #include "w5100.h"
+#include "w5100_http.h"
 #include "linenoise.h"
 
 // Both pragmas are obligatory to have cc65 generate code
@@ -24,13 +25,10 @@
 char buffer[0x1000];
 char name[16];
 
-void ip65_error_exit(bool quit)
+void ip65_error_exit(void)
 {
   printf("- %s\n", ip65_strerror(ip65_error));
-  if (quit)
-  {
-    exit(EXIT_FAILURE);
-  }
+  exit(EXIT_FAILURE);
 }
 
 void file_error_exit(void)
@@ -237,15 +235,6 @@ void exit_on_key(void)
   {
     w5100_disconnect();
     printf("- User abort\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
-void exit_on_disconnect(void)
-{
-  if (!w5100_connected())
-  {
-    printf("- Connection lost\n");
     exit(EXIT_FAILURE);
   }
 }
@@ -490,10 +479,10 @@ int main(int, char *argv[])
     }
   }
 
-  printf("- %d\n\nInitializing ", eth_init);
+  printf("- %d\n\nInitializing %s ", eth_init, eth_name);
   if (ip65_init(eth_init))
   {
-    ip65_error_exit(true);
+    ip65_error_exit();
   }
 
   // Abort on Ctrl-C to be consistent with Linenoise
@@ -502,7 +491,7 @@ int main(int, char *argv[])
   printf("- Ok\n\nObtaining IP address ");
   if (dhcp_init())
   {
-    ip65_error_exit(true);
+    ip65_error_exit();
   }
   printf("- Ok\n\n");
 
@@ -520,9 +509,7 @@ int main(int, char *argv[])
       break;
     }
 
-    // Do not actually exit
-    ip65_error_exit(false);
-    printf("\n");
+    printf("- %s\n\n", ip65_strerror(ip65_error));
   }
   save_argument("wget.urls");
   printf("- Ok\n\n");
@@ -632,7 +619,8 @@ int main(int, char *argv[])
             char oldcursor;
             char c;
 
-            printf("- Ok\n\nClobber %s? ", buffer);
+            printf("- Ok\n\n");
+            cprintf("Clobber %s? ", buffer);
 
             oldcursor = cursor(true);
             c = cgetc();
@@ -668,124 +656,10 @@ int main(int, char *argv[])
   }
   save_argument("wget.files");
 
-  printf("\n\nConnecting to %s:%d ", dotted_quad(url_ip), url_port);
-
-  if (!w5100_connect(url_ip, url_port))
+  printf("\n\n");
+  if (!w5100_http_open(url_ip, url_port, url_selector, buffer, sizeof(buffer)))
   {
-    printf("- Connect failed\n");
-    exit(EXIT_FAILURE);
-  }
-
-  printf("- Ok\n\nSending request ");
-  {
-    uint16_t snd;
-    uint16_t pos = 0;
-    uint16_t len = strlen(url_selector);
-
-    while (len)
-    {
-      exit_on_key();
-
-      snd = w5100_send_request();
-      if (!snd)
-      {
-        exit_on_disconnect();
-        continue;
-      }
-
-      if (len < snd)
-      {
-        snd = len;
-      }
-
-      {
-        // One less to allow for faster pre-increment below
-        char *dataptr = url_selector + pos - 1;
-        for (i = 0; i < snd; ++i)
-        {
-          // The variable is necessary to have cc65 generate code
-          // suitable to access the W5100 auto-increment register.
-          char data = *++dataptr;
-          *w5100_data = data;
-        }
-      }
-
-      w5100_send_commit(snd);
-      len -= snd;
-      pos += snd;
-    }
-  }
-
-  printf("- Ok\n\nReceiving response ");
-  {
-    uint16_t rcv;
-    bool body = false;
-    uint16_t len = 0;
-
-    while (!body)
-    {
-      exit_on_key();
-
-      rcv = w5100_receive_request();
-      if (!rcv)
-      {
-        exit_on_disconnect();
-        continue;
-      }
-
-      if (rcv > sizeof(buffer) - len)
-      {
-        rcv = sizeof(buffer) - len;
-      }
-
-      {
-        // One less to allow for faster pre-increment below
-        char *dataptr = buffer + len - 1;
-        for (i = 0; i < rcv; ++i)
-        {
-          // The variable is necessary to have cc65 generate code
-          // suitable to access the W5100 auto-increment register.
-          char data = *w5100_data;
-          *++dataptr = data;
-
-          if (!memcmp(dataptr - 3, "\r\n\r\n", 4))
-          {
-            rcv = i + 1;
-            body = true;
-          }
-        }
-      }
-
-      w5100_receive_commit(rcv);
-      len += rcv;
-
-      // No body found in full buffer
-      if (len == sizeof(buffer))
-      {
-        printf("- Invalid response\n");
-        w5100_disconnect();
-        exit(EXIT_FAILURE);
-      }
-    }
-
-    // Replace "HTTP/1.1" with "HTTP/1.0"
-    buffer[7] = '0';
-
-    if (!match("HTTP/1.0 200", buffer))
-    {
-      if (match("HTTP/1.0", buffer))
-      {
-        char *eol = strchr(buffer,'\r');
-        *eol = '\0';
-        printf("- Status%s\n", buffer + 8);
-      }
-      else
-      {
-        printf("- Unknown response\n");
-      }
-      w5100_disconnect();
-      exit(EXIT_FAILURE);
-    }
+    return EXIT_FAILURE;
   }
 
   if (device)

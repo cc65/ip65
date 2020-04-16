@@ -46,7 +46,7 @@ TCP =\
 
 bin: wget65.bin
 
-wget65.bin: w5100.c linenoise.c
+wget65.bin: w5100.c w5100_http.c linenoise.c
 wget65.bin: IP65LIB = ../ip65/ip65.lib
 wget65.bin: A2_DRIVERLIB = ../drivers/ip65_apple2_uther2.lib
 
