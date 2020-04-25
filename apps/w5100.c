@@ -44,6 +44,7 @@ static volatile uint8_t* w5100_addr_lo;
 
 static uint16_t addr_basis[2];
 static uint16_t addr_limit[2];
+static uint16_t addr_mask [2];
 
 static void set_addr(uint16_t addr)
 {
@@ -148,6 +149,7 @@ void w5100_config(uint8_t eth_init)
 
       addr_basis[do_send] = addr      [do_send] + size[sizes      & 3];
       addr_limit[do_send] = addr_basis[do_send] + size[sizes >> 2 & 3];
+      addr_mask [do_send] =                       size[sizes >> 2 & 3] - 1;
     }
   }
 }
@@ -255,7 +257,8 @@ uint16_t w5100_data_request(bool do_send)
                                 0x0524}; // Socket 1 TX Write Pointer Register
 
       // Calculate and set physical address
-      uint16_t addr = get_word(reg[do_send]) & 0x0FFF | addr_basis[do_send];
+      uint16_t addr = get_word(reg[do_send]) & addr_mask [do_send]
+                                             | addr_basis[do_send];
       set_addr(addr);
 
       // Access to *w5100_data is limited both by ...
