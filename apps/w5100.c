@@ -27,6 +27,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ******************************************************************************/
 
+// The W5100 has the undocumented feature to wrap around the Address Register
+// on an Auto-Increment at the end of physical address space to its beginning.
+//
+// However, the only way to make use of that feature is to have only a single
+// socket that uses all of the W5100 physical address space. But having only
+// a single socket by defining SINGLE_SOCKET comes with downsides too:
+//
+// One mustn't call into IP65 network functions anymore after w5100_config().
+// Additionally the program doesn't support 'W5100 Shared Access' anymore
+// (https://github.com/a2retrosystems/uthernet2/wiki/W5100-Shared-Access).
+
+#ifdef SINGLE_SOCKET
+#define SOCK_REG(offset) (0x0400 | (offset))
+#else // SINGLE_SOCKET
+#define SOCK_REG(offset) (0x0500 | (offset))
+#endif // SINGLE_SOCKET
+
 // Both pragmas are obligatory to have cc65 generate code
 // suitable to access the W5100 auto-increment registers.
 #pragma optimize      (on)
@@ -122,6 +139,13 @@ void w5100_config(uint8_t eth_init)
   w5100_addr_lo = w5100_mode + 2;
   w5100_data    = w5100_mode + 3;
 
+#ifdef SINGLE_SOCKET
+
+  // IP65 is inhibited so disable the W5100 Ping Block Mode.
+  *w5100_mode &= ~0x10;
+
+#endif // SINGLE_SOCKET
+
   // Source IP Address Register
   set_quad(0x000F, cfg_ip);
 
@@ -137,7 +161,6 @@ void w5100_config(uint8_t eth_init)
     {
       static uint16_t reg[2] = {0x001A,  // RX Memory Size Register
                                 0x001B}; // TX Memory Size Register
-      uint8_t sizes = get_byte(reg[do_send]);
 
       static uint16_t addr[2] = {0x6000,  // RX Memory
                                  0x4000}; // TX Memory
@@ -147,26 +170,42 @@ void w5100_config(uint8_t eth_init)
                                  0x1000,  // 4KB Memory
                                  0x2000}; // 8KB Memory
 
-      addr_basis[do_send] = addr      [do_send] + size[sizes      & 3];
-      addr_limit[do_send] = addr_basis[do_send] + size[sizes >> 2 & 3];
-      addr_mask [do_send] =                       size[sizes >> 2 & 3] - 1;
+#ifdef SINGLE_SOCKET
+
+      set_byte(reg[do_send], 0x03);
+
+      // Set Socket 0 Memory Size to 8KB
+      addr_basis[do_send] = addr      [do_send];
+      addr_limit[do_send] = addr_basis[do_send] + size[0x03];
+      addr_mask [do_send] =                       size[0x03] - 1;
+
+#else // SINGLE_SOCKET
+
+      uint8_t sizes = get_byte(reg[do_send]);
+
+      // Get Socket 1 Memory Size
+      addr_basis[do_send] = addr      [do_send] + size[sizes      & 0x03];
+      addr_limit[do_send] = addr_basis[do_send] + size[sizes >> 2 & 0x03];
+      addr_mask [do_send] =                       size[sizes >> 2 & 0x03] - 1;
+
+#endif // SINGLE_SOCKET
     }
   }
 }
 
 bool w5100_connect(uint32_t addr, uint16_t port)
 {
-  // Socket 1 Mode Register: TCP
-  set_byte(0x0500, 0x01);
+  // Socket x Mode Register: TCP
+  set_byte(SOCK_REG(0x00), 0x01);
 
-  // Socket 1 Source Port Register
-  set_word(0x0504, ip65_random_word());
+  // Socket x Source Port Register
+  set_word(SOCK_REG(0x04), ip65_random_word());
 
-  // Socket 1 Command Register: OPEN
-  set_byte(0x0501, 0x01);
+  // Socket x Command Register: OPEN
+  set_byte(SOCK_REG(0x01), 0x01);
 
-  // Socket 1 Status Register: SOCK_INIT ?
-  while (get_byte(0x0503) != 0x13)
+  // Socket x Status Register: SOCK_INIT ?
+  while (get_byte(SOCK_REG(0x03)) != 0x13)
   {
     if (input_check_for_abort_key())
     {
@@ -174,19 +213,19 @@ bool w5100_connect(uint32_t addr, uint16_t port)
     }
   }
 
-  // Socket 1 Destination IP Address Register
-  set_quad(0x050C, addr);
+  // Socket x Destination IP Address Register
+  set_quad(SOCK_REG(0x0C), addr);
 
-  // Socket 1 Destination Port Register
-  set_word(0x0510, port);
+  // Socket x Destination Port Register
+  set_word(SOCK_REG(0x10), port);
 
-  // Socket 1 Command Register: CONNECT
-  set_byte(0x0501, 0x04);
+  // Socket x Command Register: CONNECT
+  set_byte(SOCK_REG(0x01), 0x04);
 
   while (true)
   {
-    // Socket 1 Status Register
-    switch (get_byte(0x0503))
+    // Socket x Status Register
+    switch (get_byte(SOCK_REG(0x03)))
     {
       case 0x00: return false; // Socket Status: SOCK_CLOSED
       case 0x17: return true;  // Socket Status: SOCK_ESTABLISHED
@@ -201,14 +240,14 @@ bool w5100_connect(uint32_t addr, uint16_t port)
 
 bool w5100_connected(void)
 {
-  // Socket 1 Status Register: SOCK_ESTABLISHED ?
-  return get_byte(0x0503) == 0x17;
+  // Socket x Status Register: SOCK_ESTABLISHED ?
+  return get_byte(SOCK_REG(0x03)) == 0x17;
 }
 
 void w5100_disconnect(void)
 {
-  // Socket 1 Command Register: Command Pending ?
-  while (get_byte(0x0501))
+  // Socket x Command Register: Command Pending ?
+  while (get_byte(SOCK_REG(0x01)))
   {
     if (input_check_for_abort_key())
     {
@@ -216,14 +255,14 @@ void w5100_disconnect(void)
     }
   }
 
-  // Socket 1 Command Register: DISCON
-  set_byte(0x0501, 0x08);
+  // Socket x Command Register: DISCON
+  set_byte(SOCK_REG(0x01), 0x08);
 }
 
 uint16_t w5100_data_request(bool do_send)
 {
-  // Socket 1 Command Register: Command Pending ?
-  if (get_byte(0x0501))
+  // Socket x Command Register: Command Pending ?
+  if (get_byte(SOCK_REG(0x01)))
   {
     return 0;
   }
@@ -240,8 +279,8 @@ uint16_t w5100_data_request(bool do_send)
     {
       prev_size = size;
       {
-        static uint16_t reg[2] = {0x0526,  // Socket 1 RX Received Size Register
-                                  0x0520}; // Socket 1 TX Free     Size Register
+        static uint16_t reg[2] = {SOCK_REG(0x26),  // Socket x RX Received Size Register
+                                  SOCK_REG(0x20)}; // Socket x TX Free     Size Register
         size = get_word(reg[do_send]);
       }
     }
@@ -253,18 +292,28 @@ uint16_t w5100_data_request(bool do_send)
     }
 
     {
-      static uint16_t reg[2] = {0x0528,  // Socket 1 RX Read  Pointer Register
-                                0x0524}; // Socket 1 TX Write Pointer Register
+      static uint16_t reg[2] = {SOCK_REG(0x28),  // Socket x RX Read  Pointer Register
+                                SOCK_REG(0x24)}; // Socket x TX Write Pointer Register
 
       // Calculate and set physical address
       uint16_t addr = get_word(reg[do_send]) & addr_mask [do_send]
                                              | addr_basis[do_send];
       set_addr(addr);
 
+#ifdef SINGLE_SOCKET
+
+      // The W5100 has the undocumented feature to wrap around the Address Register
+      // on an Auto-Increment at the end of physical address space to its beginning.
+      return size;
+
+#else // SINGLE_SOCKET
+
       // Access to *w5100_data is limited both by ...
       // - size of received / free space
       // - end of physical address space
       return MIN(size, addr_limit[do_send] - addr);
+
+#endif // SINGLE_SOCKET
     }
   }
 }
@@ -272,16 +321,16 @@ uint16_t w5100_data_request(bool do_send)
 void w5100_data_commit(bool do_send, uint16_t size)
 {
   {
-    static uint16_t reg[2] = {0x0528,  // Socket 1 RX Read  Pointer Register
-                              0x0524}; // Socket 1 TX Write Pointer Register
+    static uint16_t reg[2] = {SOCK_REG(0x28),  // Socket x RX Read  Pointer Register
+                              SOCK_REG(0x24)}; // Socket x TX Write Pointer Register
     set_word(reg[do_send], get_word(reg[do_send]) + size);
   }
 
   {
     static uint8_t cmd[2] = {0x40,  // Socket Command: RECV
                              0x20}; // Socket Command: SEND
-    // Socket 1 Command Register
-    set_byte(0x0501, cmd[do_send]);
+    // Socket x Command Register
+    set_byte(SOCK_REG(0x01), cmd[do_send]);
   }
 
   // Do NOT wait for command completion here, rather
