@@ -125,19 +125,15 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 
 %.prg: %.c ip65 drivers
 	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_c64.lib
-	rm $*.o
 
 %.bin: %.c ip65 drivers
 	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_apple2.lib
-	rm $*.o
 
 %.com: %.c ip65 drivers
 	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atari.lib
-	rm $*.o
 
 %.xl.com: %.c ip65 drivers
 	cl65 -o $*.xl.com -O -t atarixl -m $*.atrxl.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atarixl.lib
-	rm $*.o
 
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
