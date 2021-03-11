@@ -6,22 +6,37 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef __APPLE2_SYS__
+#include <dirent.h>
+#include <stdbool.h>
+#endif
 
 #include "../inc/ip65.h"
 
 #define NTP_SERVER "pool.ntp.org"
 
-void error_exit(void)
+void message_exit(char *msg)
 {
-  printf("- %s\n", ip65_strerror(ip65_error));
+  printf("- %s\n", msg);
+#ifdef __APPLE2_SYS__
+  printf("\nPress any key");
+  cgetc();
+#endif
   exit(EXIT_FAILURE);
 }
 
+void error_exit(void)
+{
+  message_exit(ip65_strerror(ip65_error));
+}
+
+#ifndef __APPLE2__
 void confirm_exit(void)
 {
   printf("\nPress any key ");
   cgetc();
 }
+#endif
 
 int main(void)
 {
@@ -32,10 +47,16 @@ int main(void)
   uint32_t server;
   struct timespec time;
 
+#ifndef __APPLE2__
   if (doesclrscrafterexit())
   {
     atexit(confirm_exit);
   }
+#endif
+
+#ifdef __APPLE2_SYS__
+  clrscr();
+#endif
 
   printf("\nSetting timezone ");
   file = open("date65.tz", O_RDONLY);
@@ -107,10 +128,41 @@ int main(void)
   time.tv_nsec = 0;
   if (clock_settime(CLOCK_REALTIME, &time))
   {
-    printf("- Fail\n");
-    exit(EXIT_FAILURE);
+    message_exit("Fail");
   }
 
   printf("- Ok\n");
+
+#ifdef __APPLE2_SYS__
+  {
+    bool found_myself = false;
+    DIR *dir;
+    struct dirent *ent;
+
+    printf("\nChaining ");
+    dir = opendir(".");
+    if (dir)
+    {
+      while (ent = readdir(dir))
+      {
+        if (found_myself)
+        {
+          if (strstr(ent->d_name, ".SYSTEM"))
+          {
+            printf("- %s ...", ent->d_name);
+            exec(ent->d_name, NULL);
+          }
+        }
+        else if (!strcmp(ent->d_name, "DATE65.SYSTEM"))
+        {
+          found_myself = true;
+        }
+      }
+      closedir(dir);
+    }
+    message_exit("No .SYSTEM file found");
+  }
+#endif
+
   return EXIT_SUCCESS;
 }

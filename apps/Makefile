@@ -27,7 +27,7 @@ C64_DRIVERLIB = ../drivers/ip65_c64.lib
 A2_DRIVERLIB  = ../drivers/ip65_apple2.lib
 ATR_DRIVERLIB = ../drivers/ip65_atari.lib
 
-# See http://vice-emu.sourceforge.net/
+# See https://vice-emu.sourceforge.net/
 C1541 ?= c1541
 
 # See https://applecommander.github.io/
@@ -44,6 +44,9 @@ TCP =\
 	telnet65 \
 	tweet65
 
+all:    $(UDP) $(TCP)
+.PHONY: $(UDP) $(TCP)
+
 bin: wget65.bin
 
 wget65.bin: w5100.c w5100_http.c linenoise.c
@@ -56,14 +59,14 @@ telnet65.com: ATARI_CFG = atrtelnet.cfg
 
 tweet65.prg tweet65.bin tweet65.com: ifttt.c
 
-all:    $(UDP) $(TCP)
-.PHONY: $(UDP) $(TCP)
-
 $(addsuffix .prg,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .prg,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(addsuffix .bin,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .bin,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
+
+$(addsuffix .sys,$(UDP)): IP65LIB = ../ip65/ip65.lib
+$(addsuffix .sys,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
 
 $(addsuffix .com,$(UDP)): IP65LIB = ../ip65/ip65.lib
 $(addsuffix .com,$(TCP)): IP65LIB = ../ip65/ip65_tcp.lib
@@ -100,22 +103,26 @@ ATARI_CFG = atari.cfg
 %.o: %.c
 
 %.prg: %.s.o $(BUILDS)
-	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
+	ld65 -o $*.prg -C c64.cfg -m $*.prg.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
 %.bin: %.s.o $(BUILDS)
-	ld65 -o $*.bin -C apple2.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
+	ld65 -o $*.bin -C apple2.cfg -m $*.bin.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
 %.com: %.s.o $(BUILDS)
-	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
+	ld65 -o $*.com -C $(ATARI_CFG) -m $*.com.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.prg: %.c $(BUILDS)
-	cl65 -o $*.prg -Or -t c64 $(CL65FLAGS) -m $*.c64.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(C64_DRIVERLIB)
+	cl65 -o $*.prg -Or -t c64 $(CL65FLAGS) -m $*.prg.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(C64_DRIVERLIB)
 
 %.bin: %.c $(BUILDS)
-	cl65 -o $*.bin -Or -t apple2enh $(CL65FLAGS) -m $*.a2.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(A2_DRIVERLIB)
+	cl65 -o $*.bin -Or -t apple2enh $(CL65FLAGS) -m $*.bin.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(A2_DRIVERLIB)
+
+%.sys: %.c $(BUILDS)
+	cl65 -o $*.sys -Or -t apple2enh -C apple2enh-system.cfg apple2enh-iobuf-0800.o -D __APPLE2_SYS__ $(CL65FLAGS) \
+	-m $*.sys.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(A2_DRIVERLIB)
 
 %.com: %.c $(BUILDS)
-	cl65 -o $*.com -Or -t atari $(CL65FLAGS) -m $*.atr.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(ATR_DRIVERLIB)
+	cl65 -o $*.com -Or -t atari $(CL65FLAGS) -m $*.com.map -vm $(filter-out $(BUILDS),$^) $(IP65LIB) $(ATR_DRIVERLIB)
 
 ip65.d64: prg
 	$(C1541) -format ip65,00 d64 $@
@@ -125,18 +132,18 @@ ip65.d64: prg
 	$(C1541) -attach $@ -write telnet65.prg telnet65,p
 	$(C1541) -attach $@ -write tweet65.prg  tweet65,p
 
-ip65.dsk: bin
+ip65.dsk: bin date65.sys
 	cp ../build/prodos.dsk $@
 	java -jar $(AC) -as $@ date65             < date65.bin
-	java -jar $(AC) -p  $@ date65.system  sys < $(CC65)/apple2enh/util/loader.system
 	java -jar $(AC) -p  $@ date65.tz      txt < date65.tz
 	java -jar $(AC) -as $@ hfs65              < hfs65.bin
 	java -jar $(AC) -p  $@ hfs65.system   sys < $(CC65)/apple2enh/util/loader.system
+	java -jar $(AC) -as $@ telnet65           < telnet65.bin
 	java -jar $(AC) -as $@ tweet65            < tweet65.bin
 	java -jar $(AC) -p  $@ tweet65.system sys < $(CC65)/apple2enh/util/loader.system
 	java -jar $(AC) -as $@ wget65             < wget65.bin
 	java -jar $(AC) -p  $@ wget65.system  sys < $(CC65)/apple2enh/util/loader.system
-	java -jar $(AC) -as $@ telnet65           < telnet65.bin
+	java -jar $(AC) -as $@ date65.system      < date65.sys
 
 ip65.atr: com
 	mkdir atr
@@ -152,5 +159,5 @@ ip65.atr: com
 clean:
 	make -C ../ip65 clean
 	make -C ../drivers clean
-	-rm -f *.o *.prg *.bin *.com *.map
+	-rm -f *.o *.prg *.bin *.sys *.com *.map
 	-rm -f ip65.d64 ip65.dsk ip65.atr
