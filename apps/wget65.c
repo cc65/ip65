@@ -479,7 +479,7 @@ int main(int, char *argv[])
     }
   }
 
-  printf("- %d\n\nInitializing %s ", eth_init, eth_name);
+  printf("- %u\n\nInitializing %s ", eth_init, eth_name);
   if (ip65_init(eth_init))
   {
     ip65_error_exit();

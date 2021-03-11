@@ -311,7 +311,7 @@ int main(void)
       close(file);
       eth_init &= ~'0';
     }
-    printf("- %d", eth_init);
+    printf("- %u", eth_init);
   }
 #endif
 
