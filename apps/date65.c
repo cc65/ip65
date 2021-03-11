@@ -93,10 +93,14 @@ int main(void)
   // seconds since 1970 according to RFC 868
   time.tv_sec -= 2208988800UL;
 
-  printf("- %s", ctime(&time.tv_sec));
-
+  printf("- %s\nSetting time ", ctime(&time.tv_sec));
   time.tv_nsec = 0;
-  clock_settime(CLOCK_REALTIME, &time);
+  if (clock_settime(CLOCK_REALTIME, &time))
+  {
+    printf("- Fail\n");
+    exit(EXIT_FAILURE);
+  }
 
+  printf("- Ok\n");
   return EXIT_SUCCESS;
 }
