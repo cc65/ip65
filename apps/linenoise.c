@@ -102,10 +102,6 @@ static int getColumns() {
     return cols;
 }
 
-#ifdef __APPLE2__
-#pragma code-name (push, "LC")
-#endif
-
 /* Beep, used for completion when there is nothing to complete or when all
  * the choices were already shown. */
 static void linenoiseBeep(void) {
@@ -122,6 +118,10 @@ static void freeCompletions(linenoiseCompletions *lc) {
     if (lc->cvec != NULL)
         free(lc->cvec);
 }
+
+#ifdef __APPLE2__
+#pragma code-name (push, "LC")
+#endif
 
 /* This is an helper function for linenoiseEdit() and is called when the
  * user types the <tab> key in order to complete the string currently in the
