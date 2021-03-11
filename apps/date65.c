@@ -1,14 +1,3 @@
-///////////////////////////////////////////
-
-// https://www.epochconverter.com/timezones
-
-#define TIMEZONE_CODE "CET"
-#define TIMEZONE_SECS 3600
-
-#define NTP_SERVER "pool.ntp.org"
-
-///////////////////////////////////////////
-
 #include <cc65.h>
 #include <time.h>
 #include <fcntl.h>
@@ -19,6 +8,8 @@
 #include <string.h>
 
 #include "../inc/ip65.h"
+
+#define NTP_SERVER "pool.ntp.org"
 
 void error_exit(void)
 {
@@ -34,33 +25,52 @@ void confirm_exit(void)
 
 int main(void)
 {
+  int tz_hours = 0;
   uint8_t eth_init = ETH_INIT_DEFAULT;
+  int file;
+  char buf[3];
   uint32_t server;
   struct timespec time;
-
-  strncpy(_tz.tzname, TIMEZONE_CODE,
-          sizeof(_tz.tzname) - 1);
-  _tz.timezone = TIMEZONE_SECS;
 
   if (doesclrscrafterexit())
   {
     atexit(confirm_exit);
   }
 
-#ifdef __APPLE2__
+  printf("\nSetting timezone ");
+  file = open("date65.tz", O_RDONLY);
+  if (file != -1)
   {
-    int file;
-
-    printf("\nSetting slot ");
-    file = open("ethernet.slot", O_RDONLY);
-    if (file != -1)
+    if (read(file, buf, 3) == 3)
     {
-      read(file, &eth_init, 1);
-      close(file);
-      eth_init &= ~'0';
+      tz_hours = (buf[2] & ~'0') + 10 * (buf[1] & ~'0');
+      if ((buf[0] & ~0x80) == '-')
+      {
+        tz_hours = -tz_hours;
+      }
     }
-    printf("- %u\n", eth_init);
+    close(file);
   }
+  if (tz_hours < 0)
+  {
+    printf("- UTC-%02u\n", -tz_hours);
+  }
+  else
+  {
+    printf("- UTC+%02u\n", tz_hours);
+  }
+  _tz.timezone = tz_hours * 3600L;
+
+#ifdef __APPLE2__
+  printf("\nSetting slot ");
+  file = open("ethernet.slot", O_RDONLY);
+  if (file != -1)
+  {
+    read(file, &eth_init, 1);
+    close(file);
+    eth_init &= ~'0';
+  }
+  printf("- %u\n", eth_init);
 #endif
 
   printf("\nInitializing ");
@@ -82,7 +92,7 @@ int main(void)
     error_exit();
   }
 
-  printf("- Ok\n\nGetting %s ", _tz.tzname);
+  printf("- Ok\n\nGetting time ");
   time.tv_sec = sntp_get_time(server);
   if (!time.tv_sec)
   {
