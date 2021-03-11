@@ -25,7 +25,7 @@ else
   VICDRIVERLIB = ../drivers/vic20rrnet.lib
 endif
 
-# See http://vice-emu.sourceforge.net/
+# See https://vice-emu.sourceforge.net/
 C1541 ?= c1541
 
 # See https://applecommander.github.io/
@@ -112,28 +112,28 @@ vt100.com: ATARI_CFG = ../apps/atrtelnet.cfg
 %.o: %.c
 
 %.prg: %.o ip65 drivers
-	ld65 -o $*.prg -C c64.cfg -m $*.c64.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
+	ld65 -o $*.prg -C c64.cfg -m $*.prg.map -vm $< $(IP65LIB) $(C64DRIVERLIB) c64.lib
 
 %.bin: %.o ip65 drivers
-	ld65 -o $*.bin -C apple2.cfg -m $*.a2.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
+	ld65 -o $*.bin -C apple2.cfg -m $*.bin.map -vm $< $(IP65LIB) $(A2DRIVERLIB) apple2.lib
 
 %.com: %.o ip65 drivers
-	ld65 -o $*.com -C $(ATARI_CFG) -m $*.atr.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
+	ld65 -o $*.com -C $(ATARI_CFG) -m $*.com.map -vm $< $(IP65LIB) $(ATRDRIVERLIB) atari.lib
 
 %.vicprg: %.o ip65 drivers
-	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vic.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
+	ld65 -o $*.vicprg -C vic20-32k.cfg -m $*.vicprg.map -vm $< $(IP65LIB) $(VICDRIVERLIB) vic20.lib
 
 %.prg: %.c ip65 drivers
-	cl65 -o $*.prg -O -t c64 -m $*.c64.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_c64.lib
+	cl65 -o $*.prg -O -t c64 -m $*.prg.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_c64.lib
 
 %.bin: %.c ip65 drivers
-	cl65 -o $*.bin -O -t apple2 -m $*.a2.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_apple2.lib
+	cl65 -o $*.bin -O -t apple2 -m $*.bin.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_apple2.lib
 
 %.com: %.c ip65 drivers
-	cl65 -o $*.com -O -t atari -m $*.atr.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atari.lib
+	cl65 -o $*.com -O -t atari -m $*.com.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atari.lib
 
 %.xl.com: %.c ip65 drivers
-	cl65 -o $*.xl.com -O -t atarixl -m $*.atrxl.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atarixl.lib
+	cl65 -o $*.xl.com -O -t atarixl -m $*.xl.com.map -vm $< $(wildcard $**.s) $(IP65LIB) ../drivers/ip65_atarixl.lib
 
 ip65test.d64: prg
 	$(C1541) -format ip65,00 d64 $@
