@@ -65,7 +65,7 @@ _udp_recv_src_port:
   ldx udp_inp+udp_src_port
   rts
 
-  _udp_send:
+_udp_send:
   stax udp_send_src_port
   jsr popax
   stax udp_send_dest_port
