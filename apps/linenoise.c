@@ -78,15 +78,15 @@ struct linenoiseState {
     int history_index;  /* The history index we are currently editing. */
 };
 
-enum KEY_ACTION{
-	CTRL_A = 1,         /* Ctrl+a */
-	CTRL_B = 2,         /* Ctrl-b */
-	CTRL_C = 3,         /* Ctrl-c */
-	CTRL_D = 4,         /* Ctrl-d */
-	CTRL_E = 5,         /* Ctrl-e */
-	CTRL_F = 6,         /* Ctrl-f */
-	CTRL_N = 14,        /* Ctrl-n */
-	CTRL_P = 16         /* Ctrl-p */
+enum KEY_ACTION {
+    CTRL_A = 1,         /* Ctrl+a */
+    CTRL_B = 2,         /* Ctrl-b */
+    CTRL_C = 3,         /* Ctrl-c */
+    CTRL_D = 4,         /* Ctrl-d */
+    CTRL_E = 5,         /* Ctrl-e */
+    CTRL_F = 6,         /* Ctrl-f */
+    CTRL_N = 14,        /* Ctrl-n */
+    CTRL_P = 16         /* Ctrl-p */
 };
 
 static void refreshLine(struct linenoiseState *l);
