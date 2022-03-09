@@ -23,11 +23,11 @@ apple2: ip65-apple2.zip
 
 atari: ip65-atari.zip
 
-ip65-c64.zip:    ip65.h ip65.lib ip65_tcp.lib ip65_c64.lib                    ip65.d64
+ip65-c64.zip:    ip65.h ip65.lib ip65_tcp.lib ip65_c64.lib                           ip65.d64
 
-ip65-apple2.zip: ip65.h ip65.lib ip65_tcp.lib ip65_apple2.lib                 ip65.dsk
+ip65-apple2.zip: ip65.h ip65.lib ip65_tcp.lib ip65_apple2.lib ip65_apple2_uther2.lib ip65.dsk
 
-ip65-atari.zip:  ip65.h ip65.lib ip65_tcp.lib ip65_atari.lib ip65_atarixl.lib ip65.atr
+ip65-atari.zip:  ip65.h ip65.lib ip65_tcp.lib ip65_atari.lib ip65_atarixl.lib        ip65.atr
 
 ip65.h:
 	cp inc/$@ $@
@@ -36,7 +36,7 @@ ip65.lib ip65_tcp.lib:
 	make -C ip65 $@
 	cp ip65/$@ $@
 
-ip65_c64.lib ip65_apple2.lib ip65_atari.lib ip65_atarixl.lib:
+ip65_c64.lib ip65_apple2.lib ip65_apple2_uther2.lib ip65_atari.lib ip65_atarixl.lib:
 	make -C drivers $@
 	cp drivers/$@ $@
 
