@@ -42,7 +42,7 @@ void send(unsigned char flags, const char* str, ...)
   }
 
   va_start(args, str);
-  send_size += vsnprintf(send_buffer + send_size, sizeof(send_buffer) - send_size, str, args);
+  send_size += vsnprintf((char*)send_buffer + send_size, sizeof(send_buffer) - send_size, str, args);
   va_end(args);
 
   if (flags & SEND_LAST || sizeof(send_buffer) - send_size < 1024 / 4)

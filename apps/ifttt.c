@@ -91,7 +91,7 @@ int ifttt_trigger(const char* key, const char* event,
     return -1;
   }
 
-  len = url_download(url, download, sizeof(download));
+  len = url_download(url, (uint8_t*)download, sizeof(download));
 
   if (len < 12)
   {
