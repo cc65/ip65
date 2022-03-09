@@ -3,6 +3,7 @@
 *.map
 *.prg
 *.bin
+*.sys
 *.com
 *.vicprg
 *.d64
