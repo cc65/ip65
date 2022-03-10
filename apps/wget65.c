@@ -241,6 +241,7 @@ void exit_on_key(void)
 
 void write_file(const char *name)
 {
+  register volatile uint8_t *data = w5100_data;
   uint16_t i;
   int file;
   uint16_t rcv;
@@ -277,14 +278,10 @@ void write_file(const char *name)
     }
 
     {
-      // One less to allow for faster pre-increment below
-      char *dataptr = buffer + len - 1;
+      char *dataptr = buffer + len;
       for (i = 0; i < rcv; ++i)
       {
-        // The variable is necessary to have cc65 generate code
-        // suitable to access the W5100 auto-increment register.
-        char data = *w5100_data;
-        *++dataptr = data;
+        *dataptr++ = *data;
       }
     }
 
@@ -318,6 +315,7 @@ void write_file(const char *name)
 
 void write_device(char device)
 {
+  register volatile uint8_t *data = w5100_data;
   uint16_t i;
   dhandle_t dio;
   uint16_t rcv;
@@ -383,8 +381,7 @@ void write_device(char device)
           rcv = sizeof(buffer) - len;
         }
 
-        // One less to allow for faster pre-increment below
-        dataptr = buffer + len - 1;
+        dataptr = buffer + len;
       }
       else
       {
@@ -394,16 +391,12 @@ void write_device(char device)
           rcv = 0x100 - len % 0x100;
         }
 
-        // One less to allow for faster pre-increment below
-        dataptr = buffer + (skew[len / 0x100] << 8 | len % 0x100) - 1;
+        dataptr = buffer + (skew[len / 0x100] << 8 | len % 0x100);
       }
 
       for (i = 0; i < rcv; ++i)
       {
-        // The variable is necessary to have cc65 generate code
-        // suitable to access the W5100 auto-increment register.
-        char data = *w5100_data;
-        *++dataptr = data;
+        *dataptr++ = *data;
       }
     }
 

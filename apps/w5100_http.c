@@ -42,6 +42,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
                      char* buffer, size_t length)
 {
+  register volatile uint8_t *data = w5100_data;
+
   printf("Connecting to %s:%d ", dotted_quad(addr), port);
 
   if (!w5100_connect(addr, port))
@@ -82,15 +84,11 @@ bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
       }
 
       {
-        // One less to allow for faster pre-increment below
-        const char *dataptr = selector + pos - 1;
+        const char *dataptr = selector + pos;
         uint16_t i;
         for (i = 0; i < snd; ++i)
         {
-          // The variable is necessary to have cc65 generate code
-          // suitable to access the W5100 auto-increment register.
-          char data = *++dataptr;
-          *w5100_data = data;
+          *data = *dataptr++;
         }
       }
 
@@ -132,17 +130,13 @@ bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
       }
 
       {
-        // One less to allow for faster pre-increment below
-        char *dataptr = buffer + len - 1;
+        char *dataptr = buffer + len;
         uint16_t i;
         for (i = 0; i < rcv; ++i)
         {
-          // The variable is necessary to have cc65 generate code
-          // suitable to access the W5100 auto-increment register.
-          char data = *w5100_data;
-          *++dataptr = data;
+          *dataptr++ = *data;
 
-          if (!memcmp(dataptr - 3, "\r\n\r\n", 4))
+          if (!memcmp(dataptr - 4, "\r\n\r\n", 4))
           {
             rcv = i + 1;
             body = true;

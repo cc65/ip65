@@ -65,12 +65,8 @@ static uint16_t addr_mask [2];
 
 static void set_addr(uint16_t addr)
 {
-  // The variables are necessary to have cc65 generate code
-  // suitable to access the W5100 auto-increment registers.
-  uint8_t addr_hi = addr >> 8;
-  uint8_t addr_lo = addr;
-  *w5100_addr_hi = addr_hi;
-  *w5100_addr_lo = addr_lo;
+  *w5100_addr_hi = addr >> 8;
+  *w5100_addr_lo = addr;
 }
 
 static uint8_t get_byte(uint16_t addr)
@@ -91,45 +87,25 @@ static uint16_t get_word(uint16_t addr)
 {
   set_addr(addr);
 
-  {
-    // The variables are necessary to have cc65 generate code
-    // suitable to access the W5100 auto-increment registers.
-    uint8_t data_hi = *w5100_data;
-    uint8_t data_lo = *w5100_data;
-    return data_hi << 8 | data_lo;
-  }
+  return *w5100_data << 8 | *w5100_data;
 }
 
 static void set_word(uint16_t addr, uint16_t data)
 {
   set_addr(addr);
 
-  {
-    // The variables are necessary to have cc65 generate code
-    // suitable to access the W5100 auto-increment registers.
-    uint8_t data_hi = data >> 8;
-    uint8_t data_lo = data;
-    *w5100_data = data_hi;
-    *w5100_data = data_lo;
-  }
+  *w5100_data = data >> 8;
+  *w5100_data = data;
 }
 
 static void set_quad(uint16_t addr, uint32_t data)
 {
   set_addr(addr);
 
-  {
-    // The variables are necessary to have cc65 generate code
-    // suitable to access the W5100 auto-increment registers.
-    uint8_t data_1 = data;
-    uint8_t data_2 = data >> 8;
-    uint8_t data_3 = data >> 16;
-    uint8_t data_4 = data >> 24;
-    *w5100_data = data_1;
-    *w5100_data = data_2;
-    *w5100_data = data_3;
-    *w5100_data = data_4;
-  }
+  *w5100_data = data;
+  *w5100_data = data >> 8;
+  *w5100_data = data >> 16;
+  *w5100_data = data >> 24;
 }
 
 void w5100_config(uint8_t eth_init)
