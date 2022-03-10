@@ -12,3 +12,4 @@
 *.zip
 *.obj
 *.exe
+/ip65.h
