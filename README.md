@@ -11,7 +11,7 @@ All three parts are available for three 6502 based target systems:
 IP65 requires Ethernet hardware. There's no support for TCP/IP over serial connections whatsoever.
 
 On the C64 there are two supported Ethernet devices:
-- The [RR-Net](http://wiki.icomp.de/wiki/RR-Net) - emulated by [VICE](http://vice-emu.sourceforge.net/)
+- The [RR-Net](http://wiki.icomp.de/wiki/RR-Net) - emulated by [VICE](https://vice-emu.sourceforge.net/)
 - The [ETH64](https://www.ide64.org/eth64.html)
 
 On the Apple II there are three supported Ethernet cards:
