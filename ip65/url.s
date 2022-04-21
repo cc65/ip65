@@ -13,6 +13,7 @@
 .import parse_integer
 .import dns_ip
 
+.export url_host
 .export url_ip
 .export url_port
 .export url_selector
@@ -26,7 +27,8 @@ search_string   = ptr1
 .bss
 
   url_string:           .res 2
-  url_ip:               .res 4  ; will be set with ip address of host in url
+  url_host:             .res 2  ; will be set with hostname + CRLFCRLF
+  url_ip:               .res 4  ; will be set with ip address of host in url (if resolve)
   url_port:             .res 2  ; will be set with port number of url
   url_selector:         .res 2  ; will be set with address of selector part of URL
   url_type:             .res 1
@@ -35,6 +37,7 @@ search_string   = ptr1
   url_type_gopher  = 1
   url_type_http    = 2
 
+  resolve:              .res 1
   src_ptr:              .res 1
   dest_ptr:             .res 1
 
@@ -46,28 +49,33 @@ search_string   = ptr1
 ; inputs:
 ; AX = address of URL string
 ; any control character (i.e. <$20) is treated as 'end of string', e.g. a CR or LF, as well as $00
+; Y = do resolve hostname
 ; outputs:
 ; sec if a malformed url, otherwise:
 ; url_ip = ip address of host in url
 ; url_port = port number of url
 ; url_selector = address of selector part of URL
 url_parse:
+  sty resolve
   ldy #<output_buffer
   sty url_selector
   ldy #>output_buffer
   sty url_selector+1
+  ldy resolve
 
 ; parses a URL into a form that makes it easy to retrieve the specified resource
 ; caution - the resulting selector part of URL must fit into the provided buffer !!!
 ; inputs:
 ; AX = address of URL string
 ; any control character (i.e. <$20) is treated as 'end of string', e.g. a CR or LF, as well as $00
+; Y = do resolve hostname
 ; url_selector = points to a buffer that selector part of URL will be placed into
 ; outputs:
 ; sec if a malformed url, otherwise:
 ; url_ip = ip address of host in url
 ; url_port = port number of url
 url_parse_buffer:
+  sty resolve
   stax url_string
   ldy #url_type_http
   sty url_type
@@ -109,6 +117,8 @@ lda #url_type_gopher
   ; now pointing at hostname
   bcs @exit_with_error
 @no_protocol_specifier:
+  ldy resolve
+  beq @no_resolve
   jsr dns_set_hostname
   bcs @exit_with_sec
   jsr dns_resolve
@@ -125,6 +135,7 @@ lda #url_type_gopher
 
   jsr skip_to_hostname
 
+@no_resolve:
   ; skip over next colon
   ldax #colon
   jsr parser_skip_next
@@ -212,11 +223,17 @@ lda #url_type_gopher
   jsr skip_to_hostname
   ; AX now pointing at hostname
   stax ptr1
+
+  clc
   lda url_selector
   sta ptr2
+  adc dest_ptr
+  sta url_host
   pla
   sta ptr2+1
-
+  adc #0
+  sta url_host+1
+  
   lda #0
   sta src_ptr
 

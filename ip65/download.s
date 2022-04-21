@@ -61,6 +61,7 @@ url_download:
   sty url_selector
   ldy url_download_buffer+1
   sty url_selector+1
+  ldy #1
   jsr url_parse_buffer
   bcc resource_download
   rts

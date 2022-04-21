@@ -17,7 +17,6 @@
 .import url_port
 .import url_selector
 .import url_resource_type
-.import url_parse
 .import url_download
 .import url_download_buffer
 .import url_download_buffer_length

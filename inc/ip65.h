@@ -294,16 +294,18 @@ bool __fastcall__ tftp_upload_from_memory(uint32_t server, const char* name,
 //
 // On success the variables url_ip, url_port and url_selector (see below) are valid.
 //
-// Inputs: url: Zero (or ctrl char) terminated string containing the URL
+// Inputs: url:     Zero (or ctrl char) terminated string containing the URL
+//         resolve: Resolve host in URL
 // Output: true if an error occured, false otherwise
 //
-bool __fastcall__ url_parse(const char* url);
+bool __fastcall__ url_parse(const char* url, bool resolve);
 
 // Access to parsed HTTP URL
 //
-// Access to the three items below is only valid after url_parse returned false.
+// Access to the four items below is only valid after url_parse returned false.
 //
-extern uint32_t url_ip;         // IP address of host in URL
+extern char*    url_host;       // Zero terminated string containing host in URL + "\r\n\r\n"
+extern uint32_t url_ip;         // IP address of host in URL (only if 'resolve' is true)
 extern uint16_t url_port;       // Port number of URL
 extern char*    url_selector;   // Zero terminated string containing selector part of URL
 

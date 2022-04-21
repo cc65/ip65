@@ -100,6 +100,7 @@ test_url_parse:
   jsr print
   jsr print_cr
   ldax temp_url_ptr
+  ldy #1
   jsr url_parse
   bcc :+
   jmp print_errorcode

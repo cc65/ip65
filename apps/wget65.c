@@ -497,7 +497,7 @@ int main(int, char *argv[])
     arg = get_argument(1, "URL", url_completion);
 
     printf("\n\nProcessing URL ");
-    if (!url_parse(arg))
+    if (!url_parse(arg, true))
     {
       break;
     }
