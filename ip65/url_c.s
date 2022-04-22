@@ -12,7 +12,8 @@
 .import url_port
 .import url_selector
 
-.import popax, tmp1
+.import popax
+.importzp tmp1
 
 _url_parse:
   sta tmp1
