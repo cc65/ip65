@@ -46,13 +46,23 @@ void w5100_data_commit(bool do_send, uint16_t size);
 // to be sent to the server.
 extern volatile uint8_t* w5100_data;
 
+// Initialize this module after the IP65 TCP/IP stack has been initialized.
+// Return true if the (virtual) W5100 supports DNS Offloading.
+// https://github.com/a2retrosystems/uthernet2/wiki/Virtual-W5100-with-DNS
+bool w5100_init(uint8_t eth_init);
+
 // Configure W5100 Ethernet controller with additional information from IP65
 // after the IP65 TCP/IP stack has been configured.
-void w5100_config(uint8_t eth_init);
+void w5100_config(void);
 
-// Connect to server with IP address <server_addr> on TCP port <server_port>.
+// Connect to server with IP address <addr> on TCP port <port>.
 // Return true if the connection is established, return false otherwise.
-bool w5100_connect(uint32_t addr, uint16_t port);
+bool w5100_connect_addr(uint32_t addr, uint16_t port);
+
+// Connect to server with name <name>, <length> on TCP port <port> using
+// DNS Offloading.
+// Return true if the connection is established, return false otherwise.
+bool w5100_connect_name(const char* name, uint8_t length, uint16_t port);
 
 // Check if still connected to server.
 // Return true if the connection is established, return false otherwise.

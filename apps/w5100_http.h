@@ -37,12 +37,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <stdbool.h>
 
-// Connect to server with IP address <server_addr> on TCP port <server_port>,
-// then HTTP GET <selector> and consume HTTP response header. Provide feedback
-// on progress to the user via STDOUT. After returning from w5100_http_open()
-// the connection is ready to consume the HTTP body.
+// Connect to server with IP address <addr> on TCP port <port>, then HTTP GET
+// <selector> and consume HTTP response header. Provide feedback on progress
+// to the user via STDOUT. After returning from w5100_http_open_addr(), the
+// connection is ready to consume the HTTP body.
 // Return true if the connection is established, return false otherwise.
-bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
-                     char* buffer, size_t length);
+bool w5100_http_open_addr(uint32_t addr, uint16_t port, const char* selector,
+                          char* buffer, size_t length);
+
+// Connect to server with name <name>, <name_length> on TCP port <port> using
+// DNS Offloading, then HTTP GET <selector> and consume HTTP response header.
+// Provide feedback on progress to the user via STDOUT. After returning from
+// w5100_http_open_name(), the connection is ready to consume the HTTP body.
+// Return true if the connection is established, return false otherwise.
+bool w5100_http_open_name(const char* name, uint8_t name_length, uint16_t port,
+                          const char* selector, char* buffer, size_t buffer_length);
 
 #endif

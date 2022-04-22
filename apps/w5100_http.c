@@ -39,18 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma optimize      (on)
 #pragma static-locals (on)
 
-bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
-                     char* buffer, size_t length)
+static bool w5100_http_open(const char* selector, char* buffer, size_t length)
 {
   register volatile uint8_t *data = w5100_data;
-
-  printf("Connecting to %s:%d ", dotted_quad(addr), port);
-
-  if (!w5100_connect(addr, port))
-  {
-    printf("- Connect failed\n");
-    return false;
-  }
 
   printf("- Ok\n\nSending request ");
   {
@@ -176,4 +167,32 @@ bool w5100_http_open(uint32_t addr, uint16_t port, const char* selector,
     }
   }
   return true;
+}
+
+bool w5100_http_open_addr(uint32_t addr, uint16_t port, const char* selector,
+                          char* buffer, size_t length)
+{
+  printf("Connecting to %s:%d ", dotted_quad(addr), port);
+
+  if (!w5100_connect_addr(addr, port))
+  {
+    printf("- Connect failed\n");
+    return false;
+  }
+
+  return w5100_http_open(selector, buffer, length);
+}
+
+bool w5100_http_open_name(const char* name, uint8_t name_length, uint16_t port,
+                          const char* selector, char* buffer, size_t buffer_length)
+{
+  printf("Connecting to port %d ", port);
+
+  if (!w5100_connect_name(name, name_length, port))
+  {
+    printf("- Connect failed\n");
+    return false;
+  }
+
+  return w5100_http_open(selector, buffer, buffer_length);
 }

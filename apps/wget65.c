@@ -435,6 +435,7 @@ int main(int, char *argv[])
   uint16_t i;
   char *arg;
   char device;
+  bool Offload_DNS;
   uint8_t eth_init = ETH_INIT_DEFAULT;
 
   if (doesclrscrafterexit())
@@ -481,15 +482,20 @@ int main(int, char *argv[])
   // Abort on Ctrl-C to be consistent with Linenoise
   abort_key = 0x83;
 
-  printf("- Ok\n\nObtaining IP address ");
-  if (dhcp_init())
+  Offload_DNS = w5100_init(eth_init);
+
+  if (!Offload_DNS)
   {
-    ip65_error_exit();
+    printf("- Ok\n\nObtaining IP address ");
+    if (dhcp_init())
+    {
+      ip65_error_exit();
+    }
   }
   printf("- Ok\n\n");
 
   // Copy IP config from IP65 to W5100
-  w5100_config(eth_init);
+  w5100_config();
 
   load_argument("wget.urls");
   while (true)
@@ -497,7 +503,7 @@ int main(int, char *argv[])
     arg = get_argument(1, "URL", url_completion);
 
     printf("\n\nProcessing URL ");
-    if (!url_parse(arg, true))
+    if (!url_parse(arg, !Offload_DNS))
     {
       break;
     }
@@ -650,9 +656,21 @@ int main(int, char *argv[])
   save_argument("wget.files");
 
   printf("\n\n");
-  if (!w5100_http_open(url_ip, url_port, url_selector, buffer, sizeof(buffer)))
+  if (Offload_DNS)
   {
-    return EXIT_FAILURE;
+    if (!w5100_http_open_name(url_host, strlen(url_host) - 4, url_port,
+                              url_selector, buffer, sizeof(buffer)))
+    {
+      return EXIT_FAILURE;
+    }
+  }
+  else
+  {
+    if (!w5100_http_open_addr(url_ip, url_port,
+                              url_selector, buffer, sizeof(buffer)))
+    {
+      return EXIT_FAILURE;
+    }
   }
 
   if (device)
