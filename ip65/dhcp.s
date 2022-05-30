@@ -450,11 +450,11 @@ send_dhcprequest:
 
   ldax #output_buffer
   jsr udp_send
-  bcs :+                        ; if we didn't send the message we probably need to wait for an ARP reply to come back.
+  bcs :++                       ; if we didn't send the message we probably need to wait for an ARP reply to come back.
+
   lda #dhcp_bound               ; technically, we should wait till we get a DHCPACK message. but we'll assume success
   sta dhcp_state
-
-: ldx #3                        ; set the new IP address
+  ldx #3                        ; set the new IP address
 : lda dhcp_ip,x
   sta cfg_ip,x
   dex
