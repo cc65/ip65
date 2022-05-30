@@ -85,6 +85,7 @@ dhcp_message_sent_count: .res 1
 dhcp_timer:              .res 1
 dhcp_loop_count:         .res 1
 dhcp_break_polling_loop: .res 1
+dhcp_ip:                 .res 4
 
 ; DHCP constants
 BOOTREQUEST   = 1
@@ -315,9 +316,9 @@ dhcp_in:
   cmp dhcp_inp+dhcp_yiaddr      ; is the first byte in the assigned address 0?
   bne :+
   rts                           ; if so, it's a bogus response - ignore
-: ldx #4                        ; copy the our new IP address
+: ldx #3                        ; copy the new IP address
 : lda dhcp_inp+dhcp_yiaddr,x
-  sta cfg_ip,x
+  sta dhcp_ip,x
   dex
   bpl :-
 
@@ -423,7 +424,7 @@ send_dhcprequest:
   ldx #4                        ; option length is 4
   stx output_buffer+dhcp_options+4
   dex
-: lda cfg_ip,x
+: lda dhcp_ip,x
   sta output_buffer+dhcp_options+5,x
   dex
   bpl :-
@@ -452,6 +453,13 @@ send_dhcprequest:
   bcs :+                        ; if we didn't send the message we probably need to wait for an ARP reply to come back.
   lda #dhcp_bound               ; technically, we should wait till we get a DHCPACK message. but we'll assume success
   sta dhcp_state
+
+: ldx #3                        ; set the new IP address
+: lda dhcp_ip,x
+  sta cfg_ip,x
+  dex
+  bpl :-
+
 : rts
 
 
