@@ -469,7 +469,7 @@ int main(int, char *argv[])
     {
       read(file, &eth_init, 1);
       close(file);
-      eth_init &= ~'0';
+      eth_init &= 0x07;
     }
   }
 

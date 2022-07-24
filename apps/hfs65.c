@@ -309,7 +309,7 @@ int main(void)
     {
       read(file, &eth_init, 1);
       close(file);
-      eth_init &= ~'0';
+      eth_init &= 0x07;
     }
     printf("- %u", eth_init);
   }
