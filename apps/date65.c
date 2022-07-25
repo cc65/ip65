@@ -89,7 +89,7 @@ int main(void)
   {
     read(file, &eth_init, 1);
     close(file);
-    eth_init &= 0x07;
+    eth_init &= 7;
   }
   printf("- %u\n", eth_init);
 #endif
