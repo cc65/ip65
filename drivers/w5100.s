@@ -41,12 +41,7 @@
 
 	; Ethernet address
 mac:	.byte	$00, $08, $DC	; OUI of WIZnet
-	.ifdef __APPLE2__
 	.byte	$A2, $A2, $A2
-	.endif
-	.ifdef __ATARI__
-	.byte	$A8, $A8, $A8
-	.endif
 
 	; Buffer attributes
 bufaddr:.res	2		; Address
@@ -90,8 +85,6 @@ tmp	:=	tmp4		; Temporary value
 	.endif
 
 ;=====================================================================
-
-	.ifdef __APPLE2__
 
 	.rodata
 
@@ -154,54 +147,6 @@ init:
 	inc ptr+1
 	bcs :-			; Always
 :
-
-	.endif
-
-;=====================================================================
-
-	.ifdef __ATARI__
-
-	.rodata
-
-pdtab:	.byte	%00000001
-	.byte	%00000010
-	.byte	%00000100
-	.byte	%00001000
-	.byte	%00010000
-	.byte	%00100000
-	.byte	%01000000
-	.byte	%10000000
-
-;---------------------------------------------------------------------
-
-	.bss
-
-pdbit:	.res	1
-
-;---------------------------------------------------------------------
-
-mode		:= $D1F0
-addr		:= $D1F1
-data		:= $D1F3
-
-pdvs		:= $D1FF	; parallel device select
-shpdvs		:= $0248	; shadow parallel device select
-
-;---------------------------------------------------------------------
-
-	.code
-
-init:
-	; Convert parallel device ID (1-8) to parallel device bit
-	tay
-	lda pdtab-1,y
-	sta pdbit
-
-	; Select parallel device
-	sta shpdvs
-	sta pdvs
-
-	.endif
 
 ;=====================================================================
 
@@ -287,13 +232,6 @@ fixup14:sta data
 ;---------------------------------------------------------------------
 
 poll:
-	.ifdef __ATARI__
-	; Select parallel device
-	lda pdbit
-	sta shpdvs
-	sta pdvs
-	.endif
-
 	; Check for completion of previous command
 	; Socket 0 Command Register: = 0 ?
 	jsr set_addrcmdreg0
@@ -400,13 +338,6 @@ send:
 	stx cnt+1
 	sta adv
 	stx adv+1
-
-	.ifdef __ATARI__
-	; Select parallel device
-	lda pdbit
-	sta shpdvs
-	sta pdvs
-	.endif
 
 	; Set parameters for transmitting data
 	lda #>$4000		; Socket 0 TX Base Address

@@ -132,7 +132,7 @@ set_name:
 eth_init:
   sta eth_init_value
 
-.if .defined (__APPLE2__) .or .defined (__ATARI__)
+.if .defined (__APPLE2__)
   ldax #_w5100
   jsr patch_wrapper
   ldax #_w5100_name

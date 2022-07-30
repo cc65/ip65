@@ -16,9 +16,8 @@ On the C64 there are two supported Ethernet devices:
 
 On the Apple II there are three supported Ethernet cards:
 - The [Uthernet](https://web.archive.org/web/20150323031638/http://a2retrosystems.com/products.htm) - emulated by [AppleWin](https://github.com/AppleWin/AppleWin) and [GSport](https://david-schmidt.github.io/gsport/)
+- The [Uthernet II](https://a2retrosystems.com/products.htm) - emulated by [AppleWin](https://github.com/AppleWin/AppleWin)
 - The [LANceGS](https://web.archive.org/web/20010331001718/http://lancegs.a2central.com:80/)
-- The [Uthernet II](https://a2retrosystems.com/products.htm)
 
-On the ATARI (XL) there are two supported Ethernet devices:
+On the ATARI (XL) there is one supported Ethernet device:
 - The [Dragon Cart](https://www.atari8ethernet.com/) - emulated by [Altirra](http://www.virtualdub.org/altirra.html)
-- The [Dracarys](https://atariage.com/forums/topic/287376-preannouncement-dragon-cart-ii/)
