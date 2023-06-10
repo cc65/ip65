@@ -11,7 +11,7 @@
 .export timer_read
 .export timer_seconds
 
-.import   __clocks_per_sec, _clock
+.import   ___clocks_per_sec, _clock
 .import   tosumodeax, tosudiveax
 .import   pusheax, incsp4
 .importzp sp, sreg
@@ -36,7 +36,7 @@ mult: .byte $4C  ; JMP opcode
 ; inputs: none
 ; outputs: none
 timer_init:
-  jsr __clocks_per_sec
+  jsr ___clocks_per_sec
   sta timer_freq
   cmp #50
   beq @timer50
