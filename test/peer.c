@@ -6,6 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
+// MinGW: Build with -lwsock32
 
 #else
 
@@ -37,18 +38,18 @@ static void Sleep(u_int msec)
   nanosleep(&ts, NULL);
 }
 
-/* kbhit() and getch() for Unix: */
+// kbhit() and getch() for Unix:
 
 static int __conio_initialized;
 
-static struct termios tty,otty;
+static struct termios tty, otty;
 
 static void makecooked(void)
 {
   tcsetattr(0, TCSANOW, &otty);
 }
 
-static void sighand( int num )
+static void sighand(int num)
 {
   signal(SIGINT, SIG_IGN);
   signal(SIGTERM, SIG_IGN);
@@ -73,29 +74,31 @@ static void makeraw(void)
   {
     first_call = 0;
     if (tcgetattr(0, &tty))
-    {   /* input terminal */
+    {
+      // input terminal
       fprintf(stderr, "cannot get terminal attributes: %s\n", strerror(errno));
       exit(1);
     }
-    otty=tty;   /* save it */
-#ifdef NO_MAKERAW   /* makeraw code from NetBSD 1.6.2 (/usr/src/lib/libc/termios/cfmakeraw.c) */
-    tty.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+    otty = tty;  // save it
+#ifdef NO_MAKERAW
+    // makeraw code from NetBSD 1.6.2 (/usr/src/lib/libc/termios/cfmakeraw.c)
+    tty.c_iflag &= ~(IMAXBEL | IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
     tty.c_oflag &= ~OPOST;
-    tty.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
-    tty.c_cflag &= ~(CSIZE|PARENB);
+    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tty.c_cflag &= ~(CSIZE | PARENB);
     tty.c_cflag |= CS8;
 #else
     cfmakeraw(&tty);
 #endif
-    tty.c_lflag |= ISIG;    /* enable signals from ^C etc. */
-    tty.c_oflag |= ONLCR | OPOST;   /* translate '\n' to '\r\n' on output */
+    tty.c_lflag |= ISIG;  // enable signals from ^C etc.
+    tty.c_oflag |= ONLCR | OPOST;  // translate '\n' to '\r\n' on output
   }
   tcsetattr(0, TCSANOW, &tty);
 }
 
 static void __init_conio(void)
 {
-  if (! __conio_initialized)
+  if (!__conio_initialized)
   {
     signal(SIGINT, sighand);
     signal(SIGTERM, sighand);
@@ -108,7 +111,7 @@ static void __init_conio(void)
 
 static void __makeraw(void)
 {
-  if (! __conio_initialized)
+  if (!__conio_initialized)
   {
     __init_conio();
   }
@@ -126,7 +129,7 @@ static void __makecooked(void)
   }
 }
 
-static char getch (void)
+static char getch(void)
 {
   char c;
 
@@ -135,7 +138,7 @@ static char getch (void)
   return c;
 }
 
-static unsigned char kbhit (void)
+static unsigned char kbhit(void)
 {
   int retval;
   fd_set fds;
@@ -164,7 +167,7 @@ again:
   return 0;
 }
 
-#endif
+#endif  // _WIN32
 
 #define LEN 200
 
@@ -194,12 +197,12 @@ void main(void)
   }
 #endif
 
-  SOCKET udp = socket(AF_INET, SOCK_DGRAM , IPPROTO_UDP);
+  SOCKET udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (udp == INVALID_SOCKET)
   {
     return;
   }
-  SOCKET srv = socket(AF_INET, SOCK_STREAM , IPPROTO_TCP);
+  SOCKET srv = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (srv == INVALID_SOCKET)
   {
     return;
