@@ -25,6 +25,7 @@ IP65OBJS=\
 	download_c.o \
 	error.o \
 	eth.o \
+	eth_buffer.o \
 	eth_c.o \
 	http.o \
 	http_c.o \

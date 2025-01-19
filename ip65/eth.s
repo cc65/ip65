@@ -13,9 +13,9 @@
 .exportzp eth_type
 .exportzp eth_data
 
-.export eth_outp
+.import eth_outp
 .export eth_outp_len
-.export eth_inp
+.import eth_inp
 .export eth_inp_len
 
 .import cfg_mac
@@ -23,11 +23,9 @@
 
 .bss
 
-; input and output buffers
+; input and output buffer lengths
 eth_inp_len:    .res    2       ; input packet length
-eth_inp:        .res 1518       ; space for input packet
 eth_outp_len:   .res    2       ; output packet length
-eth_outp:       .res 1518       ; space for output packet
 
 ; ethernet packet offsets
 eth_dest =  0                   ; offset of destination address in ethernet packet
