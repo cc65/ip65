@@ -105,13 +105,7 @@ static int getColumns() {
 /* Beep, used for completion when there is nothing to complete or when all
  * the choices were already shown. */
 static void linenoiseBeep(void) {
-#ifdef __APPLE2__
-    unsigned char x = wherex();
-#endif
     putchar('\a');
-#ifdef __APPLE2__
-    gotox(x);
-#endif
 }
 
 /* ============================== Completion ================================ */
